@@ -246,7 +246,7 @@ html, body {
   
   .dial-face {
     @apply absolute inset-2 rounded-full;
-    background: radial-gradient(circle, hsl(var(--panel-edge)), hsl(var(--panel)));
+    background: radial-gradient(circle, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
     position: relative;
     overflow: hidden;
   }
