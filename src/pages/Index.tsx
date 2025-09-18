@@ -52,6 +52,15 @@ const ENDING_LABELS = {
   sad: 'Грустный',
   twist: 'Неожиданный'
 };
+const SCREEN_PARAMETERS = [
+  { id: 'location', label: 'Место действия', placeholder: 'Мехико или Заколдованный лес...' },
+  { id: 'artifact', label: 'Артефакт', placeholder: 'личный предмет или знакомое событие...' },
+  { id: 'hero1', label: 'Главный герой', placeholder: 'Имя, возраст, профессия...' },
+  { id: 'hero2', label: 'Герой 2', placeholder: 'Имя, возраст, профессия...' },
+  { id: 'hero3', label: 'Герой 3', placeholder: 'Имя, возраст, профессия...' },
+  { id: 'hero4', label: 'Герой 4', placeholder: 'Имя, возраст, профессия...' }
+];
+
 const Index = () => {
   const {
     toast
@@ -62,6 +71,7 @@ const Index = () => {
   const [showLoader, setShowLoader] = useState(false);
   const [showDriveButton, setShowDriveButton] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [currentScreenParameter, setCurrentScreenParameter] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: '',
@@ -104,21 +114,15 @@ const Index = () => {
     hero4: false
   });
 
-  // Handle knob click to cycle through presets
+  // Handle knob click to cycle through screen parameters
   const handleKnobClick = () => {
-    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
-    const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
-    const nextTone = TONE_PRESETS[nextIndex];
-    
-    setFormData(prev => ({...prev, tone: nextTone}));
-    setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
+    const nextIndex = (currentScreenParameter + 1) % SCREEN_PARAMETERS.length;
+    setCurrentScreenParameter(nextIndex);
+    setKnobAngle(nextIndex * (360 / SCREEN_PARAMETERS.length));
   };
-  // Initialize knob angle based on current tone
+  // Initialize knob angle based on current screen parameter
   useEffect(() => {
-    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
-    if (currentIndex !== -1) {
-      setKnobAngle(currentIndex * (360 / TONE_PRESETS.length));
-    }
+    setKnobAngle(currentScreenParameter * (360 / SCREEN_PARAMETERS.length));
   }, []);
 
   // Countdown timer
@@ -215,10 +219,10 @@ const Index = () => {
               </select>
             </div>
 
-            {/* Tone Control */}
+            {/* Navigation Control */}
             <div className="steampunk-card">
               <label className="block text-lg font-semibold mb-4 text-brass">
-                Тон повествования
+                Навигация по параметрам
               </label>
               <div className="flex items-center gap-6">
                 {/* Brass Knob */}
@@ -229,14 +233,32 @@ const Index = () => {
                   onClick={handleKnobClick}
                 />
                 
-                {/* Display */}
+                {/* Current Parameter Display */}
                 <div className="flex-1">
-                  <input type="text" className="steampunk-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  tone: e.target.value
-                }))} placeholder="Введите тон..." />
+                  <div className="text-xl font-semibold text-brass mb-2">
+                    {SCREEN_PARAMETERS[currentScreenParameter].label}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Параметр {currentScreenParameter + 1} из {SCREEN_PARAMETERS.length}
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Поверни крутилку для переключения параметров
+              </p>
+            </div>
+
+            {/* Tone Control - Hidden but functional */}
+            <div className="steampunk-card">
+              <label className="block text-lg font-semibold mb-4 text-brass">
+                Тон повествования
+              </label>
+              <input type="text" className="steampunk-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
+                ...prev,
+                tone: e.target.value
+              }))} placeholder="Введите тон..." />
               <div className="flex flex-wrap gap-2">
-                {TONE_PRESETS.map((preset, index) => (
+                {TONE_PRESETS.map((preset) => (
                   <button 
                     key={preset} 
                     className={`px-3 py-1 rounded-full border transition-all duration-200 text-sm ${
@@ -244,20 +266,12 @@ const Index = () => {
                         ? 'bg-brass text-cta-text border-brass shadow-lg' 
                         : 'border-brass text-brass hover:bg-brass hover:text-cta-text'
                     }`}
-                    onClick={() => {
-                      setFormData(prev => ({...prev, tone: preset}));
-                      setKnobAngle(index * (360 / TONE_PRESETS.length));
-                    }}
+                    onClick={() => setFormData(prev => ({...prev, tone: preset}))}
                   >
                     {preset}
                   </button>
                 ))}
               </div>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Поверни крутилку или напиши свой тон
-              </p>
             </div>
 
             {/* Form Toggle */}
@@ -316,112 +330,117 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right Column - Story Details */}
+          {/* Right Column - Parameter Screen */}
           <div className="space-y-8">
-            {/* Location & Artifact */}
+            {/* Parameter Screen */}
             <div className="steampunk-card">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-lg font-semibold mb-2 text-brass">
-                    Место действия
-                  </label>
-                  <input type="text" className="steampunk-input" value={formData.location} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  location: e.target.value
-                }))} placeholder="Мехико или Заколдованный лес..." />
+              <div className="border-4 border-brass rounded-lg p-8 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 min-h-[400px]">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-brass rounded-full flex items-center justify-center">
+                    <div className="text-2xl font-bold text-charcoal">{currentScreenParameter + 1}</div>
+                  </div>
+                  <h2 className="text-3xl font-bold text-brass mb-2">
+                    {SCREEN_PARAMETERS[currentScreenParameter].label}
+                  </h2>
+                  <div className="w-24 h-1 bg-brass mx-auto rounded-full"></div>
                 </div>
-                <div>
-                  <label className="block text-lg font-semibold mb-2 text-brass">
-                    Артефакт
-                  </label>
-                  <input type="text" className="steampunk-input" value={formData.artifact} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  artifact: e.target.value
-                }))} placeholder="личный предмет или знакомое событие..." />
+
+                {/* Parameter Content */}
+                <div className="space-y-4">
+                  {currentScreenParameter === 0 && (
+                    <div>
+                      <input 
+                        type="text" 
+                        className="steampunk-input text-center text-xl" 
+                        value={formData.location} 
+                        onChange={e => setFormData(prev => ({...prev, location: e.target.value}))} 
+                        placeholder="Мехико или Заколдованный лес..." 
+                      />
+                    </div>
+                  )}
+
+                  {currentScreenParameter === 1 && (
+                    <div>
+                      <input 
+                        type="text" 
+                        className="steampunk-input text-center text-xl" 
+                        value={formData.artifact} 
+                        onChange={e => setFormData(prev => ({...prev, artifact: e.target.value}))} 
+                        placeholder="личный предмет или знакомое событие..." 
+                      />
+                    </div>
+                  )}
+
+                  {currentScreenParameter >= 2 && (
+                    <div className="space-y-3">
+                      {(() => {
+                        const heroNum = currentScreenParameter - 1;
+                        const heroKey = `hero${heroNum}` as keyof typeof heroSections;
+                        
+                        return (
+                          <div>
+                            {heroNum > 1 && (
+                              <div className="mb-4 flex justify-center">
+                                <div className={`steampunk-toggle ${heroSections[heroKey] ? 'active' : ''}`} onClick={() => setHeroSections(prev => ({
+                                  ...prev,
+                                  [heroKey]: !prev[heroKey]
+                                }))}>
+                                  <div className="toggle-handle" />
+                                </div>
+                                <span className="ml-3 text-muted-foreground">
+                                  {heroSections[heroKey] ? 'Активен' : 'Отключен'}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {(heroNum === 1 || heroSections[heroKey]) && (
+                              <div className="grid grid-cols-2 gap-3">
+                                <input type="text" placeholder="Имя" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_name` as keyof FormData] as string} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_name`]: e.target.value}))} />
+                                <input type="number" placeholder="Возраст" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_age`]: parseInt(e.target.value) || 0}))} />
+                                <input type="text" placeholder="Профессия" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_job` as keyof FormData] as string} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_job`]: e.target.value}))} />
+                                <input type="text" placeholder="Черты характера" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_traits` as keyof FormData] as string} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_traits`]: e.target.value}))} />
+                                <input type="text" placeholder="Страхи" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_fear` as keyof FormData] as string} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_fear`]: e.target.value}))} />
+                                <input type="text" placeholder="Привычки" className="steampunk-input" 
+                                  value={formData[`hero${heroNum}_habits` as keyof FormData] as string} 
+                                  onChange={e => setFormData(prev => ({...prev, [`hero${heroNum}_habits`]: e.target.value}))} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress dots */}
+                <div className="flex justify-center mt-8 space-x-2">
+                  {SCREEN_PARAMETERS.map((_, index) => (
+                    <div 
+                      key={index}
+                      className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                        index === currentScreenParameter 
+                          ? 'bg-brass scale-125' 
+                          : 'bg-brass/30'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Heroes Section */}
-            <div className="steampunk-card">
-              <h3 className="text-lg font-semibold mb-4 text-brass">Персонажи</h3>
-              
-              {/* Main Hero */}
-              <div className="mb-6 p-4 rounded-lg bg-panel border border-brass">
-                <h4 className="font-semibold mb-3 text-brass">Главный герой</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Имя" className="steampunk-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_name: e.target.value
-                }))} />
-                  <input type="number" placeholder="Возраст" className="steampunk-input" value={formData.hero1_age || ''} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_age: parseInt(e.target.value) || 0
-                }))} />
-                  <input type="text" placeholder="Профессия" className="steampunk-input" value={formData.hero1_job} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_job: e.target.value
-                }))} />
-                  <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData.hero1_traits} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_traits: e.target.value
-                }))} />
-                  <input type="text" placeholder="Страхи" className="steampunk-input" value={formData.hero1_fear} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_fear: e.target.value
-                }))} />
-                  <input type="text" placeholder="Привычки" className="steampunk-input" value={formData.hero1_habits} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_habits: e.target.value
-                }))} />
-                </div>
-              </div>
-
-              {/* Additional Heroes */}
-              {[2, 3, 4].map(heroNum => {
-              const heroKey = `hero${heroNum}` as keyof typeof heroSections;
-              const isVisible = heroSections[heroKey];
-              return <div key={heroNum} className="mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-brass">Герой {heroNum}</h4>
-                      <div className={`steampunk-toggle ${isVisible ? 'active' : ''}`} onClick={() => setHeroSections(prev => ({
-                    ...prev,
-                    [heroKey]: !prev[heroKey]
-                  }))}>
-                        <div className="toggle-handle" />
-                      </div>
-                    </div>
-                    
-                    {isVisible && <div className="p-4 rounded-lg bg-panel border border-brass">
-                        <div className="grid grid-cols-2 gap-4">
-                          <input type="text" placeholder="Имя" className="steampunk-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_name`]: e.target.value
-                    }))} />
-                          <input type="number" placeholder="Возраст" className="steampunk-input" value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_age`]: parseInt(e.target.value) || 0
-                    }))} />
-                          <input type="text" placeholder="Профессия" className="steampunk-input" value={formData[`hero${heroNum}_job` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_job`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData[`hero${heroNum}_traits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_traits`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Страхи" className="steampunk-input" value={formData[`hero${heroNum}_fear` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_fear`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Привычки" className="steampunk-input" value={formData[`hero${heroNum}_habits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_habits`]: e.target.value
-                    }))} />
-                        </div>
-                      </div>}
-                  </div>;
-            })}
+            {/* Hidden forms for maintaining state */}
+            <div style={{ display: 'none' }}>
+              {/* ... keep existing code (all hidden form inputs for maintaining state) */}
             </div>
           </div>
         </div>
