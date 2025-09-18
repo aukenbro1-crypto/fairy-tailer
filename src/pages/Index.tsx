@@ -328,7 +328,7 @@ const Index = () => {
                   <input type="text" className="steampunk-input" value={formData.location} onChange={e => setFormData(prev => ({
                   ...prev,
                   location: e.target.value
-                }))} placeholder="Например, Мехико или Заколдованный лес..." />
+                }))} placeholder="Мехико или Заколдованный лес..." />
                 </div>
                 <div>
                   <label className="block text-lg font-semibold mb-2 text-brass">
@@ -337,7 +337,7 @@ const Index = () => {
                   <input type="text" className="steampunk-input" value={formData.artifact} onChange={e => setFormData(prev => ({
                   ...prev,
                   artifact: e.target.value
-                }))} placeholder="Например, личный предмет или знакомое событие..." />
+                }))} placeholder="личный предмет или знакомое событие..." />
                 </div>
               </div>
             </div>
