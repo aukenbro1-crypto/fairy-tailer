@@ -109,8 +109,10 @@ const Index = () => {
     const currentIndex = TONE_PRESETS.indexOf(formData.tone);
     const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
     const nextTone = TONE_PRESETS[nextIndex];
-    
-    setFormData(prev => ({...prev, tone: nextTone}));
+    setFormData(prev => ({
+      ...prev,
+      tone: nextTone
+    }));
     setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
   };
   // Initialize knob angle based on current tone
@@ -222,12 +224,9 @@ const Index = () => {
               </label>
               <div className="flex items-center gap-6">
                 {/* Brass Knob */}
-                <div 
-                  ref={knobRef} 
-                  className="brass-knob hover-scale cursor-pointer" 
-                  style={{transform: `rotate(${knobAngle}deg)`}} 
-                  onClick={handleKnobClick}
-                />
+                <div ref={knobRef} className="brass-knob hover-scale cursor-pointer" style={{
+                transform: `rotate(${knobAngle}deg)`
+              }} onClick={handleKnobClick} />
                 
                 {/* Display */}
                 <div className="flex-1">
@@ -236,22 +235,15 @@ const Index = () => {
                   tone: e.target.value
                 }))} placeholder="Введите тон..." />
               <div className="flex flex-wrap gap-2">
-                {TONE_PRESETS.map((preset, index) => (
-                  <button 
-                    key={preset} 
-                    className={`px-3 py-1 rounded-full border transition-all duration-200 text-sm ${
-                      formData.tone === preset 
-                        ? 'bg-brass text-cta-text border-brass shadow-lg' 
-                        : 'border-brass text-brass hover:bg-brass hover:text-cta-text'
-                    }`}
-                    onClick={() => {
-                      setFormData(prev => ({...prev, tone: preset}));
-                      setKnobAngle(index * (360 / TONE_PRESETS.length));
-                    }}
-                  >
+                {TONE_PRESETS.map((preset, index) => <button key={preset} className={`px-3 py-1 rounded-full border transition-all duration-200 text-sm ${formData.tone === preset ? 'bg-brass text-cta-text border-brass shadow-lg' : 'border-brass text-brass hover:bg-brass hover:text-cta-text'}`} onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      tone: preset
+                    }));
+                    setKnobAngle(index * (360 / TONE_PRESETS.length));
+                  }}>
                     {preset}
-                  </button>
-                ))}
+                  </button>)}
               </div>
                 </div>
               </div>
@@ -262,22 +254,16 @@ const Index = () => {
 
             {/* Form Toggle */}
             <div className="steampunk-card">
-              <label className="block text-lg font-semibold mb-4 text-brass">
-                Аудитория
-              </label>
+              <label className="block text-lg font-semibold mb-4 text-brass">Форма</label>
               <div className="flex items-center gap-4">
-                <span className={formData.form === 'adult' ? 'text-brass font-semibold' : 'text-muted-foreground'}>
-                  Взрослые
-                </span>
+                <span className={formData.form === 'adult' ? 'text-brass font-semibold' : 'text-muted-foreground'}>Для взрослых</span>
                 <div className={`steampunk-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
                 ...prev,
                 form: prev.form === 'adult' ? 'kids' : 'adult'
               }))}>
                   <div className="toggle-handle" />
                 </div>
-                <span className={formData.form === 'kids' ? 'text-brass font-semibold' : 'text-muted-foreground'}>
-                  Дети
-                </span>
+                <span className={formData.form === 'kids' ? 'text-brass font-semibold' : 'text-muted-foreground'}>Для детей</span>
               </div>
             </div>
 
