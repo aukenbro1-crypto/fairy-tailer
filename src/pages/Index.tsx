@@ -62,6 +62,7 @@ const Index = () => {
   const [showLoader, setShowLoader] = useState(false);
   const [showDriveButton, setShowDriveButton] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: '',
@@ -121,22 +122,24 @@ const Index = () => {
     }
   }, []);
 
-  // Countdown timer
+  // Countdown timer with real-time calculation
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (countdown > 0) {
+    if (startTime !== null) {
       interval = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            setShowDriveButton(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        const elapsed = (Date.now() - startTime) / 1000;
+        const remaining = Math.max(0, DRIVE_REVEAL_MS / 1000 - elapsed);
+        
+        setCountdown(remaining);
+        
+        if (remaining <= 0) {
+          setShowDriveButton(true);
+          setStartTime(null);
+        }
+      }, 100); // Check more frequently for smoother progress
     }
     return () => clearInterval(interval);
-  }, [countdown]);
+  }, [startTime]);
   const handleEndingChange = () => {
     const currentIndex = ENDINGS.indexOf(formData.ending);
     const nextIndex = (currentIndex + 1) % ENDINGS.length;
@@ -170,8 +173,8 @@ const Index = () => {
           description: "Идёт генерация сказки..."
         });
 
-        // Start countdown
-        setCountdown(DRIVE_REVEAL_MS / 1000);
+        // Start countdown with real time
+        setStartTime(Date.now());
       } else {
         throw new Error(`Server error: ${response.status}`);
       }
