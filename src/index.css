@@ -2,95 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Steampunk Design System - All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Steampunk Color Palette */
+    --brass: 42 85% 55%;
+    --brass-dark: 42 85% 45%;
+    --brass-light: 42 85% 65%;
+    --charcoal: 210 15% 12%;
+    --charcoal-light: 210 15% 20%;
+    --metal: 210 8% 25%;
+    --velvet: 270 50% 8%;
+    --accent: 270 70% 50%;
+    --glow: 42 100% 70%;
+    --copper: 25 85% 45%;
+    --steam: 210 15% 85%;
+    
+    /* Base colors using steampunk palette */
+    --background: 210 15% 12%;
+    --foreground: 42 85% 65%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card colors using steampunk palette */
+    --card: 210 15% 20%;
+    --card-foreground: 42 85% 65%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 210 15% 20%;
+    --popover-foreground: 42 85% 65%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 42 85% 55%;
+    --primary-foreground: 210 15% 12%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 8% 25%;
+    --secondary-foreground: 42 85% 65%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 8% 25%;
+    --muted-foreground: 210 15% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-steampunk: 270 70% 50%;
+    --accent-foreground: 42 85% 65%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 42 85% 65%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 210 8% 35%;
+    --input: 210 15% 20%;
+    --ring: 42 85% 55%;
 
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Steampunk Gradients */
+    --brass-gradient: linear-gradient(135deg, hsl(var(--brass-light)), hsl(var(--brass)), hsl(var(--brass-dark)));
+    --metal-gradient: linear-gradient(135deg, hsl(var(--metal)), hsl(var(--charcoal-light)), hsl(var(--charcoal)));
+    --glow-gradient: radial-gradient(circle, hsl(var(--glow) / 0.2), transparent);
+    
+    /* Steampunk Shadows */
+    --brass-shadow: 0 4px 15px hsl(var(--brass) / 0.3), inset 0 1px 0 hsl(var(--brass-light) / 0.8);
+    --metal-shadow: 0 2px 8px hsl(var(--charcoal) / 0.5), inset 0 1px 0 hsl(var(--metal) / 0.3);
+    --glow-shadow: 0 0 20px hsl(var(--glow) / 0.4);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 210 15% 8%;
+    --foreground: 42 85% 75%;
+    --card: 210 15% 15%;
+    --card-foreground: 42 85% 75%;
   }
 }
 
@@ -100,6 +76,148 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-serif;
+  }
+}
+
+@layer components {
+  /* Steampunk Brass Knob */
+  .brass-knob {
+    @apply relative w-24 h-24 rounded-full cursor-pointer select-none;
+    background: var(--brass-gradient);
+    box-shadow: var(--brass-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .brass-knob:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+  }
+  
+  .brass-knob::before {
+    content: '';
+    @apply absolute inset-2 rounded-full;
+    background: hsl(var(--charcoal-light));
+    box-shadow: inset 0 2px 4px hsl(var(--charcoal) / 0.8);
+  }
+  
+  .brass-knob::after {
+    content: '';
+    @apply absolute top-1 left-1/2 w-1 h-6 bg-white rounded-full;
+    transform: translateX(-50%);
+    box-shadow: 0 1px 2px hsl(var(--charcoal) / 0.5);
+  }
+
+  /* Steampunk Toggle */
+  .steampunk-toggle {
+    @apply relative w-16 h-8 rounded-full cursor-pointer;
+    background: var(--metal-gradient);
+    box-shadow: var(--metal-shadow);
+    transition: all 0.3s ease;
+  }
+  
+  .steampunk-toggle .toggle-handle {
+    @apply absolute top-1 left-1 w-6 h-6 rounded-full;
+    background: var(--brass-gradient);
+    box-shadow: var(--brass-shadow);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .steampunk-toggle.active .toggle-handle {
+    transform: translateX(2rem);
+  }
+
+  /* Analog Dial */
+  .analog-dial {
+    @apply relative w-32 h-32 rounded-full;
+    background: var(--metal-gradient);
+    box-shadow: var(--metal-shadow);
+  }
+  
+  .dial-face {
+    @apply absolute inset-2 rounded-full;
+    background: radial-gradient(circle, hsl(var(--charcoal)), hsl(var(--charcoal-light)));
+  }
+  
+  .dial-pointer {
+    @apply absolute top-1/2 left-1/2 origin-bottom;
+    width: 3px;
+    height: 48px;
+    background: var(--brass-gradient);
+    transform: translate(-50%, -100%);
+    border-radius: 2px;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px hsl(var(--charcoal) / 0.5);
+  }
+
+  /* Steampunk Button */
+  .steampunk-btn {
+    @apply relative px-8 py-4 rounded-lg font-bold text-lg cursor-pointer select-none;
+    background: linear-gradient(135deg, hsl(var(--accent-steampunk)), hsl(270 70% 40%));
+    color: hsl(var(--brass-light));
+    box-shadow: 
+      0 6px 20px hsl(var(--accent-steampunk) / 0.4),
+      inset 0 1px 0 hsl(270 70% 60%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .steampunk-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 25px hsl(var(--accent-steampunk) / 0.5),
+      inset 0 1px 0 hsl(270 70% 60%);
+  }
+  
+  .steampunk-btn:active {
+    transform: translateY(0px);
+  }
+
+  /* Input Fields */
+  .steampunk-input {
+    @apply w-full px-4 py-3 rounded-lg border-2 text-foreground;
+    background: hsl(var(--input));
+    border-color: hsl(var(--border));
+    box-shadow: inset 0 2px 4px hsl(var(--charcoal) / 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .steampunk-input:focus {
+    border-color: hsl(var(--brass));
+    box-shadow: 
+      inset 0 2px 4px hsl(var(--charcoal) / 0.3),
+      0 0 15px hsl(var(--brass) / 0.3);
+    outline: none;
+  }
+
+  /* Select */
+  .steampunk-select {
+    @apply w-full px-4 py-3 rounded-lg border-2 text-foreground cursor-pointer;
+    background: hsl(var(--input));
+    border-color: hsl(var(--border));
+    box-shadow: inset 0 2px 4px hsl(var(--charcoal) / 0.3);
+  }
+
+  /* Cards */
+  .steampunk-card {
+    @apply p-6 rounded-xl border-2;
+    background: hsl(var(--card));
+    border-color: hsl(var(--border));
+    box-shadow: 
+      0 4px 15px hsl(var(--charcoal) / 0.3),
+      inset 0 1px 0 hsl(var(--metal) / 0.2);
+  }
+
+  /* Glow effect */
+  .glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px hsl(var(--glow) / 0.2);
+    }
+    to {
+      box-shadow: 0 0 30px hsl(var(--glow) / 0.4);
+    }
   }
 }

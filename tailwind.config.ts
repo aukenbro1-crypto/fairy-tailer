@@ -36,7 +36,7 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "hsl(var(--accent-steampunk))",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
@@ -47,16 +47,21 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        // Steampunk colors
+        brass: {
+          DEFAULT: "hsl(var(--brass))",
+          light: "hsl(var(--brass-light))",
+          dark: "hsl(var(--brass-dark))",
         },
+        charcoal: {
+          DEFAULT: "hsl(var(--charcoal))",
+          light: "hsl(var(--charcoal-light))",
+        },
+        metal: "hsl(var(--metal))",
+        velvet: "hsl(var(--velvet))",
+        glow: "hsl(var(--glow))",
+        copper: "hsl(var(--copper))",
+        steam: "hsl(var(--steam))",
       },
       borderRadius: {
         lg: "var(--radius)",
