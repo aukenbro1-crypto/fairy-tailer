@@ -293,7 +293,7 @@ const Index = () => {
                     transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
                   }} />
                     {/* Sector labels */}
-                    <div className="absolute inset-0">
+                    <div className="absolute inset-0 magnifying-glass">
                       <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">М</div>
                       <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-brass">Х</div>
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">Г</div>
