@@ -292,12 +292,12 @@ const Index = () => {
                     <div className="dial-pointer" style={{
                     transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
                   }} />
-                    {/* Sector labels */}
-                    <div className="absolute inset-0">
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">М</div>
-                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-brass">Х</div>
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">Г</div>
-                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-brass">Н</div>
+                    {/* Sector labels with glass magnification */}
+                    <div className="dial-labels">
+                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-brass font-semibold">М</div>
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-brass font-semibold">Х</div>
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-brass font-semibold">Г</div>
+                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-brass font-semibold">Н</div>
                     </div>
                   </div>
                 </div>
