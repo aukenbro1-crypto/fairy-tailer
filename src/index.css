@@ -200,7 +200,7 @@ html, body {
   /* Brass Knob */
   .brass-knob {
     @apply relative w-24 h-24 rounded-full cursor-pointer select-none knob;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .brass-knob:hover {
@@ -299,5 +299,14 @@ html, body {
     to {
       box-shadow: 0 0 30px hsl(var(--glow) / 0.4);
     }
+  }
+
+  /* Hover Scale Animation */
+  .hover-scale {
+    @apply transition-transform duration-200;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.05);
   }
 }

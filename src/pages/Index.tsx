@@ -104,41 +104,22 @@ const Index = () => {
     hero4: false
   });
 
-  // Handle knob rotation
-  const handleKnobMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    e.preventDefault();
+  // Handle knob click to cycle through presets
+  const handleKnobClick = () => {
+    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
+    const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
+    const nextTone = TONE_PRESETS[nextIndex];
+    
+    setFormData(prev => ({...prev, tone: nextTone}));
+    setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
   };
+  // Initialize knob angle based on current tone
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !knobRef.current) return;
-      const rect = knobRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      const degrees = angle * 180 / Math.PI + 90;
-      setKnobAngle(degrees);
-
-      // Update tone based on angle
-      const normalizedAngle = (degrees % 360 + 360) % 360;
-      const presetIndex = Math.floor(normalizedAngle / 360 * TONE_PRESETS.length);
-      setFormData(prev => ({
-        ...prev,
-        tone: TONE_PRESETS[presetIndex]
-      }));
-    };
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
+    if (currentIndex !== -1) {
+      setKnobAngle(currentIndex * (360 / TONE_PRESETS.length));
     }
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
+  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -241,9 +222,12 @@ const Index = () => {
               </label>
               <div className="flex items-center gap-6">
                 {/* Brass Knob */}
-                <div ref={knobRef} className="brass-knob" style={{
-                transform: `rotate(${knobAngle}deg)`
-              }} onMouseDown={handleKnobMouseDown} />
+                <div 
+                  ref={knobRef} 
+                  className="brass-knob hover-scale cursor-pointer" 
+                  style={{transform: `rotate(${knobAngle}deg)`}} 
+                  onClick={handleKnobClick}
+                />
                 
                 {/* Display */}
                 <div className="flex-1">
@@ -251,14 +235,24 @@ const Index = () => {
                   ...prev,
                   tone: e.target.value
                 }))} placeholder="Введите тон..." />
-                  <div className="flex flex-wrap gap-2">
-                    {TONE_PRESETS.map(preset => <button key={preset} className="px-3 py-1 rounded-full border border-brass text-sm hover:bg-brass hover:text-charcoal transition-colors" onClick={() => setFormData(prev => ({
-                    ...prev,
-                    tone: preset
-                  }))}>
-                        {preset}
-                      </button>)}
-                  </div>
+              <div className="flex flex-wrap gap-2">
+                {TONE_PRESETS.map((preset, index) => (
+                  <button 
+                    key={preset} 
+                    className={`px-3 py-1 rounded-full border transition-all duration-200 text-sm ${
+                      formData.tone === preset 
+                        ? 'bg-brass text-cta-text border-brass shadow-lg' 
+                        : 'border-brass text-brass hover:bg-brass hover:text-cta-text'
+                    }`}
+                    onClick={() => {
+                      setFormData(prev => ({...prev, tone: preset}));
+                      setKnobAngle(index * (360 / TONE_PRESETS.length));
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
