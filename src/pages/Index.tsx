@@ -43,19 +43,7 @@ interface FormData {
   hero4_fear: string;
   hero4_habits: string;
 }
-
-const GENRES = [
-  'приключение',
-  'философская притча',
-  'сказка для детей',
-  'романтика',
-  'страшная история',
-  'юмор',
-  'сюрреализм',
-  'фэнтези',
-  'научная фантастика'
-];
-
+const GENRES = ['приключение', 'философская притча', 'сказка для детей', 'романтика', 'страшная история', 'юмор', 'сюрреализм', 'фэнтези', 'научная фантастика'];
 const TONE_PRESETS = ['легкий', 'ироничный', 'философский', 'драматичный', 'мистический'];
 const ENDINGS = ['moral', 'happy', 'sad', 'twist'];
 const ENDING_LABELS = {
@@ -64,16 +52,16 @@ const ENDING_LABELS = {
   sad: 'Грустный',
   twist: 'Неожиданный'
 };
-
 const Index = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const knobRef = useRef<HTMLDivElement>(null);
   const [knobAngle, setKnobAngle] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showDriveButton, setShowDriveButton] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: '',
@@ -85,12 +73,31 @@ const Index = () => {
     chapters: 5,
     title_need: false,
     language: 'ru',
-    hero1_name: '', hero1_age: 0, hero1_job: '', hero1_traits: '', hero1_fear: '', hero1_habits: '',
-    hero2_name: '', hero2_age: 0, hero2_job: '', hero2_traits: '', hero2_fear: '', hero2_habits: '',
-    hero3_name: '', hero3_age: 0, hero3_job: '', hero3_traits: '', hero3_fear: '', hero3_habits: '',
-    hero4_name: '', hero4_age: 0, hero4_job: '', hero4_traits: '', hero4_fear: '', hero4_habits: ''
+    hero1_name: '',
+    hero1_age: 0,
+    hero1_job: '',
+    hero1_traits: '',
+    hero1_fear: '',
+    hero1_habits: '',
+    hero2_name: '',
+    hero2_age: 0,
+    hero2_job: '',
+    hero2_traits: '',
+    hero2_fear: '',
+    hero2_habits: '',
+    hero3_name: '',
+    hero3_age: 0,
+    hero3_job: '',
+    hero3_traits: '',
+    hero3_fear: '',
+    hero3_habits: '',
+    hero4_name: '',
+    hero4_age: 0,
+    hero4_job: '',
+    hero4_traits: '',
+    hero4_fear: '',
+    hero4_habits: ''
   });
-
   const [heroSections, setHeroSections] = useState({
     hero2: false,
     hero3: false,
@@ -102,35 +109,31 @@ const Index = () => {
     setIsDragging(true);
     e.preventDefault();
   };
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging || !knobRef.current) return;
-      
       const rect = knobRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      
       const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      const degrees = (angle * 180) / Math.PI + 90;
-      
+      const degrees = angle * 180 / Math.PI + 90;
       setKnobAngle(degrees);
-      
-      // Update tone based on angle
-      const normalizedAngle = ((degrees % 360) + 360) % 360;
-      const presetIndex = Math.floor((normalizedAngle / 360) * TONE_PRESETS.length);
-      setFormData(prev => ({ ...prev, tone: TONE_PRESETS[presetIndex] }));
-    };
 
+      // Update tone based on angle
+      const normalizedAngle = (degrees % 360 + 360) % 360;
+      const presetIndex = Math.floor(normalizedAngle / 360 * TONE_PRESETS.length);
+      setFormData(prev => ({
+        ...prev,
+        tone: TONE_PRESETS[presetIndex]
+      }));
+    };
     const handleMouseUp = () => {
       setIsDragging(false);
     };
-
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
-
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -153,13 +156,14 @@ const Index = () => {
     }
     return () => clearInterval(interval);
   }, [countdown]);
-
   const handleEndingChange = () => {
     const currentIndex = ENDINGS.indexOf(formData.ending);
     const nextIndex = (currentIndex + 1) % ENDINGS.length;
-    setFormData(prev => ({ ...prev, ending: ENDINGS[nextIndex] as any }));
+    setFormData(prev => ({
+      ...prev,
+      ending: ENDINGS[nextIndex] as any
+    }));
   };
-
   const handleSubmit = async () => {
     // Validation
     if (!formData.genre || !formData.form || !formData.ending || formData.length_target <= 0 || formData.chapters <= 0) {
@@ -170,24 +174,21 @@ const Index = () => {
       });
       return;
     }
-
     setShowLoader(true);
-
     try {
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
-
       if (response.ok) {
         toast({
           title: "Принято",
           description: "Идёт генерация сказки..."
         });
-        
+
         // Start countdown
         setCountdown(DRIVE_REVEAL_MS / 1000);
       } else {
@@ -203,24 +204,17 @@ const Index = () => {
       setShowLoader(false);
     }
   };
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+  return <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-brass glow">
-            Стимпанк-микшер сказок
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Создайте уникальную историю с помощью механических приборов
-          </p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-brass glow">Конструктор сказок</h1>
+          <p className="text-xl text-muted-foreground">Создай свою историю</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -231,15 +225,12 @@ const Index = () => {
               <label className="block text-lg font-semibold mb-2 text-brass">
                 Выбери жанр истории
               </label>
-              <select
-                className="steampunk-select"
-                value={formData.genre}
-                onChange={(e) => setFormData(prev => ({ ...prev, genre: e.target.value }))}
-              >
+              <select className="steampunk-select" value={formData.genre} onChange={e => setFormData(prev => ({
+              ...prev,
+              genre: e.target.value
+            }))}>
                 <option value="">Выберите жанр...</option>
-                {GENRES.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
+                {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
               </select>
             </div>
 
@@ -250,32 +241,23 @@ const Index = () => {
               </label>
               <div className="flex items-center gap-6">
                 {/* Brass Knob */}
-                <div
-                  ref={knobRef}
-                  className="brass-knob"
-                  style={{ transform: `rotate(${knobAngle}deg)` }}
-                  onMouseDown={handleKnobMouseDown}
-                />
+                <div ref={knobRef} className="brass-knob" style={{
+                transform: `rotate(${knobAngle}deg)`
+              }} onMouseDown={handleKnobMouseDown} />
                 
                 {/* Display */}
                 <div className="flex-1">
-                  <input
-                    type="text"
-                    className="steampunk-input mb-4"
-                    value={formData.tone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, tone: e.target.value }))}
-                    placeholder="Введите тон..."
-                  />
+                  <input type="text" className="steampunk-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  tone: e.target.value
+                }))} placeholder="Введите тон..." />
                   <div className="flex flex-wrap gap-2">
-                    {TONE_PRESETS.map(preset => (
-                      <button
-                        key={preset}
-                        className="px-3 py-1 rounded-full border border-brass text-sm hover:bg-brass hover:text-charcoal transition-colors"
-                        onClick={() => setFormData(prev => ({ ...prev, tone: preset }))}
-                      >
+                    {TONE_PRESETS.map(preset => <button key={preset} className="px-3 py-1 rounded-full border border-brass text-sm hover:bg-brass hover:text-charcoal transition-colors" onClick={() => setFormData(prev => ({
+                    ...prev,
+                    tone: preset
+                  }))}>
                         {preset}
-                      </button>
-                    ))}
+                      </button>)}
                   </div>
                 </div>
               </div>
@@ -293,10 +275,10 @@ const Index = () => {
                 <span className={formData.form === 'adult' ? 'text-brass font-semibold' : 'text-muted-foreground'}>
                   Взрослые
                 </span>
-                <div
-                  className={`steampunk-toggle ${formData.form === 'kids' ? 'active' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, form: prev.form === 'adult' ? 'kids' : 'adult' }))}
-                >
+                <div className={`steampunk-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
+                ...prev,
+                form: prev.form === 'adult' ? 'kids' : 'adult'
+              }))}>
                   <div className="toggle-handle" />
                 </div>
                 <span className={formData.form === 'kids' ? 'text-brass font-semibold' : 'text-muted-foreground'}>
@@ -313,12 +295,9 @@ const Index = () => {
               <div className="flex items-center gap-6">
                 <div className="analog-dial">
                   <div className="dial-face">
-                    <div
-                      className="dial-pointer"
-                      style={{
-                        transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
-                      }}
-                    />
+                    <div className="dial-pointer" style={{
+                    transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
+                  }} />
                     {/* Sector labels */}
                     <div className="absolute inset-0">
                       <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">М</div>
@@ -332,10 +311,7 @@ const Index = () => {
                   <div className="text-xl font-semibold text-brass mb-2">
                     {ENDING_LABELS[formData.ending]}
                   </div>
-                  <button
-                    className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-brass hover:text-charcoal transition-colors"
-                    onClick={handleEndingChange}
-                  >
+                  <button className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-brass hover:text-charcoal transition-colors" onClick={handleEndingChange}>
                     Переключить
                   </button>
                 </div>
@@ -355,25 +331,19 @@ const Index = () => {
                   <label className="block text-lg font-semibold mb-2 text-brass">
                     Место действия
                   </label>
-                  <input
-                    type="text"
-                    className="steampunk-input"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="Например, Мехико или Заколдованный лес..."
-                  />
+                  <input type="text" className="steampunk-input" value={formData.location} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  location: e.target.value
+                }))} placeholder="Например, Мехико или Заколдованный лес..." />
                 </div>
                 <div>
                   <label className="block text-lg font-semibold mb-2 text-brass">
                     Артефакт
                   </label>
-                  <input
-                    type="text"
-                    className="steampunk-input"
-                    value={formData.artifact}
-                    onChange={(e) => setFormData(prev => ({ ...prev, artifact: e.target.value }))}
-                    placeholder="Например, личный предмет или знакомое событие..."
-                  />
+                  <input type="text" className="steampunk-input" value={formData.artifact} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  artifact: e.target.value
+                }))} placeholder="Например, личный предмет или знакомое событие..." />
                 </div>
               </div>
             </div>
@@ -386,40 +356,33 @@ const Index = () => {
                   <label className="block text-sm font-medium mb-1 text-brass">
                     Длина (символы)
                   </label>
-                  <input
-                    type="number"
-                    className="steampunk-input"
-                    value={formData.length_target}
-                    onChange={(e) => setFormData(prev => ({ ...prev, length_target: parseInt(e.target.value) || 0 }))}
-                  />
+                  <input type="number" className="steampunk-input" value={formData.length_target} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  length_target: parseInt(e.target.value) || 0
+                }))} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-brass">
                     Главы
                   </label>
-                  <input
-                    type="number"
-                    className="steampunk-input"
-                    value={formData.chapters}
-                    onChange={(e) => setFormData(prev => ({ ...prev, chapters: parseInt(e.target.value) || 0 }))}
-                  />
+                  <input type="number" className="steampunk-input" value={formData.chapters} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  chapters: parseInt(e.target.value) || 0
+                }))} />
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.title_need}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title_need: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
+                  <input type="checkbox" checked={formData.title_need} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  title_need: e.target.checked
+                }))} className="w-4 h-4" />
                   <span className="text-brass">Придумать заголовок</span>
                 </label>
-                <select
-                  className="steampunk-select max-w-24"
-                  value={formData.language}
-                  onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value as 'ru' | 'en' }))}
-                >
+                <select className="steampunk-select max-w-24" value={formData.language} onChange={e => setFormData(prev => ({
+                ...prev,
+                language: e.target.value as 'ru' | 'en'
+              }))}>
                   <option value="ru">RU</option>
                   <option value="en">EN</option>
                 </select>
@@ -434,130 +397,85 @@ const Index = () => {
               <div className="mb-6 p-4 rounded-lg bg-charcoal-light border border-brass">
                 <h4 className="font-semibold mb-3 text-brass">Главный герой</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Имя"
-                    className="steampunk-input"
-                    value={formData.hero1_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_name: e.target.value }))}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Возраст"
-                    className="steampunk-input"
-                    value={formData.hero1_age || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_age: parseInt(e.target.value) || 0 }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Профессия"
-                    className="steampunk-input"
-                    value={formData.hero1_job}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_job: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Черты характера"
-                    className="steampunk-input"
-                    value={formData.hero1_traits}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_traits: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Страхи"
-                    className="steampunk-input"
-                    value={formData.hero1_fear}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_fear: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Привычки"
-                    className="steampunk-input"
-                    value={formData.hero1_habits}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hero1_habits: e.target.value }))}
-                  />
+                  <input type="text" placeholder="Имя" className="steampunk-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_name: e.target.value
+                }))} />
+                  <input type="number" placeholder="Возраст" className="steampunk-input" value={formData.hero1_age || ''} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_age: parseInt(e.target.value) || 0
+                }))} />
+                  <input type="text" placeholder="Профессия" className="steampunk-input" value={formData.hero1_job} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_job: e.target.value
+                }))} />
+                  <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData.hero1_traits} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_traits: e.target.value
+                }))} />
+                  <input type="text" placeholder="Страхи" className="steampunk-input" value={formData.hero1_fear} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_fear: e.target.value
+                }))} />
+                  <input type="text" placeholder="Привычки" className="steampunk-input" value={formData.hero1_habits} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_habits: e.target.value
+                }))} />
                 </div>
               </div>
 
               {/* Additional Heroes */}
               {[2, 3, 4].map(heroNum => {
-                const heroKey = `hero${heroNum}` as keyof typeof heroSections;
-                const isVisible = heroSections[heroKey];
-                
-                return (
-                  <div key={heroNum} className="mb-4">
+              const heroKey = `hero${heroNum}` as keyof typeof heroSections;
+              const isVisible = heroSections[heroKey];
+              return <div key={heroNum} className="mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-semibold text-brass">Герой {heroNum}</h4>
-                      <div
-                        className={`steampunk-toggle ${isVisible ? 'active' : ''}`}
-                        onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
-                      >
+                      <div className={`steampunk-toggle ${isVisible ? 'active' : ''}`} onClick={() => setHeroSections(prev => ({
+                    ...prev,
+                    [heroKey]: !prev[heroKey]
+                  }))}>
                         <div className="toggle-handle" />
                       </div>
                     </div>
                     
-                    {isVisible && (
-                      <div className="p-4 rounded-lg bg-charcoal-light border border-brass">
+                    {isVisible && <div className="p-4 rounded-lg bg-charcoal-light border border-brass">
                         <div className="grid grid-cols-2 gap-4">
-                          <input
-                            type="text"
-                            placeholder="Имя"
-                            className="steampunk-input"
-                            value={formData[`hero${heroNum}_name` as keyof FormData] as string}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_name`]: e.target.value }))}
-                          />
-                          <input
-                            type="number"
-                            placeholder="Возраст"
-                            className="steampunk-input"
-                            value={(formData[`hero${heroNum}_age` as keyof FormData] as number) || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_age`]: parseInt(e.target.value) || 0 }))}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Профессия"
-                            className="steampunk-input"
-                            value={formData[`hero${heroNum}_job` as keyof FormData] as string}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_job`]: e.target.value }))}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Черты характера"
-                            className="steampunk-input"
-                            value={formData[`hero${heroNum}_traits` as keyof FormData] as string}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_traits`]: e.target.value }))}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Страхи"
-                            className="steampunk-input"
-                            value={formData[`hero${heroNum}_fear` as keyof FormData] as string}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_fear`]: e.target.value }))}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Привычки"
-                            className="steampunk-input"
-                            value={formData[`hero${heroNum}_habits` as keyof FormData] as string}
-                            onChange={(e) => setFormData(prev => ({ ...prev, [`hero${heroNum}_habits`]: e.target.value }))}
-                          />
+                          <input type="text" placeholder="Имя" className="steampunk-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_name`]: e.target.value
+                    }))} />
+                          <input type="number" placeholder="Возраст" className="steampunk-input" value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_age`]: parseInt(e.target.value) || 0
+                    }))} />
+                          <input type="text" placeholder="Профессия" className="steampunk-input" value={formData[`hero${heroNum}_job` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_job`]: e.target.value
+                    }))} />
+                          <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData[`hero${heroNum}_traits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_traits`]: e.target.value
+                    }))} />
+                          <input type="text" placeholder="Страхи" className="steampunk-input" value={formData[`hero${heroNum}_fear` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_fear`]: e.target.value
+                    }))} />
+                          <input type="text" placeholder="Привычки" className="steampunk-input" value={formData[`hero${heroNum}_habits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_habits`]: e.target.value
+                    }))} />
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      </div>}
+                  </div>;
+            })}
             </div>
           </div>
         </div>
 
         {/* Submit Section */}
         <div className="mt-12 text-center">
-          <button
-            className="steampunk-btn text-2xl px-12 py-6 mb-4"
-            onClick={handleSubmit}
-            disabled={showLoader}
-          >
+          <button className="steampunk-btn text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : 'Собрать сказку'}
           </button>
           
@@ -566,56 +484,38 @@ const Index = () => {
           </p>
 
           {/* Countdown Timer */}
-          {countdown > 0 && (
-            <div id="drive-timer" className="mb-6">
+          {countdown > 0 && <div id="drive-timer" className="mb-6">
               <div className="text-lg text-brass font-semibold">
                 Генерация сказки: {formatTime(countdown)}
               </div>
               <div className="w-full bg-charcoal-light rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brass h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${100 - (countdown / (DRIVE_REVEAL_MS / 1000)) * 100}%` }}
-                />
+                <div className="bg-brass h-2 rounded-full transition-all duration-1000" style={{
+              width: `${100 - countdown / (DRIVE_REVEAL_MS / 1000) * 100}%`
+            }} />
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Drive Download Section */}
           <div className="space-y-4">
-            {showDriveButton && (
-              <button
-                id="drive-cta"
-                className="steampunk-btn text-xl px-8 py-4 glow"
-                onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}
-              >
+            {showDriveButton && <button id="drive-cta" className="steampunk-btn text-xl px-8 py-4 glow" onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}>
                 Скачать PDF (Google Drive)
-              </button>
-            )}
+              </button>}
             
             <div>
-              <a 
-                id="drive-link"
-                href={DRIVE_FOLDER_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brass hover:text-brass-light underline text-sm"
-              >
+              <a id="drive-link" href={DRIVE_FOLDER_URL} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-brass-light underline text-sm">
                 Папка с PDF на Google Drive
               </a>
             </div>
 
-            {showDriveButton && (
-              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            {showDriveButton && <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Если файл ещё не виден в папке, обновите её через 10–20 секунд — 
                 Google Drive может отображать файлы с задержкой.
-              </p>
-            )}
+              </p>}
           </div>
         </div>
 
         {/* Loader Modal */}
-        {showLoader && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="steampunk-card max-w-md text-center">
               <div className="animate-spin w-12 h-12 border-4 border-brass border-t-transparent rounded-full mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-brass mb-2">
@@ -625,11 +525,8 @@ const Index = () => {
                 Обработка запроса...
               </p>
             </div>
-          </div>
-        )}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
