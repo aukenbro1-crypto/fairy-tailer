@@ -147,7 +147,7 @@ const Index = () => {
   };
   const handleSubmit = async () => {
     // Validation
-    if (!formData.genre || !formData.form || !formData.ending || formData.length_target <= 0 || formData.chapters <= 0) {
+    if (!formData.genre || !formData.form || !formData.ending) {
       toast({
         variant: "destructive",
         title: "Ошибка валидации",
@@ -339,47 +339,6 @@ const Index = () => {
                   artifact: e.target.value
                 }))} placeholder="Например, личный предмет или знакомое событие..." />
                 </div>
-              </div>
-            </div>
-
-            {/* Story Parameters */}
-            <div className="steampunk-card">
-              <h3 className="text-lg font-semibold mb-4 text-brass">Параметры истории</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-brass">
-                    Длина (символы)
-                  </label>
-                  <input type="number" className="steampunk-input" value={formData.length_target} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  length_target: parseInt(e.target.value) || 0
-                }))} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-brass">
-                    Главы
-                  </label>
-                  <input type="number" className="steampunk-input" value={formData.chapters} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  chapters: parseInt(e.target.value) || 0
-                }))} />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={formData.title_need} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  title_need: e.target.checked
-                }))} className="w-4 h-4" />
-                  <span className="text-brass">Придумать заголовок</span>
-                </label>
-                <select className="steampunk-select max-w-24" value={formData.language} onChange={e => setFormData(prev => ({
-                ...prev,
-                language: e.target.value as 'ru' | 'en'
-              }))}>
-                  <option value="ru">RU</option>
-                  <option value="en">EN</option>
-                </select>
               </div>
             </div>
 
