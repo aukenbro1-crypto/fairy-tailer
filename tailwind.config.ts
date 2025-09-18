@@ -36,8 +36,8 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent-steampunk))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -47,21 +47,30 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Steampunk colors
+        // Blue Brass Steampunk colors
+        panel: {
+          DEFAULT: "hsl(var(--panel))",
+          ink: "hsl(var(--panel-ink))",
+          muted: "hsl(var(--panel-muted))",
+          edge: "hsl(var(--panel-edge))",
+        },
         brass: {
           DEFAULT: "hsl(var(--brass))",
-          light: "hsl(var(--brass-light))",
-          dark: "hsl(var(--brass-dark))",
+          deep: "hsl(var(--brass-deep))",
         },
-        charcoal: {
-          DEFAULT: "hsl(var(--charcoal))",
-          light: "hsl(var(--charcoal-light))",
+        scratch: {
+          hi: "hsl(var(--scratch-hi))",
+          lo: "hsl(var(--scratch-lo))",
         },
-        metal: "hsl(var(--metal))",
-        velvet: "hsl(var(--velvet))",
+        cta: {
+          start: "hsl(var(--cta-start))",
+          end: "hsl(var(--cta-end))",
+          text: "hsl(var(--cta-text))",
+        },
         glow: "hsl(var(--glow))",
-        copper: "hsl(var(--copper))",
-        steam: "hsl(var(--steam))",
+        ok: "hsl(var(--ok))",
+        warn: "hsl(var(--warn))",
+        err: "hsl(var(--err))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -394,7 +394,7 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-4 text-brass">Персонажи</h3>
               
               {/* Main Hero */}
-              <div className="mb-6 p-4 rounded-lg bg-charcoal-light border border-brass">
+              <div className="mb-6 p-4 rounded-lg bg-panel border border-brass">
                 <h4 className="font-semibold mb-3 text-brass">Главный герой</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <input type="text" placeholder="Имя" className="steampunk-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
@@ -439,7 +439,7 @@ const Index = () => {
                       </div>
                     </div>
                     
-                    {isVisible && <div className="p-4 rounded-lg bg-charcoal-light border border-brass">
+                    {isVisible && <div className="p-4 rounded-lg bg-panel border border-brass">
                         <div className="grid grid-cols-2 gap-4">
                           <input type="text" placeholder="Имя" className="steampunk-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
@@ -475,7 +475,7 @@ const Index = () => {
 
         {/* Submit Section */}
         <div className="mt-12 text-center">
-          <button className="steampunk-btn text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
+          <button className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : 'Собрать сказку'}
           </button>
           
@@ -488,7 +488,7 @@ const Index = () => {
               <div className="text-lg text-brass font-semibold">
                 Генерация сказки: {formatTime(countdown)}
               </div>
-              <div className="w-full bg-charcoal-light rounded-full h-2 mt-2">
+              <div className="w-full bg-panel-edge rounded-full h-2 mt-2">
                 <div className="bg-brass h-2 rounded-full transition-all duration-1000" style={{
               width: `${100 - countdown / (DRIVE_REVEAL_MS / 1000) * 100}%`
             }} />
@@ -497,12 +497,12 @@ const Index = () => {
 
           {/* Drive Download Section */}
           <div className="space-y-4">
-            {showDriveButton && <button id="drive-cta" className="steampunk-btn text-xl px-8 py-4 glow" onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}>
+            {showDriveButton && <button id="drive-cta" className="button-primary text-xl px-8 py-4 glow" onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}>
                 Скачать PDF (Google Drive)
               </button>}
             
             <div>
-              <a id="drive-link" href={DRIVE_FOLDER_URL} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-brass-light underline text-sm">
+              <a id="drive-link" href={DRIVE_FOLDER_URL} target="_blank" rel="noopener noreferrer" className="text-brass hover:brightness-110 underline text-sm">
                 Папка с PDF на Google Drive
               </a>
             </div>
