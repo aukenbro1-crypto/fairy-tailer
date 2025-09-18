@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 // Constants from requirements
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
 const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/10Z6kk66UxTSXPelqm4Tckmq_lfz91ZZQ";
-const DRIVE_REVEAL_MS = 120_000; // 2 minutes
+const DRIVE_REVEAL_MS = 90_000; // 90 seconds
 
 interface FormData {
   genre: string;
@@ -428,20 +428,21 @@ const Index = () => {
 
         {/* Submit Section */}
         <div className="mt-12 text-center">
-          <button className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
-            {showLoader ? 'Отправка...' : 'Создать сказку'}
+          <button 
+            className="button-primary text-2xl px-12 py-6 mb-4" 
+            onClick={showDriveButton ? () => window.open(DRIVE_FOLDER_URL, '_blank') : handleSubmit} 
+            disabled={showLoader || countdown > 0}
+          >
+            {showLoader ? 'Отправка...' : showDriveButton ? 'Скачать PDF (Google Drive)' : 'Создать сказку'}
           </button>
           
           <p className="text-sm text-muted-foreground mb-6">
             Время генерации 2–4 мин. Ссылка на PDF появится ниже автоматически.
           </p>
 
-          {/* Countdown Timer */}
+          {/* Progress Bar */}
           {countdown > 0 && <div id="drive-timer" className="mb-6">
-              <div className="text-lg text-brass font-semibold">
-                Генерация сказки: {formatTime(countdown)}
-              </div>
-              <div className="w-full bg-panel-edge rounded-full h-2 mt-2">
+              <div className="w-full bg-panel-edge rounded-full h-2">
                 <div className="bg-brass h-2 rounded-full transition-all duration-1000" style={{
               width: `${100 - countdown / (DRIVE_REVEAL_MS / 1000) * 100}%`
             }} />
@@ -450,11 +451,6 @@ const Index = () => {
 
           {/* Drive Download Section */}
           <div className="space-y-4">
-            {showDriveButton && <button id="drive-cta" className="button-primary text-xl px-8 py-4 glow" onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}>
-                Скачать PDF (Google Drive)
-              </button>}
-            
-
             {showDriveButton && <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Если файл ещё не виден в папке, обновите её через 10–20 секунд — 
                 Google Drive может отображать файлы с задержкой.
