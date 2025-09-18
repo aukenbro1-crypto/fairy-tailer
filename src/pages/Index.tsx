@@ -429,7 +429,7 @@ const Index = () => {
         {/* Submit Section */}
         <div className="mt-12 text-center">
           <button className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
-            {showLoader ? 'Отправка...' : 'Собрать сказку'}
+            {showLoader ? 'Отправка...' : 'Создать сказку'}
           </button>
           
           <p className="text-sm text-muted-foreground mb-6">
@@ -454,11 +454,6 @@ const Index = () => {
                 Скачать PDF (Google Drive)
               </button>}
             
-            <div>
-              <a id="drive-link" href={DRIVE_FOLDER_URL} target="_blank" rel="noopener noreferrer" className="text-brass hover:brightness-110 underline text-sm">
-                Папка с PDF на Google Drive
-              </a>
-            </div>
 
             {showDriveButton && <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Если файл ещё не виден в папке, обновите её через 10–20 секунд — 
