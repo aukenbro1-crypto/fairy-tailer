@@ -6,20 +6,6 @@ const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9"
 const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/10Z6kk66UxTSXPelqm4Tckmq_lfz91ZZQ";
 const DRIVE_REVEAL_MS = 120_000; // 2 minutes
 
-// Telegram bot constants
-const BOT_USERNAME = "TaleDelivery_bot";
-const BOT_DEEPLINK = (id: string) => `https://t.me/${BOT_USERNAME}?start=${id}`;
-
-// Подстраховка тостов
-declare global {
-  interface Window {
-    toast: any;
-  }
-}
-if (typeof window !== 'undefined') {
-  window.toast = window.toast || ((t: any) => alert(t));
-}
-
 interface FormData {
   genre: string;
   tone: string;
@@ -27,7 +13,6 @@ interface FormData {
   ending: 'moral' | 'happy' | 'sad' | 'twist';
   location: string;
   artifact: string;
-  telegram_username: string;
   length_target: number;
   chapters: number;
   title_need: boolean;
@@ -84,7 +69,6 @@ const Index = () => {
     ending: 'moral',
     location: '',
     artifact: '',
-    telegram_username: '',
     length_target: 15000,
     chapters: 5,
     title_need: false,
@@ -163,142 +147,8 @@ const Index = () => {
       ending: ENDINGS[nextIndex] as any
     }));
   };
-
-  // Progress functions for Telegram bot integration
-  const ensureProgressUI = () => {
-    let box = document.getElementById('ftb-progress');
-    if (box) return box;
-
-    box = document.createElement('div');
-    box.id = 'ftb-progress';
-    box.className = 'steampunk-card mt-8';
-    box.innerHTML = `
-      <div class="mb-2"><strong>Готовим вашу сказку…</strong></div>
-      <div class="text-muted-foreground" id="ftb-phase">Инициализация…</div>
-
-      <div class="progress-wrap" style="margin:12px 0;">
-        <div class="progress-track" style="height:8px;background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden;">
-          <div id="ftb-bar" style="height:8px;width:0%;background:linear-gradient(90deg,#ffc76a,#e49a2b);box-shadow:0 0 12px rgba(228,154,43,.5) inset;"></div>
-        </div>
-      </div>
-
-      <div id="ftb-cta" class="flex gap-8 items-center" style="margin-top:6px;">
-        <div>
-          <a id="ftb-bot-link" class="button-primary" target="_blank" rel="noopener"
-             href="https://t.me/${BOT_USERNAME}">
-            Активировать бота в Telegram
-          </a>
-          <div class="text-muted-foreground" style="margin-top:4px;">Активируйте его, пока идёт загрузка.</div>
-        </div>
-        <div id="ftb-exec-wrap" class="hidden" style="display:none;align-items:center;gap:8px;">
-          <code id="ftb-exec" class="text-muted-foreground"></code>
-          <button id="ftb-copy" class="px-3 py-1 rounded bg-secondary text-secondary-foreground hover:bg-brass hover:text-charcoal transition-colors" type="button">Скопировать ID</button>
-        </div>
-      </div>
-    `;
-    
-    const submitSection = document.querySelector('#submit-section') || document.body;
-    submitSection.after(box);
-    return box;
-  };
-
-  const run90sProgress = () => {
-    const phrases = [
-      "Придумываем мир…",
-      "Прорабатываем персонажей…",
-      "Продумываем сюжет…",
-      "Формулируем объекты…",
-      "Продумываем неожиданную развязку…",
-      "Создаём неочевидные детали…"
-    ];
-    
-    const box = ensureProgressUI();
-    const bar = box.querySelector('#ftb-bar') as HTMLElement;
-    const lbl = box.querySelector('#ftb-phase') as HTMLElement;
-
-    const totalMs = 90_000;
-    const start = performance.now();
-    let phraseIdx = 0;
-    if (lbl) lbl.textContent = phrases[phraseIdx];
-    const marks = [0, 15_000, 30_000, 45_000, 60_000, 75_000];
-
-    function tick(t: number) {
-      const elapsed = t - start;
-      const p = Math.max(0, Math.min(1, elapsed / totalMs));
-      if (bar) bar.style.width = (p * 100).toFixed(2) + '%';
-
-      while (phraseIdx + 1 < phrases.length && elapsed >= marks[phraseIdx + 1]) {
-        phraseIdx++;
-        if (lbl) lbl.textContent = phrases[phraseIdx];
-      }
-      
-      if (elapsed < totalMs) {
-        requestAnimationFrame(tick);
-      } else {
-        if (bar) bar.style.width = '100%';
-        if (lbl) lbl.textContent = "Финальные штрихи…";
-      }
-    }
-    requestAnimationFrame(tick);
-  };
-
-  const updateBotDeeplink = (execId: string) => {
-    if (!execId) return;
-    
-    const a = document.getElementById('ftb-bot-link') as HTMLAnchorElement;
-    const wrap = document.getElementById('ftb-exec-wrap');
-    const code = document.getElementById('ftb-exec');
-    
-    if (a) a.href = BOT_DEEPLINK(execId);
-    if (wrap && code) {
-      wrap.classList.remove('hidden');
-      wrap.style.display = 'flex';
-      code.textContent = execId;
-      
-      const copyBtn = document.getElementById('ftb-copy');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          navigator.clipboard.writeText(execId).then(() => {
-            toast({
-              title: "ID скопирован",
-              description: execId
-            });
-          });
-        }, { once: true });
-      }
-    }
-    
-    try {
-      localStorage.setItem('tg_last_executionId', execId);
-    } catch {}
-  };
-
-  // Restore execution deeplink if saved
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('tg_last_executionId') || '';
-      if (saved) {
-        ensureProgressUI();
-        updateBotDeeplink(saved);
-      }
-    } catch {}
-  }, []);
-
   const handleSubmit = async () => {
-    // Telegram validation
-    const tgRaw = (formData.telegram_username || '').trim();
-    const tgOk = /^@?[A-Za-z0-9_]{5,32}$/.test(tgRaw);
-    if (!tgOk) {
-      toast({
-        variant: "destructive",
-        title: "Ошибка валидации",
-        description: "Введите корректный Telegram: @username (5–32 символов)"
-      });
-      (document.querySelector('#tg-username') as HTMLInputElement)?.focus();
-      return;
-    }
-
-    // Other validation
+    // Validation
     if (!formData.genre || !formData.form || !formData.ending) {
       toast({
         variant: "destructive",
@@ -307,56 +157,35 @@ const Index = () => {
       });
       return;
     }
-
-    const tgNorm = tgRaw.replace(/^@/, '');
-    const payload = {
-      ...formData,
-      telegram_username: tgNorm
-    };
-
     setShowLoader(true);
-    run90sProgress();
-
-    const submitBtn = document.querySelector('#submit-btn') as HTMLButtonElement;
-    if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
-
-    let execId = "", ok = false, errText = "";
     try {
-      const res = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload),
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
       });
-      ok = res.ok;
-      try {
-        const j = await res.json();
-        execId = j?.executionId || j?.job_id || "";
-        errText = j?.error || "";
-      } catch {}
-    } catch (e: any) {
-      errText = e?.message || "";
+      if (response.ok) {
+        toast({
+          title: "Принято",
+          description: "Идёт генерация сказки..."
+        });
+
+        // Start countdown
+        setCountdown(DRIVE_REVEAL_MS / 1000);
+      } else {
+        throw new Error(`Server error: ${response.status}`);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось отправить запрос. Попробуйте снова."
+      });
+    } finally {
+      setShowLoader(false);
     }
-
-    toast({
-      title: ok ? "Принято" : "Ошибка отправки",
-      description: ok ? "Идёт генерация сказки..." : ("Ошибка отправки" + (errText ? `: ${errText}` : "")),
-      variant: ok ? "default" : "destructive"
-    });
-
-    // Update bot CTA with deep-link if we got executionId
-    updateBotDeeplink(execId);
-
-    // Start countdown for Drive
-    if (ok) {
-      setCountdown(DRIVE_REVEAL_MS / 1000);
-    }
-
-    setShowLoader(false);
-
-    // Re-enable submit button
-    setTimeout(() => {
-      if (submitBtn) submitBtn.removeAttribute('disabled');
-    }, 1500);
   };
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -475,7 +304,7 @@ const Index = () => {
 
           {/* Right Column - Story Details */}
           <div className="space-y-8">
-            {/* Location, Artifact & Telegram */}
+            {/* Location & Artifact */}
             <div className="steampunk-card">
               <div className="space-y-4">
                 <div>
@@ -495,26 +324,6 @@ const Index = () => {
                   ...prev,
                   artifact: e.target.value
                 }))} placeholder="личный предмет или знакомое событие..." />
-                </div>
-                <div>
-                  <label htmlFor="tg-username" className="block text-lg font-semibold mb-2 text-brass">
-                    Telegram (обязательно)
-                  </label>
-                  <input 
-                    id="tg-username" 
-                    type="text" 
-                    className="steampunk-input" 
-                    value={formData.telegram_username} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      telegram_username: e.target.value
-                    }))} 
-                    placeholder="@username" 
-                    aria-required="true" 
-                  />
-                  <small className="text-sm text-muted-foreground mt-1 block">
-                    Чтобы прислать PDF в личку, укажи @username и после отправки нажми <b>Start</b> у бота <a href="https://t.me/TaleBoy_bot" target="_blank" rel="noopener" className="text-brass hover:underline">Tale Boy</a>.
-                  </small>
                 </div>
               </div>
             </div>
@@ -604,8 +413,8 @@ const Index = () => {
         </div>
 
         {/* Submit Section */}
-        <div id="submit-section" className="mt-12 text-center">
-          <button id="submit-btn" className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
+        <div className="mt-12 text-center">
+          <button className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : 'Создать сказку'}
           </button>
           
