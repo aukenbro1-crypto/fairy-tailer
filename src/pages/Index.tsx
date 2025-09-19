@@ -3,8 +3,6 @@ import { useToast } from '@/hooks/use-toast';
 
 // Constants from requirements
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
-const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/10Z6kk66UxTSXPelqm4Tckmq_lfz91ZZQ";
-const DRIVE_REVEAL_MS = 120_000; // 2 minutes
 
 interface FormData {
   genre: string;
@@ -17,6 +15,7 @@ interface FormData {
   chapters: number;
   title_need: boolean;
   language: 'ru' | 'en';
+  email: string;
   // Heroes 1-4
   hero1_name: string;
   hero1_age: number;
@@ -60,8 +59,7 @@ const Index = () => {
   const [knobAngle, setKnobAngle] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
-  const [showDriveButton, setShowDriveButton] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: '',
@@ -73,6 +71,7 @@ const Index = () => {
     chapters: 5,
     title_need: false,
     language: 'ru',
+    email: '',
     hero1_name: '',
     hero1_age: 0,
     hero1_job: '',
@@ -123,22 +122,34 @@ const Index = () => {
     }
   }, []);
 
-  // Countdown timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (countdown > 0) {
-      interval = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            setShowDriveButton(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [countdown]);
+  // Email validation
+  const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+  
+  const validateEmail = (email: string) => {
+    return EMAIL_RX.test(email);
+  };
+
+  // Email overlay functions
+  const showEmailOverlayWithProgress = () => {
+    setShowEmailOverlay(true);
+    
+    const DURATION = 90_000; // 90 seconds
+    const start = performance.now();
+    
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - start) / DURATION);
+      const progressBar = document.getElementById('email-progress');
+      if (progressBar) {
+        progressBar.style.width = (k * 100).toFixed(2) + '%';
+      }
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  const hideEmailOverlayHandler = () => {
+    setShowEmailOverlay(false);
+  };
   const handleEndingChange = () => {
     const currentIndex = ENDINGS.indexOf(formData.ending);
     const nextIndex = (currentIndex + 1) % ENDINGS.length;
@@ -148,8 +159,18 @@ const Index = () => {
     }));
   };
   const handleSubmit = async () => {
-    // Validation
-    if (!formData.genre || !formData.form || !formData.ending) {
+    // Email validation
+    if (!validateEmail(formData.email)) {
+      toast({
+        variant: "destructive",
+        title: "Ошибка валидации",
+        description: "Введите корректный email"
+      });
+      return;
+    }
+
+    // Other validation
+    if (!formData.genre || !formData.form || !formData.ending || formData.length_target <= 0 || formData.chapters <= 0) {
       toast({
         variant: "destructive",
         title: "Ошибка валидации",
@@ -157,40 +178,69 @@ const Index = () => {
       });
       return;
     }
+
     setShowLoader(true);
+    
+    // Prepare payload with all fields
+    const payload = {
+      genre: formData.genre,
+      tone: formData.tone,
+      form: formData.form,
+      ending: formData.ending,
+      location: formData.location,
+      artifact: formData.artifact,
+      length_target: formData.length_target,
+      chapters: formData.chapters,
+      title_need: formData.title_need,
+      language: formData.language,
+      email: formData.email.toLowerCase(),
+      hero1_name: formData.hero1_name,
+      hero1_age: formData.hero1_age,
+      hero1_job: formData.hero1_job,
+      hero1_traits: formData.hero1_traits,
+      hero1_fear: formData.hero1_fear,
+      hero1_habits: formData.hero1_habits,
+      hero2_name: formData.hero2_name,
+      hero2_age: formData.hero2_age,
+      hero2_job: formData.hero2_job,
+      hero2_traits: formData.hero2_traits,
+      hero2_fear: formData.hero2_fear,
+      hero2_habits: formData.hero2_habits,
+      hero3_name: formData.hero3_name,
+      hero3_age: formData.hero3_age,
+      hero3_job: formData.hero3_job,
+      hero3_traits: formData.hero3_traits,
+      hero3_fear: formData.hero3_fear,
+      hero3_habits: formData.hero3_habits,
+      hero4_name: formData.hero4_name,
+      hero4_age: formData.hero4_age,
+      hero4_job: formData.hero4_job,
+      hero4_traits: formData.hero4_traits,
+      hero4_fear: formData.hero4_fear,
+      hero4_habits: formData.hero4_habits,
+    };
+
+    let ok = false;
     try {
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
-      if (response.ok) {
-        toast({
-          title: "Принято",
-          description: "Идёт генерация сказки..."
-        });
-
-        // Start countdown
-        setCountdown(DRIVE_REVEAL_MS / 1000);
-      } else {
-        throw new Error(`Server error: ${response.status}`);
-      }
+      ok = response.ok;
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отправить запрос. Попробуйте снова."
-      });
-    } finally {
-      setShowLoader(false);
+      ok = false;
     }
-  };
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    toast({
+      title: ok ? "Заявка отправлена" : "Ошибка отправки",
+      description: ok ? "Идёт генерация сказки..." : "Не удалось отправить запрос. Попробуйте снова."
+    });
+
+    setShowLoader(false);
+    showEmailOverlayWithProgress();
   };
   return <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -304,6 +354,32 @@ const Index = () => {
 
           {/* Right Column - Story Details */}
           <div className="space-y-8">
+            {/* Email Field */}
+            <div className="steampunk-card">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-lg font-semibold mb-2 text-brass">
+                    Почта (обязательно)
+                  </label>
+                  <input 
+                    type="email" 
+                    className={`steampunk-input ${formData.email && !validateEmail(formData.email) ? 'border-red-500 shadow-red-500/20' : ''}`}
+                    value={formData.email} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      email: e.target.value
+                    }))} 
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Мы вышлем PDF на этот адрес.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Location & Artifact */}
             <div className="steampunk-card">
               <div className="space-y-4">
@@ -419,33 +495,8 @@ const Index = () => {
           </button>
           
           <p className="text-sm text-muted-foreground mb-6">
-            Время генерации 2–4 мин. Ссылка на PDF появится ниже автоматически.
+            Время генерации 2–4 мин. PDF придёт на указанную почту.
           </p>
-
-          {/* Countdown Timer */}
-          {countdown > 0 && <div id="drive-timer" className="mb-6">
-              <div className="text-lg text-brass font-semibold">
-                Генерация сказки: {formatTime(countdown)}
-              </div>
-              <div className="w-full bg-panel-edge rounded-full h-2 mt-2">
-                <div className="bg-brass h-2 rounded-full transition-all duration-1000" style={{
-              width: `${100 - countdown / (DRIVE_REVEAL_MS / 1000) * 100}%`
-            }} />
-              </div>
-            </div>}
-
-          {/* Drive Download Section */}
-          <div className="space-y-4">
-            {showDriveButton && <button id="drive-cta" className="button-primary text-xl px-8 py-4 glow" onClick={() => window.open(DRIVE_FOLDER_URL, '_blank')}>
-                Скачать PDF (Google Drive)
-              </button>}
-            
-
-            {showDriveButton && <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Если файл ещё не виден в папке, обновите её через 10–20 секунд — 
-                Google Drive может отображать файлы с задержкой.
-              </p>}
-          </div>
         </div>
 
         {/* Loader Modal */}
@@ -460,6 +511,41 @@ const Index = () => {
               </p>
             </div>
           </div>}
+
+        {/* Email Progress Overlay */}
+        {showEmailOverlay && (
+          <div 
+            className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50"
+            style={{ display: 'block' }}
+            aria-hidden="true"
+            onClick={hideEmailOverlayHandler}
+          >
+            <div 
+              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6"
+              role="dialog" 
+              aria-modal="true" 
+              aria-labelledby="email-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="email-title" className="text-2xl font-semibold mb-2 text-brass">
+                Почти готово!
+              </h3>
+              <p className="mb-4 opacity-90">
+                Через несколько минут сказка окажется у вас на почте.
+              </p>
+              <div 
+                className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden"
+                aria-label="Загрузка"
+              >
+                <div 
+                  id="email-progress"
+                  className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear"
+                  style={{ width: '0%' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>;
 };
