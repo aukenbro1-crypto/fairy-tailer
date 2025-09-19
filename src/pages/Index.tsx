@@ -513,7 +513,7 @@ const Index = () => {
                     aria-required="true" 
                   />
                   <small className="text-sm text-muted-foreground mt-1 block">
-                    Чтобы прислать PDF в личку, укажи @username и после отправки нажми <b>Start</b> у бота.
+                    Чтобы прислать PDF в личку, укажи @username и после отправки нажми <b>Start</b> у бота <a href="https://t.me/TaleBoy_bot" target="_blank" rel="noopener" className="text-brass hover:underline">Tale Boy</a>.
                   </small>
                 </div>
               </div>
