@@ -458,8 +458,13 @@ html, body {
   text-shadow: 
     0 0 10px hsla(45, 75%, 70%, 0.8),
     0 0 20px hsla(45, 75%, 70%, 0.4);
-  animation: blink 1s infinite;
+  animation: cursor-blink 1s infinite;
   -webkit-text-fill-color: hsl(45, 75%, 70%);
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 .mixer-subtitle {
