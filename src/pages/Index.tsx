@@ -242,23 +242,23 @@ const Index = () => {
     setShowLoader(false);
     showEmailOverlayWithProgress();
   };
-  return <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+  return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
+      <div className="max-w-6xl mx-auto mixer-chassis">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-brass glow">Конструктор сказок</h1>
-          <p className="text-xl text-muted-foreground">Создай свою историю</p>
+        <div className="text-center mb-12 mixer-panel">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">Конструктор сказок</h1>
+          <p className="text-xl text-muted-foreground mixer-subtitle">Создай свою историю</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Column - Controls */}
           <div className="space-y-8">
             {/* Genre */}
-            <div className="steampunk-card">
-              <label className="block text-lg font-semibold mb-2 text-brass">
+            <div className="mixer-control-section">
+              <label className="mixer-control-label">
                 Выбери жанр истории
               </label>
-              <select className="steampunk-select" value={formData.genre} onChange={e => setFormData(prev => ({
+              <select className="mixer-select" value={formData.genre} onChange={e => setFormData(prev => ({
               ...prev,
               genre: e.target.value
             }))}>
@@ -268,24 +268,24 @@ const Index = () => {
             </div>
 
             {/* Tone Control */}
-            <div className="steampunk-card">
-              <label className="block text-lg font-semibold mb-4 text-brass">
+            <div className="mixer-control-section">
+              <label className="mixer-control-label">
                 Тон повествования
               </label>
               <div className="flex items-center gap-6">
-                {/* Brass Knob */}
-                <div ref={knobRef} className="brass-knob hover-scale cursor-pointer" style={{
+                {/* Mixer Knob */}
+                <div ref={knobRef} className="mixer-knob cursor-pointer" style={{
                 transform: `rotate(${knobAngle}deg)`
               }} onClick={handleKnobClick} />
                 
                 {/* Display */}
                 <div className="flex-1">
-                  <input type="text" className="steampunk-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
+                  <input type="text" className="mixer-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
                   ...prev,
                   tone: e.target.value
                 }))} placeholder="Введите тон..." />
               <div className="flex flex-wrap gap-2">
-                {TONE_PRESETS.map((preset, index) => <button key={preset} className={`px-3 py-1 rounded-full border transition-all duration-200 text-sm ${formData.tone === preset ? 'bg-brass text-cta-text border-brass shadow-lg' : 'border-brass text-brass hover:bg-brass hover:text-cta-text'}`} onClick={() => {
+                {TONE_PRESETS.map((preset, index) => <button key={preset} className={`mixer-preset-btn ${formData.tone === preset ? 'active' : ''}`} onClick={() => {
                     setFormData(prev => ({
                       ...prev,
                       tone: preset
@@ -297,56 +297,56 @@ const Index = () => {
               </div>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="mixer-hint">
                 Поверни крутилку или напиши свой тон
               </p>
             </div>
 
             {/* Form Toggle */}
-            <div className="steampunk-card">
-              <label className="block text-lg font-semibold mb-4 text-brass">Форма</label>
+            <div className="mixer-control-section">
+              <label className="mixer-control-label">Форма</label>
               <div className="flex items-center gap-4">
-                <span className={formData.form === 'adult' ? 'text-brass font-semibold' : 'text-muted-foreground'}>Для взрослых</span>
-                <div className={`steampunk-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
+                <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
+                <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
                 ...prev,
                 form: prev.form === 'adult' ? 'kids' : 'adult'
               }))}>
-                  <div className="toggle-handle" />
+                  <div className="mixer-toggle-handle" />
                 </div>
-                <span className={formData.form === 'kids' ? 'text-brass font-semibold' : 'text-muted-foreground'}>Для детей</span>
+                <span className={formData.form === 'kids' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для детей</span>
               </div>
             </div>
 
             {/* Ending Dial */}
-            <div className="steampunk-card">
-              <label className="block text-lg font-semibold mb-4 text-brass">
+            <div className="mixer-control-section">
+              <label className="mixer-control-label">
                 Развязка истории
               </label>
               <div className="flex items-center gap-6">
-                <div className="analog-dial">
-                  <div className="dial-face">
-                    <div className="dial-pointer" style={{
+                <div className="mixer-dial">
+                  <div className="mixer-dial-face">
+                    <div className="mixer-dial-pointer" style={{
                     transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
                   }} />
                     {/* Sector labels */}
-                    <div className="absolute inset-0 magnifying-glass">
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">М</div>
-                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-brass">Х</div>
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-brass">Г</div>
-                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-brass">Н</div>
+                    <div className="absolute inset-0">
+                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs mixer-dial-label">М</div>
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs mixer-dial-label">Х</div>
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs mixer-dial-label">Г</div>
+                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs mixer-dial-label">Н</div>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <div className="text-xl font-semibold text-brass mb-2">
+                  <div className="text-xl font-semibold mixer-display-value mb-2">
                     {ENDING_LABELS[formData.ending]}
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-brass hover:text-charcoal transition-colors" onClick={handleEndingChange}>
+                  <button className="mixer-mechanical-btn" onClick={handleEndingChange}>
                     Переключить
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="mixer-hint">
                 Нажми, чтобы сменить развязку
               </p>
             </div>
@@ -355,15 +355,15 @@ const Index = () => {
           {/* Right Column - Story Details */}
           <div className="space-y-8">
             {/* Email Field */}
-            <div className="steampunk-card">
+            <div className="mixer-control-section">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-lg font-semibold mb-2 text-brass">
+                  <label className="mixer-control-label">
                     Почта (обязательно)
                   </label>
                   <input 
                     type="email" 
-                    className={`steampunk-input ${formData.email && !validateEmail(formData.email) ? 'border-red-500 shadow-red-500/20' : ''}`}
+                    className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`}
                     value={formData.email} 
                     onChange={e => setFormData(prev => ({
                       ...prev,
@@ -373,7 +373,7 @@ const Index = () => {
                     autoComplete="email"
                     required
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="mixer-hint">
                     Мы вышлем PDF на этот адрес.
                   </p>
                 </div>
@@ -381,22 +381,22 @@ const Index = () => {
             </div>
 
             {/* Location & Artifact */}
-            <div className="steampunk-card">
+            <div className="mixer-control-section">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-lg font-semibold mb-2 text-brass">
+                  <label className="mixer-control-label">
                     Место действия
                   </label>
-                  <input type="text" className="steampunk-input" value={formData.location} onChange={e => setFormData(prev => ({
+                  <input type="text" className="mixer-input" value={formData.location} onChange={e => setFormData(prev => ({
                   ...prev,
                   location: e.target.value
                 }))} placeholder="Мехико или Заколдованный лес..." />
                 </div>
                 <div>
-                  <label className="block text-lg font-semibold mb-2 text-brass">
+                  <label className="mixer-control-label">
                     Артефакт
                   </label>
-                  <input type="text" className="steampunk-input" value={formData.artifact} onChange={e => setFormData(prev => ({
+                  <input type="text" className="mixer-input" value={formData.artifact} onChange={e => setFormData(prev => ({
                   ...prev,
                   artifact: e.target.value
                 }))} placeholder="личный предмет или знакомое событие..." />
@@ -405,34 +405,34 @@ const Index = () => {
             </div>
 
             {/* Heroes Section */}
-            <div className="steampunk-card">
-              <h3 className="text-lg font-semibold mb-4 text-brass">Персонажи</h3>
+            <div className="mixer-control-section">
+              <h3 className="mixer-section-title">Персонажи</h3>
               
               {/* Main Hero */}
-              <div className="mb-6 p-4 rounded-lg bg-panel border border-brass">
-                <h4 className="font-semibold mb-3 text-brass">Главный герой</h4>
+              <div className="mixer-hero-panel">
+                <h4 className="mixer-hero-title">Главный герой</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Имя" className="steampunk-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
+                  <input type="text" placeholder="Имя" className="mixer-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_name: e.target.value
                 }))} />
-                  <input type="number" placeholder="Возраст" className="steampunk-input" value={formData.hero1_age || ''} onChange={e => setFormData(prev => ({
+                  <input type="number" placeholder="Возраст" className="mixer-input" value={formData.hero1_age || ''} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_age: parseInt(e.target.value) || 0
                 }))} />
-                  <input type="text" placeholder="Профессия" className="steampunk-input" value={formData.hero1_job} onChange={e => setFormData(prev => ({
+                  <input type="text" placeholder="Профессия" className="mixer-input" value={formData.hero1_job} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_job: e.target.value
                 }))} />
-                  <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData.hero1_traits} onChange={e => setFormData(prev => ({
+                  <input type="text" placeholder="Черты характера" className="mixer-input" value={formData.hero1_traits} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_traits: e.target.value
                 }))} />
-                  <input type="text" placeholder="Страхи" className="steampunk-input" value={formData.hero1_fear} onChange={e => setFormData(prev => ({
+                  <input type="text" placeholder="Страхи" className="mixer-input" value={formData.hero1_fear} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_fear: e.target.value
                 }))} />
-                  <input type="text" placeholder="Привычки" className="steampunk-input" value={formData.hero1_habits} onChange={e => setFormData(prev => ({
+                  <input type="text" placeholder="Привычки" className="mixer-input" value={formData.hero1_habits} onChange={e => setFormData(prev => ({
                   ...prev,
                   hero1_habits: e.target.value
                 }))} />
@@ -445,38 +445,38 @@ const Index = () => {
               const isVisible = heroSections[heroKey];
               return <div key={heroNum} className="mb-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-brass">Герой {heroNum}</h4>
-                      <div className={`steampunk-toggle ${isVisible ? 'active' : ''}`} onClick={() => setHeroSections(prev => ({
+                      <h4 className="mixer-hero-title">Герой {heroNum}</h4>
+                      <div className={`mixer-toggle ${isVisible ? 'active' : ''}`} onClick={() => setHeroSections(prev => ({
                     ...prev,
                     [heroKey]: !prev[heroKey]
                   }))}>
-                        <div className="toggle-handle" />
+                        <div className="mixer-toggle-handle" />
                       </div>
                     </div>
                     
-                    {isVisible && <div className="p-4 rounded-lg bg-panel border border-brass">
+                    {isVisible && <div className="mixer-hero-panel">
                         <div className="grid grid-cols-2 gap-4">
-                          <input type="text" placeholder="Имя" className="steampunk-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                          <input type="text" placeholder="Имя" className="mixer-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_name`]: e.target.value
                     }))} />
-                          <input type="number" placeholder="Возраст" className="steampunk-input" value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} onChange={e => setFormData(prev => ({
+                          <input type="number" placeholder="Возраст" className="mixer-input" value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_age`]: parseInt(e.target.value) || 0
                     }))} />
-                          <input type="text" placeholder="Профессия" className="steampunk-input" value={formData[`hero${heroNum}_job` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                          <input type="text" placeholder="Профессия" className="mixer-input" value={formData[`hero${heroNum}_job` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_job`]: e.target.value
                     }))} />
-                          <input type="text" placeholder="Черты характера" className="steampunk-input" value={formData[`hero${heroNum}_traits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                          <input type="text" placeholder="Черты характера" className="mixer-input" value={formData[`hero${heroNum}_traits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_traits`]: e.target.value
                     }))} />
-                          <input type="text" placeholder="Страхи" className="steampunk-input" value={formData[`hero${heroNum}_fear` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                          <input type="text" placeholder="Страхи" className="mixer-input" value={formData[`hero${heroNum}_fear` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_fear`]: e.target.value
                     }))} />
-                          <input type="text" placeholder="Привычки" className="steampunk-input" value={formData[`hero${heroNum}_habits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                          <input type="text" placeholder="Привычки" className="mixer-input" value={formData[`hero${heroNum}_habits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
                       ...prev,
                       [`hero${heroNum}_habits`]: e.target.value
                     }))} />
@@ -489,24 +489,24 @@ const Index = () => {
         </div>
 
         {/* Submit Section */}
-        <div className="mt-12 text-center">
-          <button className="button-primary text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
+        <div className="mt-12 text-center mixer-panel">
+          <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : 'Создать сказку'}
           </button>
           
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="mixer-subtitle mb-6">
             Время генерации 2–4 мин. PDF придёт на указанную почту.
           </p>
         </div>
 
         {/* Loader Modal */}
         {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="steampunk-card max-w-md text-center">
-              <div className="animate-spin w-12 h-12 border-4 border-brass border-t-transparent rounded-full mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-brass mb-2">
+            <div className="mixer-modal-panel max-w-md text-center">
+              <div className="mixer-loading-indicator" />
+              <h3 className="text-xl font-semibold mixer-display-value mb-2">
                 Задача отправлена
               </h3>
-              <p className="text-muted-foreground">
+              <p className="mixer-subtitle">
                 Обработка запроса...
               </p>
             </div>
@@ -527,10 +527,10 @@ const Index = () => {
               aria-labelledby="email-title"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 id="email-title" className="text-2xl font-semibold mb-2 text-brass">
+              <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
                 Почти готово!
               </h3>
-              <p className="mb-4 opacity-90">
+              <p className="mb-4 mixer-subtitle">
                 Через несколько минут сказка окажется у вас на почте.
               </p>
               <div 
