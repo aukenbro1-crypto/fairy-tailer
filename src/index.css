@@ -370,13 +370,18 @@ html, body {
   background-size: 400px 400px, 600px 600px, 100% 100%;
 }
 
-/* Main mixer chassis with aged blue paint */
+/* Main mixer chassis with aged blue paint and scratches */
 .mixer-chassis {
   position: relative;
   background: 
-    /* Scratches overlay */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M10,20 L90,25 M15,40 L85,45 M8,60 L92,58 M12,80 L88,82' stroke='%23334155' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E"),
-    /* Paint texture */
+    /* Fine scratches overlay */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg stroke='%23B8C5D1' stroke-width='0.3' opacity='0.12'%3E%3Cpath d='M10,20 L190,25 M15,40 L185,45 M8,60 L192,58 M12,80 L188,82 M5,100 L195,102 M20,120 L180,125 M25,140 L175,138 M18,160 L182,162 M22,180 L178,185'/%3E%3Cpath d='M30,10 L35,190 M50,8 L55,192 M70,15 L75,185 M90,5 L95,195 M110,12 L115,188 M130,18 L135,182 M150,8 L155,192 M170,15 L175,185'/%3E%3Cpath d='M40,30 L160,35 M45,50 L155,55 M38,70 L162,68 M42,90 L158,92 M35,110 L165,112 M50,130 L150,135 M55,150 L145,148 M48,170 L152,172'/%3E%3C/g%3E%3C/svg%3E"),
+    /* Corner damage scratches */
+    linear-gradient(135deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.08) 88%, transparent 92%),
+    linear-gradient(45deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.08) 88%, transparent 92%),
+    linear-gradient(-45deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.06) 88%, transparent 92%),
+    linear-gradient(-135deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.06) 88%, transparent 92%),
+    /* Original paint texture */
     radial-gradient(circle at 30% 40%, hsla(200, 60%, 45%, 0.8) 0%, transparent 50%),
     radial-gradient(circle at 70% 60%, hsla(200, 50%, 40%, 0.6) 0%, transparent 40%),
     /* Worn spots (metal showing through) */
@@ -430,8 +435,10 @@ html, body {
     inset 0 -1px 1px hsla(0, 0%, 100%, 0.05);
 }
 
-/* Brass nameplate for title */
+/* Brass nameplate for title with Orbitron font and blinking cursor */
 .mixer-nameplate {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
   background: linear-gradient(145deg, hsl(45, 70%, 65%) 0%, hsl(40, 60%, 55%) 50%, hsl(35, 50%, 45%) 100%);
   background-clip: text;
   -webkit-background-clip: text;
@@ -440,6 +447,19 @@ html, body {
     0 2px 4px hsla(45, 70%, 35%, 0.6),
     0 0 20px hsla(45, 70%, 65%, 0.4);
   filter: drop-shadow(0 2px 4px hsla(0, 0%, 0%, 0.3));
+  position: relative;
+}
+
+.mixer-nameplate::after {
+  content: '|';
+  display: inline-block;
+  margin-left: 4px;
+  color: hsl(45, 75%, 70%);
+  text-shadow: 
+    0 0 10px hsla(45, 75%, 70%, 0.8),
+    0 0 20px hsla(45, 75%, 70%, 0.4);
+  animation: blink 1s infinite;
+  -webkit-text-fill-color: hsl(45, 75%, 70%);
 }
 
 .mixer-subtitle {
@@ -485,6 +505,7 @@ html, body {
 
 .mixer-control-label {
   display: block;
+  font-family: 'Orbitron', monospace;
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 8px;
@@ -493,6 +514,7 @@ html, body {
 }
 
 .mixer-section-title {
+  font-family: 'Orbitron', monospace;
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 16px;
@@ -501,6 +523,7 @@ html, body {
 }
 
 .mixer-hero-title {
+  font-family: 'Orbitron', monospace;
   font-weight: 600;
   color: hsl(45, 65%, 60%);
   text-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.3);
@@ -787,6 +810,7 @@ html, body {
 
 /* Display values */
 .mixer-display-value {
+  font-family: 'Orbitron', monospace;
   color: hsl(45, 65%, 60%);
   text-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.3);
 }
