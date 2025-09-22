@@ -416,7 +416,7 @@ const Index = () => {
                     <div 
                       className="compass-arrow" 
                       style={{
-                        transform: `rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
+                        transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
                       }}
                     />
                     
@@ -434,7 +434,7 @@ const Index = () => {
                           aria-checked={isActive}
                           aria-label={ENDING_LABELS[ending]}
                           style={{
-                            transform: `rotate(${angle}deg) translateY(-50px)`
+                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px)`
                           }}
                           onClick={() => setFormData(prev => ({ ...prev, ending: ending as any }))}
                         >
