@@ -139,18 +139,15 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           <p className="compass-hint">
             Крути диск или нажми ←/→
           </p>
-          {/* Elegant Rotating Indicator */}
-          <div className="compass-rotation-indicator">
-            <svg width="24" height="24" viewBox="0 0 24 24" className="rotation-arrows">
+          {/* Elegant Infinity Indicator */}
+          <div className="compass-infinity-indicator">
+            <svg width="32" height="20" viewBox="0 0 32 20" className="infinity-symbol">
               <path 
-                d="M12 2 L16 6 L13 6 L13 10 L11 10 L11 6 L8 6 Z" 
-                fill="currentColor" 
-                opacity="0.3"
-              />
-              <path 
-                d="M12 22 L8 18 L11 18 L11 14 L13 14 L13 18 L16 18 Z" 
-                fill="currentColor" 
-                opacity="0.3"
+                d="M8 10C8 6 4 2 0 2C-4 2 -8 6 -8 10C-8 14 -4 18 0 18C4 18 8 14 8 10ZM24 10C24 6 20 2 16 2C12 2 8 6 8 10C8 14 12 18 16 18C20 18 24 14 24 10Z" 
+                fill="none"
+                stroke="currentColor" 
+                strokeWidth="2"
+                transform="translate(8, 0)"
               />
             </svg>
           </div>

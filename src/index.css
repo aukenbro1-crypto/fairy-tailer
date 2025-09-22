@@ -1350,32 +1350,34 @@ html, body {
   margin: 0;
 }
 
-/* Elegant Rotating Indicator */
-.compass-rotation-indicator {
+/* Elegant Infinity Indicator */
+.compass-infinity-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 20px;
+  margin-top: 4px;
 }
 
-.rotation-arrows {
+.infinity-symbol {
   color: hsl(var(--brass-deep));
-  opacity: 0.3;
-  animation: rotation-hint 6s linear infinite;
+  opacity: 0.4;
+  animation: infinity-glow 3s ease-in-out infinite;
 }
 
-@keyframes rotation-hint {
+@keyframes infinity-glow {
   0% { 
-    transform: rotate(0deg);
-    opacity: 0.2;
+    opacity: 0.3;
+    filter: drop-shadow(0 0 2px hsl(var(--brass) / 0.2));
   }
   50% { 
-    opacity: 0.4;
+    opacity: 0.6;
+    filter: drop-shadow(0 0 6px hsl(var(--brass) / 0.4));
   }
   100% { 
-    transform: rotate(360deg);
-    opacity: 0.2;
+    opacity: 0.3;
+    filter: drop-shadow(0 0 2px hsl(var(--brass) / 0.2));
   }
 }
 
