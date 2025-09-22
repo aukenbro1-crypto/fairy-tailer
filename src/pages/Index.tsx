@@ -62,7 +62,7 @@ const Index = () => {
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
-    tone: '',
+    tone: TONE_PRESETS[0], // Initialize with first tone preset
     form: 'adult',
     ending: 'moral',
     location: '',
@@ -103,16 +103,33 @@ const Index = () => {
     hero4: false
   });
 
-  // Handle knob click to cycle through presets
+  // Handle knob click to cycle through presets with animation
   const handleKnobClick = () => {
+    // Add changing animation class
+    const displayElement = document.querySelector('.mixer-tone-display-text');
+    if (displayElement) {
+      displayElement.classList.add('mixer-tone-display-changing');
+    }
+
     const currentIndex = TONE_PRESETS.indexOf(formData.tone);
     const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
     const nextTone = TONE_PRESETS[nextIndex];
-    setFormData(prev => ({
-      ...prev,
-      tone: nextTone
-    }));
-    setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
+    
+    // Delay the text change for animation effect
+    setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        tone: nextTone
+      }));
+      setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
+      
+      // Remove animation class after text change
+      setTimeout(() => {
+        if (displayElement) {
+          displayElement.classList.remove('mixer-tone-display-changing');
+        }
+      }, 50);
+    }, 150);
   };
   // Initialize knob angle based on current tone
   useEffect(() => {
@@ -272,33 +289,25 @@ const Index = () => {
               <label className="mixer-control-label">
                 Тон повествования
               </label>
-              <div className="flex items-center gap-6">
-                {/* Mixer Knob */}
-                <div ref={knobRef} className="mixer-knob cursor-pointer" style={{
-                transform: `rotate(${knobAngle}deg)`
-              }} onClick={handleKnobClick} />
+              <div className="flex items-center gap-8">
+                {/* Large Rotary Knob */}
+                <div 
+                  className="mixer-tone-knob" 
+                  style={{
+                    transform: `rotate(${knobAngle}deg)`
+                  }} 
+                  onClick={handleKnobClick}
+                />
                 
-                {/* Display */}
-                <div className="flex-1">
-                  <input type="text" className="mixer-input mb-4" value={formData.tone} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  tone: e.target.value
-                }))} placeholder="Введите тон..." />
-              <div className="flex flex-wrap gap-2">
-                {TONE_PRESETS.map((preset, index) => <button key={preset} className={`mixer-preset-btn ${formData.tone === preset ? 'active' : ''}`} onClick={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      tone: preset
-                    }));
-                    setKnobAngle(index * (360 / TONE_PRESETS.length));
-                  }}>
-                    {preset}
-                  </button>)}
-              </div>
+                {/* Display Screen */}
+                <div className="flex-1 mixer-tone-display">
+                  <div className="mixer-tone-display-text">
+                    {formData.tone || 'не выбран'}
+                  </div>
                 </div>
               </div>
               <p className="mixer-hint">
-                Поверни крутилку или напиши свой тон
+                Поверни крутилку для смены тона
               </p>
             </div>
 
