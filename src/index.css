@@ -1173,7 +1173,8 @@ html, body {
   right: 6px;
 }
 
-.compass-arrow {
+/* Fixed Red Arrow Always Pointing Up */
+.compass-arrow-fixed {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1189,11 +1190,11 @@ html, body {
   box-shadow: 
     0 0 8px hsl(0, 70%, 50%),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 5;
+  z-index: 10;
+  pointer-events: none;
 }
 
-.compass-arrow::after {
+.compass-arrow-fixed::after {
   content: '';
   position: absolute;
   top: -2px;
@@ -1207,30 +1208,39 @@ html, body {
   filter: drop-shadow(0 0 4px hsl(0, 70%, 50%));
 }
 
-.compass-sector {
+/* Rotating Disk Container */
+.compass-disk {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  z-index: 5;
+}
+
+/* Compass Sectors on Rotating Disk */
+.compass-sector-disk {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   cursor: pointer;
   transform-origin: center center;
   transition: all 0.2s ease;
   z-index: 3;
-  transform: translate(-50%, -50%);
-}
-
-.compass-sector span {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 16px;
   color: hsl(var(--brass-deep));
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease;
 }
 
-.compass-sector:hover span {
+.compass-sector-disk:hover {
   color: hsl(var(--brass));
   text-shadow: 
     0 0 6px hsl(var(--brass) / 0.6),
@@ -1238,7 +1248,7 @@ html, body {
   transform: scale(1.1);
 }
 
-.compass-sector.active span {
+.compass-sector-disk.active {
   color: hsl(var(--brass));
   text-shadow: 
     0 0 8px hsl(var(--brass) / 0.8),
@@ -1246,6 +1256,31 @@ html, body {
     0 1px 2px rgba(0, 0, 0, 0.4);
   transform: scale(1.2);
   animation: compass-glow 2s ease-in-out infinite alternate;
+}
+
+/* Active sector glow effect */
+.compass-sector-disk.active::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, 
+    hsl(var(--brass) / 0.3) 0%, 
+    hsl(var(--brass) / 0.1) 50%, 
+    transparent 100%);
+  z-index: -1;
+  animation: sector-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes sector-pulse {
+  0% { 
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  100% { 
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
 }
 
 @keyframes compass-glow {
@@ -1299,12 +1334,59 @@ html, body {
   margin-bottom: 8px;
 }
 
+.compass-hint-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .compass-hint {
   font-size: 0.75rem;
   color: hsl(var(--muted-foreground));
   text-align: center;
-  margin-top: 8px;
   font-style: italic;
+  margin: 0;
+}
+
+/* Elegant Rotating Indicator */
+.compass-rotation-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.rotation-arrows {
+  color: hsl(var(--brass-deep));
+  opacity: 0.3;
+  animation: rotation-hint 6s linear infinite;
+}
+
+@keyframes rotation-hint {
+  0% { 
+    transform: rotate(0deg);
+    opacity: 0.2;
+  }
+  50% { 
+    opacity: 0.4;
+  }
+  100% { 
+    transform: rotate(360deg);
+    opacity: 0.2;
+  }
+}
+
+/* Compass container touch improvements */
+.compass-container {
+  position: relative;
+  cursor: grab;
+  user-select: none;
+}
+
+.compass-container:active {
+  cursor: grabbing;
 }
 
 /* Mobile responsive */

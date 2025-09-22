@@ -1,6 +1,165 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+// Compass Selector Component
+interface CompassSelectorProps {
+  options: string[];
+  labels: Record<string, string>;
+  value: string;
+  onChange: (value: string) => void;
+  symbols: string[];
+}
+
+const CompassSelector: React.FC<CompassSelectorProps> = ({ 
+  options, 
+  labels, 
+  value, 
+  onChange, 
+  symbols 
+}) => {
+  const [diskRotation, setDiskRotation] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const compassRef = useRef<HTMLDivElement>(null);
+
+  // Update disk rotation when value changes
+  useEffect(() => {
+    const currentIndex = options.indexOf(value);
+    const targetRotation = -(currentIndex * (360 / options.length));
+    setDiskRotation(targetRotation);
+  }, [value, options.length]);
+
+  const handleSectorClick = (option: string) => {
+    onChange(option);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const currentIndex = options.indexOf(value);
+    let newIndex = currentIndex;
+    
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      newIndex = (currentIndex - 1 + options.length) % options.length;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      newIndex = (currentIndex + 1) % options.length;
+    }
+    
+    if (newIndex !== currentIndex) {
+      onChange(options[newIndex]);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!compassRef.current) return;
+    setIsDragging(true);
+    const rect = compassRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const angle = Math.atan2(
+        moveEvent.clientY - centerY,
+        moveEvent.clientX - centerX
+      ) * (180 / Math.PI) + 90;
+      
+      const normalizedAngle = ((angle % 360) + 360) % 360;
+      const sectorAngle = 360 / options.length;
+      const sectorIndex = Math.round(normalizedAngle / sectorAngle) % options.length;
+      
+      onChange(options[sectorIndex]);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  return (
+    <div className="flex items-center gap-6">
+      {/* Compass Selector */}
+      <div 
+        ref={compassRef}
+        className="compass-container"
+        role="radiogroup"
+        tabIndex={0}
+        aria-label="Выбор развязки истории, стрелка указывает вверх; поворачивайте диск для выбора"
+        onKeyDown={handleKeyDown}
+        onMouseDown={handleMouseDown}
+        style={{ touchAction: 'none' }}
+      >
+        <div className="compass-face">
+          {/* Fixed Red Arrow Pointing Up */}
+          <div className="compass-arrow-fixed" />
+          
+          {/* Rotating Disk with Sectors */}
+          <div 
+            className="compass-disk"
+            style={{
+              transform: `rotate(${diskRotation}deg)`,
+              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            {options.map((option, index) => {
+              const angle = index * (360 / options.length);
+              const isActive = value === option;
+              
+              return (
+                <button
+                  key={option}
+                  className={`compass-sector-disk ${isActive ? 'active' : ''}`}
+                  role="radio"
+                  aria-checked={isActive}
+                  aria-label={labels[option]}
+                  style={{
+                    transform: `rotate(${angle}deg) translateY(-50px) rotate(-${angle + diskRotation}deg)`
+                  }}
+                  onClick={() => handleSectorClick(option)}
+                >
+                  {symbols[index] || symbols[index % symbols.length]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Display Screen */}
+      <div className="compass-display">
+        <div className="compass-display-text" aria-live="polite">
+          {labels[value]}
+        </div>
+        <div className="compass-hint-container">
+          <p className="compass-hint">
+            Крути диск или нажми ←/→
+          </p>
+          {/* Elegant Rotating Indicator */}
+          <div className="compass-rotation-indicator">
+            <svg width="24" height="24" viewBox="0 0 24 24" className="rotation-arrows">
+              <path 
+                d="M12 2 L16 6 L13 6 L13 10 L11 10 L11 6 L8 6 Z" 
+                fill="currentColor" 
+                opacity="0.3"
+              />
+              <path 
+                d="M12 22 L8 18 L11 18 L11 14 L13 14 L13 18 L16 18 Z" 
+                fill="currentColor" 
+                opacity="0.3"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Constants from requirements
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
 interface FormData {
@@ -387,76 +546,13 @@ const Index = () => {
                 ))}
               </select>
 
-              <div className="flex items-center gap-6">
-                {/* Compass Selector */}
-                <div 
-                  className="compass-container"
-                  role="radiogroup"
-                  tabIndex={0}
-                  aria-label="Выбор развязки истории"
-                  onKeyDown={(e) => {
-                    const currentIndex = ENDINGS.indexOf(formData.ending);
-                    let newIndex = currentIndex;
-                    
-                    if (e.key === 'ArrowLeft') {
-                      e.preventDefault();
-                      newIndex = (currentIndex - 1 + ENDINGS.length) % ENDINGS.length;
-                    } else if (e.key === 'ArrowRight') {
-                      e.preventDefault();
-                      newIndex = (currentIndex + 1) % ENDINGS.length;
-                    }
-                    
-                    if (newIndex !== currentIndex) {
-                      setFormData(prev => ({ ...prev, ending: ENDINGS[newIndex] as any }));
-                    }
-                  }}
-                >
-                  <div className="compass-face">
-                    {/* Red Arrow Pointer */}
-                    <div 
-                      className="compass-arrow" 
-                      style={{
-                        transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
-                      }}
-                    />
-                    
-                    {/* Compass Sectors */}
-                    {ENDINGS.map((ending, index) => {
-                      const symbols = ['☉', '☽', '◇', '✶'];
-                      const angle = index * 90;
-                      const isActive = formData.ending === ending;
-                      
-                      return (
-                        <button
-                          key={ending}
-                          className={`compass-sector ${isActive ? 'active' : ''}`}
-                          role="radio"
-                          aria-checked={isActive}
-                          aria-label={ENDING_LABELS[ending]}
-                          style={{
-                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px)`
-                          }}
-                          onClick={() => setFormData(prev => ({ ...prev, ending: ending as any }))}
-                        >
-                          <span style={{ transform: `rotate(-${angle}deg)` }}>
-                            {symbols[index]}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Display Screen */}
-                <div className="compass-display">
-                  <div className="compass-display-text" aria-live="polite">
-                    {ENDING_LABELS[formData.ending]}
-                  </div>
-                  <p className="compass-hint">
-                    Поверни компас или нажми ←/→
-                  </p>
-                </div>
-              </div>
+              <CompassSelector 
+                options={ENDINGS}
+                labels={ENDING_LABELS}
+                value={formData.ending}
+                onChange={(value) => setFormData(prev => ({ ...prev, ending: value as any }))}
+                symbols={['☉', '☽', '◇', '✶']}
+              />
             </div>
           </div>
 
