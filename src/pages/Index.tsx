@@ -130,28 +130,6 @@ const Index = () => {
       }, 50);
     }, 150);
   };
-  // Genre selector functions
-  const handleGenreSelect = (genre: string) => {
-    setFormData(prev => ({ ...prev, genre }));
-  };
-
-  const handleGenreKeyDown = (e: React.KeyboardEvent) => {
-    const currentIndex = GENRES.findIndex(g => g === formData.genre);
-    let newIndex = currentIndex;
-    
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      newIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      newIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
-    }
-    
-    if (newIndex !== currentIndex) {
-      setFormData(prev => ({ ...prev, genre: GENRES[newIndex] }));
-    }
-  };
-
   // Initialize knob angle based on current tone
   useEffect(() => {
     const currentIndex = TONE_PRESETS.indexOf(formData.tone);
@@ -288,48 +266,13 @@ const Index = () => {
               <label className="mixer-control-label">
                 Выбери жанр истории
               </label>
-              
-              {/* Hidden select for form submission */}
-              <select 
-                className="mixer-select-hidden" 
-                value={formData.genre} 
-                onChange={e => setFormData(prev => ({ ...prev, genre: e.target.value }))}
-                tabIndex={-1}
-                aria-hidden="true"
-              >
+              <select className="mixer-select" value={formData.genre} onChange={e => setFormData(prev => ({
+              ...prev,
+              genre: e.target.value
+            }))}>
                 <option value="">Выберите жанр...</option>
                 {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
               </select>
-
-              {/* Custom Genre Dot Selector */}
-              <div className="genre-selector-container">
-                {/* Genre Display Screen */}
-                <div className="genre-display-screen">
-                  <div className="genre-display-text" aria-live="polite">
-                    {formData.genre || 'не выбран'}
-                  </div>
-                </div>
-                
-                {/* Dot Selector */}
-                <div 
-                  className="genre-dot-selector"
-                  role="listbox" 
-                  tabIndex={0}
-                  onKeyDown={handleGenreKeyDown}
-                  aria-label="Выбор жанра истории"
-                >
-                  {GENRES.map((genre, index) => (
-                    <button
-                      key={genre}
-                      className={`genre-dot ${formData.genre === genre ? 'active' : ''}`}
-                      role="option"
-                      aria-selected={formData.genre === genre}
-                      aria-label={genre}
-                      onClick={() => handleGenreSelect(genre)}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Tone Control */}
@@ -368,95 +311,38 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Ending Compass */}
+            {/* Ending Dial */}
             <div className="mixer-control-section">
               <label className="mixer-control-label">
                 Развязка истории
               </label>
-              
-              {/* Hidden select for form submission */}
-              <select 
-                className="mixer-select-hidden" 
-                value={formData.ending} 
-                onChange={e => setFormData(prev => ({ ...prev, ending: e.target.value as any }))}
-                tabIndex={-1}
-                aria-hidden="true"
-              >
-                {ENDINGS.map(ending => (
-                  <option key={ending} value={ending}>{ENDING_LABELS[ending]}</option>
-                ))}
-              </select>
-
               <div className="flex items-center gap-6">
-                {/* Compass Selector */}
-                <div 
-                  className="compass-container"
-                  role="radiogroup"
-                  tabIndex={0}
-                  aria-label="Выбор развязки истории"
-                  onKeyDown={(e) => {
-                    const currentIndex = ENDINGS.indexOf(formData.ending);
-                    let newIndex = currentIndex;
-                    
-                    if (e.key === 'ArrowLeft') {
-                      e.preventDefault();
-                      newIndex = (currentIndex - 1 + ENDINGS.length) % ENDINGS.length;
-                    } else if (e.key === 'ArrowRight') {
-                      e.preventDefault();
-                      newIndex = (currentIndex + 1) % ENDINGS.length;
-                    }
-                    
-                    if (newIndex !== currentIndex) {
-                      setFormData(prev => ({ ...prev, ending: ENDINGS[newIndex] as any }));
-                    }
-                  }}
-                >
-                  <div className="compass-face">
-                    {/* Red Arrow Pointer */}
-                    <div 
-                      className="compass-arrow" 
-                      style={{
-                        transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
-                      }}
-                    />
-                    
-                    {/* Compass Sectors */}
-                    {ENDINGS.map((ending, index) => {
-                      const symbols = ['☉', '☽', '◇', '✶'];
-                      const angle = index * 90;
-                      const isActive = formData.ending === ending;
-                      
-                      return (
-                        <button
-                          key={ending}
-                          className={`compass-sector ${isActive ? 'active' : ''}`}
-                          role="radio"
-                          aria-checked={isActive}
-                          aria-label={ENDING_LABELS[ending]}
-                          style={{
-                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px)`
-                          }}
-                          onClick={() => setFormData(prev => ({ ...prev, ending: ending as any }))}
-                        >
-                          <span style={{ transform: `rotate(-${angle}deg)` }}>
-                            {symbols[index]}
-                          </span>
-                        </button>
-                      );
-                    })}
+                <div className="mixer-dial">
+                  <div className="mixer-dial-face">
+                    <div className="mixer-dial-pointer" style={{
+                    transform: `translate(-50%, -100%) rotate(${ENDINGS.indexOf(formData.ending) * 90}deg)`
+                  }} />
+                    {/* Sector labels */}
+                    <div className="absolute inset-0">
+                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs mixer-dial-label">М</div>
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs mixer-dial-label">Х</div>
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs mixer-dial-label">Г</div>
+                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs mixer-dial-label">Н</div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Display Screen */}
-                <div className="compass-display">
-                  <div className="compass-display-text" aria-live="polite">
+                <div>
+                  <div className="text-xl font-semibold mixer-display-value mb-2">
                     {ENDING_LABELS[formData.ending]}
                   </div>
-                  <p className="compass-hint">
-                    Поверни компас или нажми ←/→
-                  </p>
+                  <button className="mixer-mechanical-btn" onClick={handleEndingChange}>
+                    Переключить
+                  </button>
                 </div>
               </div>
+              <p className="mixer-hint">
+                Нажми, чтобы сменить развязку
+              </p>
             </div>
           </div>
 
@@ -484,7 +370,7 @@ const Index = () => {
             <div className="mixer-control-section">
               <div className="space-y-4">
                 <div>
-                  <label className="mixer-control-label">
+                  <label className="mixer-control-label rounded-md">
                     Место действия
                   </label>
                   <input type="text" className="mixer-input" value={formData.location} onChange={e => setFormData(prev => ({
