@@ -3,7 +3,6 @@ import { useToast } from '@/hooks/use-toast';
 
 // Constants from requirements
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
-
 interface FormData {
   genre: string;
   tone: string;
@@ -62,7 +61,8 @@ const Index = () => {
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
-    tone: TONE_PRESETS[0], // Initialize with first tone preset
+    tone: TONE_PRESETS[0],
+    // Initialize with first tone preset
     form: 'adult',
     ending: 'moral',
     location: '',
@@ -110,11 +110,10 @@ const Index = () => {
     if (displayElement) {
       displayElement.classList.add('mixer-tone-display-changing');
     }
-
     const currentIndex = TONE_PRESETS.indexOf(formData.tone);
     const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
     const nextTone = TONE_PRESETS[nextIndex];
-    
+
     // Delay the text change for animation effect
     setTimeout(() => {
       setFormData(prev => ({
@@ -122,7 +121,7 @@ const Index = () => {
         tone: nextTone
       }));
       setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
-      
+
       // Remove animation class after text change
       setTimeout(() => {
         if (displayElement) {
@@ -141,7 +140,6 @@ const Index = () => {
 
   // Email validation
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
-  
   const validateEmail = (email: string) => {
     return EMAIL_RX.test(email);
   };
@@ -149,10 +147,8 @@ const Index = () => {
   // Email overlay functions
   const showEmailOverlayWithProgress = () => {
     setShowEmailOverlay(true);
-    
     const DURATION = 90_000; // 90 seconds
     const start = performance.now();
-    
     const tick = (t: number) => {
       const k = Math.min(1, (t - start) / DURATION);
       const progressBar = document.getElementById('email-progress');
@@ -163,7 +159,6 @@ const Index = () => {
     };
     requestAnimationFrame(tick);
   };
-
   const hideEmailOverlayHandler = () => {
     setShowEmailOverlay(false);
   };
@@ -195,9 +190,8 @@ const Index = () => {
       });
       return;
     }
-
     setShowLoader(true);
-    
+
     // Prepare payload with all fields
     const payload = {
       genre: formData.genre,
@@ -234,9 +228,8 @@ const Index = () => {
       hero4_job: formData.hero4_job,
       hero4_traits: formData.hero4_traits,
       hero4_fear: formData.hero4_fear,
-      hero4_habits: formData.hero4_habits,
+      hero4_habits: formData.hero4_habits
     };
-
     let ok = false;
     try {
       const response = await fetch(WEBHOOK_URL, {
@@ -250,12 +243,10 @@ const Index = () => {
     } catch (error) {
       ok = false;
     }
-
     toast({
       title: ok ? "Заявка отправлена" : "Ошибка отправки",
       description: ok ? "Идёт генерация сказки..." : "Не удалось отправить запрос. Попробуйте снова."
     });
-
     setShowLoader(false);
     showEmailOverlayWithProgress();
   };
@@ -291,13 +282,9 @@ const Index = () => {
               </label>
               <div className="flex items-center gap-8">
                 {/* Large Rotary Knob */}
-                <div 
-                  className="mixer-tone-knob" 
-                  style={{
-                    transform: `rotate(${knobAngle}deg)`
-                  }} 
-                  onClick={handleKnobClick}
-                />
+                <div className="mixer-tone-knob" style={{
+                transform: `rotate(${knobAngle}deg)`
+              }} onClick={handleKnobClick} />
                 
                 {/* Display Screen */}
                 <div className="flex-1 mixer-tone-display">
@@ -306,14 +293,12 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-              <p className="mixer-hint">
-                Поверни крутилку для смены тона
-              </p>
+              
             </div>
 
             {/* Form Toggle */}
             <div className="mixer-control-section">
-              <label className="mixer-control-label">Форма</label>
+              
               <div className="flex items-center gap-4">
                 <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
                 <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
@@ -370,18 +355,10 @@ const Index = () => {
                   <label className="mixer-control-label">
                     Почта (обязательно)
                   </label>
-                  <input 
-                    type="email" 
-                    className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`}
-                    value={formData.email} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      email: e.target.value
-                    }))} 
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                    required
-                  />
+                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="name@example.com" autoComplete="email" required />
                   <p className="mixer-hint">
                     Мы вышлем PDF на этот адрес.
                   </p>
@@ -522,39 +499,23 @@ const Index = () => {
           </div>}
 
         {/* Email Progress Overlay */}
-        {showEmailOverlay && (
-          <div 
-            className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50"
-            style={{ display: 'block' }}
-            aria-hidden="true"
-            onClick={hideEmailOverlayHandler}
-          >
-            <div 
-              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6"
-              role="dialog" 
-              aria-modal="true" 
-              aria-labelledby="email-title"
-              onClick={(e) => e.stopPropagation()}
-            >
+        {showEmailOverlay && <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50" style={{
+        display: 'block'
+      }} aria-hidden="true" onClick={hideEmailOverlayHandler}>
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="email-title" onClick={e => e.stopPropagation()}>
               <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
                 Почти готово!
               </h3>
               <p className="mb-4 mixer-subtitle">
                 Через несколько минут сказка окажется у вас на почте.
               </p>
-              <div 
-                className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden"
-                aria-label="Загрузка"
-              >
-                <div 
-                  id="email-progress"
-                  className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear"
-                  style={{ width: '0%' }}
-                />
+              <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden" aria-label="Загрузка">
+                <div id="email-progress" className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear" style={{
+              width: '0%'
+            }} />
               </div>
             </div>
-          </div>
-        )}
+          </div>}
       </div>
     </div>;
 };
