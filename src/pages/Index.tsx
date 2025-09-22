@@ -130,6 +130,24 @@ const Index = () => {
       }, 50);
     }, 150);
   };
+  // Genre carousel functions
+  const handleGenreNext = () => {
+    const currentIndex = GENRES.findIndex(g => g === formData.genre);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
+    setFormData(prev => ({ ...prev, genre: GENRES[nextIndex] }));
+  };
+
+  const handleGenrePrev = () => {
+    const currentIndex = GENRES.findIndex(g => g === formData.genre);
+    const prevIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
+    setFormData(prev => ({ ...prev, genre: GENRES[prevIndex] }));
+  };
+
+  const getGenreAngle = () => {
+    const currentIndex = GENRES.findIndex(g => g === formData.genre);
+    return currentIndex === -1 ? 0 : (currentIndex * (360 / GENRES.length));
+  };
+
   // Initialize knob angle based on current tone
   useEffect(() => {
     const currentIndex = TONE_PRESETS.indexOf(formData.tone);
@@ -266,13 +284,72 @@ const Index = () => {
               <label className="mixer-control-label">
                 Выбери жанр истории
               </label>
-              <select className="mixer-select" value={formData.genre} onChange={e => setFormData(prev => ({
-              ...prev,
-              genre: e.target.value
-            }))}>
+              
+              {/* Hidden select for form submission */}
+              <select 
+                className="mixer-select-hidden" 
+                value={formData.genre} 
+                onChange={e => setFormData(prev => ({ ...prev, genre: e.target.value }))}
+                tabIndex={-1}
+                aria-hidden="true"
+              >
                 <option value="">Выберите жанр...</option>
                 {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
               </select>
+
+              {/* Custom Genre Carousel */}
+              <div className="genre-carousel-container">
+                {/* Genre Display Screen */}
+                <div className="genre-display">
+                  <div className="genre-display-text" aria-live="polite">
+                    {formData.genre || 'не выбран'}
+                  </div>
+                </div>
+                
+                {/* Carousel Control */}
+                <div 
+                  className="genre-carousel"
+                  role="listbox" 
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowLeft') {
+                      e.preventDefault();
+                      handleGenrePrev();
+                    } else if (e.key === 'ArrowRight') {
+                      e.preventDefault();
+                      handleGenreNext();
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      // Enter can be used for confirmation if needed
+                    }
+                  }}
+                >
+                  <button 
+                    className="genre-arrow genre-arrow-left"
+                    onClick={handleGenrePrev}
+                    aria-label="Предыдущий жанр"
+                  >
+                    ◀
+                  </button>
+                  
+                  <div className="genre-disk">
+                    <div 
+                      className="genre-disk-inner"
+                      style={{ transform: `rotate(${getGenreAngle()}deg)` }}
+                    >
+                      <div className="genre-indicator"></div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    className="genre-arrow genre-arrow-right"
+                    onClick={handleGenreNext}
+                    aria-label="Следующий жанр"
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Tone Control */}
