@@ -118,7 +118,7 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
                   aria-checked={isActive}
                   aria-label={labels[option]}
                   style={{
-                    transform: `rotate(${angle}deg) translateY(-50px) rotate(-${angle + diskRotation}deg)`
+                    transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px) rotate(-${angle + diskRotation}deg)`
                   }}
                   onClick={() => handleSectorClick(option)}
                 >

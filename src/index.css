@@ -1224,8 +1224,8 @@ html, body {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1235,9 +1235,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   color: hsl(var(--brass-deep));
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
 }
 
 .compass-sector-disk:hover {
@@ -1245,7 +1246,7 @@ html, body {
   text-shadow: 
     0 0 6px hsl(var(--brass) / 0.6),
     0 1px 2px rgba(0, 0, 0, 0.4);
-  transform: scale(1.1);
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .compass-sector-disk.active {
@@ -1254,7 +1255,7 @@ html, body {
     0 0 8px hsl(var(--brass) / 0.8),
     0 0 16px hsl(var(--brass) / 0.4),
     0 1px 2px rgba(0, 0, 0, 0.4);
-  transform: scale(1.2);
+  transform: translate(-50%, -50%) scale(1.2);
   animation: compass-glow 2s ease-in-out infinite alternate;
 }
 
@@ -1396,17 +1397,14 @@ html, body {
     height: 120px;
   }
   
-  .compass-arrow {
+  .compass-arrow-fixed {
     height: 38px;
   }
   
-  .compass-sector {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .compass-sector span {
-    font-size: 14px;
+  .compass-sector-disk {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
   }
 }
 
