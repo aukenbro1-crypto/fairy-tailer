@@ -130,22 +130,26 @@ const Index = () => {
       }, 50);
     }, 150);
   };
-  // Genre carousel functions
-  const handleGenreNext = () => {
-    const currentIndex = GENRES.findIndex(g => g === formData.genre);
-    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
-    setFormData(prev => ({ ...prev, genre: GENRES[nextIndex] }));
+  // Genre selector functions
+  const handleGenreSelect = (genre: string) => {
+    setFormData(prev => ({ ...prev, genre }));
   };
 
-  const handleGenrePrev = () => {
+  const handleGenreKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = GENRES.findIndex(g => g === formData.genre);
-    const prevIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
-    setFormData(prev => ({ ...prev, genre: GENRES[prevIndex] }));
-  };
-
-  const getGenreAngle = () => {
-    const currentIndex = GENRES.findIndex(g => g === formData.genre);
-    return currentIndex === -1 ? 0 : (currentIndex * (360 / GENRES.length));
+    let newIndex = currentIndex;
+    
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      newIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      newIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
+    }
+    
+    if (newIndex !== currentIndex) {
+      setFormData(prev => ({ ...prev, genre: GENRES[newIndex] }));
+    }
   };
 
   // Initialize knob angle based on current tone
@@ -297,57 +301,33 @@ const Index = () => {
                 {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
               </select>
 
-              {/* Custom Genre Carousel */}
-              <div className="genre-carousel-container">
+              {/* Custom Genre Dot Selector */}
+              <div className="genre-selector-container">
                 {/* Genre Display Screen */}
-                <div className="genre-display">
+                <div className="genre-display-screen">
                   <div className="genre-display-text" aria-live="polite">
                     {formData.genre || 'не выбран'}
                   </div>
                 </div>
                 
-                {/* Carousel Control */}
+                {/* Dot Selector */}
                 <div 
-                  className="genre-carousel"
+                  className="genre-dot-selector"
                   role="listbox" 
                   tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowLeft') {
-                      e.preventDefault();
-                      handleGenrePrev();
-                    } else if (e.key === 'ArrowRight') {
-                      e.preventDefault();
-                      handleGenreNext();
-                    } else if (e.key === 'Enter') {
-                      e.preventDefault();
-                      // Enter can be used for confirmation if needed
-                    }
-                  }}
+                  onKeyDown={handleGenreKeyDown}
+                  aria-label="Выбор жанра истории"
                 >
-                  <button 
-                    className="genre-arrow genre-arrow-left"
-                    onClick={handleGenrePrev}
-                    aria-label="Предыдущий жанр"
-                  >
-                    ◀
-                  </button>
-                  
-                  <div className="genre-disk">
-                    <div 
-                      className="genre-disk-inner"
-                      style={{ transform: `rotate(${getGenreAngle()}deg)` }}
-                    >
-                      <div className="genre-indicator"></div>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    className="genre-arrow genre-arrow-right"
-                    onClick={handleGenreNext}
-                    aria-label="Следующий жанр"
-                  >
-                    ▶
-                  </button>
+                  {GENRES.map((genre, index) => (
+                    <button
+                      key={genre}
+                      className={`genre-dot ${formData.genre === genre ? 'active' : ''}`}
+                      role="option"
+                      aria-selected={formData.genre === genre}
+                      aria-label={genre}
+                      onClick={() => handleGenreSelect(genre)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
