@@ -459,9 +459,7 @@ const Index = () => {
 
             {/* Ending Compass and Form Toggle Container */}
             <div className="mixer-control-section">
-              <label className="mixer-control-label">
-                Развязка истории
-              </label>
+              <label className="mixer-control-label">Финал</label>
               
               {/* Hidden select for form submission */}
               <select className="mixer-select-hidden" value={formData.ending} onChange={e => setFormData(prev => ({
