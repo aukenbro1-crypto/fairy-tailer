@@ -393,9 +393,6 @@ const Index = () => {
       {/* Header */}
         <div className="text-center mb-8 mixer-panel">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">The Plot</h1>
-          <div className="hero-infinity-container">
-            <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -405,6 +402,7 @@ const Index = () => {
             <div className="mixer-control-section">
               <label className="mixer-control-label">
                 Выбери жанр истории
+                <span className="hero-infinity-symbol" aria-hidden="true" style={{ marginLeft: '8px' }}>∞</span>
               </label>
               
               {/* Hidden select for form submission */}
