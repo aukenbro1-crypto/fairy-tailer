@@ -9,13 +9,12 @@ interface CompassSelectorProps {
   onChange: (value: string) => void;
   symbols: string[];
 }
-
-const CompassSelector: React.FC<CompassSelectorProps> = ({ 
-  options, 
-  labels, 
-  value, 
-  onChange, 
-  symbols 
+const CompassSelector: React.FC<CompassSelectorProps> = ({
+  options,
+  labels,
+  value,
+  onChange,
+  symbols
 }) => {
   const [diskRotation, setDiskRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -27,15 +26,12 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
     const targetRotation = -(currentIndex * (360 / options.length));
     setDiskRotation(targetRotation);
   }, [value, options.length]);
-
   const handleSectorClick = (option: string) => {
     onChange(option);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = options.indexOf(value);
     let newIndex = currentIndex;
-    
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       newIndex = (currentIndex - 1 + options.length) % options.length;
@@ -43,57 +39,37 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
       e.preventDefault();
       newIndex = (currentIndex + 1) % options.length;
     }
-    
     if (newIndex !== currentIndex) {
       onChange(options[newIndex]);
     }
   };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!compassRef.current) return;
     setIsDragging(true);
     const rect = compassRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isDragging) return;
-      
-      const angle = Math.atan2(
-        moveEvent.clientY - centerY,
-        moveEvent.clientX - centerX
-      ) * (180 / Math.PI) + 90;
-      
-      const normalizedAngle = ((angle % 360) + 360) % 360;
+      const angle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * (180 / Math.PI) + 90;
+      const normalizedAngle = (angle % 360 + 360) % 360;
       const sectorAngle = 360 / options.length;
       const sectorIndex = Math.round(normalizedAngle / sectorAngle) % options.length;
-      
       onChange(options[sectorIndex]);
     };
-    
     const handleMouseUp = () => {
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-    
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
-
-  return (
-    <div className="compass-section">
+  return <div className="compass-section">
       {/* Compass Selector with Directional Indicators */}
-      <div 
-        ref={compassRef}
-        className="compass-container"
-        role="radiogroup"
-        tabIndex={0}
-        aria-label="Выбор развязки истории, стрелка указывает вверх; поворачивайте диск для выбора"
-        onKeyDown={handleKeyDown}
-        onMouseDown={handleMouseDown}
-        style={{ touchAction: 'none' }}
-      >
+      <div ref={compassRef} className="compass-container" role="radiogroup" tabIndex={0} aria-label="Выбор развязки истории, стрелка указывает вверх; поворачивайте диск для выбора" onKeyDown={handleKeyDown} onMouseDown={handleMouseDown} style={{
+      touchAction: 'none'
+    }}>
         <div className="compass-face">
           {/* Fixed Red Arrow Pointing Up */}
           <div className="compass-arrow-fixed" />
@@ -101,43 +77,27 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           {/* Directional Indicators */}
           <div className="compass-directional-indicators">
             <svg className="compass-arrow-indicator left" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 8 8 L 16 12 L 8 16 Z" 
-                fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 8 8 L 16 12 L 8 16 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
             </svg>
             <svg className="compass-arrow-indicator right" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 16 8 L 8 12 L 16 16 Z" 
-                fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 16 8 L 8 12 L 16 16 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
             </svg>
           </div>
           
           {/* Rotating Disk with Sectors */}
-          <div 
-            className="compass-disk"
-            style={{
-              transform: `rotate(${diskRotation}deg)`,
-              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-          >
+          <div className="compass-disk" style={{
+          transform: `rotate(${diskRotation}deg)`,
+          transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
             {options.map((option, index) => {
-              const angle = index * (360 / options.length);
-              const isActive = value === option;
-              
-              return (
-                <button
-                  key={option}
-                  className={`compass-sector-disk ${isActive ? 'active' : ''}`}
-                  role="radio"
-                  aria-checked={isActive}
-                  aria-label={labels[option]}
-                  style={{
-                    transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px) rotate(-${angle + diskRotation}deg)`
-                  }}
-                  onClick={() => handleSectorClick(option)}
-                >
+            const angle = index * (360 / options.length);
+            const isActive = value === option;
+            return <button key={option} className={`compass-sector-disk ${isActive ? 'active' : ''}`} role="radio" aria-checked={isActive} aria-label={labels[option]} style={{
+              transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-50px) rotate(-${angle + diskRotation}deg)`
+            }} onClick={() => handleSectorClick(option)}>
                   {symbols[index] || symbols[index % symbols.length]}
-                </button>
-              );
-            })}
+                </button>;
+          })}
           </div>
         </div>
       </div>
@@ -148,13 +108,10 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           {labels[value]}
         </div>
         <div className="compass-hint-container">
-          <p className="compass-hint">
-            Крути диск или нажми ←/→
-          </p>
+          
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
 
 // Constants from requirements
@@ -200,7 +157,7 @@ interface FormData {
 const GENRES = ['приключение', 'философская притча', 'романтика', 'страшная история', 'юмор', 'сюрреализм', 'фэнтези', 'научная фантастика'];
 const GENRE_SYMBOLS: Record<string, string> = {
   'приключение': '✦',
-  'философская притча': '☉', 
+  'философская притча': '☉',
   'романтика': '♡',
   'страшная история': '☾',
   'юмор': '✺',
@@ -298,13 +255,14 @@ const Index = () => {
   };
   // Genre selector functions
   const handleGenreSelect = (genre: string) => {
-    setFormData(prev => ({ ...prev, genre }));
+    setFormData(prev => ({
+      ...prev,
+      genre
+    }));
   };
-
   const handleGenreKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = GENRES.findIndex(g => g === formData.genre);
     let newIndex = currentIndex;
-    
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       newIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
@@ -312,9 +270,11 @@ const Index = () => {
       e.preventDefault();
       newIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
     }
-    
     if (newIndex !== currentIndex) {
-      setFormData(prev => ({ ...prev, genre: GENRES[newIndex] }));
+      setFormData(prev => ({
+        ...prev,
+        genre: GENRES[newIndex]
+      }));
     }
   };
 
@@ -458,13 +418,10 @@ const Index = () => {
               </label>
               
               {/* Hidden select for form submission */}
-              <select 
-                className="mixer-select-hidden" 
-                value={formData.genre} 
-                onChange={e => setFormData(prev => ({ ...prev, genre: e.target.value }))}
-                tabIndex={-1}
-                aria-hidden="true"
-              >
+              <select className="mixer-select-hidden" value={formData.genre} onChange={e => setFormData(prev => ({
+              ...prev,
+              genre: e.target.value
+            }))} tabIndex={-1} aria-hidden="true">
                 <option value="">Выберите жанр...</option>
                 {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
               </select>
@@ -474,35 +431,18 @@ const Index = () => {
                 {/* Genre Display Screen */}
                 <div className="genre-display-screen">
                   <div className="genre-display-text" aria-live="polite">
-                    {formData.genre ? (
-                      <>
+                    {formData.genre ? <>
                         {formData.genre}
                         <span className="genre-symbol" aria-hidden="true">
                           {GENRE_SYMBOLS[formData.genre]}
                         </span>
-                      </>
-                    ) : 'не выбран'}
+                      </> : 'не выбран'}
                   </div>
                 </div>
                 
                 {/* Dot Selector */}
-                <div 
-                  className="genre-dot-selector"
-                  role="listbox" 
-                  tabIndex={0}
-                  onKeyDown={handleGenreKeyDown}
-                  aria-label="Выбор жанра истории"
-                >
-                  {GENRES.map((genre, index) => (
-                    <button
-                      key={genre}
-                      className={`genre-dot ${formData.genre === genre ? 'active' : ''}`}
-                      role="option"
-                      aria-selected={formData.genre === genre}
-                      aria-label={genre}
-                      onClick={() => handleGenreSelect(genre)}
-                    />
-                  ))}
+                <div className="genre-dot-selector" role="listbox" tabIndex={0} onKeyDown={handleGenreKeyDown} aria-label="Выбор жанра истории">
+                  {GENRES.map((genre, index) => <button key={genre} className={`genre-dot ${formData.genre === genre ? 'active' : ''}`} role="option" aria-selected={formData.genre === genre} aria-label={genre} onClick={() => handleGenreSelect(genre)} />)}
                 </div>
               </div>
             </div>
@@ -536,35 +476,27 @@ const Index = () => {
               </label>
               
               {/* Hidden select for form submission */}
-              <select 
-                className="mixer-select-hidden" 
-                value={formData.ending} 
-                onChange={e => setFormData(prev => ({ ...prev, ending: e.target.value as any }))}
-                tabIndex={-1}
-                aria-hidden="true"
-              >
-                {ENDINGS.map(ending => (
-                  <option key={ending} value={ending}>{ENDING_LABELS[ending]}</option>
-                ))}
+              <select className="mixer-select-hidden" value={formData.ending} onChange={e => setFormData(prev => ({
+              ...prev,
+              ending: e.target.value as any
+            }))} tabIndex={-1} aria-hidden="true">
+                {ENDINGS.map(ending => <option key={ending} value={ending}>{ENDING_LABELS[ending]}</option>)}
               </select>
 
               <div className="compass-form-container">
-                <CompassSelector 
-                  options={ENDINGS}
-                  labels={ENDING_LABELS}
-                  value={formData.ending}
-                  onChange={(value) => setFormData(prev => ({ ...prev, ending: value as any }))}
-                  symbols={['☉', '☽', '◇', '✶']}
-                />
+                <CompassSelector options={ENDINGS} labels={ENDING_LABELS} value={formData.ending} onChange={value => setFormData(prev => ({
+                ...prev,
+                ending: value as any
+              }))} symbols={['☉', '☽', '◇', '✶']} />
                 
                 {/* Form Toggle moved here */}
                 <div className="form-toggle-section">
                   <div className="flex items-center gap-4">
                     <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
                     <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
-                      ...prev,
-                      form: prev.form === 'adult' ? 'kids' : 'adult'
-                    }))}>
+                    ...prev,
+                    form: prev.form === 'adult' ? 'kids' : 'adult'
+                  }))}>
                       <div className="mixer-toggle-handle" />
                     </div>
                     <span className={formData.form === 'kids' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для детей</span>
