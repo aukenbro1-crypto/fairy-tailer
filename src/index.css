@@ -457,7 +457,8 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 4px;
+  margin-bottom: -8px;
 }
 
 .hero-infinity-symbol {

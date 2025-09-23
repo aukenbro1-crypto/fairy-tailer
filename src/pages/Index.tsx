@@ -391,7 +391,7 @@ const Index = () => {
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
-        <div className="text-center mb-12 mixer-panel">
+        <div className="text-center mb-8 mixer-panel">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">The Plot</h1>
           <div className="hero-infinity-container">
             <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
