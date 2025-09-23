@@ -401,7 +401,7 @@ const Index = () => {
             {/* Genre */}
             <div className="mixer-control-section">
               <label className="mixer-control-label relative">
-                Выбери жанр истории
+                Выбери жанр
                 <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
               </label>
               
@@ -459,7 +459,9 @@ const Index = () => {
 
             {/* Ending Compass and Form Toggle Container */}
             <div className="mixer-control-section">
-              <label className="mixer-control-label">Финал</label>
+              <label className="mixer-control-label">
+                Развязка истории
+              </label>
               
               {/* Hidden select for form submission */}
               <select className="mixer-select-hidden" value={formData.ending} onChange={e => setFormData(prev => ({
