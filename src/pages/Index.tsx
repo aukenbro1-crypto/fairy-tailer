@@ -402,7 +402,9 @@ const Index = () => {
             <div className="mixer-control-section">
               <label className="mixer-control-label">
                 Выбери жанр истории
-                <span className="hero-infinity-symbol" aria-hidden="true" style={{ marginLeft: '8px' }}>∞</span>
+                <span className="hero-infinity-symbol" aria-hidden="true" style={{
+                marginLeft: '8px'
+              }}>∞</span>
               </label>
               
               {/* Hidden select for form submission */}
