@@ -82,8 +82,8 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-6">
-      {/* Compass Selector */}
+    <div className="compass-section">
+      {/* Compass Selector with Directional Indicators */}
       <div 
         ref={compassRef}
         className="compass-container"
@@ -98,12 +98,24 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           {/* Fixed Red Arrow Pointing Up */}
           <div className="compass-arrow-fixed" />
           
+          {/* Directional Indicators */}
+          <div className="compass-directional-indicators">
+            <svg className="compass-arrow-indicator left" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 8 8 L 16 12 L 8 16 Z" 
+                fill="none" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            <svg className="compass-arrow-indicator right" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 16 8 L 8 12 L 16 16 Z" 
+                fill="none" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </div>
+          
           {/* Rotating Disk with Sectors */}
           <div 
             className="compass-disk"
             style={{
               transform: `rotate(${diskRotation}deg)`,
-              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
             {options.map((option, index) => {
@@ -130,7 +142,7 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
         </div>
       </div>
 
-      {/* Display Screen */}
+      {/* Display Screen moved below compass */}
       <div className="compass-display">
         <div className="compass-display-text" aria-live="polite">
           {labels[value]}
@@ -139,18 +151,6 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           <p className="compass-hint">
             Крути диск или нажми ←/→
           </p>
-          {/* Elegant Infinity Indicator */}
-          <div className="compass-infinity-indicator">
-            <svg width="32" height="20" viewBox="0 0 32 20" className="infinity-symbol">
-              <path 
-                d="M8 10C8 6 4 2 0 2C-4 2 -8 6 -8 10C-8 14 -4 18 0 18C4 18 8 14 8 10ZM24 10C24 6 20 2 16 2C12 2 8 6 8 10C8 14 12 18 16 18C20 18 24 14 24 10Z" 
-                fill="none"
-                stroke="currentColor" 
-                strokeWidth="2"
-                transform="translate(8, 0)"
-              />
-            </svg>
-          </div>
         </div>
       </div>
     </div>
@@ -198,6 +198,16 @@ interface FormData {
   hero4_habits: string;
 }
 const GENRES = ['приключение', 'философская притча', 'романтика', 'страшная история', 'юмор', 'сюрреализм', 'фэнтези', 'научная фантастика'];
+const GENRE_SYMBOLS: Record<string, string> = {
+  'приключение': '✦',
+  'философская притча': '☉', 
+  'романтика': '♡',
+  'страшная история': '☾',
+  'юмор': '✺',
+  'сюрреализм': '◇',
+  'фэнтези': '✶',
+  'научная фантастика': '⚛'
+};
 const TONE_PRESETS = ['легкий', 'ироничный', 'философский', 'драматичный', 'мистический'];
 const ENDINGS = ['moral', 'happy', 'sad', 'twist'];
 const ENDING_LABELS = {
@@ -430,10 +440,12 @@ const Index = () => {
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto mixer-chassis">
-        {/* Header */}
+      {/* Header */}
         <div className="text-center mb-12 mixer-panel">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">Конструктор сказок</h1>
-          <p className="text-xl text-muted-foreground mixer-subtitle">Создай свою историю</p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">The Plot</h1>
+          <div className="hero-infinity-container">
+            <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -462,7 +474,14 @@ const Index = () => {
                 {/* Genre Display Screen */}
                 <div className="genre-display-screen">
                   <div className="genre-display-text" aria-live="polite">
-                    {formData.genre || 'не выбран'}
+                    {formData.genre ? (
+                      <>
+                        {formData.genre}
+                        <span className="genre-symbol" aria-hidden="true">
+                          {GENRE_SYMBOLS[formData.genre]}
+                        </span>
+                      </>
+                    ) : 'не выбран'}
                   </div>
                 </div>
                 
@@ -509,22 +528,8 @@ const Index = () => {
               
             </div>
 
-            {/* Form Toggle */}
-            <div className="mixer-control-section">
-              
-              <div className="flex items-center gap-4">
-                <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
-                <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
-                ...prev,
-                form: prev.form === 'adult' ? 'kids' : 'adult'
-              }))}>
-                  <div className="mixer-toggle-handle" />
-                </div>
-                <span className={formData.form === 'kids' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для детей</span>
-              </div>
-            </div>
 
-            {/* Ending Compass */}
+            {/* Ending Compass and Form Toggle Container */}
             <div className="mixer-control-section">
               <label className="mixer-control-label">
                 Развязка истории
@@ -543,13 +548,29 @@ const Index = () => {
                 ))}
               </select>
 
-              <CompassSelector 
-                options={ENDINGS}
-                labels={ENDING_LABELS}
-                value={formData.ending}
-                onChange={(value) => setFormData(prev => ({ ...prev, ending: value as any }))}
-                symbols={['☉', '☽', '◇', '✶']}
-              />
+              <div className="compass-form-container">
+                <CompassSelector 
+                  options={ENDINGS}
+                  labels={ENDING_LABELS}
+                  value={formData.ending}
+                  onChange={(value) => setFormData(prev => ({ ...prev, ending: value as any }))}
+                  symbols={['☉', '☽', '◇', '✶']}
+                />
+                
+                {/* Form Toggle moved here */}
+                <div className="form-toggle-section">
+                  <div className="flex items-center gap-4">
+                    <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
+                    <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
+                      ...prev,
+                      form: prev.form === 'adult' ? 'kids' : 'adult'
+                    }))}>
+                      <div className="mixer-toggle-handle" />
+                    </div>
+                    <span className={formData.form === 'kids' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для детей</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

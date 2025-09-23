@@ -450,21 +450,48 @@ html, body {
   position: relative;
 }
 
-.mixer-nameplate::after {
-  content: '|';
-  display: inline-block;
-  margin-left: 4px;
-  color: hsl(45, 75%, 70%);
-  text-shadow: 
-    0 0 10px hsla(45, 75%, 70%, 0.8),
-    0 0 20px hsla(45, 75%, 70%, 0.4);
-  animation: cursor-blink 1s infinite;
-  -webkit-text-fill-color: hsl(45, 75%, 70%);
+/* Remove blinking cursor */
+
+/* Hero infinity symbol with breathing animation */
+.hero-infinity-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
 }
 
-@keyframes cursor-blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+.hero-infinity-symbol {
+  font-size: 2.5rem;
+  color: hsl(var(--brass));
+  text-shadow: 
+    0 0 12px hsl(var(--brass) / 0.6),
+    0 0 24px hsl(var(--brass) / 0.4);
+  animation: hero-infinity-breathe 3.5s ease-in-out infinite;
+}
+
+@keyframes hero-infinity-breathe {
+  0%, 100% { 
+    opacity: 0.55;
+    transform: scale(0.98);
+    text-shadow: 
+      0 0 12px hsl(var(--brass) / 0.4),
+      0 0 24px hsl(var(--brass) / 0.2);
+  }
+  50% { 
+    opacity: 1.0;
+    transform: scale(1.02);
+    text-shadow: 
+      0 0 16px hsl(var(--brass) / 0.8),
+      0 0 32px hsl(var(--brass) / 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-infinity-symbol {
+    animation: none;
+    opacity: 0.75;
+    transform: scale(1);
+  }
 }
 
 .mixer-subtitle {
@@ -1124,10 +1151,68 @@ html, body {
     0 0 0 2px hsl(var(--glow));
 }
 
+/* Compass Form Container - Adaptive Layout */
+.compass-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 992px) {
+  .compass-form-container {
+    flex-direction: row;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  
+  .compass-section {
+    flex: 1;
+    max-width: 540px;
+  }
+  
+  .form-toggle-section {
+    flex-shrink: 0;
+    width: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: 
+      linear-gradient(145deg, hsl(215, 20%, 16%) 0%, hsl(220, 25%, 12%) 100%);
+    border: 2px solid hsl(45, 50%, 45%);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 
+      inset 0 1px 3px hsla(0, 0%, 0%, 0.2),
+      0 2px 6px hsla(0, 0%, 0%, 0.1);
+  }
+}
+
+@media (max-width: 991px) {
+  .form-toggle-section {
+    background: 
+      linear-gradient(145deg, hsl(215, 20%, 16%) 0%, hsl(220, 25%, 12%) 100%);
+    border: 2px solid hsl(45, 50%, 45%);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 
+      inset 0 1px 3px hsla(0, 0%, 0%, 0.2),
+      0 2px 6px hsla(0, 0%, 0, 0.1);
+  }
+}
+
+/* Compass Section Styles */
+.compass-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
 /* Compass Selector Styles */
 .compass-container {
   position: relative;
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
 }
 
 .compass-face {
@@ -1146,6 +1231,49 @@ html, body {
     inset 0 -2px 4px rgba(255, 255, 255, 0.1),
     0 8px 16px rgba(0, 0, 0, 0.3),
     0 0 20px hsl(var(--brass) / 0.15);
+}
+
+/* Directional Indicators */
+.compass-directional-indicators {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.compass-arrow-indicator {
+  position: absolute;
+  color: hsl(var(--brass-deep));
+  opacity: 0.35;
+  animation: directional-spin 8s linear infinite;
+  transition: opacity 0.3s ease;
+}
+
+.compass-arrow-indicator.left {
+  top: 20%;
+  left: 10%;
+  animation: directional-spin-reverse 8s linear infinite;
+}
+
+.compass-arrow-indicator.right {
+  bottom: 20%;
+  right: 10%;
+  animation: directional-spin 8s linear infinite;
+}
+
+.compass-container:hover .compass-arrow-indicator,
+.compass-container:active .compass-arrow-indicator {
+  opacity: 0.6;
+}
+
+@keyframes directional-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes directional-spin-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 /* Decorative screws on compass frame */
@@ -1300,8 +1428,8 @@ html, body {
 }
 
 .compass-display {
-  flex: 1;
-  max-width: 200px;
+  width: 100%;
+  max-width: 520px;
 }
 
 .compass-display-text {
@@ -1318,13 +1446,13 @@ html, body {
     inset 0 2px 4px rgba(0, 0, 0, 0.4),
     inset 0 -1px 2px rgba(255, 255, 255, 0.1),
     0 0 15px hsl(var(--brass) / 0.2);
-  min-height: 60px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   
   font-family: 'Orbitron', monospace;
-  font-size: 1.1rem;
+  font-size: clamp(16px, 3.4vw, 22px);
   font-weight: 600;
   color: hsl(var(--brass));
   text-shadow: 
@@ -1333,6 +1461,8 @@ html, body {
   transition: all 0.3s ease;
   animation: display-glow 2s ease-in-out infinite alternate;
   margin-bottom: 8px;
+  word-break: keep-all;
+  text-wrap: balance;
 }
 
 .compass-hint-container {
@@ -1381,11 +1511,28 @@ html, body {
   }
 }
 
-/* Compass container touch improvements */
-.compass-container {
-  position: relative;
-  cursor: grab;
-  user-select: none;
+/* Genre Symbol Styles */
+.genre-symbol {
+  margin-left: 6px;
+  color: hsl(var(--brass));
+  font-size: 0.9em;
+  text-shadow: 
+    0 0 6px hsl(var(--brass) / 0.6),
+    0 0 12px hsl(var(--brass) / 0.3);
+  animation: genre-symbol-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes genre-symbol-glow {
+  0% { 
+    text-shadow: 
+      0 0 6px hsl(var(--brass) / 0.4),
+      0 0 12px hsl(var(--brass) / 0.2); 
+  }
+  100% { 
+    text-shadow: 
+      0 0 8px hsl(var(--brass) / 0.8),
+      0 0 16px hsl(var(--brass) / 0.5); 
+  }
 }
 
 .compass-container:active {
