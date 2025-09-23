@@ -461,25 +461,26 @@ html, body {
 }
 
 .hero-infinity-symbol {
-  font-size: 2.5rem;
+  font-size: 4.5rem;
   color: hsl(var(--brass));
   text-shadow: 
     0 0 12px hsl(var(--brass) / 0.6),
     0 0 24px hsl(var(--brass) / 0.4);
   animation: hero-infinity-breathe 3.5s ease-in-out infinite;
+  transform: scaleX(1.4) translateY(-8px);
 }
 
 @keyframes hero-infinity-breathe {
   0%, 100% { 
     opacity: 0.55;
-    transform: scale(0.98);
+    transform: scaleX(1.4) translateY(-8px) scale(0.98);
     text-shadow: 
       0 0 12px hsl(var(--brass) / 0.4),
       0 0 24px hsl(var(--brass) / 0.2);
   }
   50% { 
     opacity: 1.0;
-    transform: scale(1.02);
+    transform: scaleX(1.4) translateY(-8px) scale(1.02);
     text-shadow: 
       0 0 16px hsl(var(--brass) / 0.8),
       0 0 32px hsl(var(--brass) / 0.6);
@@ -490,7 +491,7 @@ html, body {
   .hero-infinity-symbol {
     animation: none;
     opacity: 0.75;
-    transform: scale(1);
+    transform: scaleX(1.4) translateY(-8px) scale(1);
   }
 }
 
