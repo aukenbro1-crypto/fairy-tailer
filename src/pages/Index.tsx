@@ -74,16 +74,6 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
           {/* Fixed Red Arrow Pointing Up */}
           <div className="compass-arrow-fixed" />
           
-          {/* Directional Indicators */}
-          <div className="compass-directional-indicators">
-            <svg className="compass-arrow-indicator left" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 8 8 L 16 12 L 8 16 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-            <svg className="compass-arrow-indicator right" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2 C16.97 2 21 6.03 21 11 C21 15.97 16.97 20 12 20 C7.03 20 3 15.97 3 11 C3 6.03 7.03 2 12 2 M 16 8 L 8 12 L 16 16 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </div>
-          
           {/* Rotating Disk with Sectors */}
           <div className="compass-disk" style={{
           transform: `rotate(${diskRotation}deg)`,
