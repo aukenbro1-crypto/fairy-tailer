@@ -393,9 +393,6 @@ const Index = () => {
       {/* Header */}
         <div className="text-center mb-8 mixer-panel">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">The Plot</h1>
-          <div className="hero-infinity-container">
-            <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -627,7 +624,7 @@ const Index = () => {
         {/* Submit Section */}
         <div className="mt-12 text-center mixer-panel">
           <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
-            {showLoader ? 'Отправка...' : 'Создать сказку'}
+            {showLoader ? 'Отправка...' : <span className="hero-infinity-symbol">∞</span>}
           </button>
           
           <p className="mixer-subtitle mb-6">
