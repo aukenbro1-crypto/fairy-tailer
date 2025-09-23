@@ -623,7 +623,7 @@ const Index = () => {
 
         {/* Submit Section */}
         <div className="mt-12 text-center mixer-panel">
-          <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
+          <button className="mixer-main-button text-2xl px-16 py-3 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : <span className="hero-infinity-symbol">∞</span>}
           </button>
           

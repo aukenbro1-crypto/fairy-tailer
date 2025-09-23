@@ -468,23 +468,25 @@ html, body {
     0 0 12px hsl(var(--brass) / 0.6),
     0 0 24px hsl(var(--brass) / 0.4);
   animation: hero-infinity-breathe 3.5s ease-in-out infinite;
-  transform: scaleX(1.4) translateY(-8px);
+  transform: scaleX(2.0) translateY(-8px);
+  background: transparent;
+  display: inline-block;
 }
 
 @keyframes hero-infinity-breathe {
   0%, 100% { 
     opacity: 0.55;
-    transform: scaleX(1.4) translateY(-8px) scale(0.98);
+    transform: scaleX(2.0) translateY(-8px) scale(0.98);
     text-shadow: 
       0 0 12px hsl(var(--brass) / 0.4),
       0 0 24px hsl(var(--brass) / 0.2);
   }
   50% { 
     opacity: 1.0;
-    transform: scaleX(1.4) translateY(-8px) scale(1.02);
+    transform: scaleX(2.0) translateY(-8px) scale(1.02);
     text-shadow: 
-      0 0 16px hsl(var(--brass) / 0.8),
-      0 0 32px hsl(var(--brass) / 0.6);
+      0 0 18px hsl(var(--brass) / 0.7),
+      0 0 36px hsl(var(--brass) / 0.5);
   }
 }
 
