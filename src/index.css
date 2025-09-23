@@ -462,13 +462,16 @@ html, body {
 }
 
 .hero-infinity-symbol {
-  font-size: 4.5rem;
+  font-size: 1.2rem;
   color: hsl(var(--brass));
   text-shadow: 
-    0 0 12px hsl(var(--brass) / 0.6),
-    0 0 24px hsl(var(--brass) / 0.4);
+    0 0 4px hsl(var(--brass) / 0.4),
+    0 0 8px hsl(var(--brass) / 0.2);
   animation: hero-infinity-breathe 3.5s ease-in-out infinite;
-  transform: scaleX(1.4) translateY(-8px);
+  transform: scaleX(0.8);
+  position: absolute;
+  right: 0;
+  top: 0;
 }
 
 @keyframes hero-infinity-breathe {
@@ -479,12 +482,12 @@ html, body {
       0 0 12px hsl(var(--brass) / 0.4),
       0 0 24px hsl(var(--brass) / 0.2);
   }
-  50% { 
+  50% {
     opacity: 1.0;
-    transform: scaleX(1.4) translateY(-8px) scale(1.02);
+    transform: scaleX(0.8) scale(1.02);
     text-shadow: 
-      0 0 16px hsl(var(--brass) / 0.8),
-      0 0 32px hsl(var(--brass) / 0.6);
+      0 0 6px hsl(var(--brass) / 0.6),
+      0 0 12px hsl(var(--brass) / 0.4);
   }
 }
 
@@ -492,7 +495,7 @@ html, body {
   .hero-infinity-symbol {
     animation: none;
     opacity: 0.75;
-    transform: scaleX(1.4) translateY(-8px) scale(1);
+    transform: scaleX(0.8) scale(1);
   }
 }
 
