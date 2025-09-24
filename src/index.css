@@ -202,11 +202,10 @@ html, body {
 
   .button-primary:hover { 
     filter: brightness(1.06); 
-    transform: translateY(-1px); 
   }
 
   .button-primary:active { 
-    transform: translateY(0); 
+    filter: brightness(0.95); 
   }
 
   .button-primary:disabled {
