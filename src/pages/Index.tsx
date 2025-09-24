@@ -403,7 +403,46 @@ const Index = () => {
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
-        <div className="text-center mb-8 mixer-panel constellation-header">
+        <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
+          setFormData({
+            genre: '',
+            tone: TONE_PRESETS[0],
+            form: 'adult',
+            ending: 'moral',
+            location: '',
+            artifact: '',
+            length_target: 15000,
+            chapters: 5,
+            title_need: false,
+            language: 'ru',
+            email: '',
+            hero1_name: '',
+            hero1_age: 0,
+            hero1_job: '',
+            hero1_traits: '',
+            hero1_fear: '',
+            hero1_habits: '',
+            hero2_name: '',
+            hero2_age: 0,
+            hero2_job: '',
+            hero2_traits: '',
+            hero2_fear: '',
+            hero2_habits: '',
+            hero3_name: '',
+            hero3_age: 0,
+            hero3_job: '',
+            hero3_traits: '',
+            hero3_fear: '',
+            hero3_habits: '',
+            hero4_name: '',
+            hero4_age: 0,
+            hero4_job: '',
+            hero4_traits: '',
+            hero4_fear: '',
+            hero4_habits: ''
+          });
+          setHeroSections({ hero2: false, hero3: false, hero4: false });
+        }}>
           {/* Constellation Background Layer with Text Mask */}
           <div className="hero-constellations" aria-hidden="true">
             <svg className="constellation-svg-hero" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
