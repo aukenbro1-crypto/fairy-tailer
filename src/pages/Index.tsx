@@ -44,15 +44,15 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
     }
   };
   const handleCircleClick = (e: React.MouseEvent) => {
-    if (!compassRef.current) return;
-    const rect = compassRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI) + 90;
-    const normalizedAngle = (angle % 360 + 360) % 360;
-    const sectorAngle = 360 / options.length;
-    const sectorIndex = Math.round(normalizedAngle / sectorAngle) % options.length;
-    onChange(options[sectorIndex]);
+    // Prevent event if clicking directly on a sector button
+    if ((e.target as Element).classList.contains('compass-sector-disk')) {
+      return;
+    }
+    
+    // Move to next option in sequence
+    const currentIndex = options.indexOf(value);
+    const nextIndex = (currentIndex + 1) % options.length;
+    onChange(options[nextIndex]);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
