@@ -309,12 +309,8 @@ const Index = () => {
     }));
   };
   const handleSubmit = async () => {
-    // Add generating state
-    document.body.classList.add('is-generating');
-    
     // Email validation
     if (!validateEmail(formData.email)) {
-      document.body.classList.remove('is-generating');
       toast({
         variant: "destructive",
         title: "Ошибка валидации",
@@ -325,7 +321,6 @@ const Index = () => {
 
     // Other validation
     if (!formData.genre || !formData.form || !formData.ending || formData.length_target <= 0 || formData.chapters <= 0) {
-      document.body.classList.remove('is-generating');
       toast({
         variant: "destructive",
         title: "Ошибка валидации",
@@ -391,7 +386,6 @@ const Index = () => {
       description: ok ? "Идёт генерация сказки..." : "Не удалось отправить запрос. Попробуйте снова."
     });
     setShowLoader(false);
-    document.body.classList.remove('is-generating');
     showEmailOverlayWithProgress();
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
@@ -734,17 +728,6 @@ const Index = () => {
             </div>
           </div>
         </div>
-
-        {/* Story Status Panel */}
-        <section className="story-status-panel" aria-hidden="true">
-          <div className="status-screen">
-            <div className="status-sprite status-idle"></div>
-            <div className="status-hud">
-              <span className="status-label status-label--idle">READY</span>
-              <span className="status-label status-label--gen">GENERATING<span className="dots">...</span></span>
-            </div>
-          </div>
-        </section>
 
         {/* Submit Section */}
         <div className="mt-12 text-center mixer-panel">
