@@ -392,7 +392,10 @@ const Index = () => {
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">The Plot</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">
+            Конструктор сказок
+            <span className="cursor-blink">|</span>
+          </h1>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
