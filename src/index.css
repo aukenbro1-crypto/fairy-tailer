@@ -369,7 +369,7 @@ html, body {
     animation: blink 1s step-end infinite;
     margin-left: 0.25rem;
     opacity: 0.75;
-    color: hsl(var(--panel-muted));
+    color: hsl(45, 65%, 60%);
   }
   
 /* === MIXER DESK STYLES === */
@@ -472,8 +472,8 @@ html, body {
 .hero-title__text {
   position: relative;
   z-index: 2;
-  color: hsl(var(--panel-ink));
-  text-shadow: none !important;
+  color: hsl(45, 65%, 60%);
+  text-shadow: 0 0 10px rgba(240,197,90,.25), 0 2px 0 rgba(0,0,0,.35) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
@@ -481,14 +481,14 @@ html, body {
   -webkit-text-stroke: .2px rgba(0,0,0,.25);
 }
 
-/* Glow layer (bottom) */
+/* Glow layer (bottom) - warm halo */
 .hero-title__glow {
   position: absolute;
   inset: 0;
   z-index: 1;
-  color: hsl(var(--panel-muted));
-  filter: blur(6px) saturate(.95);
-  opacity: .45;
+  color: hsl(45, 60%, 55%);
+  filter: blur(4px) saturate(.9);
+  opacity: .35;
   pointer-events: none;
 }
 
@@ -510,36 +510,63 @@ html, body {
   overflow: hidden;
 }
 
-.constellation-layer {
+/* Hero Constellations - Static */
+.hero-constellations {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  pointer-events: none;
+  pointer-events: none !important;
   z-index: 0;
+  transform: none !important;
+  animation: none !important;
 }
 
-.constellation-svg {
+.hero-constellations * {
+  animation: none !important;
+  transform: none !important;
+}
+
+.constellation-svg-hero {
   width: 100%;
   height: 100%;
   position: absolute;
   top: 0;
   left: 0;
+  transform: scale(1.6);
+  transform-origin: center;
 }
 
-.star {
-  fill: hsl(45, 70%, 65%);
-  filter: drop-shadow(0 0 2px hsl(45, 70%, 65% / 0.6)) drop-shadow(0 0 4px hsl(45, 70%, 65% / 0.3));
-  opacity: 0.4;
+.star-hero {
+  fill: hsl(45, 65%, 60%);
+  filter: drop-shadow(0 0 2px hsl(45, 65%, 60% / 0.4)) drop-shadow(0 0 3px hsl(45, 65%, 60% / 0.2));
+  opacity: 0.35;
 }
 
-.constellation-line {
+.constellation-line-hero {
   stroke: hsl(45, 60%, 55%);
-  stroke-width: 1.5;
-  stroke-dasharray: 3,5;
+  stroke-width: 0.8;
+  stroke-dasharray: 2,4;
   fill: none;
-  opacity: 0.3;
+  opacity: 0.32;
+}
+
+.constellation-chain-line {
+  opacity: 0.28;
+}
+
+/* Mobile optimization - hide small lines on narrow screens */
+@media (max-width: 480px) {
+  .constellation-chain-line,
+  .constellation-line-hero {
+    opacity: 0.15;
+  }
+  
+  .constellation-svg-hero {
+    transform: scale(1.4);
+  }
+}
 }
 
 /* Breathing animation for constellation groups */
@@ -1724,4 +1751,4 @@ html, body {
   }
 }
 
-} /* End of @layer components */
+/* End of @layer components */

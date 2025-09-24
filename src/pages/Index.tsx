@@ -392,108 +392,79 @@ const Index = () => {
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header">
-          {/* Constellation Background Layer */}
-          <div className="constellation-layer" aria-hidden="true">
-            <svg className="constellation-svg" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
-              {/* Left Edge Constellations */}
+          {/* Constellation Background Layer with Text Mask */}
+          <div className="hero-constellations" aria-hidden="true">
+            <svg className="constellation-svg-hero" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                {/* Text mask to avoid overlapping letters */}
+                <mask id="textMask">
+                  <rect width="100%" height="100%" fill="white"/>
+                  <rect x="200" y="70" width="400" height="60" rx="8" fill="black"/>
+                </mask>
+              </defs>
               
-              {/* Orion - Left Top */}
-              <g className="constellation-group" data-group="1">
-                <circle cx="30" cy="25" r="4.4" className="star" />
-                <circle cx="50" cy="40" r="3.6" className="star" />
-                <circle cx="70" cy="30" r="5.0" className="star" />
-                <circle cx="45" cy="60" r="3.0" className="star" />
-                <circle cx="65" cy="75" r="4.0" className="star" />
-                <circle cx="85" cy="85" r="3.4" className="star" />
-                <circle cx="60" cy="105" r="4.2" className="star" />
-                <path d="M30,25 L50,40 L70,30 M45,60 L65,75 L85,85 M50,40 L45,60 M65,75 L60,105" 
-                      className="constellation-line" />
-              </g>
+              <g mask="url(#textMask)">
+                {/* Top-Left Corner */}
+                <g className="constellation-corner tl">
+                  <circle cx="25" cy="18" r="3.2" className="star-hero" />
+                  <circle cx="45" cy="28" r="2.8" className="star-hero" />
+                  <circle cx="65" cy="22" r="3.6" className="star-hero" />
+                  <circle cx="38" cy="42" r="2.4" className="star-hero" />
+                  <circle cx="58" cy="48" r="3.0" className="star-hero" />
+                  <path d="M25,18 L45,28 L65,22 M38,42 L58,48 M45,28 L38,42" 
+                        className="constellation-line-hero" />
+                </g>
 
-              {/* Scorpius - Left Bottom */}
-              <g className="constellation-group" data-group="3">
-                <circle cx="20" cy="120" r="4.0" className="star" />
-                <circle cx="40" cy="135" r="4.4" className="star" />
-                <circle cx="60" cy="150" r="3.4" className="star" />
-                <circle cx="80" cy="145" r="3.8" className="star" />
-                <circle cx="100" cy="165" r="4.2" className="star" />
-                <circle cx="120" cy="155" r="3.2" className="star" />
-                <circle cx="140" cy="175" r="4.6" className="star" />
-                <path d="M20,120 L40,135 L60,150 L80,145 L100,165 L120,155 L140,175" 
-                      className="constellation-line" />
-              </g>
+                {/* Top-Right Corner */}
+                <g className="constellation-corner tr">
+                  <circle cx="735" cy="15" r="3.4" className="star-hero" />
+                  <circle cx="755" cy="25" r="2.6" className="star-hero" />
+                  <circle cx="775" cy="20" r="3.2" className="star-hero" />
+                  <circle cx="748" cy="38" r="2.8" className="star-hero" />
+                  <circle cx="768" cy="42" r="3.0" className="star-hero" />
+                  <path d="M735,15 L755,25 L775,20 M748,38 L768,42 M755,25 L748,38" 
+                        className="constellation-line-hero" />
+                </g>
 
-              {/* Top Edge Constellations */}
-              
-              {/* Cassiopeia - Top Center */}
-              <g className="constellation-group" data-group="2">
-                <circle cx="300" cy="15" r="4.0" className="star" />
-                <circle cx="340" cy="25" r="3.4" className="star" />
-                <circle cx="380" cy="20" r="4.6" className="star" />
-                <circle cx="420" cy="35" r="3.8" className="star" />
-                <circle cx="460" cy="25" r="4.2" className="star" />
-                <circle cx="500" cy="30" r="3.6" className="star" />
-                <path d="M300,15 L340,25 L380,20 L420,35 L460,25 L500,30" className="constellation-line" />
-              </g>
+                {/* Bottom-Left Corner */}
+                <g className="constellation-corner bl">
+                  <circle cx="35" cy="155" r="3.0" className="star-hero" />
+                  <circle cx="55" cy="168" r="3.4" className="star-hero" />
+                  <circle cx="75" cy="162" r="2.8" className="star-hero" />
+                  <circle cx="48" cy="182" r="3.2" className="star-hero" />
+                  <circle cx="68" cy="185" r="2.6" className="star-hero" />
+                  <path d="M35,155 L55,168 L75,162 M48,182 L68,185 M55,168 L48,182" 
+                        className="constellation-line-hero" />
+                </g>
 
-              {/* Right Edge Constellations */}
-              
-              {/* Lyra - Right Top */}
-              <g className="constellation-group" data-group="3">
-                <circle cx="720" cy="20" r="4.8" className="star" />
-                <circle cx="740" cy="35" r="3.2" className="star" />
-                <circle cx="760" cy="30" r="3.8" className="star" />
-                <circle cx="750" cy="55" r="3.6" className="star" />
-                <circle cx="775" cy="45" r="4.0" className="star" />
-                <path d="M720,20 L740,35 L760,30 L750,55 L740,35 M760,30 L775,45" className="constellation-line" />
-              </g>
+                {/* Bottom-Right Corner */}
+                <g className="constellation-corner br">
+                  <circle cx="725" cy="158" r="3.2" className="star-hero" />
+                  <circle cx="745" cy="172" r="2.8" className="star-hero" />
+                  <circle cx="765" cy="165" r="3.4" className="star-hero" />
+                  <circle cx="738" cy="185" r="3.0" className="star-hero" />
+                  <circle cx="758" cy="188" r="2.4" className="star-hero" />
+                  <path d="M725,158 L745,172 L765,165 M738,185 L758,188 M745,172 L738,185" 
+                        className="constellation-line-hero" />
+                </g>
 
-              {/* Ursa Minor - Right Center */}
-              <g className="constellation-group" data-group="2">
-                <circle cx="730" cy="80" r="4.4" className="star" />
-                <circle cx="750" cy="90" r="3.6" className="star" />
-                <circle cx="770" cy="105" r="3.4" className="star" />
-                <circle cx="780" cy="125" r="4.0" className="star" />
-                <circle cx="765" cy="145" r="3.2" className="star" />
-                <circle cx="745" cy="135" r="4.2" className="star" />
-                <circle cx="725" cy="115" r="3.6" className="star" />
-                <path d="M730,80 L750,90 L770,105 L780,125 L765,145 L745,135 L725,115 L730,80" 
-                      className="constellation-line" />
-              </g>
-
-              {/* Bottom Edge Constellations */}
-              
-              {/* Pegasus - Bottom Left */}
-              <g className="constellation-group" data-group="1">
-                <circle cx="200" cy="160" r="4.2" className="star" />
-                <circle cx="230" cy="150" r="3.8" className="star" />
-                <circle cx="260" cy="170" r="4.8" className="star" />
-                <circle cx="250" cy="185" r="3.4" className="star" />
-                <circle cx="220" cy="180" r="4.0" className="star" />
-                <circle cx="190" cy="175" r="3.6" className="star" />
-                <path d="M200,160 L230,150 L260,170 L250,185 L220,180 L190,175 L200,160" 
-                      className="constellation-line" />
-              </g>
-
-              {/* Andromeda - Bottom Right */}
-              <g className="constellation-group" data-group="2">
-                <circle cx="550" cy="155" r="3.8" className="star" />
-                <circle cx="580" cy="170" r="4.2" className="star" />
-                <circle cx="610" cy="160" r="3.4" className="star" />
-                <circle cx="640" cy="175" r="4.0" className="star" />
-                <circle cx="670" cy="165" r="4.4" className="star" />
-                <circle cx="595" cy="185" r="3.2" className="star" />
-                <circle cx="625" cy="190" r="3.6" className="star" />
-                <path d="M550,155 L580,170 L610,160 L640,175 L670,165 M580,170 L595,185 L625,190" 
-                      className="constellation-line" />
-              </g>
-
-              {/* Corner accent stars */}
-              <g className="constellation-group" data-group="3">
-                <circle cx="15" cy="15" r="3.6" className="star" />
-                <circle cx="785" cy="15" r="4.0" className="star" />
-                <circle cx="15" cy="185" r="3.4" className="star" />
-                <circle cx="785" cy="185" r="3.8" className="star" />
+                {/* Thin central chain below text baseline */}
+                <g className="constellation-chain">
+                  <circle cx="180" cy="145" r="2.2" className="star-hero" />
+                  <circle cx="220" cy="148" r="2.0" className="star-hero" />
+                  <circle cx="260" cy="145" r="2.4" className="star-hero" />
+                  <circle cx="300" cy="150" r="2.2" className="star-hero" />
+                  <circle cx="340" cy="147" r="2.0" className="star-hero" />
+                  <circle cx="380" cy="149" r="2.2" className="star-hero" />
+                  <circle cx="420" cy="146" r="2.4" className="star-hero" />
+                  <circle cx="460" cy="150" r="2.0" className="star-hero" />
+                  <circle cx="500" cy="148" r="2.2" className="star-hero" />
+                  <circle cx="540" cy="145" r="2.0" className="star-hero" />
+                  <circle cx="580" cy="149" r="2.2" className="star-hero" />
+                  <circle cx="620" cy="146" r="2.4" className="star-hero" />
+                  <path d="M180,145 L220,148 L260,145 L300,150 L340,147 L380,149 L420,146 L460,150 L500,148 L540,145 L580,149 L620,146" 
+                        className="constellation-line-hero constellation-chain-line" />
+                </g>
               </g>
             </svg>
           </div>
