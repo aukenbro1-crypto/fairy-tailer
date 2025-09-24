@@ -544,6 +544,24 @@ html, body {
   opacity: 0.35;
 }
 
+.star-hero.bright {
+  fill: hsl(45, 70%, 65%);
+  filter: drop-shadow(0 0 3px hsl(45, 70%, 65% / 0.6)) drop-shadow(0 0 6px hsl(45, 70%, 65% / 0.3));
+  opacity: 0.55;
+}
+
+.star-hero.dim {
+  fill: hsl(45, 60%, 55%);
+  filter: drop-shadow(0 0 1px hsl(45, 60%, 55% / 0.3));
+  opacity: 0.25;
+}
+
+.star-hero.tiny {
+  fill: hsl(45, 55%, 50%);
+  filter: drop-shadow(0 0 1px hsl(45, 55%, 50% / 0.2));
+  opacity: 0.18;
+}
+
 .constellation-line-hero {
   stroke: hsl(45, 60%, 55%);
   stroke-width: 0.8;
@@ -567,78 +585,11 @@ html, body {
     transform: scale(1.4);
   }
 }
-}
-
-/* Breathing animation for constellation groups */
-.constellation-group[data-group="1"] {
-  animation: constellation-breathe-1 7s ease-in-out infinite;
-}
-
-.constellation-group[data-group="2"] {
-  animation: constellation-breathe-2 8.5s ease-in-out infinite;
-}
-
-.constellation-group[data-group="3"] {
-  animation: constellation-breathe-3 6.2s ease-in-out infinite;
-}
-
-@keyframes constellation-breathe-1 {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1.0; }
-}
-
-@keyframes constellation-breathe-2 {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 0.95; }
-}
-
-@keyframes constellation-breathe-3 {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1.0; }
-}
-
-/* Subtle parallax on mouse movement */
-.constellation-header:hover .constellation-layer {
-  transform: translate(1px, -1px);
-  transition: transform 0.8s ease-out;
-}
 
 /* Ensure title text is above constellation layer */
 .mixer-nameplate {
   position: relative;
   z-index: 10;
-}
-
-/* Responsive: Hide detailed lines on small screens */
-@media (max-width: 768px) {
-  .constellation-line {
-    opacity: 0.15;
-    stroke-dasharray: 1,4;
-  }
-  
-  .star {
-    opacity: 0.5;
-  }
-}
-
-/* Accessibility: Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .constellation-group {
-    animation: none !important;
-  }
-  
-  .constellation-header:hover .constellation-layer {
-    transform: none;
-    transition: none;
-  }
-  
-  .star {
-    opacity: 0.35;
-  }
-  
-  .constellation-line {
-    opacity: 0.2;
-  }
 }
 
 /* Hero infinity symbol with breathing animation */
@@ -1749,6 +1700,8 @@ html, body {
     height: 28px;
     font-size: 20px;
   }
+}
+
 }
 
 /* End of @layer components */
