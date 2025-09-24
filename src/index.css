@@ -369,6 +369,7 @@ html, body {
     animation: blink 1s step-end infinite;
     margin-left: 0.25rem;
     opacity: 0.75;
+    color: hsl(var(--panel-muted));
   }
   
 /* === MIXER DESK STYLES === */
@@ -471,7 +472,7 @@ html, body {
 .hero-title__text {
   position: relative;
   z-index: 2;
-  color: #e2bf60;
+  color: hsl(var(--panel-ink));
   text-shadow: none !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -485,9 +486,9 @@ html, body {
   position: absolute;
   inset: 0;
   z-index: 1;
-  color: #d9b24e;
+  color: hsl(var(--panel-muted));
   filter: blur(6px) saturate(.95);
-  opacity: .55;
+  opacity: .45;
   pointer-events: none;
 }
 
