@@ -391,7 +391,84 @@ const Index = () => {
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
-        <div className="hero-title-panel text-center mb-8 mixer-panel constellation-header">
+        <div className="text-center mb-8 mixer-panel constellation-header">
+          {/* Constellation Background Layer with Text Mask */}
+          <div className="hero-constellations" aria-hidden="true">
+            <svg className="constellation-svg-hero" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                {/* Text mask to avoid overlapping letters */}
+                <mask id="textMask">
+                  <rect width="100%" height="100%" fill="white"/>
+                  <rect x="200" y="70" width="400" height="60" rx="8" fill="black"/>
+                </mask>
+              </defs>
+              
+              <g mask="url(#textMask)">
+                {/* Top-Left Corner */}
+                <g className="constellation-corner tl">
+                  <circle cx="25" cy="18" r="3.2" className="star-hero" />
+                  <circle cx="45" cy="28" r="2.8" className="star-hero" />
+                  <circle cx="65" cy="22" r="3.6" className="star-hero" />
+                  <circle cx="38" cy="42" r="2.4" className="star-hero" />
+                  <circle cx="58" cy="48" r="3.0" className="star-hero" />
+                  <path d="M25,18 L45,28 L65,22 M38,42 L58,48 M45,28 L38,42" 
+                        className="constellation-line-hero" />
+                </g>
+
+                {/* Top-Right Corner */}
+                <g className="constellation-corner tr">
+                  <circle cx="735" cy="15" r="3.4" className="star-hero" />
+                  <circle cx="755" cy="25" r="2.6" className="star-hero" />
+                  <circle cx="775" cy="20" r="3.2" className="star-hero" />
+                  <circle cx="748" cy="38" r="2.8" className="star-hero" />
+                  <circle cx="768" cy="42" r="3.0" className="star-hero" />
+                  <path d="M735,15 L755,25 L775,20 M748,38 L768,42 M755,25 L748,38" 
+                        className="constellation-line-hero" />
+                </g>
+
+                {/* Bottom-Left Corner */}
+                <g className="constellation-corner bl">
+                  <circle cx="35" cy="155" r="3.0" className="star-hero" />
+                  <circle cx="55" cy="168" r="3.4" className="star-hero" />
+                  <circle cx="75" cy="162" r="2.8" className="star-hero" />
+                  <circle cx="48" cy="182" r="3.2" className="star-hero" />
+                  <circle cx="68" cy="185" r="2.6" className="star-hero" />
+                  <path d="M35,155 L55,168 L75,162 M48,182 L68,185 M55,168 L48,182" 
+                        className="constellation-line-hero" />
+                </g>
+
+                {/* Bottom-Right Corner */}
+                <g className="constellation-corner br">
+                  <circle cx="725" cy="158" r="3.2" className="star-hero" />
+                  <circle cx="745" cy="172" r="2.8" className="star-hero" />
+                  <circle cx="765" cy="165" r="3.4" className="star-hero" />
+                  <circle cx="738" cy="185" r="3.0" className="star-hero" />
+                  <circle cx="758" cy="188" r="2.4" className="star-hero" />
+                  <path d="M725,158 L745,172 L765,165 M738,185 L758,188 M745,172 L738,185" 
+                        className="constellation-line-hero" />
+                </g>
+
+                {/* Thin central chain below text baseline */}
+                <g className="constellation-chain">
+                  <circle cx="180" cy="145" r="2.2" className="star-hero" />
+                  <circle cx="220" cy="148" r="2.0" className="star-hero" />
+                  <circle cx="260" cy="145" r="2.4" className="star-hero" />
+                  <circle cx="300" cy="150" r="2.2" className="star-hero" />
+                  <circle cx="340" cy="147" r="2.0" className="star-hero" />
+                  <circle cx="380" cy="149" r="2.2" className="star-hero" />
+                  <circle cx="420" cy="146" r="2.4" className="star-hero" />
+                  <circle cx="460" cy="150" r="2.0" className="star-hero" />
+                  <circle cx="500" cy="148" r="2.2" className="star-hero" />
+                  <circle cx="540" cy="145" r="2.0" className="star-hero" />
+                  <circle cx="580" cy="149" r="2.2" className="star-hero" />
+                  <circle cx="620" cy="146" r="2.4" className="star-hero" />
+                  <path d="M180,145 L220,148 L260,145 L300,150 L340,147 L380,149 L420,146 L460,150 L500,148 L540,145 L580,149 L620,146" 
+                        className="constellation-line-hero constellation-chain-line" />
+                </g>
+              </g>
+            </svg>
+          </div>
+
           <div className="hero-title-wrapper mb-4">
             <h1 className="hero-title font-bold mixer-nameplate">
               <span className="hero-title__text">Конструктор сказок</span>
