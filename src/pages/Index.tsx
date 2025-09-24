@@ -43,6 +43,18 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
       onChange(options[newIndex]);
     }
   };
+  const handleCircleClick = (e: React.MouseEvent) => {
+    if (!compassRef.current) return;
+    const rect = compassRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI) + 90;
+    const normalizedAngle = (angle % 360 + 360) % 360;
+    const sectorAngle = 360 / options.length;
+    const sectorIndex = Math.round(normalizedAngle / sectorAngle) % options.length;
+    onChange(options[sectorIndex]);
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!compassRef.current) return;
     setIsDragging(true);
@@ -67,7 +79,7 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
   };
   return <div className="compass-section">
       {/* Compass Selector with Directional Indicators */}
-      <div ref={compassRef} className="compass-container" role="radiogroup" tabIndex={0} aria-label="Выбор развязки истории, стрелка указывает вверх; поворачивайте диск для выбора" onKeyDown={handleKeyDown} onMouseDown={handleMouseDown} style={{
+      <div ref={compassRef} className="compass-container" role="radiogroup" tabIndex={0} aria-label="Выбор развязки истории, стрелка указывает вверх; поворачивайте диск для выбора" onKeyDown={handleKeyDown} onMouseDown={handleMouseDown} onClick={handleCircleClick} style={{
       touchAction: 'none'
     }}>
         <div className="compass-face">
