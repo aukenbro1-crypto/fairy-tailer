@@ -447,18 +447,59 @@ html, body {
     inset 0 -1px 1px hsla(0, 0%, 100%, 0.05);
 }
 
-/* Brass nameplate for title with Orbitron font and blinking cursor */
-.mixer-nameplate {
+/* Hero Title Wrapper */
+.hero-title-wrapper {
+  padding: 2px;
+  position: relative;
+}
+
+/* Hero Title Container */
+.hero-title, .hero-title * {
+  transform: none !important;
+  backface-visibility: hidden;
+  will-change: auto;
+}
+
+.hero-title {
+  font-size: clamp(28px, 5.5vw, 72px);
+  position: relative;
   font-family: 'Orbitron', monospace;
   font-weight: 700;
-  background: linear-gradient(145deg, hsl(45, 70%, 65%) 0%, hsl(40, 60%, 55%) 50%, hsl(35, 50%, 45%) 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 
-    0 2px 4px hsla(45, 70%, 35%, 0.6),
-    0 0 20px hsla(45, 70%, 65%, 0.4);
-  filter: drop-shadow(0 2px 4px hsla(0, 0%, 0%, 0.3));
+}
+
+/* Clean text layer (top) */
+.hero-title__text {
+  position: relative;
+  z-index: 2;
+  color: #e2bf60;
+  text-shadow: none !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  letter-spacing: .01em;
+  -webkit-text-stroke: .2px rgba(0,0,0,.25);
+}
+
+/* Glow layer (bottom) */
+.hero-title__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  color: #d9b24e;
+  filter: blur(6px) saturate(.95);
+  opacity: .55;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .hero-title__glow {
+    filter: blur(8px) saturate(.95);
+    opacity: .6;
+  }
+}
+
+/* Legacy mixer nameplate class for cursor */
+.mixer-nameplate {
   position: relative;
 }
 

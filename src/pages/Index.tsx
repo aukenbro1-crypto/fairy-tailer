@@ -498,10 +498,13 @@ const Index = () => {
             </svg>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 mixer-nameplate">
-            Конструктор сказок
-            <span className="cursor-blink">|</span>
-          </h1>
+          <div className="hero-title-wrapper mb-4">
+            <h1 className="hero-title font-bold mixer-nameplate">
+              <span className="hero-title__text">Конструктор сказок</span>
+              <span className="hero-title__glow" aria-hidden="true">Конструктор сказок</span>
+              <span className="cursor-blink">|</span>
+            </h1>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
