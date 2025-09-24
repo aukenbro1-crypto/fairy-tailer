@@ -83,8 +83,9 @@ html, body {
     font-weight: 700;             /* можно 900 для главного тайтла */
     line-height: 1.15;
     letter-spacing: .01em;
-    /* лёгкое «латунное» свечение под существующую тему */
-    text-shadow: 0 1px 0 rgba(255,255,255,.05), 0 0 12px rgba(230,166,72,.18);
+    /* тёплое золотистое свечение для контраста на тёмном индиго */
+    color: #f0c55a;
+    text-shadow: 0 0 8px rgba(240,197,90,.18);
   }
 
   /* UI: кнопки, метки, инпуты */
@@ -150,11 +151,16 @@ html, body {
 
   /* поля ввода */
   .input, .field, select, textarea {
-    background: rgba(0,0,0,.25);
-    border: 1px solid hsl(var(--panel-edge));
+    background: #0a1124;
+    border: 1px solid rgba(255,255,255,.08);
     border-radius: 10px;
     color: hsl(var(--panel-ink));
     padding: 10px 12px;
+  }
+
+  .input:focus, .field:focus, select:focus, textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(240,197,90,.25);
   }
 
   ::placeholder { 
@@ -185,7 +191,10 @@ html, body {
     color: hsl(var(--cta-text));
     background: linear-gradient(#fff0,#fff0), linear-gradient(180deg, hsl(var(--cta-start)), hsl(var(--cta-end)));
     border: 1px solid #7b4a12;
-    box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.35);
+    box-shadow: 
+      0 10px 24px rgba(0,0,0,.45), 
+      inset 0 1px 0 rgba(255,255,255,.35),
+      inset 0 2px 0 rgba(255,255,255,.12);
     transition: .15s ease;
     font-weight: 600;
     font-size: 1rem;
@@ -383,33 +392,31 @@ html, body {
   background-size: 400px 400px, 600px 600px, 100% 100%;
 }
 
-/* Main mixer chassis with aged blue paint and scratches */
+/* Main mixer chassis with Midnight Indigo theme and 3D volume */
 .mixer-chassis {
   position: relative;
   background: 
-    /* Fine scratches overlay */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg stroke='%23B8C5D1' stroke-width='0.3' opacity='0.12'%3E%3Cpath d='M10,20 L190,25 M15,40 L185,45 M8,60 L192,58 M12,80 L188,82 M5,100 L195,102 M20,120 L180,125 M25,140 L175,138 M18,160 L182,162 M22,180 L178,185'/%3E%3Cpath d='M30,10 L35,190 M50,8 L55,192 M70,15 L75,185 M90,5 L95,195 M110,12 L115,188 M130,18 L135,182 M150,8 L155,192 M170,15 L175,185'/%3E%3Cpath d='M40,30 L160,35 M45,50 L155,55 M38,70 L162,68 M42,90 L158,92 M35,110 L165,112 M50,130 L150,135 M55,150 L145,148 M48,170 L152,172'/%3E%3C/g%3E%3C/svg%3E"),
-    /* Corner damage scratches */
-    linear-gradient(135deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.08) 88%, transparent 92%),
-    linear-gradient(45deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.08) 88%, transparent 92%),
-    linear-gradient(-45deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.06) 88%, transparent 92%),
-    linear-gradient(-135deg, transparent 0%, transparent 85%, hsla(184, 15%, 70%, 0.06) 88%, transparent 92%),
-    /* Original paint texture */
-    radial-gradient(circle at 30% 40%, hsla(200, 60%, 45%, 0.8) 0%, transparent 50%),
-    radial-gradient(circle at 70% 60%, hsla(200, 50%, 40%, 0.6) 0%, transparent 40%),
-    /* Worn spots (metal showing through) */
-    radial-gradient(circle at 10% 90%, hsla(210, 10%, 25%, 0.9) 0%, transparent 30%),
-    radial-gradient(circle at 90% 10%, hsla(210, 10%, 25%, 0.9) 0%, transparent 25%),
-    /* Base blue paint */
-    linear-gradient(145deg, hsl(200, 55%, 42%) 0%, hsl(205, 45%, 35%) 50%, hsl(210, 35%, 30%) 100%);
+    /* Выпуклость центра */
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,.06), transparent 55%),
+    /* Noise texture */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg stroke='%23B8C5D1' stroke-width='0.3' opacity='0.06'%3E%3Cpath d='M10,20 L190,25 M15,40 L185,45 M8,60 L192,58 M12,80 L188,82 M5,100 L195,102 M20,120 L180,125 M25,140 L175,138 M18,160 L182,162 M22,180 L178,185'/%3E%3Cpath d='M30,10 L35,190 M50,8 L55,192 M70,15 L75,185 M90,5 L95,195 M110,12 L115,188 M130,18 L135,182 M150,8 L155,192 M170,15 L175,185'/%3E%3C/g%3E%3C/svg%3E"),
+    /* Патина/сетка */
+    repeating-linear-gradient(45deg, rgba(255,255,255,.02) 0 1px, transparent 1px 20px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.02) 0 1px, transparent 1px 20px),
+    /* Базовый градиент Midnight Indigo */
+    linear-gradient(180deg, #10234f 0%, #0e1b40 45%, #0b1837 100%);
   
   border: 4px solid hsl(210, 15%, 20%);
   border-radius: 24px;
   padding: 32px;
   box-shadow: 
-    inset 0 2px 4px hsla(0, 0%, 0%, 0.3),
-    inset 0 -1px 2px hsla(0, 0%, 100%, 0.1),
-    0 20px 40px hsla(0, 0%, 0%, 0.4);
+    /* Внешние тени для объёма */
+    0 28px 60px rgba(0,0,0,.45), 
+    0 8px 24px rgba(0,0,0,.35),
+    /* Внутренние подсветки для фаски */
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 -1px 0 rgba(0,0,0,.4),
+    inset 0 6px 18px rgba(255,255,255,.06);
 }
 
 /* Corner screws */
@@ -437,15 +444,22 @@ html, body {
   right: 12px;
 }
 
-/* Inner panel */
+/* Inner panel with darker Midnight Indigo */
 .mixer-panel {
   background: 
-    linear-gradient(145deg, hsl(210, 15%, 18%) 0%, hsl(215, 18%, 15%) 100%);
+    linear-gradient(145deg, #141c33 0%, #0f162b 100%);
+  border: 1px solid rgba(240,197,90,.35);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 
-    inset 0 2px 6px hsla(0, 0%, 0%, 0.4),
-    inset 0 -1px 1px hsla(0, 0%, 100%, 0.05);
+    0 14px 32px rgba(0,0,0,.35), 
+    0 4px 10px rgba(0,0,0,.3), 
+    inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform 0.18s ease;
+}
+
+.mixer-panel:hover {
+  transform: translateY(-2px);
 }
 
 /* Hero Title Wrapper */
@@ -636,6 +650,18 @@ html, body {
     animation: none;
     opacity: 0.75;
     transform: scaleX(0.8) scale(1);
+  }
+}
+
+/* Mobile optimization for chassis shadow */
+@media (max-width: 480px) {
+  .mixer-chassis {
+    box-shadow: 
+      0 18px 40px rgba(0,0,0,.4), 
+      0 6px 18px rgba(0,0,0,.3),
+      inset 0 1px 0 rgba(255,255,255,.06),
+      inset 0 -1px 0 rgba(0,0,0,.4),
+      inset 0 6px 18px rgba(255,255,255,.06);
   }
 }
 
