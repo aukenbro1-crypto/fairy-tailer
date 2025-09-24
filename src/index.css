@@ -11,11 +11,11 @@
   --frame-texture: url(/src/assets/burst-texture.jpg);
   
   /* Texture effect variables */
-  --fx-opacity: 0.22;        /* 0.14–0.30 */
-  --fx-bright: 0.98;         /* 0.9–1.1 */
-  --fx-contrast: 1.15;       /* 1.0–1.3 */
-  --fx-sat: 0.6;             /* 0–1 */
-  --fx-blend: overlay;       /* overlay/soft-light/screen */
+  --fx-opacity: 0.28;        /* 0.14–0.30 */
+  --fx-bright: 1.15;         /* 0.9–1.1 */
+  --fx-contrast: 1.25;       /* 1.0–1.3 */
+  --fx-sat: 0.3;             /* 0–1 */
+  --fx-blend: screen;        /* overlay/soft-light/screen */
   
   /* корпус / фон */
   --panel: 47 34% 37%;        /* #2f4b5f стальной голубой */
@@ -1777,7 +1777,7 @@ html, body {
 /* ===== TEXTURE THEMES ===== */
 
 /* Серебро (по умолчанию) */
-.theme-silver     { --fx-blend: overlay;    --fx-opacity:.22; --fx-bright:1.00; --fx-contrast:1.20; --fx-sat:.40; }
+.theme-silver     { --fx-blend: screen;     --fx-opacity:.28; --fx-bright:1.15; --fx-contrast:1.25; --fx-sat:.30; }
 /* Gunmetal (тёмный графит) */
 .theme-gunmetal   { --fx-blend: soft-light; --fx-opacity:.20; --fx-bright:.92;  --fx-contrast:1.25; --fx-sat:.30; }
 /* Champagne (тёплый металл) */
