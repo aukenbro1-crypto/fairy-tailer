@@ -401,10 +401,7 @@ const Index = () => {
     showEmailOverlayWithProgress();
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
-      <div className="max-w-6xl mx-auto shell-frame">
-        {/* Corner screws */}
-        <div className="corner-screw-tl"></div>
-        <div className="corner-screw-tr"></div>
+      <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
           setFormData({

@@ -6,17 +6,6 @@
 
 :root {
   color-scheme: dark;
-  
-  /* Frame texture */
-  --frame-texture: url(/src/assets/burst-texture.jpg);
-  
-  /* Texture effect variables */
-  --fx-opacity: 0.28;        /* 0.14–0.30 */
-  --fx-bright: 1.15;         /* 0.9–1.1 */
-  --fx-contrast: 1.25;       /* 1.0–1.3 */
-  --fx-sat: 0.3;             /* 0–1 */
-  --fx-blend: screen;        /* overlay/soft-light/screen */
-  
   /* корпус / фон */
   --panel: 47 34% 37%;        /* #2f4b5f стальной голубой */
   --panel-ink: 195 26% 90%;   /* #eaf2f6 основной текст на панели */
@@ -1736,59 +1725,3 @@ html, body {
 }
 
 /* End of @layer components */
-
-/* ===== FRAME TEXTURE SYSTEM ===== */
-
-.shell-frame { 
-  position: relative; 
-}
-
-.shell-frame::before {
-  content: "";
-  position: absolute; 
-  inset: 0; 
-  border-radius: inherit; 
-  pointer-events: none;
-  background: var(--frame-texture) center/cover no-repeat;
-  background-position: 50% 38%;
-  background-size: 120% auto;
-  mix-blend-mode: var(--fx-blend);
-  filter: grayscale(1) brightness(var(--fx-bright)) contrast(var(--fx-contrast)) saturate(var(--fx-sat));
-  opacity: var(--fx-opacity);
-  z-index: 0; /* слой под контентом */
-}
-
-/* гарантируем, что контент выше */
-.shell-frame > * { 
-  position: relative; 
-  z-index: 1; 
-}
-
-.shell-frame::after {
-  content:""; 
-  position:absolute; 
-  inset:0; 
-  border-radius:inherit; 
-  pointer-events:none;
-  background: linear-gradient(180deg, rgba(0,0,0,.18), transparent 30%);
-  z-index: 0.5;
-}
-
-/* ===== TEXTURE THEMES ===== */
-
-/* Серебро (по умолчанию) */
-.theme-silver     { --fx-blend: screen;     --fx-opacity:.28; --fx-bright:1.15; --fx-contrast:1.25; --fx-sat:.30; }
-/* Gunmetal (тёмный графит) */
-.theme-gunmetal   { --fx-blend: soft-light; --fx-opacity:.20; --fx-bright:.92;  --fx-contrast:1.25; --fx-sat:.30; }
-/* Champagne (тёплый металл) */
-.theme-champagne  { --fx-blend: overlay;    --fx-opacity:.24; --fx-bright:1.05; --fx-contrast:1.10; --fx-sat:.75; }
-/* Azure steel (под индиго-корпус) */
-.theme-azuresteel { --fx-blend: screen;     --fx-opacity:.18; --fx-bright:1.08; --fx-contrast:1.10; --fx-sat:.90; }
-
-/* Mobile adaptations */
-@media (max-width: 480px) {
-  .shell-frame::before { 
-    opacity: calc(var(--fx-opacity) * .8); 
-    background-size: 160% auto; 
-  }
-}
