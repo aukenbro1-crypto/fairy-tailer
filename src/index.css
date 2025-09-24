@@ -369,7 +369,7 @@ html, body {
     animation: blink 1s step-end infinite;
     margin-left: 0.25rem;
     opacity: 0.75;
-    color: hsl(45, 65%, 60%);
+    color: #f0c55a;
   }
   
 /* === MIXER DESK STYLES === */
@@ -448,10 +448,44 @@ html, body {
     inset 0 -1px 1px hsla(0, 0%, 100%, 0.05);
 }
 
+/* CSS Variables for constellation image */
+:root {
+  --constellation-img: url('../assets/constellations.png');
+}
+
+/* Hero Title Panel with Constellation Background */
+.hero-title-panel {
+  position: relative;
+  background:
+    radial-gradient(80% 160% at 50% 120%, rgba(0,0,0,.55), rgba(0,0,0,.85)),
+    var(--constellation-img) center 40%/cover no-repeat,
+    linear-gradient(180deg, #1b1f25, #161a1f);
+  background-blend-mode: normal, screen, normal;
+  border-radius: inherit;
+  overflow: hidden;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Constellation image overlay with color adjustment */
+.hero-title-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--constellation-img) center 40%/cover no-repeat;
+  filter: sepia(.9) saturate(.9) hue-rotate(330deg) brightness(.9);
+  opacity: .30;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: none !important;
+  transform: none !important;
+}
+
 /* Hero Title Wrapper */
 .hero-title-wrapper {
   padding: 2px;
   position: relative;
+  z-index: 2;
 }
 
 /* Hero Title Container */
@@ -472,7 +506,7 @@ html, body {
 .hero-title__text {
   position: relative;
   z-index: 2;
-  color: hsl(45, 65%, 60%);
+  color: #f0c55a;
   text-shadow: 0 0 10px rgba(240,197,90,.25), 0 2px 0 rgba(0,0,0,.35) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -486,9 +520,9 @@ html, body {
   position: absolute;
   inset: 0;
   z-index: 1;
-  color: hsl(45, 60%, 55%);
+  color: #f0c55a;
   filter: blur(4px) saturate(.9);
-  opacity: .35;
+  opacity: .25;
   pointer-events: none;
 }
 
@@ -504,141 +538,31 @@ html, body {
   position: relative;
 }
 
-/* Constellation Header Styles */
+/* Constellation Header Styles - Using background image */
 .constellation-header {
   position: relative;
   overflow: hidden;
 }
 
-/* Hero Constellations - Static */
-.hero-constellations {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none !important;
-  z-index: 0;
-  transform: none !important;
-  animation: none !important;
-}
-
-.hero-constellations * {
-  animation: none !important;
-  transform: none !important;
-}
-
-.constellation-svg-hero {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: scale(1.6);
-  transform-origin: center;
-}
-
-.star-hero {
-  fill: hsl(45, 65%, 60%);
-  filter: drop-shadow(0 0 2px hsl(45, 65%, 60% / 0.4)) drop-shadow(0 0 3px hsl(45, 65%, 60% / 0.2));
-  opacity: 0.35;
-}
-
-.constellation-line-hero {
-  stroke: hsl(45, 60%, 55%);
-  stroke-width: 0.8;
-  stroke-dasharray: 2,4;
-  fill: none;
-  opacity: 0.32;
-}
-
-.constellation-chain-line {
-  opacity: 0.28;
-}
-
-/* Mobile optimization - hide small lines on narrow screens */
-@media (max-width: 480px) {
-  .constellation-chain-line,
-  .constellation-line-hero {
-    opacity: 0.15;
-  }
-  
-  .constellation-svg-hero {
-    transform: scale(1.4);
-  }
-}
-}
-
-/* Breathing animation for constellation groups */
-.constellation-group[data-group="1"] {
-  animation: constellation-breathe-1 7s ease-in-out infinite;
-}
-
-.constellation-group[data-group="2"] {
-  animation: constellation-breathe-2 8.5s ease-in-out infinite;
-}
-
-.constellation-group[data-group="3"] {
-  animation: constellation-breathe-3 6.2s ease-in-out infinite;
-}
-
-@keyframes constellation-breathe-1 {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1.0; }
-}
-
-@keyframes constellation-breathe-2 {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 0.95; }
-}
-
-@keyframes constellation-breathe-3 {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1.0; }
-}
-
-/* Subtle parallax on mouse movement */
-.constellation-header:hover .constellation-layer {
-  transform: translate(1px, -1px);
-  transition: transform 0.8s ease-out;
-}
-
-/* Ensure title text is above constellation layer */
-.mixer-nameplate {
-  position: relative;
-  z-index: 10;
-}
-
-/* Responsive: Hide detailed lines on small screens */
+/* Mobile adaptations */
 @media (max-width: 768px) {
-  .constellation-line {
-    opacity: 0.15;
-    stroke-dasharray: 1,4;
+  .hero-title-panel {
+    background-position: center 50%, center 50%, center;
   }
   
-  .star {
-    opacity: 0.5;
+  .hero-title-panel::before {
+    background-position: center 50%;
   }
 }
 
-/* Accessibility: Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .constellation-group {
-    animation: none !important;
+@media (max-width: 480px) {
+  .hero-title-panel {
+    background:
+      radial-gradient(80% 160% at 50% 120%, rgba(0,0,0,.65), rgba(0,0,0,.85)),
+      var(--constellation-img) center 50%/cover no-repeat,
+      linear-gradient(180deg, #1b1f25, #161a1f);
   }
-  
-  .constellation-header:hover .constellation-layer {
-    transform: none;
-    transition: none;
-  }
-  
-  .star {
-    opacity: 0.35;
-  }
-  
-  .constellation-line {
-    opacity: 0.2;
-  }
+}
 }
 
 /* Hero infinity symbol with breathing animation */
