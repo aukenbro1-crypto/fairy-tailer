@@ -6,6 +6,17 @@
 
 :root {
   color-scheme: dark;
+  
+  /* Frame texture */
+  --frame-texture: url(/src/assets/burst-texture.jpg);
+  
+  /* Texture effect variables */
+  --fx-opacity: 0.22;        /* 0.14–0.30 */
+  --fx-bright: 0.98;         /* 0.9–1.1 */
+  --fx-contrast: 1.15;       /* 1.0–1.3 */
+  --fx-sat: 0.6;             /* 0–1 */
+  --fx-blend: overlay;       /* overlay/soft-light/screen */
+  
   /* корпус / фон */
   --panel: 47 34% 37%;        /* #2f4b5f стальной голубой */
   --panel-ink: 195 26% 90%;   /* #eaf2f6 основной текст на панели */
@@ -51,55 +62,6 @@
   --input: 47 34% 37%;        /* --panel */
   --ring: 42 76% 59%;         /* --brass */
   --radius: 0.5rem;
-}
-
-/* Light theme */
-.light {
-  color-scheme: light;
-  /* корпус / фон - светлые версии */
-  --panel: 200 15% 85%;        /* светлый серо-голубой */
-  --panel-ink: 210 15% 15%;    /* тёмный текст на светлом фоне */
-  --panel-muted: 210 10% 45%;  /* приглушённый текст */
-  --panel-edge: 210 15% 65%;   /* края и рамки */
-  --scratch-hi: 200 20% 95%;   /* светлые блики */
-  --scratch-lo: 210 15% 25%;   /* тёмные углубления */
-
-  /* латунные акценты остаются */
-  --brass: 42 76% 59%;        
-  --brass-deep: 42 70% 32%;   
-
-  /* CTA адаптированы для светлого фона */
-  --cta-start: 41 85% 55%;    
-  --cta-end: 39 70% 45%;      
-  --cta-text: 0 0% 100%;      /* белый текст на CTA */
-  --glow: 195 85% 55%;        
-
-  /* состояния */
-  --ok: 149 60% 45%;          
-  --warn: 46 85% 55%;         
-  --err: 0 85% 55%;           
-
-  /* системный акцент */
-  --accent: 42 76% 59%;       
-
-  /* Mapped to existing system for light */
-  --background: 210 15% 95%;   /* светлый фон */
-  --foreground: 210 15% 15%;   
-  --card: 200 15% 85%;         
-  --card-foreground: 210 15% 15%;
-  --popover: 200 15% 85%;
-  --popover-foreground: 210 15% 15%;
-  --primary: 42 76% 59%;       
-  --primary-foreground: 0 0% 100%;
-  --secondary: 200 15% 85%;
-  --secondary-foreground: 210 15% 15%;
-  --muted: 210 10% 45%;        
-  --muted-foreground: 210 10% 45%;
-  --destructive: 0 85% 55%;    
-  --destructive-foreground: 0 0% 100%;
-  --border: 210 15% 65%;       
-  --input: 200 15% 85%;        
-  --ring: 42 76% 59%;          
 }
 
 /* базовая типографика */
@@ -431,44 +393,12 @@ html, body {
   
 /* === MIXER DESK STYLES === */
 
-/* Theme Toggle Button */
-.theme-toggle-button {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 50;
-  @apply w-12 h-12 rounded-full cursor-pointer knob;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.theme-toggle-button:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
-}
-
-.theme-toggle-icon {
-  color: hsl(var(--panel-ink));
-  transition: all 0.3s ease;
-}
-
 /* Page background with desk texture */
 .mixer-desk-bg {
   background: 
     radial-gradient(circle at 20% 80%, hsla(210, 15%, 8%, 0.1) 0%, transparent 60%),
     radial-gradient(circle at 80% 20%, hsla(210, 15%, 8%, 0.1) 0%, transparent 60%),
     linear-gradient(135deg, hsl(210, 15%, 8%) 0%, hsl(215, 20%, 12%) 100%);
-  background-size: 400px 400px, 600px 600px, 100% 100%;
-}
-
-/* Light theme background */
-.light .mixer-desk-bg {
-  background: 
-    radial-gradient(circle at 20% 80%, hsla(210, 15%, 92%, 0.1) 0%, transparent 60%),
-    radial-gradient(circle at 80% 20%, hsla(210, 15%, 92%, 0.1) 0%, transparent 60%),
-    linear-gradient(135deg, hsl(210, 15%, 92%) 0%, hsl(215, 20%, 88%) 100%);
   background-size: 400px 400px, 600px 600px, 100% 100%;
 }
 
@@ -497,30 +427,6 @@ html, body {
     inset 0 1px 0 rgba(255,255,255,.06),
     inset 0 -1px 0 rgba(0,0,0,.4),
     inset 0 6px 18px rgba(255,255,255,.06);
-}
-
-/* Light theme chassis */
-.light .mixer-chassis {
-  background: 
-    /* Выпуклость центра для светлой темы */
-    radial-gradient(120% 90% at 50% -10%, rgba(0,0,0,.08), transparent 55%),
-    /* Noise texture светлый */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg stroke='%23475569' stroke-width='0.3' opacity='0.1'%3E%3Cpath d='M10,20 L190,25 M15,40 L185,45 M8,60 L192,58 M12,80 L188,82 M5,100 L195,102 M20,120 L180,125 M25,140 L175,138 M18,160 L182,162 M22,180 L178,185'/%3E%3Cpath d='M30,10 L35,190 M50,8 L55,192 M70,15 L75,185 M90,5 L95,195 M110,12 L115,188 M130,18 L135,182 M150,8 L155,192 M170,15 L175,185'/%3E%3C/g%3E%3C/svg%3E"),
-    /* Патина/сетка светлая */
-    repeating-linear-gradient(45deg, rgba(0,0,0,.03) 0 1px, transparent 1px 20px),
-    repeating-linear-gradient(-45deg, rgba(0,0,0,.03) 0 1px, transparent 1px 20px),
-    /* Базовый градиент светлый */
-    linear-gradient(180deg, #e8ecf0 0%, #dce3e8 45%, #d1dae0 100%);
-  
-  border: 4px solid hsl(210, 15%, 65%);
-  box-shadow: 
-    /* Внешние тени для объёма */
-    0 28px 60px rgba(0,0,0,.25), 
-    0 8px 24px rgba(0,0,0,.15),
-    /* Внутренние подсветки для фаски */
-    inset 0 1px 0 rgba(255,255,255,.8),
-    inset 0 -1px 0 rgba(0,0,0,.1),
-    inset 0 6px 18px rgba(255,255,255,.3);
 }
 
 /* Corner screws */
@@ -559,17 +465,6 @@ html, body {
     0 14px 32px rgba(0,0,0,.35), 
     0 4px 10px rgba(0,0,0,.3), 
     inset 0 1px 0 rgba(255,255,255,.05);
-}
-
-/* Light theme panel */
-.light .mixer-panel {
-  background: 
-    linear-gradient(145deg, #f5f7fa 0%, #e8ecf0 100%);
-  border: 1px solid rgba(230,166,72,.5);
-  box-shadow: 
-    0 14px 32px rgba(0,0,0,.15), 
-    0 4px 10px rgba(0,0,0,.1), 
-    inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 /* Hero Title Wrapper */
@@ -1841,3 +1736,88 @@ html, body {
 }
 
 /* End of @layer components */
+
+/* ===== FRAME TEXTURE SYSTEM ===== */
+
+/* Apply texture to main chassis frame */
+.mixer-chassis {
+  position: relative;
+}
+
+.mixer-chassis::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--frame-texture) center/cover no-repeat;
+  background-position: 50% 38%;
+  background-size: 120% auto;
+  mix-blend-mode: var(--fx-blend);
+  filter: grayscale(1) brightness(var(--fx-bright)) contrast(var(--fx-contrast)) saturate(var(--fx-sat));
+  opacity: var(--fx-opacity);
+  z-index: 0;
+}
+
+/* Ensure content stays above texture */
+.mixer-chassis > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Optional anti-gradient for edge softening */
+.mixer-chassis::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.18), transparent 30%);
+  z-index: 0;
+}
+
+/* ===== TEXTURE THEMES ===== */
+
+/* Silver (default) - cold metal */
+.theme-silver {
+  --fx-blend: overlay;
+  --fx-opacity: 0.22;
+  --fx-bright: 1.0;
+  --fx-contrast: 1.2;
+  --fx-sat: 0.4;
+}
+
+/* Gunmetal (dark graphite) */
+.theme-gunmetal {
+  --fx-blend: soft-light;
+  --fx-opacity: 0.2;
+  --fx-bright: 0.92;
+  --fx-contrast: 1.25;
+  --fx-sat: 0.3;
+}
+
+/* Champagne (warm light metal) */
+.theme-champagne {
+  --fx-blend: overlay;
+  --fx-opacity: 0.24;
+  --fx-bright: 1.05;
+  --fx-contrast: 1.1;
+  --fx-sat: 0.75;
+}
+
+/* Azure steel (slight blue reflections) */
+.theme-azuresteel {
+  --fx-blend: screen;
+  --fx-opacity: 0.18;
+  --fx-bright: 1.08;
+  --fx-contrast: 1.1;
+  --fx-sat: 0.9;
+}
+
+/* Mobile adaptations */
+@media (max-width: 480px) {
+  .mixer-chassis::before {
+    opacity: calc(var(--fx-opacity) * 0.8);
+    background-size: 160% auto;
+  }
+}

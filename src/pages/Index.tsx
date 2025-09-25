@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -402,9 +401,6 @@ const Index = () => {
     showEmailOverlayWithProgress();
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
-      {/* Theme Toggle */}
-      <ThemeToggle />
-      
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
