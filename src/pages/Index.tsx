@@ -130,6 +130,7 @@ interface FormData {
   title_need: boolean;
   language: 'ru' | 'en';
   email: string;
+  illustration_style: string;
   // Heroes 1-4
   hero1_name: string;
   hero1_age: number;
@@ -197,6 +198,7 @@ const Index = () => {
     title_need: false,
     language: 'ru',
     email: '',
+    illustration_style: 'Ink drawing',
     hero1_name: '',
     hero1_age: 0,
     hero1_job: '',
@@ -355,6 +357,7 @@ const Index = () => {
       title_need: formData.title_need,
       language: formData.language,
       email: formData.email.toLowerCase(),
+      illustration_style: formData.illustration_style,
       hero1_name: formData.hero1_name,
       hero1_age: formData.hero1_age,
       hero1_job: formData.hero1_job,
@@ -416,6 +419,7 @@ const Index = () => {
             title_need: false,
             language: 'ru',
             email: '',
+            illustration_style: 'Ink drawing',
             hero1_name: '',
             hero1_age: 0,
             hero1_job: '',
@@ -687,6 +691,33 @@ const Index = () => {
                   ...prev,
                   artifact: e.target.value
                 }))} placeholder="личный предмет или знакомое событие..." />
+                </div>
+                
+                {/* Illustration Style */}
+                <div>
+                  <label className="mixer-control-label">
+                    Стиль иллюстраций
+                  </label>
+                  <select 
+                    className="mixer-select" 
+                    value={formData.illustration_style}
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      illustration_style: e.target.value
+                    }))}
+                  >
+                    <option value="Ink drawing">Ink drawing (чёрные чернила, штриховка)</option>
+                    <option value="Восточноазиатская ксилография">Восточноазиатская ксилография (ukiyo-e)</option>
+                    <option value="Супрематизм">Супрематизм (геометрическая абстракция)</option>
+                    <option value="Наивное искусство">Наивное искусство</option>
+                    <option value="Акварельная иллюстрация">Акварельная иллюстрация</option>
+                    <option value="Психоделическая графика 60-х">Психоделическая графика 60-х</option>
+                    <option value="Арт-нуво">Арт-нуво (модерн)</option>
+                    <option value="Аниме">Аниме (Studio Ghibli)</option>
+                  </select>
+                  <p className="mixer-hint">
+                    Выбери художественную манеру, в которой будут рисоваться все картинки сказки.
+                  </p>
                 </div>
               </div>
             </div>
