@@ -179,14 +179,25 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'ink': 'pen & ink line art, cross-hatching, high contrast, no color fill, clean outlines',
-  'woodblock': 'traditional woodblock print, flat color planes, limited palette, woodgrain texture, strong contour lines',
-  'suprematism': 'abstract geometry, simple shapes, strong diagonals, flat primary colors, no shading',
-  'naive': 'childlike proportions, flat perspective, bold simple shapes, decorative folk patterns',
-  'watercolor': 'soft washes, paper texture, wet-on-wet edges, translucent layers, gentle gradients',
-  'psychedelic60s': 'trippy poster art, swirling patterns, high saturation, optical vibrations, bold outlines',
+  'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill',
+  'woodblock': 'Chinese red woodblock print: monochrome vermilion ink, flat carved planes, bold calligraphic contours, paper/woodgrain texture, seal marks',
+  'suprematism': 'suprematist poster look: strong diagonals, flat primary color planes, simple geometric accents; figurative silhouettes stay readable, no full abstraction, no shading',
+  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative patterns; in the manner of Niko Pirosmani',
+  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients',
+  'psychedelic60s': 'trippy poster art, swirling patterns, optical vibrations, high saturation, bold outlines',
   'artnouveau': 'ornamental flowing lines, floral motifs, elegant curves, poster-like composition',
-  'anime': 'cinematic anime still, expressive faces, clean cel shading, soft painted backgrounds'
+  'anime': 'anime (Studio Ghibli): cinematic still, expressive faces, clean cel-shading, soft painted backgrounds'
+};
+
+const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
+  'ink': 'Перо и тушь (ink)',
+  'woodblock': 'Ксилография (китайская красная)',
+  'suprematism': 'Супрематизм (читабельно)',
+  'naive': 'Наив (Пиросмани)',
+  'watercolor': 'Акварель',
+  'psychedelic60s': 'Психодел 60-х',
+  'artnouveau': 'Арт-нуво (модерн)',
+  'anime': 'Аниме (Studio Ghibli)'
 };
 
 const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
@@ -693,7 +704,10 @@ const Index = () => {
               <label className="mixer-control-label">
                 Стиль иллюстрации
               </label>
-              <div className="grid grid-cols-4 gap-2">
+              <p className="mixer-hint mb-3">
+                Стиль иллюстраций книги
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 {ILLUSTRATION_STYLE_KEYS.map((styleKey) => (
                   <button
                     key={styleKey}
@@ -709,7 +723,7 @@ const Index = () => {
                       illustration_style_prompt: ILLUSTRATION_STYLES[styleKey]
                     }))}
                   >
-                    {styleKey}
+                    {ILLUSTRATION_STYLE_LABELS[styleKey]}
                   </button>
                 ))}
               </div>
