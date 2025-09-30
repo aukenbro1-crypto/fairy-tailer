@@ -736,7 +736,7 @@ const Index = () => {
                 {/* Illustration Style */}
                 <div>
                   <label className="mixer-control-label">
-                    Illustration style (default: Ink)
+                    Стиль иллюстраций
                   </label>
                   <select 
                     className="mixer-select" 
