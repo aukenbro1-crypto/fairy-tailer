@@ -179,8 +179,8 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
+  'chinese_woodcut': 'Chinese red woodblock print: monochrome vermilion ink, flat carved planes, bold calligraphic contours, paper/woodgrain texture, seal marks',
   'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill',
-  'woodblock': 'Chinese red woodblock print: monochrome vermilion ink, flat carved planes, bold calligraphic contours, paper/woodgrain texture, seal marks',
   'suprematism': 'suprematist poster look: strong diagonals, flat primary color planes, simple geometric accents; figurative silhouettes stay readable, no full abstraction, no shading',
   'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative patterns; in the manner of Niko Pirosmani',
   'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients',
@@ -190,17 +190,132 @@ const ILLUSTRATION_STYLES: Record<string, string> = {
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
-  'ink': 'Перо и тушь (ink)',
-  'woodblock': 'Ксилография (китайская красная)',
-  'suprematism': 'Супрематизм (читабельно)',
-  'naive': 'Наив (Пиросмани)',
-  'watercolor': 'Акварель',
-  'psychedelic60s': 'Психодел 60-х',
-  'artnouveau': 'Арт-нуво (модерн)',
-  'anime': 'Аниме (Studio Ghibli)'
+  'chinese_woodcut': 'chinese woodcut',
+  'ink': 'ink',
+  'suprematism': 'suprematism',
+  'naive': 'naive',
+  'watercolor': 'watercolor',
+  'psychedelic60s': 'psychedelic60s',
+  'artnouveau': 'artnouveau',
+  'anime': 'anime'
+};
+
+// Pixel art sprites as inline SVG data URIs
+const STYLE_SPRITES: Record<string, string> = {
+  'chinese_woodcut': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="2" y="6" width="2" height="8"/><rect fill="#f0c55a" x="4" y="5" width="2" height="9"/><rect fill="#f0c55a" x="6" y="4" width="2" height="10"/><rect fill="#f0c55a" x="8" y="5" width="2" height="9"/><rect fill="#f0c55a" x="10" y="7" width="2" height="7"/><rect fill="#f0c55a" x="12" y="9" width="2" height="5"/></svg>')}`,
+  'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="4" width="4" height="2"/><rect fill="#f0c55a" x="7" y="6" width="2" height="4"/><rect fill="#f0c55a" x="6" y="10" width="4" height="2"/><rect fill="#f0c55a" x="5" y="12" width="6" height="2"/></svg>')}`,
+  'suprematism': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="3" width="6" height="6"/><rect fill="#f0c55a" x="11" y="3" width="2" height="10"/><rect fill="#f0c55a" x="5" y="11" width="6" height="2"/></svg>')}`,
+  'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
+  'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="2"/><rect fill="#f0c55a" x="2" y="8" width="11" height="2"/><rect fill="#f0c55a" x="4" y="10" width="8" height="2"/></svg>')}`,
+  'psychedelic60s': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="5" y="4" width="2" height="2"/><rect fill="#f0c55a" x="9" y="4" width="2" height="2"/><rect fill="#f0c55a" x="3" y="6" width="2" height="2"/><rect fill="#f0c55a" x="11" y="6" width="2" height="2"/><rect fill="#f0c55a" x="4" y="8" width="8" height="2"/><rect fill="#f0c55a" x="5" y="10" width="6" height="2"/><rect fill="#f0c55a" x="7" y="12" width="2" height="2"/></svg>')}`,
+  'artnouveau': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="4" width="2" height="2"/><rect fill="#f0c55a" x="5" y="6" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="8" width="2" height="2"/><rect fill="#f0c55a" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="9" y="6" width="2" height="2"/><rect fill="#f0c55a" x="10" y="8" width="2" height="2"/><rect fill="#f0c55a" x="9" y="10" width="2" height="2"/></svg>')}`,
+  'anime': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="4" width="8" height="8"/><rect fill="#f0c55a" x="3" y="5" width="1" height="6"/><rect fill="#f0c55a" x="12" y="5" width="1" height="6"/><rect fill="#f0c55a" x="6" y="7" width="2" height="3"/><rect fill="#f0c55a" x="6" y="6" width="2" height="1"/></svg>')}`
 };
 
 const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
+
+// 8-bit Style Picker Component
+interface StylePicker8BitProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) => {
+  const [focusedIndex, setFocusedIndex] = React.useState(0);
+
+  const handleItemClick = (styleKey: string) => {
+    onChange(styleKey);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const cols = window.innerWidth < 768 ? 2 : 4;
+    const rows = Math.ceil(ILLUSTRATION_STYLE_KEYS.length / cols);
+    let newIndex = index;
+
+    switch(e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        newIndex = index > 0 ? index - 1 : ILLUSTRATION_STYLE_KEYS.length - 1;
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        newIndex = index < ILLUSTRATION_STYLE_KEYS.length - 1 ? index + 1 : 0;
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        newIndex = index - cols;
+        if (newIndex < 0) newIndex = index + (rows - 1) * cols;
+        if (newIndex >= ILLUSTRATION_STYLE_KEYS.length) newIndex = ILLUSTRATION_STYLE_KEYS.length - 1;
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        newIndex = index + cols;
+        if (newIndex >= ILLUSTRATION_STYLE_KEYS.length) newIndex = index % cols;
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        onChange(ILLUSTRATION_STYLE_KEYS[index]);
+        return;
+    }
+
+    setFocusedIndex(newIndex);
+    const element = document.querySelector(`[data-style-index="${newIndex}"]`) as HTMLElement;
+    element?.focus();
+  };
+
+  return (
+    <section className="style-picker-8bit">
+      {/* Preview Screen */}
+      <div className="sp-screen">
+        <div className="sp-scanlines" aria-hidden="true"></div>
+        <div className="sp-preview">
+          <div 
+            className="sp-sprite" 
+            style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
+            aria-hidden="true"
+          ></div>
+          <div className="sp-label" aria-live="polite">
+            {ILLUSTRATION_STYLE_LABELS[value]}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of Style Cards */}
+      <ul className="sp-grid" role="listbox" aria-label="Illustration style">
+        {ILLUSTRATION_STYLE_KEYS.map((styleKey, index) => (
+          <li
+            key={styleKey}
+            className="sp-item"
+            role="option"
+            aria-selected={value === styleKey}
+            data-style-index={index}
+            data-value={styleKey}
+            data-label={ILLUSTRATION_STYLE_LABELS[styleKey]}
+            tabIndex={value === styleKey ? 0 : -1}
+            onClick={() => handleItemClick(styleKey)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+          >
+            <div 
+              className="sp-item-sprite" 
+              style={{ backgroundImage: `url("${STYLE_SPRITES[styleKey]}")` }}
+              aria-hidden="true"
+            ></div>
+            <span className="sr-only">{ILLUSTRATION_STYLE_LABELS[styleKey]}</span>
+          </li>
+        ))}
+      </ul>
+
+      <input 
+        type="hidden" 
+        name="illustration_style" 
+        id="styleValue" 
+        value={value}
+      />
+    </section>
+  );
+};
+
 const Index = () => {
   const {
     toast
@@ -699,34 +814,19 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Illustration Style */}
+            {/* 8-bit Style Picker */}
             <div className="mixer-control-section">
               <label className="mixer-control-label">
                 Стиль иллюстрации
               </label>
-              <p className="mixer-hint mb-3">
-                Стиль иллюстраций книги
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {ILLUSTRATION_STYLE_KEYS.map((styleKey) => (
-                  <button
-                    key={styleKey}
-                    type="button"
-                    className={`px-3 py-2 text-sm rounded border transition-all ${
-                      formData.illustration_style === styleKey
-                        ? 'border-[#63d2ff] bg-[#63d2ff]/10 text-[#63d2ff]'
-                        : 'border-[#1b2d3a] bg-[#0d1519] text-[#9cb3c3] hover:border-[#2a4557] hover:bg-[#111a22]'
-                    }`}
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      illustration_style: styleKey,
-                      illustration_style_prompt: ILLUSTRATION_STYLES[styleKey]
-                    }))}
-                  >
-                    {ILLUSTRATION_STYLE_LABELS[styleKey]}
-                  </button>
-                ))}
-              </div>
+              <StylePicker8Bit
+                value={formData.illustration_style}
+                onChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  illustration_style: value,
+                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
+                }))}
+              />
             </div>
 
             {/* Location & Artifact */}

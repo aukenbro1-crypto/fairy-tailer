@@ -1821,3 +1821,226 @@ html, body {
     background-size: 160% auto;
   }
 }
+
+/* === 8-BIT STYLE PICKER === */
+
+.style-picker-8bit {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 0;
+}
+
+/* CRT Screen Preview */
+.sp-screen {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  height: 160px;
+  background: 
+    radial-gradient(ellipse at center, #0f1419 0%, #060a0e 100%);
+  border: 3px solid hsl(210, 15%, 20%);
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 2px 8px rgba(0,0,0,.8),
+    inset 0 -2px 4px rgba(255,255,255,.05),
+    0 0 20px rgba(240,197,90,.15),
+    0 8px 24px rgba(0,0,0,.5);
+  overflow: hidden;
+}
+
+.sp-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,.4) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Scanlines overlay */
+.sp-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, .15) 0px,
+    transparent 1px,
+    transparent 2px,
+    rgba(0, 0, 0, .15) 3px
+  );
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.08;
+}
+
+/* Preview content */
+.sp-preview {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.sp-sprite {
+  width: 128px;
+  height: 96px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 0 8px rgba(240,197,90,.35));
+}
+
+.sp-label {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0c55a;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  text-shadow: 
+    0 0 8px rgba(240,197,90,.6),
+    0 2px 0 rgba(0,0,0,.5);
+}
+
+/* Grid of style cards */
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.sp-item {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: 
+    radial-gradient(ellipse at center, #0f1419 0%, #060a0e 100%);
+  border: 2px solid hsl(210, 15%, 20%);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    inset 0 1px 4px rgba(0,0,0,.6),
+    0 4px 12px rgba(0,0,0,.4);
+}
+
+.sp-item:hover {
+  border-color: rgba(240,197,90,.4);
+  box-shadow: 
+    inset 0 1px 4px rgba(0,0,0,.6),
+    0 0 12px rgba(240,197,90,.2),
+    0 4px 12px rgba(0,0,0,.4);
+  transform: translateY(-2px);
+}
+
+.sp-item:focus {
+  outline: none;
+  border-color: rgba(240,197,90,.6);
+  box-shadow: 
+    inset 0 1px 4px rgba(0,0,0,.6),
+    0 0 16px rgba(240,197,90,.4),
+    0 4px 12px rgba(0,0,0,.4);
+}
+
+.sp-item[aria-selected="true"] {
+  border-color: #f0c55a;
+  background: 
+    radial-gradient(ellipse at center, rgba(240,197,90,.08) 0%, #0f1419 100%);
+  box-shadow: 
+    inset 0 1px 4px rgba(0,0,0,.6),
+    0 0 20px rgba(240,197,90,.4),
+    0 0 40px rgba(240,197,90,.2),
+    0 4px 16px rgba(0,0,0,.5);
+}
+
+.sp-item-sprite {
+  width: 48px;
+  height: 36px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.sp-item:hover .sp-item-sprite,
+.sp-item[aria-selected="true"] .sp-item-sprite {
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(240,197,90,.4));
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sp-item,
+  .sp-item-sprite,
+  .sp-sprite {
+    transition: none;
+    animation: none;
+  }
+  
+  .sp-item:hover {
+    transform: none;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .sp-screen {
+    max-width: 240px;
+    height: 140px;
+  }
+  
+  .sp-sprite {
+    width: 96px;
+    height: 72px;
+  }
+  
+  .sp-label {
+    font-size: 12px;
+  }
+  
+  .sp-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .sp-item {
+    min-height: 60px;
+  }
+  
+  .sp-item-sprite {
+    width: 40px;
+    height: 30px;
+  }
+}
