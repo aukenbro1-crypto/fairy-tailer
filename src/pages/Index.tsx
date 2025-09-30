@@ -130,6 +130,8 @@ interface FormData {
   title_need: boolean;
   language: 'ru' | 'en';
   email: string;
+  illustration_style: string;
+  illustration_style_prompt: string;
   // Heroes 1-4
   hero1_name: string;
   hero1_age: number;
@@ -175,6 +177,19 @@ const ENDING_LABELS = {
   sad: 'Грустный',
   twist: 'Неожиданный'
 };
+
+const ILLUSTRATION_STYLES: Record<string, string> = {
+  'ink': 'pen & ink line art, cross-hatching, high contrast, no color fill, clean outlines',
+  'woodblock': 'traditional woodblock print, flat color planes, limited palette, woodgrain texture, strong contour lines',
+  'suprematism': 'abstract geometry, simple shapes, strong diagonals, flat primary colors, no shading',
+  'naive': 'childlike proportions, flat perspective, bold simple shapes, decorative folk patterns',
+  'watercolor': 'soft washes, paper texture, wet-on-wet edges, translucent layers, gentle gradients',
+  'psychedelic60s': 'trippy poster art, swirling patterns, high saturation, optical vibrations, bold outlines',
+  'artnouveau': 'ornamental flowing lines, floral motifs, elegant curves, poster-like composition',
+  'anime': 'cinematic anime still, expressive faces, clean cel shading, soft painted backgrounds'
+};
+
+const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
 const Index = () => {
   const {
     toast
@@ -197,6 +212,8 @@ const Index = () => {
     title_need: false,
     language: 'ru',
     email: '',
+    illustration_style: 'ink',
+    illustration_style_prompt: ILLUSTRATION_STYLES['ink'],
     hero1_name: '',
     hero1_age: 0,
     hero1_job: '',
@@ -355,6 +372,8 @@ const Index = () => {
       title_need: formData.title_need,
       language: formData.language,
       email: formData.email.toLowerCase(),
+      illustration_style: formData.illustration_style,
+      illustration_style_prompt: formData.illustration_style_prompt,
       hero1_name: formData.hero1_name,
       hero1_age: formData.hero1_age,
       hero1_job: formData.hero1_job,
@@ -416,6 +435,8 @@ const Index = () => {
             title_need: false,
             language: 'ru',
             email: '',
+            illustration_style: 'ink',
+            illustration_style_prompt: ILLUSTRATION_STYLES['ink'],
             hero1_name: '',
             hero1_age: 0,
             hero1_job: '',
@@ -664,6 +685,33 @@ const Index = () => {
                     Мы вышлем PDF на этот адрес.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Illustration Style */}
+            <div className="mixer-control-section">
+              <label className="mixer-control-label">
+                Стиль иллюстрации
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {ILLUSTRATION_STYLE_KEYS.map((styleKey) => (
+                  <button
+                    key={styleKey}
+                    type="button"
+                    className={`px-3 py-2 text-sm rounded border transition-all ${
+                      formData.illustration_style === styleKey
+                        ? 'border-[#63d2ff] bg-[#63d2ff]/10 text-[#63d2ff]'
+                        : 'border-[#1b2d3a] bg-[#0d1519] text-[#9cb3c3] hover:border-[#2a4557] hover:bg-[#111a22]'
+                    }`}
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      illustration_style: styleKey,
+                      illustration_style_prompt: ILLUSTRATION_STYLES[styleKey]
+                    }))}
+                  >
+                    {styleKey}
+                  </button>
+                ))}
               </div>
             </div>
 
