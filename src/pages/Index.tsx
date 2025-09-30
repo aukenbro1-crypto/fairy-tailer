@@ -203,7 +203,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 // Pixel art sprites as inline SVG data URIs
 const STYLE_SPRITES: Record<string, string> = {
   'chinese_woodcut': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="2" y="6" width="2" height="8"/><rect fill="#f0c55a" x="4" y="5" width="2" height="9"/><rect fill="#f0c55a" x="6" y="4" width="2" height="10"/><rect fill="#f0c55a" x="8" y="5" width="2" height="9"/><rect fill="#f0c55a" x="10" y="7" width="2" height="7"/><rect fill="#f0c55a" x="12" y="9" width="2" height="5"/></svg>')}`,
-  'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="4" width="4" height="2"/><rect fill="#f0c55a" x="7" y="6" width="2" height="4"/><rect fill="#f0c55a" x="6" y="10" width="4" height="2"/><rect fill="#f0c55a" x="5" y="12" width="6" height="2"/></svg>')}`,
+  'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="7" y="4" width="2" height="2"/><rect fill="#f0c55a" x="6" y="6" width="4" height="2"/><rect fill="#f0c55a" x="7" y="8" width="2" height="4"/><rect fill="#f0c55a" x="5" y="12" width="6" height="2"/><rect fill="#f0c55a" x="4" y="14" width="8" height="1"/></svg>')}`,
   'suprematism': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="3" width="6" height="6"/><rect fill="#f0c55a" x="11" y="3" width="2" height="10"/><rect fill="#f0c55a" x="5" y="11" width="6" height="2"/></svg>')}`,
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="2"/><rect fill="#f0c55a" x="2" y="8" width="11" height="2"/><rect fill="#f0c55a" x="4" y="10" width="8" height="2"/></svg>')}`,
@@ -221,90 +221,70 @@ interface StylePicker8BitProps {
 }
 
 const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) => {
-  const [focusedIndex, setFocusedIndex] = React.useState(0);
+  const currentIndex = ILLUSTRATION_STYLE_KEYS.indexOf(value);
 
-  const handleItemClick = (styleKey: string) => {
-    onChange(styleKey);
+  const handlePrevious = () => {
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : ILLUSTRATION_STYLE_KEYS.length - 1;
+    onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    const cols = window.innerWidth < 768 ? 2 : 4;
-    const rows = Math.ceil(ILLUSTRATION_STYLE_KEYS.length / cols);
-    let newIndex = index;
+  const handleNext = () => {
+    const newIndex = currentIndex < ILLUSTRATION_STYLE_KEYS.length - 1 ? currentIndex + 1 : 0;
+    onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
+  };
 
-    switch(e.key) {
-      case 'ArrowLeft':
-        e.preventDefault();
-        newIndex = index > 0 ? index - 1 : ILLUSTRATION_STYLE_KEYS.length - 1;
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        newIndex = index < ILLUSTRATION_STYLE_KEYS.length - 1 ? index + 1 : 0;
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        newIndex = index - cols;
-        if (newIndex < 0) newIndex = index + (rows - 1) * cols;
-        if (newIndex >= ILLUSTRATION_STYLE_KEYS.length) newIndex = ILLUSTRATION_STYLE_KEYS.length - 1;
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        newIndex = index + cols;
-        if (newIndex >= ILLUSTRATION_STYLE_KEYS.length) newIndex = index % cols;
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        onChange(ILLUSTRATION_STYLE_KEYS[index]);
-        return;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      handlePrevious();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      handleNext();
     }
-
-    setFocusedIndex(newIndex);
-    const element = document.querySelector(`[data-style-index="${newIndex}"]`) as HTMLElement;
-    element?.focus();
   };
 
   return (
-    <section className="style-picker-8bit">
-      {/* Preview Screen */}
-      <div className="sp-screen">
-        <div className="sp-scanlines" aria-hidden="true"></div>
-        <div className="sp-preview">
-          <div 
-            className="sp-sprite" 
-            style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
-            aria-hidden="true"
-          ></div>
-          <div className="sp-label" aria-live="polite">
-            {ILLUSTRATION_STYLE_LABELS[value]}
-          </div>
-        </div>
-      </div>
+    <section className="style-picker-8bit" onKeyDown={handleKeyDown}>
+      <div className="sp-controls">
+        {/* Previous Arrow */}
+        <button
+          type="button"
+          className="sp-arrow sp-arrow-prev"
+          onClick={handlePrevious}
+          aria-label="Previous style"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+          </svg>
+        </button>
 
-      {/* Grid of Style Cards */}
-      <ul className="sp-grid" role="listbox" aria-label="Illustration style">
-        {ILLUSTRATION_STYLE_KEYS.map((styleKey, index) => (
-          <li
-            key={styleKey}
-            className="sp-item"
-            role="option"
-            aria-selected={value === styleKey}
-            data-style-index={index}
-            data-value={styleKey}
-            data-label={ILLUSTRATION_STYLE_LABELS[styleKey]}
-            tabIndex={value === styleKey ? 0 : -1}
-            onClick={() => handleItemClick(styleKey)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-          >
+        {/* Preview Screen */}
+        <div className="sp-screen" tabIndex={0} role="img" aria-label={`Current style: ${ILLUSTRATION_STYLE_LABELS[value]}`}>
+          <div className="sp-scanlines" aria-hidden="true"></div>
+          <div className="sp-preview">
             <div 
-              className="sp-item-sprite" 
-              style={{ backgroundImage: `url("${STYLE_SPRITES[styleKey]}")` }}
+              className="sp-sprite" 
+              style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
               aria-hidden="true"
             ></div>
-            <span className="sr-only">{ILLUSTRATION_STYLE_LABELS[styleKey]}</span>
-          </li>
-        ))}
-      </ul>
+            <div className="sp-label" aria-live="polite">
+              {ILLUSTRATION_STYLE_LABELS[value]}
+            </div>
+          </div>
+        </div>
+
+        {/* Next Arrow */}
+        <button
+          type="button"
+          className="sp-arrow sp-arrow-next"
+          onClick={handleNext}
+          aria-label="Next style"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+          </svg>
+        </button>
+      </div>
 
       <input 
         type="hidden" 
