@@ -130,8 +130,6 @@ interface FormData {
   title_need: boolean;
   language: 'ru' | 'en';
   email: string;
-  illustration_style_key: string;
-  illustration_style_prompt: string;
   // Heroes 1-4
   hero1_name: string;
   hero1_age: number;
@@ -177,42 +175,6 @@ const ENDING_LABELS = {
   sad: 'Грустный',
   twist: 'Неожиданный'
 };
-
-// Illustration style mapping
-const ILLUSTRATION_STYLES: Record<string, { label: string; prompt: string }> = {
-  ink: {
-    label: 'pen & ink line art; cross-hatching, high contrast, clean outlines',
-    prompt: 'pen & ink line art, cross-hatching, high contrast, no color fill, clean outlines'
-  },
-  woodblock: {
-    label: 'traditional woodblock print; flat color planes, limited palette, woodgrain, strong contours',
-    prompt: 'traditional woodblock print, flat color planes, limited palette, woodgrain texture, strong contour lines'
-  },
-  suprematism: {
-    label: 'abstract geometry; simple shapes, strong diagonals, flat primary colors, no shading',
-    prompt: 'abstract geometry, simple shapes, strong diagonals, flat primary colors, no shading'
-  },
-  naive: {
-    label: 'childlike proportions; flat perspective, bold simple shapes, decorative folk patterns',
-    prompt: 'childlike proportions, flat perspective, bold simple shapes, decorative folk patterns'
-  },
-  watercolor: {
-    label: 'soft washes; paper texture, wet-on-wet edges, translucent layers, gentle gradients',
-    prompt: 'soft washes, paper texture, wet-on-wet edges, translucent layers, gentle gradients'
-  },
-  psychedelic60s: {
-    label: 'trippy poster art; swirling patterns, high saturation, optical vibrations, bold outlines',
-    prompt: 'trippy poster art, swirling patterns, high saturation, optical vibrations, bold outlines'
-  },
-  artnouveau: {
-    label: 'ornamental flowing lines; floral motifs, elegant curves, poster-like composition',
-    prompt: 'ornamental flowing lines, floral motifs, elegant curves, poster-like composition'
-  },
-  anime: {
-    label: 'cinematic anime still; expressive faces, clean cel shading, soft painted backgrounds',
-    prompt: 'cinematic anime still, expressive faces, clean cel shading, soft painted backgrounds'
-  }
-};
 const Index = () => {
   const {
     toast
@@ -235,8 +197,6 @@ const Index = () => {
     title_need: false,
     language: 'ru',
     email: '',
-    illustration_style_key: 'ink',
-    illustration_style_prompt: ILLUSTRATION_STYLES.ink.prompt,
     hero1_name: '',
     hero1_age: 0,
     hero1_job: '',
@@ -395,8 +355,6 @@ const Index = () => {
       title_need: formData.title_need,
       language: formData.language,
       email: formData.email.toLowerCase(),
-      illustration_style_key: formData.illustration_style_key,
-      illustration_style_prompt: formData.illustration_style_prompt,
       hero1_name: formData.hero1_name,
       hero1_age: formData.hero1_age,
       hero1_job: formData.hero1_job,
@@ -458,8 +416,6 @@ const Index = () => {
             title_need: false,
             language: 'ru',
             email: '',
-            illustration_style_key: 'ink',
-            illustration_style_prompt: ILLUSTRATION_STYLES.ink.prompt,
             hero1_name: '',
             hero1_age: 0,
             hero1_job: '',
@@ -731,32 +687,6 @@ const Index = () => {
                   ...prev,
                   artifact: e.target.value
                 }))} placeholder="личный предмет или знакомое событие..." />
-                </div>
-                
-                {/* Illustration Style */}
-                <div>
-                  <label className="mixer-control-label">
-                    Стиль иллюстраций
-                  </label>
-                  <select 
-                    className="mixer-select" 
-                    value={formData.illustration_style_key}
-                    onChange={e => {
-                      const key = e.target.value;
-                      const style = ILLUSTRATION_STYLES[key];
-                      setFormData(prev => ({
-                        ...prev,
-                        illustration_style_key: key,
-                        illustration_style_prompt: style.prompt
-                      }));
-                    }}
-                  >
-                    {Object.entries(ILLUSTRATION_STYLES).map(([key, { label }]) => (
-                      <option key={key} value={key}>
-                        {key} — {label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
             </div>
