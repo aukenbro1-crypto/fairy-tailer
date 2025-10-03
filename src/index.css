@@ -43,6 +43,18 @@
   /* системный акцент для нативных контролов */
   --accent: 42 76% 59%;       /* #e6a648 */
 
+  /* Book-Console Colors */
+  --leather-hi: 23 43% 33%;   /* #6b4c39 */
+  --leather-mid: 23 35% 24%;  /* #4b362c */
+  --leather-lo: 23 25% 16%;   /* #2f231e */
+  --copper-hi: 67 25% 56%;    /* #9aa37a */
+  --copper-lo: 80 18% 26%;    /* #3c4a38 */
+  --steel-hi: 195 22% 67%;    /* #a0b3b8 */
+  --steel-lo: 195 20% 28%;    /* #384b51 */
+  --glass-hi: 97 69% 73%;     /* #b0df98 */
+  --glass-mid: 97 28% 48%;    /* #6a8f68 */
+  --glass-lo: 97 28% 18%;     /* #233628 */
+
   /* Mapped to existing system */
   --background: 205 50% 7%;   /* #0e1a22 */
   --foreground: 195 26% 90%;  /* --panel-ink */

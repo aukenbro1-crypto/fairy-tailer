@@ -305,6 +305,7 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: TONE_PRESETS[0],
@@ -525,10 +526,66 @@ const Index = () => {
     setShowLoader(false);
     showEmailOverlayWithProgress();
   };
+  // Page navigation
+  const totalPages = 4;
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
+  };
+  const handleNextPage = () => {
+    setCurrentPage((prev) => (prev + 1) % totalPages);
+  };
+  const handleOkButton = () => {
+    const currentPageElement = document.querySelector(`.page[data-page="${currentPage}"]`);
+    if (currentPageElement) {
+      const firstInput = currentPageElement.querySelector<HTMLElement>('input, select, button, [tabindex="0"]');
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handlePrevPage();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleNextPage();
+      } else if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        handleOkButton();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage]);
+
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
-      <div className="max-w-6xl mx-auto mixer-chassis">
-      {/* Header */}
-        <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
+      <div className="max-w-6xl mx-auto">
+      
+      {/* Book Console Shell */}
+      <div className="book-shell">
+        {/* Book Cover/Frame */}
+        <div className="book-cover">
+          <div className="book-border"></div>
+          <div className="book-spine"></div>
+          <div className="book-rivets" aria-hidden="true"></div>
+        </div>
+
+        {/* CRT Screen Area */}
+        <div className="book-screen">
+          <div className="crt-glass">
+            <div className="crt-noise" aria-hidden="true"></div>
+            <div className="crt-scan" aria-hidden="true"></div>
+            
+            {/* CRT Content */}
+            <div className="crt-content">
+              <div className="mixer-chassis">
+              {/* Header */}
+                <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
+                  setCurrentPage(0);
           setFormData({
             genre: '',
             tone: TONE_PRESETS[0],
@@ -677,6 +734,8 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Page 0: Genre, Tone, Ending */}
+        <div className={`page ${currentPage === 0 ? '' : 'hidden'}`} data-page="0">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Column - Controls */}
           <div className="space-y-8">
@@ -774,8 +833,30 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right Column - Story Details */}
+          {/* Right Column - Ending */}
           <div className="space-y-8">
+              <div className="space-y-4">
+                <div>
+                  <label className="mixer-control-label">
+                    Почта (обязательно)
+                  </label>
+                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="name@example.com" autoComplete="email" required />
+                  <p className="mixer-hint">
+                    Мы вышлем PDF на этот адрес.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        {/* Page 1: Email, Style, Location */}
+        <div className={`page ${currentPage === 1 ? '' : 'hidden'}`} data-page="1">
+        <div className="space-y-8">
             {/* Email Field */}
             <div className="mixer-control-section">
               <div className="space-y-4">
@@ -832,7 +913,12 @@ const Index = () => {
                 </div>
               </div>
             </div>
+        </div>
+        </div>
 
+        {/* Page 2: Heroes */}
+        <div className={`page ${currentPage === 2 ? '' : 'hidden'}`} data-page="2">
+        <div className="space-y-8">
             {/* Heroes Section */}
             <div className="mixer-control-section">
               <h3 className="mixer-section-title">Персонажи</h3>
@@ -912,11 +998,13 @@ const Index = () => {
                         </div>
                       </div>}
                   </div>;
-            })}
+             })}
             </div>
-          </div>
+        </div>
         </div>
 
+        {/* Page 3: Submit */}
+        <div className={`page ${currentPage === 3 ? '' : 'hidden'}`} data-page="3">
         {/* Submit Section */}
         <div className="mt-12 text-center mixer-panel">
           <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
@@ -927,6 +1015,51 @@ const Index = () => {
             Время генерации 2–4 мин. PDF придёт на указанную почту.
           </p>
         </div>
+        </div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* Book Controls - Navigation Buttons */}
+          <div className="book-controls" aria-label="controls">
+            <button 
+              className="btn-tri up" 
+              type="button" 
+              aria-label="prev section"
+              onClick={handlePrevPage}
+            ></button>
+            <button 
+              className="btn-round ok" 
+              type="button" 
+              aria-label="select"
+              onClick={handleOkButton}
+            ></button>
+            <button 
+              className="btn-tri down" 
+              type="button" 
+              aria-label="next section"
+              onClick={handleNextPage}
+            ></button>
+          </div>
+
+          {/* Book Pipes Decoration */}
+          <div className="book-pipes" aria-hidden="true">
+            <svg viewBox="0 0 60 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{stopColor: 'hsl(var(--steel-hi))', stopOpacity: 1}} />
+                  <stop offset="50%" style={{stopColor: 'hsl(var(--steel-lo))', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: 'hsl(var(--steel-hi))', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <ellipse cx="30" cy="60" rx="12" ry="18" fill="url(#pipeGrad)" />
+              <rect x="18" y="60" width="24" height="80" fill="url(#pipeGrad)" />
+              <ellipse cx="30" cy="140" rx="12" ry="18" fill="url(#pipeGrad)" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
         {/* Loader Modal */}
         {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
