@@ -1061,38 +1061,40 @@ const Index = () => {
         </div>
       </div>
 
-        {/* Loader Modal */}
-        {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="mixer-modal-panel max-w-md text-center">
-              <div className="mixer-loading-indicator" />
-              <h3 className="text-xl font-semibold mixer-display-value mb-2">
-                Задача отправлена
-              </h3>
-              <p className="mixer-subtitle">
-                Обработка запроса...
-              </p>
-            </div>
-          </div>}
+      {/* Loader Modal */}
+      {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="mixer-modal-panel max-w-md text-center">
+            <div className="mixer-loading-indicator" />
+            <h3 className="text-xl font-semibold mixer-display-value mb-2">
+              Задача отправлена
+            </h3>
+            <p className="mixer-subtitle">
+              Обработка запроса...
+            </p>
+          </div>
+        </div>}
 
-        {/* Email Progress Overlay */}
-        {showEmailOverlay && <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50" style={{
-        display: 'block'
-      }} aria-hidden="true" onClick={hideEmailOverlayHandler}>
-            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="email-title" onClick={e => e.stopPropagation()}>
-              <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
-                Почти готово!
-              </h3>
-              <p className="mb-4 mixer-subtitle">
-                Через несколько минут сказка окажется у вас на почте.
-              </p>
-              <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden" aria-label="Загрузка">
-                <div id="email-progress" className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear" style={{
-              width: '0%'
-            }} />
-              </div>
+      {/* Email Progress Overlay */}
+      {showEmailOverlay && <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50" style={{
+      display: 'block'
+    }} aria-hidden="true" onClick={hideEmailOverlayHandler}>
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="email-title" onClick={e => e.stopPropagation()}>
+            <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
+              Почти готово!
+            </h3>
+            <p className="mb-4 mixer-subtitle">
+              Через несколько минут сказка окажется у вас на почте.
+            </p>
+            <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden" aria-label="Загрузка">
+              <div id="email-progress" className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear" style={{
+            width: '0%'
+          }} />
+            </div>
             </div>
           </div>}
-      </div>
-    </div>;
+    </div>
+  </div>
+  );
 };
+
 export default Index;
