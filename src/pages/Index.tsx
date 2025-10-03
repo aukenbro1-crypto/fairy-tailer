@@ -562,7 +562,8 @@ const Index = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPage]);
 
-  return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
+  return (
+    <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
       
       {/* Book Console Shell */}
@@ -1020,6 +1021,7 @@ const Index = () => {
               </div>
             </div>
           </div>
+        </div>
 
           {/* Book Controls - Navigation Buttons */}
           <div className="book-controls" aria-label="controls">
@@ -1090,8 +1092,8 @@ const Index = () => {
             width: '0%'
           }} />
             </div>
-            </div>
-          </div>}
+          </div>
+        </div>}
     </div>
   </div>
   );
