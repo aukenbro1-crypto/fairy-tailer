@@ -179,24 +179,24 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill; strictly figurative',
-  'simpsons': 'The Simpsons cartoon style: flat cel shading, thick black outlines, rounded shapes, yellow skin tones, simple geometric features, TV-sitcom framing, bright flat colors; strictly figurative; no 3D render',
-  'suprematism': 'suprematist poster look: strong diagonals, flat primary color planes, simple geometric accents; figurative silhouettes remain readable; no full abstraction, no shading',
-  'naive': 'naive folk painting in the manner of Niko Pirosmani: childlike proportions, flat perspective, bold simple shapes, decorative folk patterns; strictly figurative',
-  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients; strictly figurative',
-  'psychedelic60s': 'trippy 1960s poster art, swirling patterns, optical vibrations, high saturation, bold outlines; figurative subjects stay clear; avoid kaleidoscopic abstraction',
-  'artnouveau': 'ornamental flowing lines, floral motifs, elegant curves, poster-like composition; strictly figurative; no decorative frames',
-  'anime': 'anime (Studio Ghibli): cinematic still, expressive faces, clean cel-shading, soft painted backgrounds, warm atmospheric light; strictly figurative; no manga panels or speech bubbles'
+  'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill',
+  'simpsons': 'The Simpsons TV-cartoon look: bold black outlines, flat colors, simple shapes, exaggerated expressions, minimal shading, 2D animation vibe',
+  'lego': 'LEGO-style brick-built diorama: visible studs, primary-color bricks, plastic sheen, blocky geometry, minifigure proportions, simple faces, clean even lighting',
+  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative patterns; in the manner of Niko Pirosmani',
+  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients',
+  'psychedelic60s': 'trippy poster art, swirling patterns, optical vibrations, high saturation, bold outlines',
+  'neverhood': 'claymation (Neverhood-inspired): hand-sculpted plasticine, visible fingerprints, chunky forms, miniature set feel, warm tungsten light, shallow depth of field',
+  'anime': 'anime (Studio Ghibli): cinematic still, expressive faces, clean cel-shading, soft painted backgrounds'
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'ink': 'ink',
   'simpsons': 'simpsons',
-  'suprematism': 'suprematism',
+  'lego': 'lego',
   'naive': 'naive',
   'watercolor': 'watercolor',
   'psychedelic60s': 'psychedelic60s',
-  'artnouveau': 'artnouveau',
+  'neverhood': 'neverhood',
   'anime': 'anime'
 };
 
@@ -204,11 +204,11 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 const STYLE_SPRITES: Record<string, string> = {
   'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="6"/><rect fill="#f0c55a" x="6" y="7" width="4" height="2"/><rect fill="#f0c55a" x="5" y="9" width="6" height="2"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/><rect fill="#060a0e" x="7" y="3" width="2" height="1"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/></svg>')}`,
   'simpsons': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="6"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="5" y="2" width="6" height="1"/><rect fill="#060a0e" x="4" y="3" width="1" height="6"/><rect fill="#060a0e" x="11" y="3" width="1" height="6"/><rect fill="#060a0e" x="5" y="9" width="6" height="1"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#060a0e" x="5" y="10" width="1" height="3"/><rect fill="#060a0e" x="10" y="10" width="1" height="3"/><rect fill="#060a0e" x="6" y="13" width="4" height="1"/></svg>')}`,
-  'suprematism': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="3" width="6" height="6"/><rect fill="#f0c55a" x="11" y="3" width="2" height="10"/><rect fill="#f0c55a" x="5" y="11" width="6" height="2"/></svg>')}`,
+  'lego': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="5" width="8" height="8"/><rect fill="#060a0e" x="5" y="6" width="2" height="2"/><rect fill="#060a0e" x="9" y="6" width="2" height="2"/><rect fill="#f0c55a" x="6" y="3" width="1" height="2"/><rect fill="#f0c55a" x="9" y="3" width="1" height="2"/><rect fill="#f0c55a" x="5" y="10" width="2" height="2"/><rect fill="#f0c55a" x="9" y="10" width="2" height="2"/></svg>')}`,
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="7" width="10" height="6"/><rect fill="#f0c55a" x="4" y="6" width="8" height="1"/><rect fill="#f0c55a" x="5" y="5" width="6" height="1"/><rect fill="#060a0e" x="5" y="8" width="2" height="2"/><rect fill="#060a0e" x="9" y="8" width="2" height="2"/><rect fill="#060a0e" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="13" y="3" width="2" height="2"/></svg>')}`,
   'psychedelic60s': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="5" y="4" width="2" height="2"/><rect fill="#f0c55a" x="9" y="4" width="2" height="2"/><rect fill="#f0c55a" x="3" y="6" width="2" height="2"/><rect fill="#f0c55a" x="11" y="6" width="2" height="2"/><rect fill="#f0c55a" x="4" y="8" width="8" height="2"/><rect fill="#f0c55a" x="5" y="10" width="6" height="2"/><rect fill="#f0c55a" x="7" y="12" width="2" height="2"/></svg>')}`,
-  'artnouveau': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="4" width="2" height="2"/><rect fill="#f0c55a" x="5" y="6" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="8" width="2" height="2"/><rect fill="#f0c55a" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="9" y="6" width="2" height="2"/><rect fill="#f0c55a" x="10" y="8" width="2" height="2"/><rect fill="#f0c55a" x="9" y="10" width="2" height="2"/></svg>')}`,
+  'neverhood': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="4" width="6" height="7"/><rect fill="#060a0e" x="6" y="6" width="1" height="2"/><rect fill="#060a0e" x="9" y="6" width="1" height="2"/><rect fill="#060a0e" x="6" y="9" width="4" height="1"/><rect fill="#f0c55a" x="4" y="7" width="1" height="2"/><rect fill="#f0c55a" x="11" y="7" width="1" height="2"/><rect fill="#f0c55a" x="7" y="11" width="2" height="2"/></svg>')}`,
   'anime': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/><rect fill="#f0c55a" x="3" y="3" width="2" height="1"/><rect fill="#f0c55a" x="11" y="3" width="2" height="1"/></svg>')}`
 };
 
