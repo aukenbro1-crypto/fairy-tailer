@@ -179,14 +179,14 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill',
-  'simpsons': 'The Simpsons TV-cartoon look: bold black outlines, flat colors, simple shapes, exaggerated expressions, minimal shading, 2D animation vibe',
-  'lego': 'LEGO-style brick-built diorama: visible studs, primary-color bricks, plastic sheen, blocky geometry, minifigure proportions, simple faces, clean even lighting',
-  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative patterns; in the manner of Niko Pirosmani',
-  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients',
-  'psychedelic60s': 'trippy poster art, swirling patterns, optical vibrations, high saturation, bold outlines',
-  'neverhood': 'claymation (Neverhood-inspired): hand-sculpted plasticine, visible fingerprints, chunky forms, miniature set feel, warm tungsten light, shallow depth of field',
-  'anime': 'anime (Studio Ghibli): cinematic still, expressive faces, clean cel-shading, soft painted backgrounds'
+  'ink': 'pen & ink line art: clean outlines, cross-hatching, high contrast, no color fill; strictly figurative, readable silhouettes; original characters (not licensed IP); no broken anatomy; no collage/photobash/3D renders',
+  'simpsons': 'TV-cartoon look inspired by "The Simpsons" (not affiliated): bold black outlines, flat colors, simple shapes, optional yellowish skin palette; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/photobash/3D',
+  'lego': 'brick-minifigure inspired diorama (not affiliated with LEGO): visible studs, glossy ABS plastic, correct minifigure proportions (cylindrical head, C-hands), brick-built scenery; strictly figurative, readable poses; original characters; no printed text/logos; no broken anatomy; no photoreal humans',
+  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk patterns; in the manner of Niko Pirosmani; strictly figurative, readable silhouettes; original characters; no broken anatomy',
+  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients; strictly figurative; readable silhouettes; original characters; no broken anatomy; no collage/3D',
+  'psychedelic60s': 'psychedelic 1960s poster art: swirling patterns, optical vibrations, high saturation, bold outlines; figurative scene with clear subject (no full abstraction); readable silhouettes; original characters; no broken anatomy',
+  'soviet': 'Soviet-era hand-drawn animation (1960s–1980s) inspired: flat color planes, limited palette, paper/guache texture, restrained yet expressive faces, constructive forms, neat outlines; strictly figurative; readable silhouettes; original characters; no broken anatomy; no 3D/collage',
+  'anime': 'anime (Studio Ghibli) inspired (not affiliated): cinematic still, expressive faces, clean cel shading, soft painted backgrounds, warm atmospheric light; strictly figurative (no manga panels/speech bubbles); original characters; no broken anatomy'
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
@@ -196,7 +196,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'naive': 'naive',
   'watercolor': 'watercolor',
   'psychedelic60s': 'psychedelic60s',
-  'neverhood': 'neverhood',
+  'soviet': 'soviet',
   'anime': 'anime'
 };
 
@@ -208,7 +208,7 @@ const STYLE_SPRITES: Record<string, string> = {
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="7" width="10" height="6"/><rect fill="#f0c55a" x="4" y="6" width="8" height="1"/><rect fill="#f0c55a" x="5" y="5" width="6" height="1"/><rect fill="#060a0e" x="5" y="8" width="2" height="2"/><rect fill="#060a0e" x="9" y="8" width="2" height="2"/><rect fill="#060a0e" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="13" y="3" width="2" height="2"/></svg>')}`,
   'psychedelic60s': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="5" y="4" width="2" height="2"/><rect fill="#f0c55a" x="9" y="4" width="2" height="2"/><rect fill="#f0c55a" x="3" y="6" width="2" height="2"/><rect fill="#f0c55a" x="11" y="6" width="2" height="2"/><rect fill="#f0c55a" x="4" y="8" width="8" height="2"/><rect fill="#f0c55a" x="5" y="10" width="6" height="2"/><rect fill="#f0c55a" x="7" y="12" width="2" height="2"/></svg>')}`,
-  'neverhood': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="4" width="6" height="7"/><rect fill="#060a0e" x="6" y="6" width="1" height="2"/><rect fill="#060a0e" x="9" y="6" width="1" height="2"/><rect fill="#060a0e" x="6" y="9" width="4" height="1"/><rect fill="#f0c55a" x="4" y="7" width="1" height="2"/><rect fill="#f0c55a" x="11" y="7" width="1" height="2"/><rect fill="#f0c55a" x="7" y="11" width="2" height="2"/></svg>')}`,
+  'soviet': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="8"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/><rect fill="#f0c55a" x="5" y="2" width="6" height="1"/><rect fill="#f0c55a" x="7" y="1" width="2" height="1"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/></svg>')}`,
   'anime': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/><rect fill="#f0c55a" x="3" y="3" width="2" height="1"/><rect fill="#f0c55a" x="11" y="3" width="2" height="1"/></svg>')}`
 };
 
