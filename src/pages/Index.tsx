@@ -305,7 +305,6 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     genre: '',
     tone: TONE_PRESETS[0],
@@ -526,67 +525,10 @@ const Index = () => {
     setShowLoader(false);
     showEmailOverlayWithProgress();
   };
-  // Page navigation
-  const totalPages = 4;
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
-  };
-  const handleNextPage = () => {
-    setCurrentPage((prev) => (prev + 1) % totalPages);
-  };
-  const handleOkButton = () => {
-    const currentPageElement = document.querySelector(`.page[data-page="${currentPage}"]`);
-    if (currentPageElement) {
-      const firstInput = currentPageElement.querySelector<HTMLElement>('input, select, button, [tabindex="0"]');
-      if (firstInput) {
-        firstInput.focus();
-      }
-    }
-  };
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        handlePrevPage();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        handleNextPage();
-      } else if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
-        e.preventDefault();
-        handleOkButton();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage]);
-
-  return (
-    <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-      
-      {/* Book Console Shell */}
-      <div className="book-shell">
-        {/* Book Cover/Frame */}
-        <div className="book-cover">
-          <div className="book-border"></div>
-          <div className="book-spine"></div>
-          <div className="book-rivets" aria-hidden="true"></div>
-        </div>
-
-        {/* CRT Screen Area */}
-        <div className="book-screen">
-          <div className="crt-glass">
-            <div className="crt-noise" aria-hidden="true"></div>
-            <div className="crt-scan" aria-hidden="true"></div>
-            
-            {/* CRT Content */}
-            <div className="crt-content">
-              <div className="mixer-chassis">
-              {/* Header */}
-                <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
-                  setCurrentPage(0);
+  return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
+      <div className="max-w-6xl mx-auto mixer-chassis">
+      {/* Header */}
+        <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
           setFormData({
             genre: '',
             tone: TONE_PRESETS[0],
@@ -735,8 +677,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Page 0: Genre, Tone, Ending */}
-        <div className={`page ${currentPage === 0 ? '' : 'hidden'}`} data-page="0">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Column - Controls */}
           <div className="space-y-8">
@@ -834,30 +774,8 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right Column - Ending */}
+          {/* Right Column - Story Details */}
           <div className="space-y-8">
-              <div className="space-y-4">
-                <div>
-                  <label className="mixer-control-label">
-                    Почта (обязательно)
-                  </label>
-                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))} placeholder="name@example.com" autoComplete="email" required />
-                  <p className="mixer-hint">
-                    Мы вышлем PDF на этот адрес.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-
-        {/* Page 1: Email, Style, Location */}
-        <div className={`page ${currentPage === 1 ? '' : 'hidden'}`} data-page="1">
-        <div className="space-y-8">
             {/* Email Field */}
             <div className="mixer-control-section">
               <div className="space-y-4">
@@ -914,12 +832,7 @@ const Index = () => {
                 </div>
               </div>
             </div>
-        </div>
-        </div>
 
-        {/* Page 2: Heroes */}
-        <div className={`page ${currentPage === 2 ? '' : 'hidden'}`} data-page="2">
-        <div className="space-y-8">
             {/* Heroes Section */}
             <div className="mixer-control-section">
               <h3 className="mixer-section-title">Персонажи</h3>
@@ -999,13 +912,11 @@ const Index = () => {
                         </div>
                       </div>}
                   </div>;
-             })}
+            })}
             </div>
-        </div>
+          </div>
         </div>
 
-        {/* Page 3: Submit */}
-        <div className={`page ${currentPage === 3 ? '' : 'hidden'}`} data-page="3">
         {/* Submit Section */}
         <div className="mt-12 text-center mixer-panel">
           <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
@@ -1016,85 +927,39 @@ const Index = () => {
             Время генерации 2–4 мин. PDF придёт на указанную почту.
           </p>
         </div>
-        </div>
 
+        {/* Loader Modal */}
+        {showLoader && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="mixer-modal-panel max-w-md text-center">
+              <div className="mixer-loading-indicator" />
+              <h3 className="text-xl font-semibold mixer-display-value mb-2">
+                Задача отправлена
+              </h3>
+              <p className="mixer-subtitle">
+                Обработка запроса...
+              </p>
+            </div>
+          </div>}
+
+        {/* Email Progress Overlay */}
+        {showEmailOverlay && <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50" style={{
+        display: 'block'
+      }} aria-hidden="true" onClick={hideEmailOverlayHandler}>
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="email-title" onClick={e => e.stopPropagation()}>
+              <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
+                Почти готово!
+              </h3>
+              <p className="mb-4 mixer-subtitle">
+                Через несколько минут сказка окажется у вас на почте.
+              </p>
+              <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden" aria-label="Загрузка">
+                <div id="email-progress" className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear" style={{
+              width: '0%'
+            }} />
               </div>
             </div>
-
-          {/* Book Controls - Navigation Buttons */}
-          <div className="book-controls" aria-label="controls">
-            <button 
-              className="btn-tri up" 
-              type="button" 
-              aria-label="prev section"
-              onClick={handlePrevPage}
-            ></button>
-            <button 
-              className="btn-round ok" 
-              type="button" 
-              aria-label="select"
-              onClick={handleOkButton}
-            ></button>
-            <button 
-              className="btn-tri down" 
-              type="button" 
-              aria-label="next section"
-              onClick={handleNextPage}
-            ></button>
-          </div>
-
-          {/* Book Pipes Decoration */}
-          <div className="book-pipes" aria-hidden="true">
-            <svg viewBox="0 0 60 200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{stopColor: 'hsl(var(--steel-hi))', stopOpacity: 1}} />
-                  <stop offset="50%" style={{stopColor: 'hsl(var(--steel-lo))', stopOpacity: 1}} />
-                  <stop offset="100%" style={{stopColor: 'hsl(var(--steel-hi))', stopOpacity: 1}} />
-                </linearGradient>
-              </defs>
-              <ellipse cx="30" cy="60" rx="12" ry="18" fill="url(#pipeGrad)" />
-              <rect x="18" y="60" width="24" height="80" fill="url(#pipeGrad)" />
-              <ellipse cx="30" cy="140" rx="12" ry="18" fill="url(#pipeGrad)" />
-            </svg>
-          </div>
-        </div>
+          </div>}
       </div>
-
-      {/* Loader Modal */}
-      {showLoader && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="mixer-modal-panel max-w-md text-center">
-            <div className="mixer-loading-indicator" />
-            <h3 className="text-xl font-semibold mixer-display-value mb-2">
-              Задача отправлена
-            </h3>
-            <p className="mixer-subtitle">
-              Обработка запроса...
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Email Progress Overlay */}
-      {showEmailOverlay && (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50" style={{ display: 'block' }} aria-hidden="true" onClick={hideEmailOverlayHandler}>
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#111a22] text-[#eaf2f6] border border-[#1b2d3a] rounded-2xl shadow-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="email-title" onClick={e => e.stopPropagation()}>
-            <h3 id="email-title" className="text-2xl font-semibold mb-2 mixer-nameplate">
-              Почти готово!
-            </h3>
-            <p className="mb-4 mixer-subtitle">
-              Через несколько минут сказка окажется у вас на почте.
-            </p>
-            <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden" aria-label="Загрузка">
-              <div id="email-progress" className="h-full bg-gradient-to-r from-[#63d2ff] to-[#e6a648] transition-all duration-200 ease-linear" style={{ width: '0%' }} />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-  );
+    </div>;
 };
-
 export default Index;
