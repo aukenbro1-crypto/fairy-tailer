@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { MusicPlayer } from '@/components/MusicPlayer';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -961,7 +960,6 @@ const Index = () => {
             </div>
           </div>}
       </div>
-      <MusicPlayer />
     </div>;
 };
 export default Index;
