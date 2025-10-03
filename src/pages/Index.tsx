@@ -179,19 +179,19 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'ink': 'pen & ink line art; clean outlines; cross-hatching; high contrast; no color fill; figurative scene, readable silhouettes',
-  'woodblock': 'Chinese red woodblock print (vermilion/cinnabar ink) on off-white rice paper; flat carved planes; bold calligraphic contours; subtle wood/paper grain; small seal marks; figurative narrative scene, not abstract; no Western shading/perspective',
-  'suprematism': 'suprematist poster style: flat primary color planes, strong diagonals, simple geometric accents; simplified but figurative silhouettes, clear action; no full abstraction; no shading',
-  'naive': 'naive folk painting in the manner of Niko Pirosmani: childlike proportions, flat/frontal perspective, bold simple shapes, decorative folk patterns; figurative scene',
-  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients; hand-painted figurative illustration; avoid photorealism',
-  'psychedelic60s': 'psychedelic 1960s rock-poster art (Wes Wilson / Victor Moscoso vibe): swirling patterns, optical vibrations, high saturation, bold poster outlines; figurative composition with readable characters; no pure abstract swirls; no typography',
-  'artnouveau': 'Art Nouveau à la Alphonse Mucha: ornamental flowing lines, floral motifs, elegant curves, poster-like layout; figurative portrait/scene; avoid heavy borders and any text',
-  'anime': 'anime (Studio Ghibli) cinematic still: expressive faces, clean cel-shading, soft painted backgrounds, warm atmospheric light; figurative; no manga panels or speech bubbles'
+  'ink': 'pen & ink line art, clear outlines, cross-hatching, high contrast, no color fill; strictly figurative',
+  'simpsons': 'The Simpsons cartoon style: flat cel shading, thick black outlines, rounded shapes, yellow skin tones, simple geometric features, TV-sitcom framing, bright flat colors; strictly figurative; no 3D render',
+  'suprematism': 'suprematist poster look: strong diagonals, flat primary color planes, simple geometric accents; figurative silhouettes remain readable; no full abstraction, no shading',
+  'naive': 'naive folk painting in the manner of Niko Pirosmani: childlike proportions, flat perspective, bold simple shapes, decorative folk patterns; strictly figurative',
+  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients; strictly figurative',
+  'psychedelic60s': 'trippy 1960s poster art, swirling patterns, optical vibrations, high saturation, bold outlines; figurative subjects stay clear; avoid kaleidoscopic abstraction',
+  'artnouveau': 'ornamental flowing lines, floral motifs, elegant curves, poster-like composition; strictly figurative; no decorative frames',
+  'anime': 'anime (Studio Ghibli): cinematic still, expressive faces, clean cel-shading, soft painted backgrounds, warm atmospheric light; strictly figurative; no manga panels or speech bubbles'
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'ink': 'ink',
-  'woodblock': 'chinese woodcut',
+  'simpsons': 'simpsons',
   'suprematism': 'suprematism',
   'naive': 'naive',
   'watercolor': 'watercolor',
@@ -203,7 +203,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 // Pixel art sprites as inline SVG data URIs
 const STYLE_SPRITES: Record<string, string> = {
   'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="6"/><rect fill="#f0c55a" x="6" y="7" width="4" height="2"/><rect fill="#f0c55a" x="5" y="9" width="6" height="2"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/><rect fill="#060a0e" x="7" y="3" width="2" height="1"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/></svg>')}`,
-  'woodblock': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="2" y="6" width="2" height="8"/><rect fill="#f0c55a" x="4" y="5" width="2" height="9"/><rect fill="#f0c55a" x="6" y="4" width="2" height="10"/><rect fill="#f0c55a" x="8" y="5" width="2" height="9"/><rect fill="#f0c55a" x="10" y="7" width="2" height="7"/><rect fill="#f0c55a" x="12" y="9" width="2" height="5"/></svg>')}`,
+  'simpsons': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="6"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="5" y="2" width="6" height="1"/><rect fill="#060a0e" x="4" y="3" width="1" height="6"/><rect fill="#060a0e" x="11" y="3" width="1" height="6"/><rect fill="#060a0e" x="5" y="9" width="6" height="1"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#060a0e" x="5" y="10" width="1" height="3"/><rect fill="#060a0e" x="10" y="10" width="1" height="3"/><rect fill="#060a0e" x="6" y="13" width="4" height="1"/></svg>')}`,
   'suprematism': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="3" width="6" height="6"/><rect fill="#f0c55a" x="11" y="3" width="2" height="10"/><rect fill="#f0c55a" x="5" y="11" width="6" height="2"/></svg>')}`,
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="7" width="10" height="6"/><rect fill="#f0c55a" x="4" y="6" width="8" height="1"/><rect fill="#f0c55a" x="5" y="5" width="6" height="1"/><rect fill="#060a0e" x="5" y="8" width="2" height="2"/><rect fill="#060a0e" x="9" y="8" width="2" height="2"/><rect fill="#060a0e" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="13" y="3" width="2" height="2"/></svg>')}`,
