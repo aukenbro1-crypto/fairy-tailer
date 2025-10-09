@@ -139,24 +139,32 @@ interface FormData {
   hero1_traits: string;
   hero1_fear: string;
   hero1_habits: string;
+  hero1_photo: File | null;
+  hero1_photo_url: string;
   hero2_name: string;
   hero2_age: number;
   hero2_job: string;
   hero2_traits: string;
   hero2_fear: string;
   hero2_habits: string;
+  hero2_photo: File | null;
+  hero2_photo_url: string;
   hero3_name: string;
   hero3_age: number;
   hero3_job: string;
   hero3_traits: string;
   hero3_fear: string;
   hero3_habits: string;
+  hero3_photo: File | null;
+  hero3_photo_url: string;
   hero4_name: string;
   hero4_age: number;
   hero4_job: string;
   hero4_traits: string;
   hero4_fear: string;
   hero4_habits: string;
+  hero4_photo: File | null;
+  hero4_photo_url: string;
 }
 const GENRES = ['приключение', 'философская притча', 'романтика', 'страшная история', 'юмор', 'сюрреализм', 'фэнтези', 'научная фантастика'];
 const GENRE_SYMBOLS: Record<string, string> = {
@@ -326,24 +334,32 @@ const Index = () => {
     hero1_traits: '',
     hero1_fear: '',
     hero1_habits: '',
+    hero1_photo: null,
+    hero1_photo_url: '',
     hero2_name: '',
     hero2_age: 0,
     hero2_job: '',
     hero2_traits: '',
     hero2_fear: '',
     hero2_habits: '',
+    hero2_photo: null,
+    hero2_photo_url: '',
     hero3_name: '',
     hero3_age: 0,
     hero3_job: '',
     hero3_traits: '',
     hero3_fear: '',
     hero3_habits: '',
+    hero3_photo: null,
+    hero3_photo_url: '',
     hero4_name: '',
     hero4_age: 0,
     hero4_job: '',
     hero4_traits: '',
     hero4_fear: '',
-    hero4_habits: ''
+    hero4_habits: '',
+    hero4_photo: null,
+    hero4_photo_url: ''
   });
   const [heroSections, setHeroSections] = useState({
     hero2: false,
@@ -486,24 +502,32 @@ const Index = () => {
       hero1_traits: formData.hero1_traits,
       hero1_fear: formData.hero1_fear,
       hero1_habits: formData.hero1_habits,
+      hero1_photo_url: formData.hero1_photo_url,
+      hero1_photo_name: formData.hero1_photo?.name || '',
       hero2_name: formData.hero2_name,
       hero2_age: formData.hero2_age,
       hero2_job: formData.hero2_job,
       hero2_traits: formData.hero2_traits,
       hero2_fear: formData.hero2_fear,
       hero2_habits: formData.hero2_habits,
+      hero2_photo_url: formData.hero2_photo_url,
+      hero2_photo_name: formData.hero2_photo?.name || '',
       hero3_name: formData.hero3_name,
       hero3_age: formData.hero3_age,
       hero3_job: formData.hero3_job,
       hero3_traits: formData.hero3_traits,
       hero3_fear: formData.hero3_fear,
       hero3_habits: formData.hero3_habits,
+      hero3_photo_url: formData.hero3_photo_url,
+      hero3_photo_name: formData.hero3_photo?.name || '',
       hero4_name: formData.hero4_name,
       hero4_age: formData.hero4_age,
       hero4_job: formData.hero4_job,
       hero4_traits: formData.hero4_traits,
       hero4_fear: formData.hero4_fear,
-      hero4_habits: formData.hero4_habits
+      hero4_habits: formData.hero4_habits,
+      hero4_photo_url: formData.hero4_photo_url,
+      hero4_photo_name: formData.hero4_photo?.name || ''
     };
     let ok = false;
     try {
@@ -549,24 +573,32 @@ const Index = () => {
             hero1_traits: '',
             hero1_fear: '',
             hero1_habits: '',
+            hero1_photo: null,
+            hero1_photo_url: '',
             hero2_name: '',
             hero2_age: 0,
             hero2_job: '',
             hero2_traits: '',
             hero2_fear: '',
             hero2_habits: '',
+            hero2_photo: null,
+            hero2_photo_url: '',
             hero3_name: '',
             hero3_age: 0,
             hero3_job: '',
             hero3_traits: '',
             hero3_fear: '',
             hero3_habits: '',
+            hero3_photo: null,
+            hero3_photo_url: '',
             hero4_name: '',
             hero4_age: 0,
             hero4_job: '',
             hero4_traits: '',
             hero4_fear: '',
-            hero4_habits: ''
+            hero4_habits: '',
+            hero4_photo: null,
+            hero4_photo_url: ''
           });
           setHeroSections({ hero2: false, hero3: false, hero4: false });
         }}>
@@ -866,6 +898,86 @@ const Index = () => {
                   hero1_habits: e.target.value
                 }))} />
                 </div>
+                
+                {/* Photo Upload for Hero 1 */}
+                <div className="mt-4">
+                  <label className="mixer-control-label block mb-2">
+                    Фото героя 1
+                  </label>
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    className="hidden"
+                    id="hero1-photo-input"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      // Validate file type
+                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                        toast({
+                          variant: "destructive",
+                          title: "Неверный формат",
+                          description: "Допустимы JPG/PNG до 3 МБ"
+                        });
+                        return;
+                      }
+                      
+                      // Validate file size (3MB)
+                      if (file.size > 3 * 1024 * 1024) {
+                        toast({
+                          variant: "destructive",
+                          title: "Файл слишком большой",
+                          description: "Допустимы JPG/PNG до 3 МБ"
+                        });
+                        return;
+                      }
+                      
+                      // Convert to data URL
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          hero1_photo: file,
+                          hero1_photo_url: event.target?.result as string
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
+                    onClick={() => document.getElementById('hero1-photo-input')?.click()}
+                  >
+                    Загрузить фото
+                  </button>
+                  <p className="mixer-hint mt-1">
+                    Лучше всего — лицевая фотография, без фона/фильтров. Используется только для сохранения идентичности персонажа в иллюстрациях.
+                  </p>
+                  
+                  {/* Preview */}
+                  {formData.hero1_photo_url && (
+                    <div className="mt-3 relative inline-block">
+                      <img 
+                        src={formData.hero1_photo_url} 
+                        alt="Превью героя 1" 
+                        className="w-32 h-32 object-cover rounded-md border-2 border-accent"
+                      />
+                      <button
+                        type="button"
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          hero1_photo: null,
+                          hero1_photo_url: ''
+                        }))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Additional Heroes */}
@@ -909,6 +1021,86 @@ const Index = () => {
                       ...prev,
                       [`hero${heroNum}_habits`]: e.target.value
                     }))} />
+                        </div>
+                        
+                        {/* Photo Upload */}
+                        <div className="mt-4">
+                          <label className="mixer-control-label block mb-2">
+                            Фото героя {heroNum}
+                          </label>
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png"
+                            className="hidden"
+                            id={`hero${heroNum}-photo-input`}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              // Validate file type
+                              if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Неверный формат",
+                                  description: "Допустимы JPG/PNG до 3 МБ"
+                                });
+                                return;
+                              }
+                              
+                              // Validate file size (3MB)
+                              if (file.size > 3 * 1024 * 1024) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Файл слишком большой",
+                                  description: "Допустимы JPG/PNG до 3 МБ"
+                                });
+                                return;
+                              }
+                              
+                              // Convert to data URL
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  [`hero${heroNum}_photo`]: file,
+                                  [`hero${heroNum}_photo_url`]: event.target?.result as string
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
+                            onClick={() => document.getElementById(`hero${heroNum}-photo-input`)?.click()}
+                          >
+                            Загрузить фото
+                          </button>
+                          <p className="mixer-hint mt-1">
+                            Лучше всего — лицевая фотография, без фона/фильтров. Используется только для сохранения идентичности персонажа в иллюстрациях.
+                          </p>
+                          
+                          {/* Preview */}
+                          {formData[`hero${heroNum}_photo_url` as keyof FormData] && (
+                            <div className="mt-3 relative inline-block">
+                              <img 
+                                src={formData[`hero${heroNum}_photo_url` as keyof FormData] as string} 
+                                alt={`Превью героя ${heroNum}`}
+                                className="w-32 h-32 object-cover rounded-md border-2 border-accent"
+                              />
+                              <button
+                                type="button"
+                                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  [`hero${heroNum}_photo`]: null,
+                                  [`hero${heroNum}_photo_url`]: ''
+                                }))}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>}
                   </div>;
