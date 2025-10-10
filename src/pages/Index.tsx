@@ -481,73 +481,105 @@ const Index = () => {
     }
     setShowLoader(true);
 
-    // Prepare payload with all fields
-    const payload = {
-      genre: formData.genre,
-      tone: formData.tone,
-      form: formData.form,
-      ending: formData.ending,
-      location: formData.location,
-      artifact: formData.artifact,
-      length_target: formData.length_target,
-      chapters: formData.chapters,
-      title_need: formData.title_need,
-      language: formData.language,
-      email: formData.email.toLowerCase(),
-      illustration_style: formData.illustration_style,
-      illustration_style_prompt: formData.illustration_style_prompt,
-      hero1_name: formData.hero1_name,
-      hero1_age: formData.hero1_age,
-      hero1_job: formData.hero1_job,
-      hero1_traits: formData.hero1_traits,
-      hero1_fear: formData.hero1_fear,
-      hero1_habits: formData.hero1_habits,
-      hero1_photo_url: formData.hero1_photo_url,
-      hero1_photo_name: formData.hero1_photo?.name || '',
-      hero2_name: formData.hero2_name,
-      hero2_age: formData.hero2_age,
-      hero2_job: formData.hero2_job,
-      hero2_traits: formData.hero2_traits,
-      hero2_fear: formData.hero2_fear,
-      hero2_habits: formData.hero2_habits,
-      hero2_photo_url: formData.hero2_photo_url,
-      hero2_photo_name: formData.hero2_photo?.name || '',
-      hero3_name: formData.hero3_name,
-      hero3_age: formData.hero3_age,
-      hero3_job: formData.hero3_job,
-      hero3_traits: formData.hero3_traits,
-      hero3_fear: formData.hero3_fear,
-      hero3_habits: formData.hero3_habits,
-      hero3_photo_url: formData.hero3_photo_url,
-      hero3_photo_name: formData.hero3_photo?.name || '',
-      hero4_name: formData.hero4_name,
-      hero4_age: formData.hero4_age,
-      hero4_job: formData.hero4_job,
-      hero4_traits: formData.hero4_traits,
-      hero4_fear: formData.hero4_fear,
-      hero4_habits: formData.hero4_habits,
-      hero4_photo_url: formData.hero4_photo_url,
-      hero4_photo_name: formData.hero4_photo?.name || ''
-    };
+    // Prepare multipart/form-data
+    const multipartData = new FormData();
+    
+    // Add all text fields
+    multipartData.append('genre', formData.genre);
+    multipartData.append('tone', formData.tone);
+    multipartData.append('form', formData.form);
+    multipartData.append('ending', formData.ending);
+    multipartData.append('location', formData.location);
+    multipartData.append('artifact', formData.artifact);
+    multipartData.append('length_target', formData.length_target.toString());
+    multipartData.append('chapters', formData.chapters.toString());
+    multipartData.append('title_need', formData.title_need.toString());
+    multipartData.append('language', formData.language);
+    multipartData.append('email', formData.email.toLowerCase());
+    multipartData.append('illustration_style', formData.illustration_style);
+    multipartData.append('illustration_style_prompt', formData.illustration_style_prompt);
+    
+    // Hero 1 (always included, photo optional)
+    multipartData.append('hero1_name', formData.hero1_name);
+    multipartData.append('hero1_age', formData.hero1_age.toString());
+    multipartData.append('hero1_job', formData.hero1_job);
+    multipartData.append('hero1_traits', formData.hero1_traits);
+    multipartData.append('hero1_fear', formData.hero1_fear);
+    multipartData.append('hero1_habits', formData.hero1_habits);
+    
+    if (formData.hero1_photo) {
+      multipartData.append('hero1_photo', formData.hero1_photo);
+      multipartData.append('hero1_photo_name', formData.hero1_photo.name);
+      multipartData.append('hero1_photo_mime', formData.hero1_photo.type);
+    }
+    
+    // Hero 2 (if enabled)
+    if (heroSections.hero2) {
+      multipartData.append('hero2_name', formData.hero2_name);
+      multipartData.append('hero2_age', formData.hero2_age.toString());
+      multipartData.append('hero2_job', formData.hero2_job);
+      multipartData.append('hero2_traits', formData.hero2_traits);
+      multipartData.append('hero2_fear', formData.hero2_fear);
+      multipartData.append('hero2_habits', formData.hero2_habits);
+      
+      if (formData.hero2_photo) {
+        multipartData.append('hero2_photo', formData.hero2_photo);
+        multipartData.append('hero2_photo_name', formData.hero2_photo.name);
+        multipartData.append('hero2_photo_mime', formData.hero2_photo.type);
+      }
+    }
+    
+    // Hero 3 (if enabled)
+    if (heroSections.hero3) {
+      multipartData.append('hero3_name', formData.hero3_name);
+      multipartData.append('hero3_age', formData.hero3_age.toString());
+      multipartData.append('hero3_job', formData.hero3_job);
+      multipartData.append('hero3_traits', formData.hero3_traits);
+      multipartData.append('hero3_fear', formData.hero3_fear);
+      multipartData.append('hero3_habits', formData.hero3_habits);
+      
+      if (formData.hero3_photo) {
+        multipartData.append('hero3_photo', formData.hero3_photo);
+        multipartData.append('hero3_photo_name', formData.hero3_photo.name);
+        multipartData.append('hero3_photo_mime', formData.hero3_photo.type);
+      }
+    }
+    
+    // Hero 4 (if enabled)
+    if (heroSections.hero4) {
+      multipartData.append('hero4_name', formData.hero4_name);
+      multipartData.append('hero4_age', formData.hero4_age.toString());
+      multipartData.append('hero4_job', formData.hero4_job);
+      multipartData.append('hero4_traits', formData.hero4_traits);
+      multipartData.append('hero4_fear', formData.hero4_fear);
+      multipartData.append('hero4_habits', formData.hero4_habits);
+      
+      if (formData.hero4_photo) {
+        multipartData.append('hero4_photo', formData.hero4_photo);
+        multipartData.append('hero4_photo_name', formData.hero4_photo.name);
+        multipartData.append('hero4_photo_mime', formData.hero4_photo.type);
+      }
+    }
+    
     let ok = false;
     try {
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+        // Don't set Content-Type header - browser will set it with boundary
+        body: multipartData
       });
       ok = response.ok;
     } catch (error) {
       ok = false;
     }
     toast({
-      title: ok ? "Заявка отправлена" : "Ошибка отправки",
-      description: ok ? "Идёт генерация сказки..." : "Не удалось отправить запрос. Попробуйте снова."
+      title: ok ? "Файлы загружены" : "Ошибка отправки",
+      description: ok ? "История генерируется" : "Не удалось отправить данные. Попробуйте ещё раз."
     });
     setShowLoader(false);
-    showEmailOverlayWithProgress();
+    if (ok) {
+      showEmailOverlayWithProgress();
+    }
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto mixer-chassis">
@@ -909,7 +941,7 @@ const Index = () => {
                     accept=".jpg,.jpeg,.png"
                     className="hidden"
                     id="hero1-photo-input"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       
@@ -933,16 +965,12 @@ const Index = () => {
                         return;
                       }
                       
-                      // Convert to data URL
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          hero1_photo: file,
-                          hero1_photo_url: event.target?.result as string
-                        }));
-                      };
-                      reader.readAsDataURL(file);
+                      // Store file and create preview URL
+                      setFormData(prev => ({
+                        ...prev,
+                        hero1_photo: file,
+                        hero1_photo_url: URL.createObjectURL(file)
+                      }));
                     }}
                   />
                   <button
@@ -1033,7 +1061,7 @@ const Index = () => {
                             accept=".jpg,.jpeg,.png"
                             className="hidden"
                             id={`hero${heroNum}-photo-input`}
-                            onChange={async (e) => {
+                            onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
                               
@@ -1057,16 +1085,12 @@ const Index = () => {
                                 return;
                               }
                               
-                              // Convert to data URL
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  [`hero${heroNum}_photo`]: file,
-                                  [`hero${heroNum}_photo_url`]: event.target?.result as string
-                                }));
-                              };
-                              reader.readAsDataURL(file);
+                              // Store file and create preview URL
+                              setFormData(prev => ({
+                                ...prev,
+                                [`hero${heroNum}_photo`]: file,
+                                [`hero${heroNum}_photo_url`]: URL.createObjectURL(file)
+                              }));
                             }}
                           />
                           <button
