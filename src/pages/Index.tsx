@@ -187,37 +187,37 @@ const ENDING_LABELS = {
 };
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'ink': 'pen & ink line art: clean outlines, cross-hatching, high contrast, no color fill; strictly figurative, readable silhouettes; original characters (not licensed IP); no broken anatomy; no collage/photobash/3D renders',
-  'simpsons': 'TV-cartoon look inspired by "The Simpsons" (not affiliated): bold black outlines, flat colors, simple shapes, optional yellowish skin palette; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/photobash/3D',
-  'lego': 'brick-minifigure inspired diorama (not affiliated with LEGO): visible studs, glossy ABS plastic, correct minifigure proportions (cylindrical head, C-hands), brick-built scenery; strictly figurative, readable poses; original characters; no printed text/logos; no broken anatomy; no photoreal humans',
-  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk patterns; in the manner of Niko Pirosmani; strictly figurative, readable silhouettes; original characters; no broken anatomy',
-  'watercolor': 'soft washes, translucent layers, paper texture, wet-on-wet edges, gentle gradients; strictly figurative; readable silhouettes; original characters; no broken anatomy; no collage/3D',
-  'psychedelic60s': 'psychedelic 1960s poster art: swirling patterns, optical vibrations, high saturation, bold outlines; figurative scene with clear subject (no full abstraction); readable silhouettes; original characters; no broken anatomy',
-  'soviet': 'Soviet-era hand-drawn animation (1960s–1980s) inspired: flat color planes, limited palette, paper/guache texture, restrained yet expressive faces, constructive forms, neat outlines; strictly figurative; readable silhouettes; original characters; no broken anatomy; no 3D/collage',
-  'anime': 'anime (Studio Ghibli) inspired (not affiliated): cinematic still, expressive faces, clean cel shading, soft painted backgrounds, warm atmospheric light; strictly figurative (no manga panels/speech bubbles); original characters; no broken anatomy'
+  'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
+  'toonflat': 'vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.',
+  'minibrick': 'brick-miniature diorama style: visible studs and seams, glossy plastic material, simplified blocky anatomy (cylindrical head, curved hands), modular brick-built scenery; strictly figurative, readable poses; original characters; no printed logos or text; no photoreal humans.',
+  'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk motifs; in the manner of early 20th-century primitivism; strictly figurative, readable silhouettes; original characters; no broken anatomy.',
+  'watercolor': 'soft watercolor illustration: gentle washes, translucent pigment layers, visible paper grain, diffused light, wet-on-wet edges, subtle gradients; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
+  'claymotion': 'clay stop-motion aesthetic: sculpted clay characters with visible texture, soft handmade look, warm lighting, slight surface imperfections, tactile realism; carefully staged poses, readable silhouettes; strictly figurative; original characters; no photorealism or 3D-rendered surfaces.',
+  'retroanimation': 'mid-century hand-drawn animation aesthetic: limited palette, flat paper or gouache texture, stylized constructive forms, expressive yet restrained faces; strictly figurative, readable silhouettes; original characters; no 3D/collage.',
+  'celcinema': 'cinematic cel-animation aesthetic: expressive faces, clean color blocks with soft shading, painterly backgrounds, atmospheric warm light; strictly figurative (no manga panels or speech bubbles); original characters; no broken anatomy.'
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
-  'ink': 'ink',
-  'simpsons': 'simpsons',
-  'lego': 'lego',
+  'disney': 'disney',
+  'toonflat': 'toonflat',
+  'minibrick': 'minibrick',
   'naive': 'naive',
   'watercolor': 'watercolor',
-  'psychedelic60s': 'psychedelic60s',
-  'soviet': 'soviet',
-  'anime': 'anime'
+  'claymotion': 'claymotion',
+  'retroanimation': 'retroanimation',
+  'celcinema': 'celcinema'
 };
 
 // Pixel art sprites as inline SVG data URIs
 const STYLE_SPRITES: Record<string, string> = {
-  'ink': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="6"/><rect fill="#f0c55a" x="6" y="7" width="4" height="2"/><rect fill="#f0c55a" x="5" y="9" width="6" height="2"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/><rect fill="#060a0e" x="7" y="3" width="2" height="1"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/></svg>')}`,
-  'simpsons': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="6"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="5" y="2" width="6" height="1"/><rect fill="#060a0e" x="4" y="3" width="1" height="6"/><rect fill="#060a0e" x="11" y="3" width="1" height="6"/><rect fill="#060a0e" x="5" y="9" width="6" height="1"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#060a0e" x="5" y="10" width="1" height="3"/><rect fill="#060a0e" x="10" y="10" width="1" height="3"/><rect fill="#060a0e" x="6" y="13" width="4" height="1"/></svg>')}`,
-  'lego': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="5" width="8" height="8"/><rect fill="#060a0e" x="5" y="6" width="2" height="2"/><rect fill="#060a0e" x="9" y="6" width="2" height="2"/><rect fill="#f0c55a" x="6" y="3" width="1" height="2"/><rect fill="#f0c55a" x="9" y="3" width="1" height="2"/><rect fill="#f0c55a" x="5" y="10" width="2" height="2"/><rect fill="#f0c55a" x="9" y="10" width="2" height="2"/></svg>')}`,
+  'disney': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/><rect fill="#f0c55a" x="3" y="3" width="2" height="1"/><rect fill="#f0c55a" x="11" y="3" width="2" height="1"/></svg>')}`,
+  'toonflat': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="6"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="5" y="2" width="6" height="1"/><rect fill="#060a0e" x="4" y="3" width="1" height="6"/><rect fill="#060a0e" x="11" y="3" width="1" height="6"/><rect fill="#060a0e" x="5" y="9" width="6" height="1"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#060a0e" x="5" y="10" width="1" height="3"/><rect fill="#060a0e" x="10" y="10" width="1" height="3"/><rect fill="#060a0e" x="6" y="13" width="4" height="1"/></svg>')}`,
+  'minibrick': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="4" y="5" width="8" height="8"/><rect fill="#060a0e" x="5" y="6" width="2" height="2"/><rect fill="#060a0e" x="9" y="6" width="2" height="2"/><rect fill="#f0c55a" x="6" y="3" width="1" height="2"/><rect fill="#f0c55a" x="9" y="3" width="1" height="2"/><rect fill="#f0c55a" x="5" y="10" width="2" height="2"/><rect fill="#f0c55a" x="9" y="10" width="2" height="2"/></svg>')}`,
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="7" width="10" height="6"/><rect fill="#f0c55a" x="4" y="6" width="8" height="1"/><rect fill="#f0c55a" x="5" y="5" width="6" height="1"/><rect fill="#060a0e" x="5" y="8" width="2" height="2"/><rect fill="#060a0e" x="9" y="8" width="2" height="2"/><rect fill="#060a0e" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="13" y="3" width="2" height="2"/></svg>')}`,
-  'psychedelic60s': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="5" y="4" width="2" height="2"/><rect fill="#f0c55a" x="9" y="4" width="2" height="2"/><rect fill="#f0c55a" x="3" y="6" width="2" height="2"/><rect fill="#f0c55a" x="11" y="6" width="2" height="2"/><rect fill="#f0c55a" x="4" y="8" width="8" height="2"/><rect fill="#f0c55a" x="5" y="10" width="6" height="2"/><rect fill="#f0c55a" x="7" y="12" width="2" height="2"/></svg>')}`,
-  'soviet': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="8"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/><rect fill="#f0c55a" x="5" y="2" width="6" height="1"/><rect fill="#f0c55a" x="7" y="1" width="2" height="1"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/></svg>')}`,
-  'anime': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/><rect fill="#f0c55a" x="3" y="3" width="2" height="1"/><rect fill="#f0c55a" x="11" y="3" width="2" height="1"/></svg>')}`
+  'claymotion': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="4" width="6" height="6"/><rect fill="#f0c55a" x="4" y="5" width="1" height="4"/><rect fill="#f0c55a" x="11" y="5" width="1" height="4"/><rect fill="#060a0e" x="6" y="6" width="1" height="2"/><rect fill="#060a0e" x="9" y="6" width="1" height="2"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#f0c55a" x="7" y="3" width="2" height="1"/></svg>')}`,
+  'retroanimation': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="8"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/><rect fill="#f0c55a" x="5" y="2" width="6" height="1"/><rect fill="#f0c55a" x="7" y="1" width="2" height="1"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/></svg>')}`,
+  'celcinema': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/></svg>')}`
 };
 
 const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
@@ -326,8 +326,8 @@ const Index = () => {
     title_need: false,
     language: 'ru',
     email: '',
-    illustration_style: 'ink',
-    illustration_style_prompt: ILLUSTRATION_STYLES['ink'],
+    illustration_style: 'disney',
+    illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
     hero1_name: '',
     hero1_age: 0,
     hero1_job: '',
