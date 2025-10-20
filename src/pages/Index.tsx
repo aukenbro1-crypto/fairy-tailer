@@ -700,6 +700,61 @@ const Index = () => {
               
               {/* Carousel Container */}
               <div className="world-carousel-wrapper">
+                {/* Mobile Navigation Arrows */}
+                <button
+                  type="button"
+                  className="world-carousel-arrow world-carousel-arrow-prev"
+                  onClick={() => {
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : WORLDS.length - 1;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || !cards[prevIndex]) return;
+                    
+                    const card = cards[prevIndex];
+                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                    
+                    track.scrollTo({
+                      left: scrollLeft,
+                      behavior: 'smooth'
+                    });
+                    
+                    setFormData(prev => ({ ...prev, world: WORLDS[prevIndex].value }));
+                  }}
+                  aria-label="Предыдущий мир"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  className="world-carousel-arrow world-carousel-arrow-next"
+                  onClick={() => {
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                    const nextIndex = currentIndex < WORLDS.length - 1 ? currentIndex + 1 : 0;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || !cards[nextIndex]) return;
+                    
+                    const card = cards[nextIndex];
+                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                    
+                    track.scrollTo({
+                      left: scrollLeft,
+                      behavior: 'smooth'
+                    });
+                    
+                    setFormData(prev => ({ ...prev, world: WORLDS[nextIndex].value }));
+                  }}
+                  aria-label="Следующий мир"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+
                 <div 
                   className="world-carousel-track"
                   onScroll={(e) => {
