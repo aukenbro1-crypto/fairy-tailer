@@ -700,32 +700,33 @@ const Index = () => {
               
               {/* Carousel Container */}
               <div className="world-carousel-wrapper">
-                <button
-                  type="button"
-                  className="world-carousel-arrow world-carousel-arrow-left"
-                  onClick={() => {
-                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                    if (!track || cards.length === 0) return;
+                <div 
+                  className="world-carousel-track"
+                  onScroll={(e) => {
+                    const track = e.currentTarget;
+                    const cards = track.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (cards.length === 0) return;
                     
-                    const scrollLeft = track.scrollLeft;
-                    const cardWidth = cards[0].offsetWidth + 16; // card width + gap
-                    const currentIndex = Math.round(scrollLeft / cardWidth);
-                    const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+                    const trackCenter = track.scrollLeft + track.offsetWidth / 2;
+                    let closestIndex = 0;
+                    let closestDistance = Infinity;
                     
-                    track.scrollTo({
-                      left: prevIndex * cardWidth,
-                      behavior: 'smooth'
+                    cards.forEach((card, index) => {
+                      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+                      const distance = Math.abs(trackCenter - cardCenter);
+                      if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestIndex = index;
+                      }
                     });
+                    
+                    // Auto-select the centered card
+                    const selectedWorld = WORLDS[closestIndex];
+                    if (selectedWorld && formData.world !== selectedWorld.value) {
+                      setFormData(prev => ({ ...prev, world: selectedWorld.value }));
+                    }
                   }}
-                  aria-label="Предыдущий мир"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-
-                <div className="world-carousel-track">
                   {WORLDS.map((world) => (
                     <button
                       key={world.value}
@@ -745,30 +746,32 @@ const Index = () => {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  className="world-carousel-arrow world-carousel-arrow-right"
-                  onClick={() => {
-                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                    if (!track || cards.length === 0) return;
-                    
-                    const scrollLeft = track.scrollLeft;
-                    const cardWidth = cards[0].offsetWidth + 16; // card width + gap
-                    const currentIndex = Math.round(scrollLeft / cardWidth);
-                    const nextIndex = (currentIndex + 1) % cards.length;
-                    
-                    track.scrollTo({
-                      left: nextIndex * cardWidth,
-                      behavior: 'smooth'
-                    });
-                  }}
-                  aria-label="Следующий мир"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
+                {/* Dots Navigation */}
+                <div className="world-carousel-dots">
+                  {WORLDS.map((world, index) => (
+                    <button
+                      key={world.value}
+                      type="button"
+                      className={`world-carousel-dot ${formData.world === world.value ? 'active' : ''}`}
+                      onClick={() => {
+                        const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                        const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                        if (!track || !cards[index]) return;
+                        
+                        const card = cards[index];
+                        const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                        
+                        track.scrollTo({
+                          left: scrollLeft,
+                          behavior: 'smooth'
+                        });
+                        
+                        setFormData(prev => ({ ...prev, world: world.value }));
+                      }}
+                      aria-label={world.title}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
