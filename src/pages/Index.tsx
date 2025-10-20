@@ -704,13 +704,21 @@ const Index = () => {
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-left"
                   onClick={() => {
-                    const container = document.querySelector('.world-carousel-track');
-                    if (container) {
-                      const cardWidth = 300 + 16; // card width + gap
-                      container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
-                    }
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || cards.length === 0) return;
+                    
+                    const scrollLeft = track.scrollLeft;
+                    const cardWidth = cards[0].offsetWidth + 16; // card width + gap
+                    const currentIndex = Math.round(scrollLeft / cardWidth);
+                    const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+                    
+                    track.scrollTo({
+                      left: prevIndex * cardWidth,
+                      behavior: 'smooth'
+                    });
                   }}
-                  aria-label="Предыдущие миры"
+                  aria-label="Предыдущий мир"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -741,13 +749,21 @@ const Index = () => {
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-right"
                   onClick={() => {
-                    const container = document.querySelector('.world-carousel-track');
-                    if (container) {
-                      const cardWidth = 300 + 16; // card width + gap
-                      container.scrollBy({ left: cardWidth, behavior: 'smooth' });
-                    }
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || cards.length === 0) return;
+                    
+                    const scrollLeft = track.scrollLeft;
+                    const cardWidth = cards[0].offsetWidth + 16; // card width + gap
+                    const currentIndex = Math.round(scrollLeft / cardWidth);
+                    const nextIndex = (currentIndex + 1) % cards.length;
+                    
+                    track.scrollTo({
+                      left: nextIndex * cardWidth,
+                      behavior: 'smooth'
+                    });
                   }}
-                  aria-label="Следующие миры"
+                  aria-label="Следующий мир"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

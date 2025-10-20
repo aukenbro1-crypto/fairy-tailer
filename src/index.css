@@ -2028,12 +2028,15 @@ html, body {
   }
 }
 
-/* === WORLD CARDS CAROUSEL === */
+/* === WORLD CARDS CAROUSEL (CENTER MODE - 1 CARD) === */
 .world-carousel-wrapper {
   position: relative;
   width: 100%;
-  padding: 16px 8px;
+  padding: 0 16px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .world-carousel-track {
@@ -2043,7 +2046,8 @@ html, body {
   overflow-y: visible;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  padding: 4px;
+  padding: 20px 8px;
+  width: 100%;
   /* Hide scrollbar but keep functionality */
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -2059,114 +2063,85 @@ html, body {
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, #141c33 0%, #0f162b 100%);
-  border: 2px solid rgba(240,197,90,.4);
+  border: 2px solid rgba(240,197,90,.45);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease-out;
   color: hsl(var(--brass));
   box-shadow: 
-    0 4px 12px rgba(0,0,0,.4),
-    inset 0 1px 0 rgba(255,255,255,.08);
+    0 4px 16px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.1);
 }
 
 .world-carousel-arrow-left {
-  left: 12px;
+  left: 8px;
 }
 
 .world-carousel-arrow-right {
-  right: 12px;
+  right: 8px;
 }
 
 .world-carousel-arrow:hover {
   border-color: hsl(var(--brass));
-  background: linear-gradient(145deg, rgba(230,166,72,.15) 0%, rgba(230,166,72,.08) 100%),
+  background: linear-gradient(145deg, rgba(230,166,72,.18) 0%, rgba(230,166,72,.1) 100%),
               linear-gradient(145deg, #141c33 0%, #0f162b 100%);
   box-shadow: 
-    0 6px 16px rgba(0,0,0,.5),
-    0 0 24px rgba(240,197,90,.25),
-    inset 0 1px 0 rgba(255,255,255,.12);
-  transform: translateY(-50%) scale(1.1);
+    0 6px 20px rgba(0,0,0,.55),
+    0 0 28px rgba(240,197,90,.3),
+    inset 0 1px 0 rgba(255,255,255,.15);
+  transform: translateY(-50%) scale(1.08);
 }
 
 .world-carousel-arrow:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(0.96);
 }
 
-/* Desktop: 3 cards visible */
-@media (min-width: 1024px) {
-  .world-card {
-    flex: 0 0 300px;
-    min-width: 280px;
-    max-width: 320px;
-  }
-}
-
-/* Tablet: 2 cards visible */
-@media (min-width: 640px) and (max-width: 1023px) {
-  .world-card {
-    flex: 0 0 calc(50% - 8px);
-    min-width: 260px;
-    max-width: 350px;
-  }
-}
-
-/* Mobile: 1 card visible */
-@media (max-width: 639px) {
-  .world-card {
-    flex: 0 0 calc(100% - 64px);
-    min-width: 240px;
-    max-width: 100%;
-  }
-  
-  .world-carousel-arrow {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .world-carousel-arrow-left {
-    left: 8px;
-  }
-  
-  .world-carousel-arrow-right {
-    right: 8px;
-  }
-}
-
+/* Single card centered on all breakpoints */
 .world-card {
   position: relative;
+  flex: 0 0 min(520px, 88vw);
+  min-width: 280px;
+  max-width: 520px;
+  margin: 0 auto;
   background: linear-gradient(145deg, #141c33 0%, #0f162b 100%);
-  border: 2px solid rgba(240,197,90,.28);
-  border-radius: 14px;
+  border: 2px solid rgba(240,197,90,.3);
+  border-radius: 16px;
   padding: 0;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s ease-out;
   text-align: left;
   box-shadow: 
-    0 6px 20px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.05);
+    0 8px 24px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.06);
   scroll-snap-align: center;
   height: auto;
+  text-wrap: balance;
 }
 
 .world-card:hover {
-  border-color: rgba(240,197,90,.5);
-  transform: translateY(-2px);
+  border-color: rgba(240,197,90,.55);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 10px 28px rgba(0,0,0,.45),
+    0 0 18px rgba(240,197,90,.15),
+    inset 0 1px 0 rgba(255,255,255,.08);
 }
 
 .world-card-active {
   border-color: hsl(var(--brass));
-  background: linear-gradient(145deg, rgba(230,166,72,.1) 0%, rgba(230,166,72,.05) 100%),
+  background: linear-gradient(145deg, rgba(230,166,72,.12) 0%, rgba(230,166,72,.06) 100%),
               linear-gradient(145deg, #141c33 0%, #0f162b 100%);
   box-shadow: 
-    0 8px 24px rgba(0,0,0,.45),
-    0 0 20px rgba(240,197,90,.3),
-    inset 0 1px 0 rgba(255,255,255,.1);
+    0 12px 32px rgba(0,0,0,.5),
+    0 0 30px rgba(240,197,90,.35),
+    0 0 50px rgba(240,197,90,.2),
+    inset 0 1px 0 rgba(255,255,255,.12);
   transform: scale(1.04);
 }
 
@@ -2175,59 +2150,100 @@ html, body {
 }
 
 .world-card-content {
-  padding: 14px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   height: 100%;
 }
 
 .world-card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 4px;
 }
 
 .world-card-emoji {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   line-height: 1;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.3));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
 }
 
 .world-card-title {
   font-family: 'Orbitron', monospace;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #f0c55a;
-  line-height: 1.25;
-  text-shadow: 0 0 6px rgba(240,197,90,.15);
+  line-height: 1.3;
+  text-shadow: 0 0 8px rgba(240,197,90,.18);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-wrap: balance;
 }
 
 .world-card-description {
-  font-size: 0.78rem;
-  line-height: 1.3;
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: hsl(var(--panel-muted));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-wrap: balance;
 }
 
 .world-card-tagline {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-style: italic;
   color: hsl(var(--panel-ink));
-  opacity: 0.65;
-  line-height: 1.2;
-  white-space: nowrap;
+  opacity: 0.7;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .world-carousel-arrow {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .world-carousel-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .world-card {
+    flex: 0 0 min(420px, 88vw);
+  }
+  
+  .world-card-content {
+    padding: 16px;
+  }
+  
+  .world-card-emoji {
+    font-size: 1.5rem;
+  }
+  
+  .world-card-title {
+    font-size: 0.95rem;
+  }
+  
+  .world-card-description {
+    font-size: 0.82rem;
+  }
+  
+  .world-card-tagline {
+    font-size: 0.75rem;
+  }
 }
