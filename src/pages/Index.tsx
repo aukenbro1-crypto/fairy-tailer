@@ -801,8 +801,39 @@ const Index = () => {
                   ))}
                 </div>
 
-                {/* Dots Navigation */}
+                {/* Dots Navigation with Arrow Buttons */}
                 <div className="world-carousel-dots">
+                  {/* Left Arrow */}
+                  <button
+                    type="button"
+                    className="world-carousel-nav-arrow world-carousel-nav-arrow-left"
+                    onClick={() => {
+                      const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                      const prevIndex = currentIndex === 0 ? WORLDS.length - 1 : currentIndex - 1;
+                      const prevWorld = WORLDS[prevIndex];
+                      
+                      const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                      const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                      if (!track || !cards[prevIndex]) return;
+                      
+                      const card = cards[prevIndex];
+                      const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                      
+                      track.scrollTo({
+                        left: scrollLeft,
+                        behavior: 'smooth'
+                      });
+                      
+                      setFormData(prev => ({ ...prev, world: prevWorld.value }));
+                    }}
+                    aria-label="Previous world"
+                  >
+                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
+                      <path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+
+                  {/* Dots */}
                   {WORLDS.map((world, index) => (
                     <button
                       key={world.value}
@@ -826,6 +857,36 @@ const Index = () => {
                       aria-label={world.title}
                     />
                   ))}
+
+                  {/* Right Arrow */}
+                  <button
+                    type="button"
+                    className="world-carousel-nav-arrow world-carousel-nav-arrow-right"
+                    onClick={() => {
+                      const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                      const nextIndex = currentIndex === WORLDS.length - 1 ? 0 : currentIndex + 1;
+                      const nextWorld = WORLDS[nextIndex];
+                      
+                      const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                      const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                      if (!track || !cards[nextIndex]) return;
+                      
+                      const card = cards[nextIndex];
+                      const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                      
+                      track.scrollTo({
+                        left: scrollLeft,
+                        behavior: 'smooth'
+                      });
+                      
+                      setFormData(prev => ({ ...prev, world: nextWorld.value }));
+                    }}
+                    aria-label="Next world"
+                  >
+                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
+                      <path d="M2 1L7 6L2 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
