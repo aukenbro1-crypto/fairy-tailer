@@ -2099,8 +2099,8 @@ html, body {
   box-sizing: border-box;
   flex: 0 0 100%;
   width: 100%;
-  max-width: 380px;
-  min-width: 260px;
+  max-width: 340px;
+  min-width: 240px;
   margin: 0 auto;
   background: linear-gradient(145deg, #141c33 0%, #0f162b 100%);
   border: 2px solid rgba(240,197,90,.3);
@@ -2208,8 +2208,8 @@ html, body {
   }
   
   .world-card {
-    max-width: 320px;
-    min-width: 240px;
+    max-width: 290px;
+    min-width: 220px;
   }
   
   .world-card-content {
