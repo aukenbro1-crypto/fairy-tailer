@@ -2038,12 +2038,12 @@ html, body {
 
 .world-carousel-track {
   display: flex;
-  gap: 24px;
+  gap: 0;
   overflow-x: auto;
   overflow-y: visible;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  padding: 8px 80px; /* padding creates space for arrows */
+  padding: 8px 0;
   width: 100%;
   /* Hide scrollbar */
   scrollbar-width: none;
@@ -2078,11 +2078,11 @@ html, body {
 }
 
 .world-carousel-arrow-left {
-  left: 16px;
+  left: 8px;
 }
 
 .world-carousel-arrow-right {
-  right: 16px;
+  right: 8px;
 }
 
 .world-carousel-arrow:hover {
@@ -2100,11 +2100,11 @@ html, body {
   transform: translateY(-50%) scale(0.95);
 }
 
-/* Card - always centered, always fits between arrows */
+/* Card - only one visible at a time */
 .world-card {
   position: relative;
   box-sizing: border-box;
-  flex: 0 0 auto;
+  flex: 0 0 100%;
   width: 100%;
   max-width: 420px;
   min-width: 280px;
@@ -2202,18 +2202,14 @@ html, body {
   text-overflow: ellipsis;
 }
 
-/* Mobile - smaller padding for track */
+/* Mobile adjustments */
 @media (max-width: 640px) {
-  .world-carousel-track {
-    padding: 8px 60px;
-  }
-  
   .world-carousel-arrow-left {
-    left: 8px;
+    left: 4px;
   }
   
   .world-carousel-arrow-right {
-    right: 8px;
+    right: 4px;
   }
   
   .world-card {
