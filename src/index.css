@@ -2146,30 +2146,27 @@ html, body {
 
 /* Navigation arrows next to dots */
 .world-carousel-nav-arrow {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(20, 28, 51, 0.8);
-  border: 1.5px solid rgba(240, 197, 90, 0.6);
-  border-radius: 50%;
+  background: none;
+  border: none;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   color: hsl(var(--primary));
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+  padding: 0;
 }
 
 .world-carousel-nav-arrow:hover {
-  background: rgba(20, 28, 51, 0.95);
-  border-color: rgba(240, 197, 90, 0.9);
-  transform: scale(1.15);
-  box-shadow: 0 0 12px rgba(240, 197, 90, 0.4);
+  transform: scale(1.2);
+  color: hsl(var(--brass));
 }
 
 .world-carousel-nav-arrow:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
 
@@ -2454,30 +2451,10 @@ html, body {
     transform: scale(1.5);
   }
 
-  /* Navigation arrows next to dots */
+  /* Navigation arrows next to dots - mobile */
   .world-carousel-nav-arrow {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(20, 28, 51, 0.7);
-    border: 1.5px solid rgba(240, 197, 90, 0.5);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: hsl(var(--primary));
-    flex-shrink: 0;
-  }
-
-  .world-carousel-nav-arrow:hover {
-    background: rgba(20, 28, 51, 0.95);
-    border-color: rgba(240, 197, 90, 0.9);
-    transform: scale(1.15);
-  }
-
-  .world-carousel-nav-arrow:active {
-    transform: scale(0.9);
+    width: 18px;
+    height: 18px;
   }
   
   /* Ensure all mixer control sections take full width */
