@@ -698,20 +698,55 @@ const Index = () => {
                 От выбора зависит, какой получится сказка: лёгкая, философская, приключенческая или кибер-сон.
               </p>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {WORLDS.map((world) => (
-                  <button
-                    key={world.value}
-                    type="button"
-                    className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
-                    onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
-                  >
-                    <div className="world-card-emoji">{world.emoji}</div>
-                    <h4 className="world-card-title">{world.title}</h4>
-                    <p className="world-card-description">{world.description}</p>
-                    <p className="world-card-tagline">{world.tagline}</p>
-                  </button>
-                ))}
+              {/* Carousel Container */}
+              <div className="world-carousel-wrapper">
+                <button
+                  type="button"
+                  className="world-carousel-arrow world-carousel-arrow-left"
+                  onClick={() => {
+                    const container = document.querySelector('.world-carousel-container');
+                    if (container) {
+                      container.scrollBy({ left: -300, behavior: 'smooth' });
+                    }
+                  }}
+                  aria-label="Предыдущие миры"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+                  </svg>
+                </button>
+
+                <div className="world-carousel-container">
+                  {WORLDS.map((world) => (
+                    <button
+                      key={world.value}
+                      type="button"
+                      className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
+                    >
+                      <div className="world-card-emoji">{world.emoji}</div>
+                      <h4 className="world-card-title">{world.title}</h4>
+                      <p className="world-card-description">{world.description}</p>
+                      <p className="world-card-tagline">{world.tagline}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="world-carousel-arrow world-carousel-arrow-right"
+                  onClick={() => {
+                    const container = document.querySelector('.world-carousel-container');
+                    if (container) {
+                      container.scrollBy({ left: 300, behavior: 'smooth' });
+                    }
+                  }}
+                  aria-label="Следующие миры"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+                  </svg>
+                </button>
               </div>
             </div>
 
