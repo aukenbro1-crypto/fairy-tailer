@@ -2028,15 +2028,16 @@ html, body {
   }
 }
 
-/* === WORLD CARDS CAROUSEL (CENTER MODE - 1 CARD) === */
+/* === WORLD CARDS CAROUSEL (CENTER MODE - 1 CARD FIXED) === */
 .world-carousel-wrapper {
   position: relative;
   width: 100%;
   padding: 0 16px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .world-carousel-track {
@@ -2046,7 +2047,8 @@ html, body {
   overflow-y: visible;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  padding: 20px 8px;
+  scroll-padding: 64px;
+  padding: 24px 64px;
   width: 100%;
   /* Hide scrollbar but keep functionality */
   scrollbar-width: none;
@@ -2062,9 +2064,9 @@ html, body {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
-  width: 44px;
-  height: 44px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2077,6 +2079,7 @@ html, body {
   box-shadow: 
     0 4px 16px rgba(0,0,0,.45),
     inset 0 1px 0 rgba(255,255,255,.1);
+  flex-shrink: 0;
 }
 
 .world-carousel-arrow-left {
@@ -2102,26 +2105,26 @@ html, body {
   transform: translateY(-50%) scale(0.96);
 }
 
-/* Single card centered on all breakpoints */
+/* Single card centered - always fits in container */
 .world-card {
   position: relative;
-  flex: 0 0 min(520px, 88vw);
-  min-width: 280px;
-  max-width: 520px;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  max-width: 440px;
+  width: min(440px, calc(100% - 128px)); /* 128px = 2*40 (arrows) + 2*8 (offset) + 2*16 (padding) */
   margin: 0 auto;
   background: linear-gradient(145deg, #141c33 0%, #0f162b 100%);
   border: 2px solid rgba(240,197,90,.3);
   border-radius: 16px;
   padding: 0;
   cursor: pointer;
-  transition: all 0.35s ease-out;
+  transition: transform 0.25s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;
   text-align: left;
   box-shadow: 
     0 8px 24px rgba(0,0,0,.4),
     inset 0 1px 0 rgba(255,255,255,.06);
   scroll-snap-align: center;
   height: auto;
-  text-wrap: balance;
 }
 
 .world-card:hover {
@@ -2142,15 +2145,15 @@ html, body {
     0 0 30px rgba(240,197,90,.35),
     0 0 50px rgba(240,197,90,.2),
     inset 0 1px 0 rgba(255,255,255,.12);
-  transform: scale(1.04);
+  transform: scale(1.02);
 }
 
 .world-card-active:hover {
-  transform: scale(1.04) translateY(-2px);
+  transform: scale(1.02) translateY(-2px);
 }
 
 .world-card-content {
-  padding: 18px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2165,7 +2168,7 @@ html, body {
 }
 
 .world-card-emoji {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   line-height: 1;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
@@ -2173,7 +2176,7 @@ html, body {
 
 .world-card-title {
   font-family: 'Orbitron', monospace;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #f0c55a;
   line-height: 1.3;
@@ -2183,23 +2186,21 @@ html, body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-wrap: balance;
 }
 
 .world-card-description {
-  font-size: 0.875rem;
-  line-height: 1.45;
+  font-size: 0.85rem;
+  line-height: 1.4;
   color: hsl(var(--panel-muted));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-wrap: balance;
 }
 
 .world-card-tagline {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-style: italic;
   color: hsl(var(--panel-ink));
   opacity: 0.7;
@@ -2213,37 +2214,27 @@ html, body {
 
 /* Mobile adjustments */
 @media (max-width: 640px) {
-  .world-carousel-arrow {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .world-carousel-arrow svg {
-    width: 18px;
-    height: 18px;
-  }
-  
   .world-card {
-    flex: 0 0 min(420px, 88vw);
+    width: min(380px, calc(100% - 112px)); /* smaller calculation for mobile */
   }
   
   .world-card-content {
-    padding: 16px;
+    padding: 14px 16px;
   }
   
   .world-card-emoji {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
   }
   
   .world-card-title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
   
   .world-card-description {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
   
   .world-card-tagline {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
   }
 }
