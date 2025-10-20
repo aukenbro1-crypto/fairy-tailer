@@ -330,7 +330,6 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
-  const [worldIndex, setWorldIndex] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     world: 'disney_light',
     newyear_mode: false,
@@ -699,15 +698,27 @@ const Index = () => {
                 От выбора зависит, какой получится сказка: лёгкая, философская, приключенческая или кибер-сон.
               </p>
               
-              {/* Pseudo-Carousel Container */}
+              {/* Carousel Container */}
               <div className="world-carousel-wrapper">
-                {/* Navigation Arrows */}
+                {/* Mobile Navigation Arrows */}
                 <button
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-prev"
                   onClick={() => {
-                    const prevIndex = worldIndex === 0 ? WORLDS.length - 1 : worldIndex - 1;
-                    setWorldIndex(prevIndex);
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : WORLDS.length - 1;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || !cards[prevIndex]) return;
+                    
+                    const card = cards[prevIndex];
+                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                    
+                    track.scrollTo({
+                      left: scrollLeft,
+                      behavior: 'smooth'
+                    });
+                    
                     setFormData(prev => ({ ...prev, world: WORLDS[prevIndex].value }));
                   }}
                   aria-label="Предыдущий мир"
@@ -721,8 +732,20 @@ const Index = () => {
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-next"
                   onClick={() => {
-                    const nextIndex = worldIndex === WORLDS.length - 1 ? 0 : worldIndex + 1;
-                    setWorldIndex(nextIndex);
+                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                    const nextIndex = currentIndex < WORLDS.length - 1 ? currentIndex + 1 : 0;
+                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (!track || !cards[nextIndex]) return;
+                    
+                    const card = cards[nextIndex];
+                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                    
+                    track.scrollTo({
+                      left: scrollLeft,
+                      behavior: 'smooth'
+                    });
+                    
                     setFormData(prev => ({ ...prev, world: WORLDS[nextIndex].value }));
                   }}
                   aria-label="Следующий мир"
@@ -732,26 +755,49 @@ const Index = () => {
                   </svg>
                 </button>
 
-                {/* Card Container - shows only one card at a time */}
-                <div className="world-card-container">
-                  {WORLDS.map((world, index) => (
-                    worldIndex === index && (
-                      <button
-                        key={world.value}
-                        type="button"
-                        className="world-card world-card-active"
-                        onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
-                      >
-                        <div className="world-card-content">
-                          <div className="world-card-header">
-                            <span className="world-card-emoji">{world.emoji}</span>
-                            <h4 className="world-card-title">{world.title}</h4>
-                          </div>
-                          <p className="world-card-description">{world.description}</p>
-                          <p className="world-card-tagline">{world.tagline}</p>
+                <div 
+                  className="world-carousel-track"
+                  onScroll={(e) => {
+                    const track = e.currentTarget;
+                    const cards = track.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                    if (cards.length === 0) return;
+                    
+                    const trackCenter = track.scrollLeft + track.offsetWidth / 2;
+                    let closestIndex = 0;
+                    let closestDistance = Infinity;
+                    
+                    cards.forEach((card, index) => {
+                      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+                      const distance = Math.abs(trackCenter - cardCenter);
+                      if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestIndex = index;
+                      }
+                    });
+                    
+                    // Auto-select the centered card
+                    const selectedWorld = WORLDS[closestIndex];
+                    if (selectedWorld && formData.world !== selectedWorld.value) {
+                      setFormData(prev => ({ ...prev, world: selectedWorld.value }));
+                    }
+                  }}
+                >
+                  {WORLDS.map((world) => (
+                    <button
+                      key={world.value}
+                      type="button"
+                      className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
+                    >
+                      <div className="world-card-content">
+                        <div className="world-card-header">
+                          <span className="world-card-emoji">{world.emoji}</span>
+                          <h4 className="world-card-title">{world.title}</h4>
                         </div>
-                      </button>
-                    )
+                        <p className="world-card-description">{world.description}</p>
+                        <p className="world-card-tagline">{world.tagline}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
 
@@ -761,9 +807,20 @@ const Index = () => {
                     <button
                       key={world.value}
                       type="button"
-                      className={`world-carousel-dot ${worldIndex === index ? 'active' : ''}`}
+                      className={`world-carousel-dot ${formData.world === world.value ? 'active' : ''}`}
                       onClick={() => {
-                        setWorldIndex(index);
+                        const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                        const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                        if (!track || !cards[index]) return;
+                        
+                        const card = cards[index];
+                        const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                        
+                        track.scrollTo({
+                          left: scrollLeft,
+                          behavior: 'smooth'
+                        });
+                        
                         setFormData(prev => ({ ...prev, world: world.value }));
                       }}
                       aria-label={world.title}

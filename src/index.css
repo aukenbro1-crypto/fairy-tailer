@@ -2074,7 +2074,7 @@ html, body {
   }
 }
 
-/* === WORLD CARDS PSEUDO-CAROUSEL (1 CARD WITH DOTS) === */
+/* === WORLD CARDS CAROUSEL (1 CARD WITH DOTS) === */
 .world-carousel-wrapper {
   position: relative;
   width: 100%;
@@ -2082,55 +2082,28 @@ html, body {
   overflow: hidden;
 }
 
-/* Navigation Arrows - visible on all screens */
+/* Mobile Navigation Arrows (hidden on desktop) */
 .world-carousel-arrow {
+  display: none;
+}
+
+.world-carousel-track {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(20, 28, 51, 0.88);
-  border: 1.5px solid rgba(240, 197, 90, 0.35);
-  color: hsl(var(--brass));
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.25s ease-out;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  padding: 0;
-}
-
-.world-carousel-arrow:hover {
-  background: rgba(20, 28, 51, 0.96);
-  border-color: rgba(240, 197, 90, 0.65);
-  box-shadow: 0 0 18px rgba(240, 197, 90, 0.35);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.world-carousel-arrow:active {
-  transform: translateY(-50%) scale(0.92);
-}
-
-.world-carousel-arrow-prev {
-  left: 10px;
-}
-
-.world-carousel-arrow-next {
-  right: 10px;
-}
-
-/* Card Container - displays one card at a time */
-.world-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  min-height: 200px;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
   padding: 8px 0;
+  width: 100%;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.world-carousel-track::-webkit-scrollbar {
+  display: none;
 }
 
 /* Dots Navigation */
@@ -2175,6 +2148,7 @@ html, body {
 .world-card {
   position: relative;
   box-sizing: border-box;
+  flex: 0 0 100%;
   width: 100%;
   max-width: 340px;
   min-width: 240px;
@@ -2188,6 +2162,7 @@ html, body {
   box-shadow: 
     0 8px 24px rgba(0,0,0,.4),
     inset 0 1px 0 rgba(255,255,255,.06);
+  scroll-snap-align: center;
   height: auto;
 }
 
@@ -2281,12 +2256,6 @@ html, body {
     max-width: 100vw;
   }
 
-  /* Card Container */
-  .world-card-container {
-    min-height: 240px;
-    padding: 12px 0;
-  }
-
   /* Navigation Arrows - positioned over carousel, not affecting card width */
   .world-carousel-arrow {
     display: flex;
@@ -2328,13 +2297,35 @@ html, body {
     right: 7px;
   }
 
+  /* Carousel track - horizontal scroll, snap to center */
+  .world-carousel-track {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    padding: 12px 8px 16px 8px;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .world-carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Card - ONE large card, centered, fully visible */
   .world-card {
+    flex: 0 0 min(88vw, 340px);
     width: min(88vw, 340px);
     max-width: 340px;
     min-width: 280px;
     margin: 0 auto;
     box-sizing: border-box;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
   }
 
   /* NO scale transform on mobile */
