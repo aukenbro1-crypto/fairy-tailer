@@ -2027,3 +2027,90 @@ html, body {
     font-size: 11px;
   }
 }
+
+/* === WORLD CARDS === */
+.world-card {
+  position: relative;
+  background: linear-gradient(145deg, #141c33 0%, #0f162b 100%);
+  border: 2px solid rgba(240,197,90,.25);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.world-card:hover {
+  border-color: rgba(240,197,90,.5);
+  box-shadow: 
+    0 12px 32px rgba(0,0,0,.45),
+    0 0 20px rgba(240,197,90,.15),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  transform: translateY(-2px);
+}
+
+.world-card-active {
+  border-color: hsl(var(--brass));
+  background: linear-gradient(145deg, rgba(230,166,72,.12) 0%, rgba(230,166,72,.06) 100%),
+              linear-gradient(145deg, #141c33 0%, #0f162b 100%);
+  box-shadow: 
+    0 14px 36px rgba(0,0,0,.45),
+    0 0 30px rgba(240,197,90,.25),
+    inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.world-card-emoji {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.world-card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0c55a;
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px rgba(240,197,90,.18);
+}
+
+.world-card-description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: hsl(var(--panel-muted));
+  margin-bottom: 8px;
+}
+
+.world-card-tagline {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: hsl(var(--panel-ink));
+  opacity: 0.7;
+}
+
+/* Mobile responsive for world cards */
+@media (max-width: 768px) {
+  .world-card {
+    padding: 16px;
+  }
+  
+  .world-card-emoji {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  
+  .world-card-title {
+    font-size: 1rem;
+  }
+  
+  .world-card-description {
+    font-size: 0.8rem;
+  }
+  
+  .world-card-tagline {
+    font-size: 0.75rem;
+  }
+}

@@ -119,10 +119,8 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
 // Constants from requirements
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
 interface FormData {
-  genre: string;
-  tone: string;
-  form: 'adult' | 'kids';
-  ending: 'moral' | 'happy' | 'sad' | 'twist';
+  world: string;
+  newyear_mode: boolean;
   location: string;
   artifact: string;
   length_target: number;
@@ -166,25 +164,44 @@ interface FormData {
   hero4_photo: File | null;
   hero4_photo_url: string;
 }
-const GENRES = ['приключение', 'философская притча', 'романтика', 'страшная история', 'юмор', 'сюрреализм', 'фэнтези', 'научная фантастика'];
-const GENRE_SYMBOLS: Record<string, string> = {
-  'приключение': '✦',
-  'философская притча': '☉',
-  'романтика': '♡',
-  'страшная история': '☾',
-  'юмор': '✺',
-  'сюрреализм': '◇',
-  'фэнтези': '✶',
-  'научная фантастика': '⚛'
-};
-const TONE_PRESETS = ['легкий', 'ироничный', 'философский', 'драматичный', 'мистический'];
-const ENDINGS = ['moral', 'happy', 'sad', 'twist'];
-const ENDING_LABELS = {
-  moral: 'С моралью',
-  happy: 'Хэппи-энд',
-  sad: 'Грустный',
-  twist: 'Неожиданный'
-};
+// World options for the new "Choose Your World" section
+const WORLDS = [
+  {
+    value: 'disney_light',
+    emoji: '🕯',
+    title: 'Disney Light',
+    description: 'Светлый и доброжелательный мир, где чудо рождается из доброты и веры в себя.',
+    tagline: '— Добро звучит песней.'
+  },
+  {
+    value: 'adventure_classic',
+    emoji: '🧭',
+    title: 'Adventure Classic',
+    description: 'Мир открытий, дорог и шторма, где герои находят главное внутри себя.',
+    tagline: '— Вперёд, команда!'
+  },
+  {
+    value: 'fantasy_epic',
+    emoji: '🐉',
+    title: 'Fantasy Epic',
+    description: 'Древние тайны, героизм и выбор судьбы.',
+    tagline: '— Свет и Тьма внутри нас.'
+  },
+  {
+    value: 'cyberpunk_dream',
+    emoji: '💾',
+    title: 'Cyberpunk Dream',
+    description: 'Город неона, дождя и одиночества, где человек спорит с машинами и с собой.',
+    tagline: '— Сердце в коде.'
+  },
+  {
+    value: 'philosophical_tale',
+    emoji: '🌙',
+    title: 'Philosophical Tale',
+    description: 'Тихий, созерцательный мир, где всё становится метафорой пути.',
+    tagline: '— Разговор с тенью.'
+  }
+];
 
 const ILLUSTRATION_STYLES: Record<string, string> = {
   'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
@@ -314,11 +331,8 @@ const Index = () => {
   const [showLoader, setShowLoader] = useState(false);
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    genre: '',
-    tone: TONE_PRESETS[0],
-    // Initialize with first tone preset
-    form: 'adult',
-    ending: 'moral',
+    world: 'disney_light',
+    newyear_mode: false,
     location: '',
     artifact: '',
     length_target: 15000,
@@ -367,65 +381,6 @@ const Index = () => {
     hero4: false
   });
 
-  // Handle knob click to cycle through presets with animation
-  const handleKnobClick = () => {
-    // Add changing animation class
-    const displayElement = document.querySelector('.mixer-tone-display-text');
-    if (displayElement) {
-      displayElement.classList.add('mixer-tone-display-changing');
-    }
-    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
-    const nextIndex = (currentIndex + 1) % TONE_PRESETS.length;
-    const nextTone = TONE_PRESETS[nextIndex];
-
-    // Delay the text change for animation effect
-    setTimeout(() => {
-      setFormData(prev => ({
-        ...prev,
-        tone: nextTone
-      }));
-      setKnobAngle(nextIndex * (360 / TONE_PRESETS.length));
-
-      // Remove animation class after text change
-      setTimeout(() => {
-        if (displayElement) {
-          displayElement.classList.remove('mixer-tone-display-changing');
-        }
-      }, 50);
-    }, 150);
-  };
-  // Genre selector functions
-  const handleGenreSelect = (genre: string) => {
-    setFormData(prev => ({
-      ...prev,
-      genre
-    }));
-  };
-  const handleGenreKeyDown = (e: React.KeyboardEvent) => {
-    const currentIndex = GENRES.findIndex(g => g === formData.genre);
-    let newIndex = currentIndex;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      newIndex = currentIndex === -1 ? GENRES.length - 1 : (currentIndex - 1 + GENRES.length) % GENRES.length;
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      newIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % GENRES.length;
-    }
-    if (newIndex !== currentIndex) {
-      setFormData(prev => ({
-        ...prev,
-        genre: GENRES[newIndex]
-      }));
-    }
-  };
-
-  // Initialize knob angle based on current tone
-  useEffect(() => {
-    const currentIndex = TONE_PRESETS.indexOf(formData.tone);
-    if (currentIndex !== -1) {
-      setKnobAngle(currentIndex * (360 / TONE_PRESETS.length));
-    }
-  }, []);
 
   // Email validation
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -451,14 +406,6 @@ const Index = () => {
   const hideEmailOverlayHandler = () => {
     setShowEmailOverlay(false);
   };
-  const handleEndingChange = () => {
-    const currentIndex = ENDINGS.indexOf(formData.ending);
-    const nextIndex = (currentIndex + 1) % ENDINGS.length;
-    setFormData(prev => ({
-      ...prev,
-      ending: ENDINGS[nextIndex] as any
-    }));
-  };
   const handleSubmit = async () => {
     // Email validation
     if (!validateEmail(formData.email)) {
@@ -471,7 +418,7 @@ const Index = () => {
     }
 
     // Other validation
-    if (!formData.genre || !formData.form || !formData.ending || formData.length_target <= 0 || formData.chapters <= 0) {
+    if (!formData.world || formData.length_target <= 0 || formData.chapters <= 0) {
       toast({
         variant: "destructive",
         title: "Ошибка валидации",
@@ -485,10 +432,8 @@ const Index = () => {
     const multipartData = new FormData();
     
     // Add all text fields
-    multipartData.append('genre', formData.genre);
-    multipartData.append('tone', formData.tone);
-    multipartData.append('form', formData.form);
-    multipartData.append('ending', formData.ending);
+    multipartData.append('world', formData.world);
+    multipartData.append('newyear_mode', formData.newyear_mode.toString());
     multipartData.append('location', formData.location);
     multipartData.append('artifact', formData.artifact);
     multipartData.append('length_target', formData.length_target.toString());
@@ -586,10 +531,8 @@ const Index = () => {
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
           setFormData({
-            genre: '',
-            tone: TONE_PRESETS[0],
-            form: 'adult',
-            ending: 'moral',
+            world: 'disney_light',
+            newyear_mode: false,
             location: '',
             artifact: '',
             length_target: 15000,
@@ -597,8 +540,8 @@ const Index = () => {
             title_need: false,
             language: 'ru',
             email: '',
-            illustration_style: 'ink',
-            illustration_style_prompt: ILLUSTRATION_STYLES['ink'],
+            illustration_style: 'disney',
+            illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
             hero1_name: '',
             hero1_age: 0,
             hero1_job: '',
@@ -744,95 +687,53 @@ const Index = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Column - Controls */}
           <div className="space-y-8">
-            {/* Genre */}
+            {/* World Selection */}
             <div className="mixer-control-section">
               <label className="mixer-control-label relative">
-                Выбери жанр
+                Выбери свой мир
                 <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
               </label>
+              <p className="mixer-hint mb-4">
+                Каждый мир — это своя атмосфера, законы и настроение. 
+                От выбора зависит, какой получится сказка: лёгкая, философская, приключенческая или кибер-сон.
+              </p>
               
-              {/* Hidden select for form submission */}
-              <select className="mixer-select-hidden" value={formData.genre} onChange={e => setFormData(prev => ({
-              ...prev,
-              genre: e.target.value
-            }))} tabIndex={-1} aria-hidden="true">
-                <option value="">Выберите жанр...</option>
-                {GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
-              </select>
-
-              {/* Custom Genre Dot Selector */}
-              <div className="genre-selector-container">
-                {/* Genre Display Screen */}
-                <div className="genre-display-screen">
-                  <div className="genre-display-text" aria-live="polite">
-                    {formData.genre ? <>
-                        {formData.genre}
-                        <span className="genre-symbol" aria-hidden="true">
-                          {GENRE_SYMBOLS[formData.genre]}
-                        </span>
-                      </> : 'не выбран'}
-                  </div>
-                </div>
-                
-                {/* Dot Selector */}
-                <div className="genre-dot-selector" role="listbox" tabIndex={0} onKeyDown={handleGenreKeyDown} aria-label="Выбор жанра истории">
-                  {GENRES.map((genre, index) => <button key={genre} className={`genre-dot ${formData.genre === genre ? 'active' : ''}`} role="option" aria-selected={formData.genre === genre} aria-label={genre} onClick={() => handleGenreSelect(genre)} />)}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {WORLDS.map((world) => (
+                  <button
+                    key={world.value}
+                    type="button"
+                    className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
+                  >
+                    <div className="world-card-emoji">{world.emoji}</div>
+                    <h4 className="world-card-title">{world.title}</h4>
+                    <p className="world-card-description">{world.description}</p>
+                    <p className="world-card-tagline">{world.tagline}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Tone Control */}
+            {/* New Year Toggle */}
             <div className="mixer-control-section">
-              <label className="mixer-control-label">
-                Тон повествования
-              </label>
-              <div className="flex items-center gap-8">
-                {/* Large Rotary Knob */}
-                <div className="mixer-tone-knob" style={{
-                transform: `rotate(${knobAngle}deg)`
-              }} onClick={handleKnobClick} />
-                
-                {/* Display Screen */}
-                <div className="flex-1 mixer-tone-display">
-                  <div className="mixer-tone-display-text">
-                    {formData.tone || 'не выбран'}
-                  </div>
+              <div className="flex items-start gap-4">
+                <div 
+                  className={`mixer-toggle ${formData.newyear_mode ? 'active' : ''}`}
+                  onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}
+                >
+                  <div className="mixer-toggle-handle" />
                 </div>
-              </div>
-              
-            </div>
-
-
-            {/* Ending Compass and Form Toggle Container */}
-            <div className="mixer-control-section">
-              <label className="mixer-control-label">Финал</label>
-              
-              {/* Hidden select for form submission */}
-              <select className="mixer-select-hidden" value={formData.ending} onChange={e => setFormData(prev => ({
-              ...prev,
-              ending: e.target.value as any
-            }))} tabIndex={-1} aria-hidden="true">
-                {ENDINGS.map(ending => <option key={ending} value={ending}>{ENDING_LABELS[ending]}</option>)}
-              </select>
-
-              <div className="compass-form-container">
-                <CompassSelector options={ENDINGS} labels={ENDING_LABELS} value={formData.ending} onChange={value => setFormData(prev => ({
-                ...prev,
-                ending: value as any
-              }))} symbols={['☉', '☽', '◇', '✶']} />
-                
-                {/* Form Toggle moved here */}
-                <div className="form-toggle-section">
-                  <div className="flex items-center gap-4">
-                    <span className={formData.form === 'adult' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для взрослых</span>
-                    <div className={`mixer-toggle ${formData.form === 'kids' ? 'active' : ''}`} onClick={() => setFormData(prev => ({
-                    ...prev,
-                    form: prev.form === 'adult' ? 'kids' : 'adult'
-                  }))}>
-                      <div className="mixer-toggle-handle" />
-                    </div>
-                    <span className={formData.form === 'kids' ? 'mixer-toggle-label active' : 'mixer-toggle-label'}>Для детей</span>
-                  </div>
+                <div className="flex-1">
+                  <label className="mixer-control-label cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}>
+                    🎄 Новогодняя история
+                  </label>
+                  <p className="mixer-hint mt-1">
+                    Добавит зимнюю атмосферу, огни и ощущение начала нового — без клише и Санта-нарратива.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Тёплый свет гирлянд, свечи, мандарины или тропическая новогодняя ночь — в зависимости от локации.
+                  </p>
                 </div>
               </div>
             </div>
