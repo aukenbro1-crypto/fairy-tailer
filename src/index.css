@@ -2297,26 +2297,9 @@ html, body {
     margin: 0 auto;
   }
 
-  /* Navigation Arrows - positioned over carousel, not affecting card width */
+  /* Hide big navigation arrows on mobile */
   .world-carousel-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(20, 28, 51, 0.95);
-    border: 2px solid rgba(240, 197, 90, 0.5);
-    color: hsl(var(--brass));
-    cursor: pointer;
-    z-index: 20;
-    transition: all 0.2s ease-out;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    padding: 0;
+    display: none !important;
   }
 
   .world-carousel-arrow svg {
