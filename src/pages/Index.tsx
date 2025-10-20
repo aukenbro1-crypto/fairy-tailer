@@ -704,19 +704,20 @@ const Index = () => {
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-left"
                   onClick={() => {
-                    const container = document.querySelector('.world-carousel-container');
+                    const container = document.querySelector('.world-carousel-track');
                     if (container) {
-                      container.scrollBy({ left: -300, behavior: 'smooth' });
+                      const cardWidth = 300 + 16; // card width + gap
+                      container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
                     }
                   }}
                   aria-label="Предыдущие миры"
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
 
-                <div className="world-carousel-container">
+                <div className="world-carousel-track">
                   {WORLDS.map((world) => (
                     <button
                       key={world.value}
@@ -724,10 +725,14 @@ const Index = () => {
                       className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
                       onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
                     >
-                      <div className="world-card-emoji">{world.emoji}</div>
-                      <h4 className="world-card-title">{world.title}</h4>
-                      <p className="world-card-description">{world.description}</p>
-                      <p className="world-card-tagline">{world.tagline}</p>
+                      <div className="world-card-content">
+                        <div className="world-card-header">
+                          <span className="world-card-emoji">{world.emoji}</span>
+                          <h4 className="world-card-title">{world.title}</h4>
+                        </div>
+                        <p className="world-card-description">{world.description}</p>
+                        <p className="world-card-tagline">{world.tagline}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -736,15 +741,16 @@ const Index = () => {
                   type="button"
                   className="world-carousel-arrow world-carousel-arrow-right"
                   onClick={() => {
-                    const container = document.querySelector('.world-carousel-container');
+                    const container = document.querySelector('.world-carousel-track');
                     if (container) {
-                      container.scrollBy({ left: 300, behavior: 'smooth' });
+                      const cardWidth = 300 + 16; // card width + gap
+                      container.scrollBy({ left: cardWidth, behavior: 'smooth' });
                     }
                   }}
                   aria-label="Следующие миры"
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
               </div>
