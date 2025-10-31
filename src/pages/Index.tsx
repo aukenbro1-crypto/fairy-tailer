@@ -974,7 +974,7 @@ const Index = () => {
                       id="hero1_rel"
                       rows={2}
                       maxLength={300}
-                      placeholder='Одной строкой: "Ана — сестра Никиты; Никита и Дима соперничают". Можно просто: "Никита учит Ану, но спорят".'
+                      placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
                       className="mixer-input resize-none"
                       value={formData.hero1_rel}
                       onChange={e => setFormData(prev => ({
@@ -1119,7 +1119,7 @@ const Index = () => {
                               id={`hero${heroNum}_rel`}
                               rows={2}
                               maxLength={300}
-                              placeholder='Одной строкой: "Ана — сестра Никиты; Никита и Дима соперничают". Можно просто: "Никита учит Ану, но спорят".'
+                              placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
                               className="mixer-input resize-none"
                               value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
                               onChange={e => setFormData(prev => ({
