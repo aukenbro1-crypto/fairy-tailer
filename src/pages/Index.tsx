@@ -132,35 +132,23 @@ interface FormData {
   illustration_style_prompt: string;
   // Heroes 1-4
   hero1_name: string;
-  hero1_age: number;
-  hero1_job: string;
-  hero1_traits: string;
-  hero1_fear: string;
-  hero1_habits: string;
+  hero1_desc: string;
+  hero1_rel: string;
   hero1_photo: File | null;
   hero1_photo_url: string;
   hero2_name: string;
-  hero2_age: number;
-  hero2_job: string;
-  hero2_traits: string;
-  hero2_fear: string;
-  hero2_habits: string;
+  hero2_desc: string;
+  hero2_rel: string;
   hero2_photo: File | null;
   hero2_photo_url: string;
   hero3_name: string;
-  hero3_age: number;
-  hero3_job: string;
-  hero3_traits: string;
-  hero3_fear: string;
-  hero3_habits: string;
+  hero3_desc: string;
+  hero3_rel: string;
   hero3_photo: File | null;
   hero3_photo_url: string;
   hero4_name: string;
-  hero4_age: number;
-  hero4_job: string;
-  hero4_traits: string;
-  hero4_fear: string;
-  hero4_habits: string;
+  hero4_desc: string;
+  hero4_rel: string;
   hero4_photo: File | null;
   hero4_photo_url: string;
 }
@@ -343,35 +331,23 @@ const Index = () => {
     illustration_style: 'disney',
     illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
     hero1_name: '',
-    hero1_age: 0,
-    hero1_job: '',
-    hero1_traits: '',
-    hero1_fear: '',
-    hero1_habits: '',
+    hero1_desc: '',
+    hero1_rel: '',
     hero1_photo: null,
     hero1_photo_url: '',
     hero2_name: '',
-    hero2_age: 0,
-    hero2_job: '',
-    hero2_traits: '',
-    hero2_fear: '',
-    hero2_habits: '',
+    hero2_desc: '',
+    hero2_rel: '',
     hero2_photo: null,
     hero2_photo_url: '',
     hero3_name: '',
-    hero3_age: 0,
-    hero3_job: '',
-    hero3_traits: '',
-    hero3_fear: '',
-    hero3_habits: '',
+    hero3_desc: '',
+    hero3_rel: '',
     hero3_photo: null,
     hero3_photo_url: '',
     hero4_name: '',
-    hero4_age: 0,
-    hero4_job: '',
-    hero4_traits: '',
-    hero4_fear: '',
-    hero4_habits: '',
+    hero4_desc: '',
+    hero4_rel: '',
     hero4_photo: null,
     hero4_photo_url: ''
   });
@@ -446,11 +422,8 @@ const Index = () => {
     
     // Hero 1 (always included, photo optional)
     multipartData.append('hero1_name', formData.hero1_name);
-    multipartData.append('hero1_age', formData.hero1_age.toString());
-    multipartData.append('hero1_job', formData.hero1_job);
-    multipartData.append('hero1_traits', formData.hero1_traits);
-    multipartData.append('hero1_fear', formData.hero1_fear);
-    multipartData.append('hero1_habits', formData.hero1_habits);
+    multipartData.append('hero1_desc', formData.hero1_desc);
+    multipartData.append('hero1_rel', formData.hero1_rel);
     
     if (formData.hero1_photo) {
       multipartData.append('hero1_photo', formData.hero1_photo);
@@ -461,11 +434,8 @@ const Index = () => {
     // Hero 2 (if enabled)
     if (heroSections.hero2) {
       multipartData.append('hero2_name', formData.hero2_name);
-      multipartData.append('hero2_age', formData.hero2_age.toString());
-      multipartData.append('hero2_job', formData.hero2_job);
-      multipartData.append('hero2_traits', formData.hero2_traits);
-      multipartData.append('hero2_fear', formData.hero2_fear);
-      multipartData.append('hero2_habits', formData.hero2_habits);
+      multipartData.append('hero2_desc', formData.hero2_desc);
+      multipartData.append('hero2_rel', formData.hero2_rel);
       
       if (formData.hero2_photo) {
         multipartData.append('hero2_photo', formData.hero2_photo);
@@ -477,11 +447,8 @@ const Index = () => {
     // Hero 3 (if enabled)
     if (heroSections.hero3) {
       multipartData.append('hero3_name', formData.hero3_name);
-      multipartData.append('hero3_age', formData.hero3_age.toString());
-      multipartData.append('hero3_job', formData.hero3_job);
-      multipartData.append('hero3_traits', formData.hero3_traits);
-      multipartData.append('hero3_fear', formData.hero3_fear);
-      multipartData.append('hero3_habits', formData.hero3_habits);
+      multipartData.append('hero3_desc', formData.hero3_desc);
+      multipartData.append('hero3_rel', formData.hero3_rel);
       
       if (formData.hero3_photo) {
         multipartData.append('hero3_photo', formData.hero3_photo);
@@ -493,11 +460,8 @@ const Index = () => {
     // Hero 4 (if enabled)
     if (heroSections.hero4) {
       multipartData.append('hero4_name', formData.hero4_name);
-      multipartData.append('hero4_age', formData.hero4_age.toString());
-      multipartData.append('hero4_job', formData.hero4_job);
-      multipartData.append('hero4_traits', formData.hero4_traits);
-      multipartData.append('hero4_fear', formData.hero4_fear);
-      multipartData.append('hero4_habits', formData.hero4_habits);
+      multipartData.append('hero4_desc', formData.hero4_desc);
+      multipartData.append('hero4_rel', formData.hero4_rel);
       
       if (formData.hero4_photo) {
         multipartData.append('hero4_photo', formData.hero4_photo);
@@ -543,35 +507,23 @@ const Index = () => {
             illustration_style: 'disney',
             illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
             hero1_name: '',
-            hero1_age: 0,
-            hero1_job: '',
-            hero1_traits: '',
-            hero1_fear: '',
-            hero1_habits: '',
+            hero1_desc: '',
+            hero1_rel: '',
             hero1_photo: null,
             hero1_photo_url: '',
             hero2_name: '',
-            hero2_age: 0,
-            hero2_job: '',
-            hero2_traits: '',
-            hero2_fear: '',
-            hero2_habits: '',
+            hero2_desc: '',
+            hero2_rel: '',
             hero2_photo: null,
             hero2_photo_url: '',
             hero3_name: '',
-            hero3_age: 0,
-            hero3_job: '',
-            hero3_traits: '',
-            hero3_fear: '',
-            hero3_habits: '',
+            hero3_desc: '',
+            hero3_rel: '',
             hero3_photo: null,
             hero3_photo_url: '',
             hero4_name: '',
-            hero4_age: 0,
-            hero4_job: '',
-            hero4_traits: '',
-            hero4_fear: '',
-            hero4_habits: '',
+            hero4_desc: '',
+            hero4_rel: '',
             hero4_photo: null,
             hero4_photo_url: ''
           });
@@ -981,31 +933,56 @@ const Index = () => {
               {/* Main Hero */}
               <div className="mixer-hero-panel">
                 <h4 className="mixer-hero-title">Главный герой</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Имя" className="mixer-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_name: e.target.value
-                }))} />
-                  <input type="number" placeholder="Возраст" className="mixer-input" value={formData.hero1_age || ''} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_age: parseInt(e.target.value) || 0
-                }))} />
-                  <input type="text" placeholder="Профессия" className="mixer-input" value={formData.hero1_job} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_job: e.target.value
-                }))} />
-                  <input type="text" placeholder="Черты характера" className="mixer-input" value={formData.hero1_traits} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_traits: e.target.value
-                }))} />
-                  <input type="text" placeholder="Страхи" className="mixer-input" value={formData.hero1_fear} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_fear: e.target.value
-                }))} />
-                  <input type="text" placeholder="Привычки" className="mixer-input" value={formData.hero1_habits} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  hero1_habits: e.target.value
-                }))} />
+                <div className="space-y-4">
+                  <input 
+                    type="text" 
+                    placeholder="Имя" 
+                    className="mixer-input" 
+                    value={formData.hero1_name} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      hero1_name: e.target.value
+                    }))} 
+                  />
+                  
+                  <div>
+                    <label className="mixer-control-label block mb-2">
+                      Описание героя
+                    </label>
+                    <textarea 
+                      name="hero1_desc"
+                      id="hero1_desc"
+                      rows={4}
+                      minLength={60}
+                      maxLength={600}
+                      placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
+                      className="mixer-input resize-none"
+                      value={formData.hero1_desc}
+                      onChange={e => setFormData(prev => ({
+                        ...prev,
+                        hero1_desc: e.target.value
+                      }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="mixer-control-label block mb-2">
+                      Отношения
+                    </label>
+                    <textarea 
+                      name="hero1_rel"
+                      id="hero1_rel"
+                      rows={2}
+                      maxLength={300}
+                      placeholder='Одной строкой: "Ана — сестра Никиты; Никита и Дима соперничают". Можно просто: "Никита учит Ану, но спорят".'
+                      className="mixer-input resize-none"
+                      value={formData.hero1_rel}
+                      onChange={e => setFormData(prev => ({
+                        ...prev,
+                        hero1_rel: e.target.value
+                      }))}
+                    />
+                  </div>
                 </div>
                 
                 {/* Photo Upload for Hero 1 */}
@@ -1101,31 +1078,56 @@ const Index = () => {
                     </div>
                     
                     {isVisible && <div className="mixer-hero-panel">
-                        <div className="grid grid-cols-2 gap-4">
-                          <input type="text" placeholder="Имя" className="mixer-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_name`]: e.target.value
-                    }))} />
-                          <input type="number" placeholder="Возраст" className="mixer-input" value={formData[`hero${heroNum}_age` as keyof FormData] as number || ''} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_age`]: parseInt(e.target.value) || 0
-                    }))} />
-                          <input type="text" placeholder="Профессия" className="mixer-input" value={formData[`hero${heroNum}_job` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_job`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Черты характера" className="mixer-input" value={formData[`hero${heroNum}_traits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_traits`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Страхи" className="mixer-input" value={formData[`hero${heroNum}_fear` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_fear`]: e.target.value
-                    }))} />
-                          <input type="text" placeholder="Привычки" className="mixer-input" value={formData[`hero${heroNum}_habits` as keyof FormData] as string} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      [`hero${heroNum}_habits`]: e.target.value
-                    }))} />
+                        <div className="space-y-4">
+                          <input 
+                            type="text" 
+                            placeholder="Имя" 
+                            className="mixer-input" 
+                            value={formData[`hero${heroNum}_name` as keyof FormData] as string} 
+                            onChange={e => setFormData(prev => ({
+                              ...prev,
+                              [`hero${heroNum}_name`]: e.target.value
+                            }))} 
+                          />
+                          
+                          <div>
+                            <label className="mixer-control-label block mb-2">
+                              Описание героя
+                            </label>
+                            <textarea 
+                              name={`hero${heroNum}_desc`}
+                              id={`hero${heroNum}_desc`}
+                              rows={4}
+                              minLength={60}
+                              maxLength={600}
+                              placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
+                              className="mixer-input resize-none"
+                              value={formData[`hero${heroNum}_desc` as keyof FormData] as string}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                [`hero${heroNum}_desc`]: e.target.value
+                              }))}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="mixer-control-label block mb-2">
+                              Отношения
+                            </label>
+                            <textarea 
+                              name={`hero${heroNum}_rel`}
+                              id={`hero${heroNum}_rel`}
+                              rows={2}
+                              maxLength={300}
+                              placeholder='Одной строкой: "Ана — сестра Никиты; Никита и Дима соперничают". Можно просто: "Никита учит Ану, но спорят".'
+                              className="mixer-input resize-none"
+                              value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                [`hero${heroNum}_rel`]: e.target.value
+                              }))}
+                            />
+                          </div>
                         </div>
                         
                         {/* Photo Upload */}
