@@ -869,24 +869,6 @@ const Index = () => {
 
           {/* Right Column - Story Details */}
           <div className="space-y-8">
-            {/* Email Field */}
-            <div className="mixer-control-section">
-              <div className="space-y-4">
-                <div>
-                  <label className="mixer-control-label">
-                    Почта (обязательно)
-                  </label>
-                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))} placeholder="name@example.com" autoComplete="email" required />
-                  <p className="mixer-hint">
-                    Мы вышлем PDF на этот адрес.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* 8-bit Style Picker */}
             <div className="mixer-control-section">
               <label className="mixer-control-label">
@@ -922,6 +904,24 @@ const Index = () => {
                   ...prev,
                   artifact: e.target.value
                 }))} placeholder="личный предмет или знакомое событие..." />
+                </div>
+              </div>
+            </div>
+
+            {/* Email Field */}
+            <div className="mixer-control-section">
+              <div className="space-y-4">
+                <div>
+                  <label className="mixer-control-label">
+                    Почта (обязательно)
+                  </label>
+                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="name@example.com" autoComplete="email" required />
+                  <p className="mixer-hint">
+                    Мы вышлем PDF на этот адрес.
+                  </p>
                 </div>
               </div>
             </div>
