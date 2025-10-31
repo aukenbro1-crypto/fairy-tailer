@@ -972,7 +972,7 @@ const Index = () => {
                     <textarea 
                       name="hero1_rel"
                       id="hero1_rel"
-                      rows={2}
+                      rows={3}
                       maxLength={300}
                       placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
                       className="mixer-input resize-none"
@@ -1117,7 +1117,7 @@ const Index = () => {
                             <textarea 
                               name={`hero${heroNum}_rel`}
                               id={`hero${heroNum}_rel`}
-                              rows={2}
+                              rows={3}
                               maxLength={300}
                               placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
                               className="mixer-input resize-none"
