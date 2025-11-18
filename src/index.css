@@ -2455,6 +2455,14 @@ html, body {
     order: 2;
   }
   
+  .mobile-order-3 {
+    order: 3;
+  }
+  
+  .mobile-order-4 {
+    order: 4;
+  }
+  
   /* Ensure parent container uses flex for order to work */
   .space-y-8 {
     display: flex;
