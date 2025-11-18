@@ -882,44 +882,8 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Email Field */}
-            <div className="mixer-control-section mobile-order-5">
-              <div className="space-y-4">
-                <div>
-                  <label className="mixer-control-label">
-                    Почта (обязательно)
-                  </label>
-                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))} placeholder="name@example.com" autoComplete="email" required />
-                  <p className="mixer-hint">
-                    Мы вышлем PDF на этот адрес.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Story Details */}
-          <div className="space-y-8">
-            {/* 8-bit Style Picker */}
-            <div className="mixer-control-section mobile-order-2">
-              <label className="mixer-control-label">
-                Стиль иллюстрации
-              </label>
-              <StylePicker8Bit
-                value={formData.illustration_style}
-                onChange={(value) => setFormData(prev => ({
-                  ...prev,
-                  illustration_style: value,
-                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
-                }))}
-              />
-            </div>
-
             {/* Location & Artifact */}
-            <div className="mixer-control-section mobile-order-3">
+            <div className="mixer-control-section mobile-order-2">
               <div className="space-y-4">
                 <div>
                   <label className="mixer-control-label">
@@ -940,6 +904,24 @@ const Index = () => {
                 }))} placeholder="личный предмет или знакомое событие..." />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Right Column - Story Details */}
+          <div className="space-y-8">
+            {/* 8-bit Style Picker */}
+            <div className="mixer-control-section mobile-order-3">
+              <label className="mixer-control-label">
+                Стиль иллюстрации
+              </label>
+              <StylePicker8Bit
+                value={formData.illustration_style}
+                onChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  illustration_style: value,
+                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
+                }))}
+              />
             </div>
 
             {/* Heroes Section */}
@@ -1224,6 +1206,24 @@ const Index = () => {
                       </div>}
                   </div>;
             })}
+            </div>
+
+            {/* Email Field */}
+            <div className="mixer-control-section mobile-order-5">
+              <div className="space-y-4">
+                <div>
+                  <label className="mixer-control-label">
+                    Почта (обязательно)
+                  </label>
+                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="name@example.com" autoComplete="email" required />
+                  <p className="mixer-hint">
+                    Мы вышлем PDF на этот адрес.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
