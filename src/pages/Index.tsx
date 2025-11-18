@@ -857,7 +857,7 @@ const Index = () => {
                 </div>
                 <div className="flex-1">
                   <label className="mixer-control-label cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}>
-                    🎄 Новогодняя история
+                    🎄 Новый год
                   </label>
                   <p className="mixer-hint mt-1">
                     Добавит зимнюю атмосферу, огни и ощущение начала нового — без клише и Санта-нарратива.
