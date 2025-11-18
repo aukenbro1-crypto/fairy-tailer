@@ -171,7 +171,7 @@ const WORLDS = [
   },
   {
     value: 'adventure_classic',
-    emoji: '🧭',
+    emoji: '🦜',
     title: 'Приключения',
     description: 'Мир открытий, где герои идут навстречу новым возможностям.',
     tagline: '— Лови момент!'
