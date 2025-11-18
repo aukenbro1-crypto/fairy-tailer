@@ -2445,4 +2445,19 @@ html, body {
     max-width: 100%;
     box-sizing: border-box;
   }
+  
+  /* Mobile order for illustration style and email */
+  .mobile-order-1 {
+    order: 1;
+  }
+  
+  .mobile-order-2 {
+    order: 2;
+  }
+  
+  /* Ensure parent container uses flex for order to work */
+  .space-y-8 {
+    display: flex;
+    flex-direction: column;
+  }
 }
