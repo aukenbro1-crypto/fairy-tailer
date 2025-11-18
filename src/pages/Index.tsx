@@ -174,7 +174,7 @@ const WORLDS = [
     emoji: '🧭',
     title: 'Приключения',
     description: 'Мир открытий, где герои идут навстречу новым возможностям.',
-    tagline: '— Вперёд, команда!'
+    tagline: '— Лови момент!'
   },
   {
     value: 'fantasy_epic',
