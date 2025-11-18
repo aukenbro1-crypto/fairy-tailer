@@ -7,6 +7,7 @@ import watercolorStyleImage from '@/assets/watercolor-style.jpg';
 import disneyStyleImage from '@/assets/disney-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
+import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -221,7 +222,7 @@ const STYLE_SPRITES: Record<string, string> = {
   'naive': naiveStyleImage,
   'watercolor': watercolorStyleImage,
   'claymotion': claymotionStyleImage,
-  'yarncraft': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="6" y="4" width="4" height="4"/><rect fill="#f0c55a" x="5" y="5" width="1" height="2"/><rect fill="#f0c55a" x="10" y="5" width="1" height="2"/><rect fill="#060a0e" x="6" y="5" width="1" height="1"/><rect fill="#060a0e" x="9" y="5" width="1" height="1"/><rect fill="#f0c55a" x="7" y="7" width="2" height="1"/><rect fill="#f0c55a" x="6" y="9" width="4" height="3"/><rect fill="#f0c55a" x="7" y="3" width="2" height="1"/></svg>')}`,
+  'yarncraft': yarncraftStyleImage,
   'celcinema': celcinemaStyleImage
 };
 
