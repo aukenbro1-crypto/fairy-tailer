@@ -128,6 +128,7 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
 interface FormData {
   world: string;
+  newyear_mode: boolean;
   location: string;
   artifact: string;
   length_target: number;
@@ -162,18 +163,18 @@ interface FormData {
 // World options for the new "Choose Your World" section
 const WORLDS = [
   {
+    value: 'disney_light',
+    emoji: '💖',
+    title: 'Романтическая история',
+    description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
+    tagline: '— И жили они долго и счастливо.'
+  },
+  {
     value: 'adventure_classic',
     emoji: '🦜',
     title: 'Приключения',
     description: 'Мир открытий, где герои идут навстречу новым возможностям.',
     tagline: '— Лови момент!'
-  },
-  {
-    value: 'new_year',
-    emoji: '🎅🏻',
-    title: 'Новогодняя сказка',
-    description: 'Увлекательная зимняя история, где герои готовят и спасают праздник.',
-    tagline: '— Счастливого Нового года!'
   },
   {
     value: 'fantasy_epic',
@@ -188,13 +189,6 @@ const WORLDS = [
     title: 'Киберпанк',
     description: 'Неоновые вывески и одиночество в Сети.',
     tagline: '— Следуй за белым кроликом.'
-  },
-  {
-    value: 'disney_light',
-    emoji: '💖',
-    title: 'Романтическая история',
-    description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
-    tagline: '— И жили они долго и счастливо.'
   }
 ];
 
@@ -329,6 +323,7 @@ const Index = () => {
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     world: 'disney_light',
+    newyear_mode: false,
     location: '',
     artifact: '',
     length_target: 15000,
@@ -391,39 +386,6 @@ const Index = () => {
     setShowEmailOverlay(false);
   };
   const handleSubmit = async () => {
-    // Special handling for new_year world - send only world parameter
-    if (formData.world === 'new_year') {
-      setShowLoader(true);
-      
-      let ok = false;
-      try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            world: 'new_year'
-          })
-        });
-        ok = response.ok;
-      } catch (error) {
-        ok = false;
-      }
-      
-      toast({
-        title: ok ? "Успешно!" : "Ошибка",
-        description: ok ? "Ваш запрос отправлен" : "Не удалось отправить запрос",
-        variant: ok ? "default" : "destructive"
-      });
-      
-      setShowLoader(false);
-      if (ok) {
-        showEmailOverlayWithProgress();
-      }
-      return;
-    }
-    
     // Email validation
     if (!validateEmail(formData.email)) {
       toast({
@@ -450,6 +412,7 @@ const Index = () => {
     
     // Add all text fields
     multipartData.append('world', formData.world);
+    multipartData.append('newyear_mode', formData.newyear_mode.toString());
     multipartData.append('location', formData.location);
     multipartData.append('artifact', formData.artifact);
     multipartData.append('length_target', formData.length_target.toString());
@@ -536,6 +499,7 @@ const Index = () => {
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
           setFormData({
             world: 'disney_light',
+            newyear_mode: false,
             location: '',
             artifact: '',
             length_target: 15000,
@@ -882,8 +846,67 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Location & Artifact */}
+            {/* New Year Toggle */}
+            <div className="mixer-control-section mobile-order-3">
+              <div className="flex items-start gap-4">
+                <div 
+                  className={`mixer-toggle ${formData.newyear_mode ? 'active' : ''}`}
+                  onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}
+                >
+                  <div className="mixer-toggle-handle" />
+                </div>
+                <div className="flex-1">
+                  <label className="mixer-control-label cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}>
+                    🎄 Новый год
+                  </label>
+                  <p className="mixer-hint mt-1">
+                    Добавит зимнюю атмосферу, огни и ощущение начала нового — без клише и Санта-нарратива.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Тёплый свет гирлянд, свечи, мандарины или тропическая новогодняя ночь — в зависимости от локации.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Email Field */}
+            <div className="mixer-control-section mobile-order-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="mixer-control-label">
+                    Почта (обязательно)
+                  </label>
+                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="name@example.com" autoComplete="email" required />
+                  <p className="mixer-hint">
+                    Мы вышлем PDF на этот адрес.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Story Details */}
+          <div className="space-y-8">
+            {/* 8-bit Style Picker */}
             <div className="mixer-control-section mobile-order-2">
+              <label className="mixer-control-label">
+                Стиль иллюстрации
+              </label>
+              <StylePicker8Bit
+                value={formData.illustration_style}
+                onChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  illustration_style: value,
+                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
+                }))}
+              />
+            </div>
+
+            {/* Location & Artifact */}
+            <div className="mixer-control-section mobile-order-5">
               <div className="space-y-4">
                 <div>
                   <label className="mixer-control-label">
@@ -905,27 +928,9 @@ const Index = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Right Column - Story Details */}
-          <div className="space-y-8">
-            {/* 8-bit Style Picker */}
-            <div className="mixer-control-section mobile-order-3">
-              <label className="mixer-control-label">
-                Стиль иллюстрации
-              </label>
-              <StylePicker8Bit
-                value={formData.illustration_style}
-                onChange={(value) => setFormData(prev => ({
-                  ...prev,
-                  illustration_style: value,
-                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
-                }))}
-              />
-            </div>
 
             {/* Heroes Section */}
-            <div className="mixer-control-section mobile-order-4">
+            <div className="mixer-control-section mobile-order-6">
               <h3 className="mixer-section-title">Персонажи</h3>
               
               {/* Main Hero */}
@@ -1206,24 +1211,6 @@ const Index = () => {
                       </div>}
                   </div>;
             })}
-            </div>
-
-            {/* Email Field */}
-            <div className="mixer-control-section mobile-order-5">
-              <div className="space-y-4">
-                <div>
-                  <label className="mixer-control-label">
-                    Почта (обязательно)
-                  </label>
-                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))} placeholder="name@example.com" autoComplete="email" required />
-                  <p className="mixer-hint">
-                    Мы вышлем PDF на этот адрес.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
