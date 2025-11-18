@@ -869,7 +869,7 @@ const Index = () => {
             </div>
 
             {/* Email Field */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-2">
               <div className="space-y-4">
                 <div>
                   <label className="mixer-control-label">
@@ -890,7 +890,7 @@ const Index = () => {
           {/* Right Column - Story Details */}
           <div className="space-y-8">
             {/* 8-bit Style Picker */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-1">
               <label className="mixer-control-label">
                 Стиль иллюстрации
               </label>
