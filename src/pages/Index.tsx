@@ -189,6 +189,13 @@ const WORLDS = [
     title: 'Киберпанк',
     description: 'Неоновые вывески и одиночество в Сети.',
     tagline: '— Следуй за белым кроликом.'
+  },
+  {
+    value: 'new_year',
+    emoji: '🎅🏻',
+    title: 'Новогодняя сказка',
+    description: 'Увлекательная зимняя история, где герои готовят и спасают праздник.',
+    tagline: '— Счастливого Нового года!'
   }
 ];
 
@@ -386,6 +393,39 @@ const Index = () => {
     setShowEmailOverlay(false);
   };
   const handleSubmit = async () => {
+    // Special handling for new_year world - send only world parameter
+    if (formData.world === 'new_year') {
+      setShowLoader(true);
+      
+      let ok = false;
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            world: 'new_year'
+          })
+        });
+        ok = response.ok;
+      } catch (error) {
+        ok = false;
+      }
+      
+      toast({
+        title: ok ? "Успешно!" : "Ошибка",
+        description: ok ? "Ваш запрос отправлен" : "Не удалось отправить запрос",
+        variant: ok ? "default" : "destructive"
+      });
+      
+      setShowLoader(false);
+      if (ok) {
+        showEmailOverlayWithProgress();
+      }
+      return;
+    }
+    
     // Email validation
     if (!validateEmail(formData.email)) {
       toast({
