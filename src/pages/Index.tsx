@@ -164,7 +164,7 @@ const WORLDS = [
   {
     value: 'disney_light',
     emoji: '🕯',
-    title: 'Disney Light',
+    title: 'Романтическая история',
     description: 'Светлый и доброжелательный мир, где чудо рождается из доброты и веры в себя.',
     tagline: '— Добро звучит песней.'
   },
