@@ -163,18 +163,18 @@ interface FormData {
 // World options for the new "Choose Your World" section
 const WORLDS = [
   {
-    value: 'disney_light',
-    emoji: '💖',
-    title: 'Романтическая история',
-    description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
-    tagline: '— И жили они долго и счастливо.'
-  },
-  {
     value: 'adventure_classic',
     emoji: '🦜',
     title: 'Приключения',
     description: 'Мир открытий, где герои идут навстречу новым возможностям.',
     tagline: '— Лови момент!'
+  },
+  {
+    value: 'new_year',
+    emoji: '🎅🏻',
+    title: 'Новогодняя сказка',
+    description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
+    tagline: '— Счастливого Нового года!'
   },
   {
     value: 'fantasy_epic',
@@ -191,11 +191,11 @@ const WORLDS = [
     tagline: '— Следуй за белым кроликом.'
   },
   {
-    value: 'new_year',
-    emoji: '🎅🏻',
-    title: 'Новогодняя сказка',
-    description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
-    tagline: '— Счастливого Нового года!'
+    value: 'disney_light',
+    emoji: '💖',
+    title: 'Романтическая история',
+    description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
+    tagline: '— И жили они долго и счастливо.'
   }
 ];
 
