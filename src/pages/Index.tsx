@@ -128,7 +128,6 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
 interface FormData {
   world: string;
-  newyear_mode: boolean;
   location: string;
   artifact: string;
   length_target: number;
@@ -330,7 +329,6 @@ const Index = () => {
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     world: 'disney_light',
-    newyear_mode: false,
     location: '',
     artifact: '',
     length_target: 15000,
@@ -452,7 +450,6 @@ const Index = () => {
     
     // Add all text fields
     multipartData.append('world', formData.world);
-    multipartData.append('newyear_mode', formData.newyear_mode.toString());
     multipartData.append('location', formData.location);
     multipartData.append('artifact', formData.artifact);
     multipartData.append('length_target', formData.length_target.toString());
@@ -539,7 +536,6 @@ const Index = () => {
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
           setFormData({
             world: 'disney_light',
-            newyear_mode: false,
             location: '',
             artifact: '',
             length_target: 15000,
@@ -888,25 +884,6 @@ const Index = () => {
 
             {/* New Year Toggle */}
             <div className="mixer-control-section mobile-order-3">
-              <div className="flex items-start gap-4">
-                <div 
-                  className={`mixer-toggle ${formData.newyear_mode ? 'active' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}
-                >
-                  <div className="mixer-toggle-handle" />
-                </div>
-                <div className="flex-1">
-                  <label className="mixer-control-label cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}>
-                    🎄 Новый год
-                  </label>
-                  <p className="mixer-hint mt-1">
-                    Добавит зимнюю атмосферу, огни и ощущение начала нового — без клише и Санта-нарратива.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    💡 Тёплый свет гирлянд, свечи, мандарины или тропическая новогодняя ночь — в зависимости от локации.
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Email Field */}
