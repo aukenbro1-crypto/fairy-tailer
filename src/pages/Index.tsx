@@ -181,13 +181,6 @@ const WORLDS = [
     title: 'Cyberpunk Dream',
     description: 'Город неона, дождя и одиночества, где человек спорит с машинами и с собой.',
     tagline: '— Сердце в коде.'
-  },
-  {
-    value: 'philosophical_tale',
-    emoji: '🌙',
-    title: 'Philosophical Tale',
-    description: 'Тихий, созерцательный мир, где всё становится метафорой пути.',
-    tagline: '— Разговор с тенью.'
   }
 ];
 
