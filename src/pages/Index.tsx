@@ -906,7 +906,7 @@ const Index = () => {
             </div>
 
             {/* Location & Artifact */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-5">
               <div className="space-y-4">
                 <div>
                   <label className="mixer-control-label">
@@ -930,7 +930,7 @@ const Index = () => {
             </div>
 
             {/* Heroes Section */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-6">
               <h3 className="mixer-section-title">Персонажи</h3>
               
               {/* Main Hero */}
