@@ -162,18 +162,18 @@ interface FormData {
 // World options for the new "Choose Your World" section
 const WORLDS = [
   {
-    value: 'new_year',
-    emoji: '🎅🏻',
-    title: 'Новогодняя сказка',
-    description: 'Увлекательная зимняя история, где герои готовят и спасают праздник.',
-    tagline: '— Счастливого Нового года!'
-  },
-  {
     value: 'adventure_classic',
     emoji: '🦜',
     title: 'Приключения',
     description: 'Мир открытий, где герои идут навстречу новым возможностям.',
     tagline: '— Лови момент!'
+  },
+  {
+    value: 'new_year',
+    emoji: '🎅🏻',
+    title: 'Новогодняя сказка',
+    description: 'Увлекательная зимняя история, где герои готовят и спасают праздник.',
+    tagline: '— Счастливого Нового года!'
   },
   {
     value: 'fantasy_epic',
