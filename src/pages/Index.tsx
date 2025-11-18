@@ -642,7 +642,7 @@ const Index = () => {
           {/* Left Column - Controls */}
           <div className="space-y-8">
             {/* World Selection */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-1">
               <label className="mixer-control-label relative">
                 Выбери свой мир
                 <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
@@ -846,7 +846,7 @@ const Index = () => {
             </div>
 
             {/* New Year Toggle */}
-            <div className="mixer-control-section">
+            <div className="mixer-control-section mobile-order-3">
               <div className="flex items-start gap-4">
                 <div 
                   className={`mixer-toggle ${formData.newyear_mode ? 'active' : ''}`}
@@ -869,7 +869,7 @@ const Index = () => {
             </div>
 
             {/* Email Field */}
-            <div className="mixer-control-section mobile-order-2">
+            <div className="mixer-control-section mobile-order-4">
               <div className="space-y-4">
                 <div>
                   <label className="mixer-control-label">
@@ -890,7 +890,7 @@ const Index = () => {
           {/* Right Column - Story Details */}
           <div className="space-y-8">
             {/* 8-bit Style Picker */}
-            <div className="mixer-control-section mobile-order-1">
+            <div className="mixer-control-section mobile-order-2">
               <label className="mixer-control-label">
                 Стиль иллюстрации
               </label>
