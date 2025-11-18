@@ -882,10 +882,6 @@ const Index = () => {
               </div>
             </div>
 
-            {/* New Year Toggle */}
-            <div className="mixer-control-section mobile-order-3">
-            </div>
-
             {/* Email Field */}
             <div className="mixer-control-section mobile-order-4">
               <div className="space-y-4">
