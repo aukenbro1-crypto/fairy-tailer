@@ -1990,14 +1990,14 @@ html, body {
 }
 
 .sp-sprite {
-  width: 96px;
-  height: 72px;
-  background-size: contain;
+  width: 180px;
+  height: 135px;
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  image-rendering: auto;
   filter: drop-shadow(0 0 8px rgba(240,197,90,.35));
+  border-radius: 4px;
 }
 
 .sp-label {
@@ -2065,8 +2065,8 @@ html, body {
   }
   
   .sp-sprite {
-    width: 72px;
-    height: 54px;
+    width: 140px;
+    height: 105px;
   }
   
   .sp-label {
