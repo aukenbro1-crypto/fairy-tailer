@@ -4,6 +4,7 @@ import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
 import watercolorStyleImage from '@/assets/watercolor-style.jpg';
+import disneyStyleImage from '@/assets/disney-style.jpg';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -212,7 +213,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 
 // Pixel art sprites as inline SVG data URIs
 const STYLE_SPRITES: Record<string, string> = {
-  'disney': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/><rect fill="#f0c55a" x="3" y="3" width="2" height="1"/><rect fill="#f0c55a" x="11" y="3" width="2" height="1"/></svg>')}`,
+  'disney': disneyStyleImage,
   'toonflat': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="6"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="5" y="2" width="6" height="1"/><rect fill="#060a0e" x="4" y="3" width="1" height="6"/><rect fill="#060a0e" x="11" y="3" width="1" height="6"/><rect fill="#060a0e" x="5" y="9" width="6" height="1"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#060a0e" x="5" y="10" width="1" height="3"/><rect fill="#060a0e" x="10" y="10" width="1" height="3"/><rect fill="#060a0e" x="6" y="13" width="4" height="1"/></svg>')}`,
   'minibrick': minibrickStyleImage,
   'naive': naiveStyleImage,
@@ -277,7 +278,7 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
               style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
               aria-hidden="true"
             ></div>
-            {value !== 'claymotion' && value !== 'naive' && value !== 'minibrick' && value !== 'watercolor' && (
+            {value !== 'claymotion' && value !== 'naive' && value !== 'minibrick' && value !== 'watercolor' && value !== 'disney' && (
               <div className="sp-label" aria-live="polite">
                 {ILLUSTRATION_STYLE_LABELS[value]}
               </div>
