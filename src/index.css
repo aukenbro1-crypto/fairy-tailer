@@ -1990,14 +1990,15 @@ html, body {
 }
 
 .sp-sprite {
-  width: 240px;
-  height: 180px;
+  width: 260px;
+  height: 195px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: auto;
   filter: drop-shadow(0 0 8px rgba(240,197,90,.35));
   border-radius: 4px;
+  margin-top: 8px;
 }
 
 .sp-label {
@@ -2065,8 +2066,9 @@ html, body {
   }
   
   .sp-sprite {
-    width: 160px;
-    height: 120px;
+    width: 180px;
+    height: 135px;
+    margin-top: 6px;
   }
   
   .sp-label {
