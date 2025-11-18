@@ -191,7 +191,7 @@ const ILLUSTRATION_STYLES: Record<string, string> = {
   'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk motifs; in the manner of early 20th-century primitivism; strictly figurative, readable silhouettes; original characters; no broken anatomy.',
   'watercolor': 'soft watercolor illustration: gentle washes, translucent pigment layers, visible paper grain, diffused light, wet-on-wet edges, subtle gradients; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'claymotion': 'clay stop-motion aesthetic: sculpted clay characters with visible texture, soft handmade look, warm lighting, slight surface imperfections, tactile realism; carefully staged poses, readable silhouettes; strictly figurative; original characters; no photorealism or 3D-rendered surfaces.',
-  'retroanimation': 'mid-century hand-drawn animation aesthetic: limited palette, flat paper or gouache texture, stylized constructive forms, expressive yet restrained faces; strictly figurative, readable silhouettes; original characters; no 3D/collage.',
+  'yarncraft': 'hand-knitted textile diorama aesthetic: everything built from yarn/felt/thread; visible knit stitches (stockinette/garter), soft plush volumes, braided cords for frames/columns; knitted snow and embroidered stars/flakes; warm window glow against a cold night sky; gentle fairy-tale mood, tactile craft imperfections; shallow-focus diorama look. strictly figurative, readable silhouettes, clear character poses; original characters only; no photorealism/CG sheen; no 3D/collage/plastic; represent glass/water/fire as yarn.',
   'celcinema': 'cinematic cel-animation aesthetic: expressive faces, clean color blocks with soft shading, painterly backgrounds, atmospheric warm light; strictly figurative (no manga panels or speech bubbles); original characters; no broken anatomy.'
 };
 
@@ -202,7 +202,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'naive': 'naive',
   'watercolor': 'watercolor',
   'claymotion': 'claymotion',
-  'retroanimation': 'retroanimation',
+  'yarncraft': 'yarncraft',
   'celcinema': 'celcinema'
 };
 
@@ -214,7 +214,7 @@ const STYLE_SPRITES: Record<string, string> = {
   'naive': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="5" y="4" width="6" height="2"/><rect fill="#f0c55a" x="7" y="2" width="2" height="2"/><rect fill="#f0c55a" x="11" y="2" width="2" height="2"/><rect fill="#f0c55a" x="6" y="8" width="2" height="2"/><rect fill="#f0c55a" x="8" y="10" width="2" height="2"/></svg>')}`,
   'watercolor': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="3" y="7" width="10" height="6"/><rect fill="#f0c55a" x="4" y="6" width="8" height="1"/><rect fill="#f0c55a" x="5" y="5" width="6" height="1"/><rect fill="#060a0e" x="5" y="8" width="2" height="2"/><rect fill="#060a0e" x="9" y="8" width="2" height="2"/><rect fill="#060a0e" x="7" y="10" width="2" height="2"/><rect fill="#f0c55a" x="13" y="3" width="2" height="2"/></svg>')}`,
   'claymotion': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="4" width="6" height="6"/><rect fill="#f0c55a" x="4" y="5" width="1" height="4"/><rect fill="#f0c55a" x="11" y="5" width="1" height="4"/><rect fill="#060a0e" x="6" y="6" width="1" height="2"/><rect fill="#060a0e" x="9" y="6" width="1" height="2"/><rect fill="#f0c55a" x="6" y="10" width="4" height="3"/><rect fill="#f0c55a" x="7" y="3" width="2" height="1"/></svg>')}`,
-  'retroanimation': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="3" width="6" height="8"/><rect fill="#060a0e" x="6" y="5" width="2" height="2"/><rect fill="#060a0e" x="9" y="5" width="2" height="2"/><rect fill="#060a0e" x="7" y="8" width="2" height="1"/><rect fill="#f0c55a" x="5" y="2" width="6" height="1"/><rect fill="#f0c55a" x="7" y="1" width="2" height="1"/><rect fill="#f0c55a" x="7" y="11" width="2" height="3"/></svg>')}`,
+  'yarncraft': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="6" y="4" width="4" height="4"/><rect fill="#f0c55a" x="5" y="5" width="1" height="2"/><rect fill="#f0c55a" x="10" y="5" width="1" height="2"/><rect fill="#060a0e" x="6" y="5" width="1" height="1"/><rect fill="#060a0e" x="9" y="5" width="1" height="1"/><rect fill="#f0c55a" x="7" y="7" width="2" height="1"/><rect fill="#f0c55a" x="6" y="9" width="4" height="3"/><rect fill="#f0c55a" x="7" y="3" width="2" height="1"/></svg>')}`,
   'celcinema': `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect fill="#f0c55a" x="5" y="2" width="6" height="2"/><rect fill="#f0c55a" x="4" y="4" width="8" height="2"/><rect fill="#f0c55a" x="3" y="6" width="10" height="6"/><rect fill="#f0c55a" x="4" y="12" width="8" height="2"/><rect fill="#060a0e" x="5" y="7" width="2" height="3"/><rect fill="#060a0e" x="9" y="7" width="2" height="3"/><rect fill="#ff69b4" x="7" y="10" width="2" height="1"/></svg>')}`
 };
 
