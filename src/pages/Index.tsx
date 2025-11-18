@@ -172,7 +172,7 @@ const WORLDS = [
   {
     value: 'adventure_classic',
     emoji: '🧭',
-    title: 'Adventure Classic',
+    title: 'Приключения',
     description: 'Мир открытий, дорог и шторма, где герои находят главное внутри себя.',
     tagline: '— Вперёд, команда!'
   },
