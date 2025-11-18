@@ -178,10 +178,10 @@ const WORLDS = [
   },
   {
     value: 'fantasy_epic',
-    emoji: '🐉',
-    title: 'Fantasy Epic',
-    description: 'Древние тайны, героизм и выбор судьбы.',
-    tagline: '— Свет и Тьма внутри нас.'
+    emoji: '🧙🏻‍♂️',
+    title: 'Фэнтези',
+    description: 'Древние миры, тайны и борьба со злом.',
+    tagline: '— От судьбы не уйдешь.'
   },
   {
     value: 'cyberpunk_dream',
