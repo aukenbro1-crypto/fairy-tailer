@@ -185,10 +185,10 @@ const WORLDS = [
   },
   {
     value: 'cyberpunk_dream',
-    emoji: '💾',
-    title: 'Cyberpunk Dream',
-    description: 'Город неона, дождя и одиночества, где человек спорит с машинами и с собой.',
-    tagline: '— Сердце в коде.'
+    emoji: '👩‍🎤',
+    title: 'Киберпанк',
+    description: 'Неоновые вывески и одиночество в Сети.',
+    tagline: '— Следуй за белым кроликом.'
   }
 ];
 
