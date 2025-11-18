@@ -164,7 +164,7 @@ interface FormData {
 const WORLDS = [
   {
     value: 'disney_light',
-    emoji: '🕯',
+    emoji: '💖',
     title: 'Романтическая история',
     description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
     tagline: '— И жили они долго и счастливо.'
