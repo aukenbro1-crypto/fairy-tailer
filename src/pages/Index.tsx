@@ -8,6 +8,7 @@ import disneyStyleImage from '@/assets/disney-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -321,6 +322,7 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showEmailOverlay, setShowEmailOverlay] = useState(false);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
   const [formData, setFormData] = useState<FormData>({
     world: 'disney_light',
     newyear_mode: false,
@@ -494,6 +496,7 @@ const Index = () => {
     }
   };
   return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
+      <WelcomeBanner open={showWelcomeBanner} onClose={() => setShowWelcomeBanner(false)} />
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
