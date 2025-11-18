@@ -274,9 +274,11 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
               style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
               aria-hidden="true"
             ></div>
-            <div className="sp-label" aria-live="polite">
-              {ILLUSTRATION_STYLE_LABELS[value]}
-            </div>
+            {value !== 'claymotion' && (
+              <div className="sp-label" aria-live="polite">
+                {ILLUSTRATION_STYLE_LABELS[value]}
+              </div>
+            )}
           </div>
         </div>
 

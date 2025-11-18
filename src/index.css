@@ -1990,8 +1990,8 @@ html, body {
 }
 
 .sp-sprite {
-  width: 180px;
-  height: 135px;
+  width: 240px;
+  height: 180px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -2065,8 +2065,8 @@ html, body {
   }
   
   .sp-sprite {
-    width: 140px;
-    height: 105px;
+    width: 160px;
+    height: 120px;
   }
   
   .sp-label {
