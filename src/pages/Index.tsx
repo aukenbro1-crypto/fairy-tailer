@@ -845,30 +845,6 @@ const Index = () => {
                 </div>
               </div>
             </div>
-
-            {/* New Year Toggle */}
-            <div className="mixer-control-section mobile-order-3">
-              <div className="flex items-start gap-4">
-                <div 
-                  className={`mixer-toggle ${formData.newyear_mode ? 'active' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}
-                >
-                  <div className="mixer-toggle-handle" />
-                </div>
-                <div className="flex-1">
-                  <label className="mixer-control-label cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, newyear_mode: !prev.newyear_mode }))}>
-                    🎄 Новый год
-                  </label>
-                  <p className="mixer-hint mt-1">
-                    Добавит зимнюю атмосферу, огни и ощущение начала нового — без клише и Санта-нарратива.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    💡 Тёплый свет гирлянд, свечи, мандарины или тропическая новогодняя ночь — в зависимости от локации.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Email Field */}
             <div className="mixer-control-section mobile-order-4">
               <div className="space-y-4">
