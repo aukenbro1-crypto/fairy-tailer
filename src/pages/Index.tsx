@@ -1111,9 +1111,7 @@ const Index = () => {
                   </div>
             })}
             </div>
-          </div>
         </div>
-      </div>
 
         {/* Submit Section */}
         <div className="mt-12 text-center glass-card">
@@ -1161,4 +1159,5 @@ const Index = () => {
     </div>
   );
 };
+
 export default Index;
