@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        display: ['Bricolage Grotesque', 'sans-serif'],
+        sans: ['Roboto', 'sans-serif'],
+        orbitron: ['Orbitron', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -42,7 +42,6 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--foreground))",
-          glow: "hsl(var(--accent-glow))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -52,7 +51,30 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        success: "hsl(var(--success))",
+        // Blue Brass Steampunk colors
+        panel: {
+          DEFAULT: "hsl(var(--panel))",
+          ink: "hsl(var(--panel-ink))",
+          muted: "hsl(var(--panel-muted))",
+          edge: "hsl(var(--panel-edge))",
+        },
+        brass: {
+          DEFAULT: "hsl(var(--brass))",
+          deep: "hsl(var(--brass-deep))",
+        },
+        scratch: {
+          hi: "hsl(var(--scratch-hi))",
+          lo: "hsl(var(--scratch-lo))",
+        },
+        cta: {
+          start: "hsl(var(--cta-start))",
+          end: "hsl(var(--cta-end))",
+          text: "hsl(var(--cta-text))",
+        },
+        glow: "hsl(var(--glow))",
+        ok: "hsl(var(--ok))",
+        warn: "hsl(var(--warn))",
+        err: "hsl(var(--err))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -76,26 +98,15 @@ export default {
             height: "0",
           },
         },
-        "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "slide-up": {
-          "0%": { opacity: "0", transform: "translateY(40px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "float": {
-          "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
-          "33%": { transform: "translate(30px, -30px) rotate(5deg)" },
-          "66%": { transform: "translate(-20px, 20px) rotate(-5deg)" },
+        "blink": {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.6s ease-out forwards",
-        "slide-up": "slide-up 0.8s ease-out forwards",
-        "float": "float 20s ease-in-out infinite",
+        "blink": "blink 1s infinite",
       },
     },
   },
