@@ -56,13 +56,12 @@ const CompassSelector: React.FC<CompassSelectorProps> = ({
     if ((e.target as Element).classList.contains('compass-sector-disk')) {
       return;
     }
-    
+
     // Move to next option in sequence
     const currentIndex = options.indexOf(value);
     const nextIndex = (currentIndex + 1) % options.length;
     onChange(options[nextIndex]);
   };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!compassRef.current) return;
     setIsDragging(true);
@@ -161,44 +160,37 @@ interface FormData {
   hero4_photo_url: string;
 }
 // World options for the new "Choose Your World" section
-const WORLDS = [
-  {
-    value: 'adventure_classic',
-    emoji: '🦜',
-    title: 'Приключения',
-    description: 'Мир открытий, где герои идут навстречу новым возможностям.',
-    tagline: '— Лови момент!'
-  },
-  {
-    value: 'new_year',
-    emoji: '🎅🏻',
-    title: 'Новогодняя сказка',
-    description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
-    tagline: '— Счастливого Нового года!'
-  },
-  {
-    value: 'fantasy_epic',
-    emoji: '🧙🏻‍♂️',
-    title: 'Фэнтези',
-    description: 'Древние миры, тайны и борьба со злом.',
-    tagline: '— От судьбы не уйдешь.'
-  },
-  {
-    value: 'cyberpunk_dream',
-    emoji: '👩‍🎤',
-    title: 'Киберпанк',
-    description: 'Неоновые вывески и одиночество в Сети.',
-    tagline: '— Следуй за белым кроликом.'
-  },
-  {
-    value: 'disney_light',
-    emoji: '💖',
-    title: 'Романтическая история',
-    description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
-    tagline: '— И жили они долго и счастливо.'
-  }
-];
-
+const WORLDS = [{
+  value: 'adventure_classic',
+  emoji: '🦜',
+  title: 'Приключения',
+  description: 'Мир открытий, где герои идут навстречу новым возможностям.',
+  tagline: '— Лови момент!'
+}, {
+  value: 'new_year',
+  emoji: '🎅🏻',
+  title: 'Новогодняя сказка',
+  description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
+  tagline: '— Счастливого Нового года!'
+}, {
+  value: 'fantasy_epic',
+  emoji: '🧙🏻‍♂️',
+  title: 'Фэнтези',
+  description: 'Древние миры, тайны и борьба со злом.',
+  tagline: '— От судьбы не уйдешь.'
+}, {
+  value: 'cyberpunk_dream',
+  emoji: '👩‍🎤',
+  title: 'Киберпанк',
+  description: 'Неоновые вывески и одиночество в Сети.',
+  tagline: '— Следуй за белым кроликом.'
+}, {
+  value: 'disney_light',
+  emoji: '💖',
+  title: 'Романтическая история',
+  description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
+  tagline: '— И жили они долго и счастливо.'
+}];
 const ILLUSTRATION_STYLES: Record<string, string> = {
   'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'toonflat': 'vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.',
@@ -209,7 +201,6 @@ const ILLUSTRATION_STYLES: Record<string, string> = {
   'yarncraft': 'fully hand-knitted textile world: characters and environment made only of yarn/felt/thread; human figures are knitted dolls with visible stitches and soft wool fuzz; embroidered facial features (eyebrows/eyelashes/mouth), button/felt-disc eyes; hair = twisted yarn strands; knitted clothing (rib/garter/stockinette); plush volumes, braided cords/rails; knitted snow and embroidered stars; warm window glow vs cold night; cozy fairy-tale diorama, shallow depth of field. strictly figurative, readable silhouettes, clear poses, original characters only. represent glass/water/fire as yarn/felt. no photorealism/CG sheen/3D/collage/plastic.',
   'celcinema': 'cinematic cel-animation aesthetic: expressive faces, clean color blocks with soft shading, painterly backgrounds, atmospheric warm light; strictly figurative (no manga panels or speech bubbles); original characters; no broken anatomy.'
 };
-
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'disney': 'disney',
   'toonflat': 'toonflat',
@@ -232,7 +223,6 @@ const STYLE_SPRITES: Record<string, string> = {
   'yarncraft': yarncraftStyleImage,
   'celcinema': celcinemaStyleImage
 };
-
 const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
 
 // 8-bit Style Picker Component
@@ -240,20 +230,19 @@ interface StylePicker8BitProps {
   value: string;
   onChange: (value: string) => void;
 }
-
-const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) => {
+const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({
+  value,
+  onChange
+}) => {
   const currentIndex = ILLUSTRATION_STYLE_KEYS.indexOf(value);
-
   const handlePrevious = () => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : ILLUSTRATION_STYLE_KEYS.length - 1;
     onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
   };
-
   const handleNext = () => {
     const newIndex = currentIndex < ILLUSTRATION_STYLE_KEYS.length - 1 ? currentIndex + 1 : 0;
     onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -263,19 +252,12 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
       handleNext();
     }
   };
-
-  return (
-    <section className="style-picker-8bit" onKeyDown={handleKeyDown}>
+  return <section className="style-picker-8bit" onKeyDown={handleKeyDown}>
       <div className="sp-controls">
         {/* Previous Arrow */}
-        <button
-          type="button"
-          className="sp-arrow sp-arrow-prev"
-          onClick={handlePrevious}
-          aria-label="Previous style"
-        >
+        <button type="button" className="sp-arrow sp-arrow-prev" onClick={handlePrevious} aria-label="Previous style">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
           </svg>
         </button>
 
@@ -283,42 +265,26 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
         <div className="sp-screen" tabIndex={0} role="img" aria-label={`Current style: ${ILLUSTRATION_STYLE_LABELS[value]}`}>
           <div className="sp-scanlines" aria-hidden="true"></div>
           <div className="sp-preview">
-            <div 
-              className="sp-sprite" 
-              style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }}
-              aria-hidden="true"
-            ></div>
-            {value !== 'claymotion' && value !== 'naive' && value !== 'minibrick' && value !== 'watercolor' && value !== 'disney' && value !== 'toonflat' && value !== 'celcinema' && value !== 'yarncraft' && (
-              <div className="sp-label" aria-live="polite">
+            <div className="sp-sprite" style={{
+            backgroundImage: `url("${STYLE_SPRITES[value]}")`
+          }} aria-hidden="true"></div>
+            {value !== 'claymotion' && value !== 'naive' && value !== 'minibrick' && value !== 'watercolor' && value !== 'disney' && value !== 'toonflat' && value !== 'celcinema' && value !== 'yarncraft' && <div className="sp-label" aria-live="polite">
                 {ILLUSTRATION_STYLE_LABELS[value]}
-              </div>
-            )}
+              </div>}
           </div>
         </div>
 
         {/* Next Arrow */}
-        <button
-          type="button"
-          className="sp-arrow sp-arrow-next"
-          onClick={handleNext}
-          aria-label="Next style"
-        >
+        <button type="button" className="sp-arrow sp-arrow-next" onClick={handleNext} aria-label="Next style">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square"/>
+            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
           </svg>
         </button>
       </div>
 
-      <input 
-        type="hidden" 
-        name="illustration_style" 
-        id="styleValue" 
-        value={value}
-      />
-    </section>
-  );
+      <input type="hidden" name="illustration_style" id="styleValue" value={value} />
+    </section>;
 };
-
 const Index = () => {
   const {
     toast
@@ -366,7 +332,6 @@ const Index = () => {
     hero3: false,
     hero4: false
   });
-
 
   // Email validation
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -416,7 +381,7 @@ const Index = () => {
 
     // Prepare multipart/form-data
     const multipartData = new FormData();
-    
+
     // Add all text fields
     multipartData.append('world', formData.world);
     multipartData.append('newyear_mode', formData.newyear_mode.toString());
@@ -429,57 +394,52 @@ const Index = () => {
     multipartData.append('email', formData.email.toLowerCase());
     multipartData.append('illustration_style', formData.illustration_style);
     multipartData.append('illustration_style_prompt', formData.illustration_style_prompt);
-    
+
     // Hero 1 (always included, photo optional)
     multipartData.append('hero1_name', formData.hero1_name);
     multipartData.append('hero1_desc', formData.hero1_desc);
     multipartData.append('hero1_rel', formData.hero1_rel);
-    
     if (formData.hero1_photo) {
       multipartData.append('hero1_photo', formData.hero1_photo);
       multipartData.append('hero1_photo_name', formData.hero1_photo.name);
       multipartData.append('hero1_photo_mime', formData.hero1_photo.type);
     }
-    
+
     // Hero 2 (if enabled)
     if (heroSections.hero2) {
       multipartData.append('hero2_name', formData.hero2_name);
       multipartData.append('hero2_desc', formData.hero2_desc);
       multipartData.append('hero2_rel', formData.hero2_rel);
-      
       if (formData.hero2_photo) {
         multipartData.append('hero2_photo', formData.hero2_photo);
         multipartData.append('hero2_photo_name', formData.hero2_photo.name);
         multipartData.append('hero2_photo_mime', formData.hero2_photo.type);
       }
     }
-    
+
     // Hero 3 (if enabled)
     if (heroSections.hero3) {
       multipartData.append('hero3_name', formData.hero3_name);
       multipartData.append('hero3_desc', formData.hero3_desc);
       multipartData.append('hero3_rel', formData.hero3_rel);
-      
       if (formData.hero3_photo) {
         multipartData.append('hero3_photo', formData.hero3_photo);
         multipartData.append('hero3_photo_name', formData.hero3_photo.name);
         multipartData.append('hero3_photo_mime', formData.hero3_photo.type);
       }
     }
-    
+
     // Hero 4 (if enabled)
     if (heroSections.hero4) {
       multipartData.append('hero4_name', formData.hero4_name);
       multipartData.append('hero4_desc', formData.hero4_desc);
       multipartData.append('hero4_rel', formData.hero4_rel);
-      
       if (formData.hero4_photo) {
         multipartData.append('hero4_photo', formData.hero4_photo);
         multipartData.append('hero4_photo_name', formData.hero4_photo.name);
         multipartData.append('hero4_photo_mime', formData.hero4_photo.type);
       }
     }
-    
     let ok = false;
     try {
       const response = await fetch(WEBHOOK_URL, {
@@ -504,49 +464,53 @@ const Index = () => {
       <div className="max-w-6xl mx-auto mixer-chassis">
       {/* Header */}
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
-          setFormData({
-            world: 'disney_light',
-            newyear_mode: false,
-            location: '',
-            artifact: '',
-            length_target: 15000,
-            chapters: 5,
-            title_need: false,
-            language: 'ru',
-            email: '',
-            illustration_style: 'disney',
-            illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
-            hero1_name: '',
-            hero1_desc: '',
-            hero1_rel: '',
-            hero1_photo: null,
-            hero1_photo_url: '',
-            hero2_name: '',
-            hero2_desc: '',
-            hero2_rel: '',
-            hero2_photo: null,
-            hero2_photo_url: '',
-            hero3_name: '',
-            hero3_desc: '',
-            hero3_rel: '',
-            hero3_photo: null,
-            hero3_photo_url: '',
-            hero4_name: '',
-            hero4_desc: '',
-            hero4_rel: '',
-            hero4_photo: null,
-            hero4_photo_url: ''
-          });
-          setHeroSections({ hero2: false, hero3: false, hero4: false });
-        }}>
+        setFormData({
+          world: 'disney_light',
+          newyear_mode: false,
+          location: '',
+          artifact: '',
+          length_target: 15000,
+          chapters: 5,
+          title_need: false,
+          language: 'ru',
+          email: '',
+          illustration_style: 'disney',
+          illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
+          hero1_name: '',
+          hero1_desc: '',
+          hero1_rel: '',
+          hero1_photo: null,
+          hero1_photo_url: '',
+          hero2_name: '',
+          hero2_desc: '',
+          hero2_rel: '',
+          hero2_photo: null,
+          hero2_photo_url: '',
+          hero3_name: '',
+          hero3_desc: '',
+          hero3_rel: '',
+          hero3_photo: null,
+          hero3_photo_url: '',
+          hero4_name: '',
+          hero4_desc: '',
+          hero4_rel: '',
+          hero4_photo: null,
+          hero4_photo_url: ''
+        });
+        setHeroSections({
+          hero2: false,
+          hero3: false,
+          hero4: false
+        });
+      }}>
           {/* Constellation Background Layer with Text Mask */}
           <div className="hero-constellations" aria-hidden="true">
             <svg className="constellation-svg-hero" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 {/* Text mask to avoid overlapping letters */}
                 <mask id="textMask">
-                  <rect width="100%" height="100%" fill="white"/>
-                  <rect x="180" y="60" width="440" height="80" rx="12" fill="black"/>
+                  <rect width="100%" height="100%" fill="white" />
+                  <rect x="180" y="60" width="440" height="80" rx="12" fill="black" />
                 </mask>
               </defs>
               
@@ -560,8 +524,7 @@ const Index = () => {
                   <circle cx="75" cy="55" r="3.2" className="star-hero" />
                   <circle cx="45" cy="50" r="4.0" className="star-hero" />
                   <circle cx="110" cy="45" r="3.6" className="star-hero" />
-                  <path d="M40,25 L85,35 L120,20 L160,40 M85,35 L110,45 L75,55 L45,50 L40,25" 
-                        className="constellation-line-hero" />
+                  <path d="M40,25 L85,35 L120,20 L160,40 M85,35 L110,45 L75,55 L45,50 L40,25" className="constellation-line-hero" />
                 </g>
 
                 {/* Upper Right Constellation - "Кассиопея" style */}
@@ -572,8 +535,7 @@ const Index = () => {
                   <circle cx="750" cy="25" r="3.4" className="star-hero" />
                   <circle cx="780" cy="40" r="3.9" className="star-hero" />
                   <circle cx="670" cy="50" r="3.2" className="star-hero" />
-                  <path d="M650,30 L690,20 L720,35 L750,25 L780,40 M690,20 L670,50" 
-                        className="constellation-line-hero" />
+                  <path d="M650,30 L690,20 L720,35 L750,25 L780,40 M690,20 L670,50" className="constellation-line-hero" />
                 </g>
 
                 {/* Lower Left Constellation - "Орион" style */}
@@ -585,8 +547,7 @@ const Index = () => {
                   <circle cx="100" cy="195" r="3.8" className="star-hero" />
                   <circle cx="30" cy="180" r="3.5" className="star-hero" />
                   <circle cx="50" cy="190" r="4.2" className="star-hero bright" />
-                  <path d="M60,160 L90,175 L120,165 M80,185 L100,195 L50,190 M30,180 L60,160 M90,175 L80,185" 
-                        className="constellation-line-hero" />
+                  <path d="M60,160 L90,175 L120,165 M80,185 L100,195 L50,190 M30,180 L60,160 M90,175 L80,185" className="constellation-line-hero" />
                 </g>
 
                 {/* Lower Right Constellation - "Лебедь" style */}
@@ -597,8 +558,7 @@ const Index = () => {
                   <circle cx="740" cy="190" r="3.4" className="star-hero" />
                   <circle cx="770" cy="185" r="4.0" className="star-hero" />
                   <circle cx="700" cy="195" r="3.6" className="star-hero" />
-                  <path d="M680,170 L720,180 L750,165 M720,180 L740,190 L770,185 M720,180 L700,195" 
-                        className="constellation-line-hero" />
+                  <path d="M680,170 L720,180 L750,165 M720,180 L740,190 L770,185 M720,180 L700,195" className="constellation-line-hero" />
                 </g>
 
                 {/* Scattered Individual Stars */}
@@ -663,94 +623,79 @@ const Index = () => {
               {/* Carousel Container */}
               <div className="world-carousel-wrapper">
                 {/* Mobile Navigation Arrows */}
-                <button
-                  type="button"
-                  className="world-carousel-arrow world-carousel-arrow-prev"
-                  onClick={() => {
-                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
-                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : WORLDS.length - 1;
-                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                    if (!track || !cards[prevIndex]) return;
-                    
-                    const card = cards[prevIndex];
-                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
-                    
-                    track.scrollTo({
-                      left: scrollLeft,
-                      behavior: 'smooth'
-                    });
-                    
-                    setFormData(prev => ({ ...prev, world: WORLDS[prevIndex].value }));
-                  }}
-                  aria-label="Предыдущий мир"
-                >
+                <button type="button" className="world-carousel-arrow world-carousel-arrow-prev" onClick={() => {
+                const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : WORLDS.length - 1;
+                const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                if (!track || !cards[prevIndex]) return;
+                const card = cards[prevIndex];
+                const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                track.scrollTo({
+                  left: scrollLeft,
+                  behavior: 'smooth'
+                });
+                setFormData(prev => ({
+                  ...prev,
+                  world: WORLDS[prevIndex].value
+                }));
+              }} aria-label="Предыдущий мир">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 18l-6-6 6-6"/>
+                    <path d="M15 18l-6-6 6-6" />
                   </svg>
                 </button>
 
-                <button
-                  type="button"
-                  className="world-carousel-arrow world-carousel-arrow-next"
-                  onClick={() => {
-                    const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                    const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
-                    const nextIndex = currentIndex < WORLDS.length - 1 ? currentIndex + 1 : 0;
-                    const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                    if (!track || !cards[nextIndex]) return;
-                    
-                    const card = cards[nextIndex];
-                    const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
-                    
-                    track.scrollTo({
-                      left: scrollLeft,
-                      behavior: 'smooth'
-                    });
-                    
-                    setFormData(prev => ({ ...prev, world: WORLDS[nextIndex].value }));
-                  }}
-                  aria-label="Следующий мир"
-                >
+                <button type="button" className="world-carousel-arrow world-carousel-arrow-next" onClick={() => {
+                const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                const nextIndex = currentIndex < WORLDS.length - 1 ? currentIndex + 1 : 0;
+                const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                if (!track || !cards[nextIndex]) return;
+                const card = cards[nextIndex];
+                const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                track.scrollTo({
+                  left: scrollLeft,
+                  behavior: 'smooth'
+                });
+                setFormData(prev => ({
+                  ...prev,
+                  world: WORLDS[nextIndex].value
+                }));
+              }} aria-label="Следующий мир">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18l6-6-6-6"/>
+                    <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
 
-                <div 
-                  className="world-carousel-track"
-                  onScroll={(e) => {
-                    const track = e.currentTarget;
-                    const cards = track.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                    if (cards.length === 0) return;
-                    
-                    const trackCenter = track.scrollLeft + track.offsetWidth / 2;
-                    let closestIndex = 0;
-                    let closestDistance = Infinity;
-                    
-                    cards.forEach((card, index) => {
-                      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-                      const distance = Math.abs(trackCenter - cardCenter);
-                      if (distance < closestDistance) {
-                        closestDistance = distance;
-                        closestIndex = index;
-                      }
-                    });
-                    
-                    // Auto-select the centered card
-                    const selectedWorld = WORLDS[closestIndex];
-                    if (selectedWorld && formData.world !== selectedWorld.value) {
-                      setFormData(prev => ({ ...prev, world: selectedWorld.value }));
-                    }
-                  }}
-                >
-                  {WORLDS.map((world) => (
-                    <button
-                      key={world.value}
-                      type="button"
-                      className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
-                    >
+                <div className="world-carousel-track" onScroll={e => {
+                const track = e.currentTarget;
+                const cards = track.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                if (cards.length === 0) return;
+                const trackCenter = track.scrollLeft + track.offsetWidth / 2;
+                let closestIndex = 0;
+                let closestDistance = Infinity;
+                cards.forEach((card, index) => {
+                  const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+                  const distance = Math.abs(trackCenter - cardCenter);
+                  if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestIndex = index;
+                  }
+                });
+
+                // Auto-select the centered card
+                const selectedWorld = WORLDS[closestIndex];
+                if (selectedWorld && formData.world !== selectedWorld.value) {
+                  setFormData(prev => ({
+                    ...prev,
+                    world: selectedWorld.value
+                  }));
+                }
+              }}>
+                  {WORLDS.map(world => <button key={world.value} type="button" className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`} onClick={() => setFormData(prev => ({
+                  ...prev,
+                  world: world.value
+                }))}>
                       <div className="world-card-content">
                         <div className="world-card-header">
                           <span className="world-card-emoji">{world.emoji}</span>
@@ -759,94 +704,73 @@ const Index = () => {
                         <p className="world-card-description">{world.description}</p>
                         <p className="world-card-tagline">{world.tagline}</p>
                       </div>
-                    </button>
-                  ))}
+                    </button>)}
                 </div>
 
                 {/* Dots Navigation with Arrow Buttons */}
                 <div className="world-carousel-dots">
                   {/* Left Arrow */}
-                  <button
-                    type="button"
-                    className="world-carousel-nav-arrow world-carousel-nav-arrow-left"
-                    onClick={() => {
-                      const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
-                      const prevIndex = currentIndex === 0 ? WORLDS.length - 1 : currentIndex - 1;
-                      const prevWorld = WORLDS[prevIndex];
-                      
-                      const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                      const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                      if (!track || !cards[prevIndex]) return;
-                      
-                      const card = cards[prevIndex];
-                      const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
-                      
-                      track.scrollTo({
-                        left: scrollLeft,
-                        behavior: 'smooth'
-                      });
-                      
-                      setFormData(prev => ({ ...prev, world: prevWorld.value }));
-                    }}
-                    aria-label="Previous world"
-                  >
+                  <button type="button" className="world-carousel-nav-arrow world-carousel-nav-arrow-left" onClick={() => {
+                  const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                  const prevIndex = currentIndex === 0 ? WORLDS.length - 1 : currentIndex - 1;
+                  const prevWorld = WORLDS[prevIndex];
+                  const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                  const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                  if (!track || !cards[prevIndex]) return;
+                  const card = cards[prevIndex];
+                  const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                  track.scrollTo({
+                    left: scrollLeft,
+                    behavior: 'smooth'
+                  });
+                  setFormData(prev => ({
+                    ...prev,
+                    world: prevWorld.value
+                  }));
+                }} aria-label="Previous world">
                     <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-                      <path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
 
                   {/* Dots */}
-                  {WORLDS.map((world, index) => (
-                    <button
-                      key={world.value}
-                      type="button"
-                      className={`world-carousel-dot ${formData.world === world.value ? 'active' : ''}`}
-                      onClick={() => {
-                        const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                        const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                        if (!track || !cards[index]) return;
-                        
-                        const card = cards[index];
-                        const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
-                        
-                        track.scrollTo({
-                          left: scrollLeft,
-                          behavior: 'smooth'
-                        });
-                        
-                        setFormData(prev => ({ ...prev, world: world.value }));
-                      }}
-                      aria-label={world.title}
-                    />
-                  ))}
+                  {WORLDS.map((world, index) => <button key={world.value} type="button" className={`world-carousel-dot ${formData.world === world.value ? 'active' : ''}`} onClick={() => {
+                  const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                  const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                  if (!track || !cards[index]) return;
+                  const card = cards[index];
+                  const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                  track.scrollTo({
+                    left: scrollLeft,
+                    behavior: 'smooth'
+                  });
+                  setFormData(prev => ({
+                    ...prev,
+                    world: world.value
+                  }));
+                }} aria-label={world.title} />)}
 
                   {/* Right Arrow */}
-                  <button
-                    type="button"
-                    className="world-carousel-nav-arrow world-carousel-nav-arrow-right"
-                    onClick={() => {
-                      const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
-                      const nextIndex = currentIndex === WORLDS.length - 1 ? 0 : currentIndex + 1;
-                      const nextWorld = WORLDS[nextIndex];
-                      
-                      const track = document.querySelector('.world-carousel-track') as HTMLElement;
-                      const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
-                      if (!track || !cards[nextIndex]) return;
-                      
-                      const card = cards[nextIndex];
-                      const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
-                      
-                      track.scrollTo({
-                        left: scrollLeft,
-                        behavior: 'smooth'
-                      });
-                      
-                      setFormData(prev => ({ ...prev, world: nextWorld.value }));
-                    }}
-                    aria-label="Next world"
-                  >
+                  <button type="button" className="world-carousel-nav-arrow world-carousel-nav-arrow-right" onClick={() => {
+                  const currentIndex = WORLDS.findIndex(w => w.value === formData.world);
+                  const nextIndex = currentIndex === WORLDS.length - 1 ? 0 : currentIndex + 1;
+                  const nextWorld = WORLDS[nextIndex];
+                  const track = document.querySelector('.world-carousel-track') as HTMLElement;
+                  const cards = document.querySelectorAll('.world-card') as NodeListOf<HTMLElement>;
+                  if (!track || !cards[nextIndex]) return;
+                  const card = cards[nextIndex];
+                  const scrollLeft = card.offsetLeft - (track.offsetWidth - card.offsetWidth) / 2;
+                  track.scrollTo({
+                    left: scrollLeft,
+                    behavior: 'smooth'
+                  });
+                  setFormData(prev => ({
+                    ...prev,
+                    world: nextWorld.value
+                  }));
+                }} aria-label="Next world">
                     <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-                      <path d="M2 1L7 6L2 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2 1L7 6L2 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                 </div>
@@ -878,14 +802,11 @@ const Index = () => {
               <label className="mixer-control-label">
                 Стиль иллюстрации
               </label>
-              <StylePicker8Bit
-                value={formData.illustration_style}
-                onChange={(value) => setFormData(prev => ({
-                  ...prev,
-                  illustration_style: value,
-                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
-                }))}
-              />
+              <StylePicker8Bit value={formData.illustration_style} onChange={value => setFormData(prev => ({
+              ...prev,
+              illustration_style: value,
+              illustration_style_prompt: ILLUSTRATION_STYLES[value]
+            }))} />
             </div>
 
             {/* Location & Artifact */}
@@ -920,54 +841,29 @@ const Index = () => {
               <div className="mixer-hero-panel">
                 <h4 className="mixer-hero-title">Главный герой</h4>
                 <div className="space-y-4">
-                  <input 
-                    type="text" 
-                    placeholder="Имя" 
-                    className="mixer-input" 
-                    value={formData.hero1_name} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      hero1_name: e.target.value
-                    }))} 
-                  />
+                  <input type="text" placeholder="Имя" className="mixer-input" value={formData.hero1_name} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  hero1_name: e.target.value
+                }))} />
                   
                   <div>
                     <label className="mixer-control-label block mb-2">
                       Описание героя
                     </label>
-                    <textarea 
-                      name="hero1_desc"
-                      id="hero1_desc"
-                      rows={4}
-                      minLength={60}
-                      maxLength={600}
-                      placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
-                      className="mixer-input resize-none"
-                      value={formData.hero1_desc}
-                      onChange={e => setFormData(prev => ({
-                        ...prev,
-                        hero1_desc: e.target.value
-                      }))}
-                    />
+                    <textarea name="hero1_desc" id="hero1_desc" rows={4} minLength={60} maxLength={600} placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения." className="mixer-input resize-none" value={formData.hero1_desc} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    hero1_desc: e.target.value
+                  }))} />
                   </div>
                   
                   <div>
                     <label className="mixer-control-label block mb-2">
                       Отношения
                     </label>
-                    <textarea 
-                      name="hero1_rel"
-                      id="hero1_rel"
-                      rows={3}
-                      maxLength={300}
-                      placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
-                      className="mixer-input resize-none"
-                      value={formData.hero1_rel}
-                      onChange={e => setFormData(prev => ({
-                        ...prev,
-                        hero1_rel: e.target.value
-                      }))}
-                    />
+                    <textarea name="hero1_rel" id="hero1_rel" rows={3} maxLength={300} placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой." className="mixer-input resize-none" value={formData.hero1_rel} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    hero1_rel: e.target.value
+                  }))} />
                   </div>
                 </div>
                 
@@ -976,75 +872,53 @@ const Index = () => {
                   <label className="mixer-control-label block mb-2">
                     Фото героя 1
                   </label>
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png"
-                    className="hidden"
-                    id="hero1-photo-input"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      
-                      // Validate file type
-                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-                        toast({
-                          variant: "destructive",
-                          title: "Неверный формат",
-                          description: "Допустимы JPG/PNG до 3 МБ"
-                        });
-                        return;
-                      }
-                      
-                      // Validate file size (3MB)
-                      if (file.size > 3 * 1024 * 1024) {
-                        toast({
-                          variant: "destructive",
-                          title: "Файл слишком большой",
-                          description: "Допустимы JPG/PNG до 3 МБ"
-                        });
-                        return;
-                      }
-                      
-                      // Store file and create preview URL
-                      setFormData(prev => ({
-                        ...prev,
-                        hero1_photo: file,
-                        hero1_photo_url: URL.createObjectURL(file)
-                      }));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
-                    onClick={() => document.getElementById('hero1-photo-input')?.click()}
-                  >
+                  <input type="file" accept=".jpg,.jpeg,.png" className="hidden" id="hero1-photo-input" onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  // Validate file type
+                  if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                    toast({
+                      variant: "destructive",
+                      title: "Неверный формат",
+                      description: "Допустимы JPG/PNG до 3 МБ"
+                    });
+                    return;
+                  }
+
+                  // Validate file size (3MB)
+                  if (file.size > 3 * 1024 * 1024) {
+                    toast({
+                      variant: "destructive",
+                      title: "Файл слишком большой",
+                      description: "Допустимы JPG/PNG до 3 МБ"
+                    });
+                    return;
+                  }
+
+                  // Store file and create preview URL
+                  setFormData(prev => ({
+                    ...prev,
+                    hero1_photo: file,
+                    hero1_photo_url: URL.createObjectURL(file)
+                  }));
+                }} />
+                  <button type="button" className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => document.getElementById('hero1-photo-input')?.click()}>
                     Загрузить фото
                   </button>
-                  <p className="mixer-hint mt-1">
-                    Лучше всего — лицевая фотография, без фона/фильтров. Используется только для сохранения идентичности персонажа в иллюстрациях.
-                  </p>
+                  <p className="mixer-hint mt-1">Добавьте портретное фото, где хорошо видно лицо. Используется для создания идентичности персонажа. </p>
                   
                   {/* Preview */}
-                  {formData.hero1_photo_url && (
-                    <div className="mt-3 relative inline-block">
-                      <img 
-                        src={formData.hero1_photo_url} 
-                        alt="Превью героя 1" 
-                        className="w-32 h-32 object-cover rounded-md border-2 border-accent"
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
-                        onClick={() => setFormData(prev => ({
-                          ...prev,
-                          hero1_photo: null,
-                          hero1_photo_url: ''
-                        }))}
-                      >
+                  {formData.hero1_photo_url && <div className="mt-3 relative inline-block">
+                      <img src={formData.hero1_photo_url} alt="Превью героя 1" className="w-32 h-32 object-cover rounded-md border-2 border-accent" />
+                      <button type="button" className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90" onClick={() => setFormData(prev => ({
+                    ...prev,
+                    hero1_photo: null,
+                    hero1_photo_url: ''
+                  }))}>
                         ×
                       </button>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
@@ -1065,54 +939,29 @@ const Index = () => {
                     
                     {isVisible && <div className="mixer-hero-panel">
                         <div className="space-y-4">
-                          <input 
-                            type="text" 
-                            placeholder="Имя" 
-                            className="mixer-input" 
-                            value={formData[`hero${heroNum}_name` as keyof FormData] as string} 
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              [`hero${heroNum}_name`]: e.target.value
-                            }))} 
-                          />
+                          <input type="text" placeholder="Имя" className="mixer-input" value={formData[`hero${heroNum}_name` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      [`hero${heroNum}_name`]: e.target.value
+                    }))} />
                           
                           <div>
                             <label className="mixer-control-label block mb-2">
                               Описание героя
                             </label>
-                            <textarea 
-                              name={`hero${heroNum}_desc`}
-                              id={`hero${heroNum}_desc`}
-                              rows={4}
-                              minLength={60}
-                              maxLength={600}
-                              placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
-                              className="mixer-input resize-none"
-                              value={formData[`hero${heroNum}_desc` as keyof FormData] as string}
-                              onChange={e => setFormData(prev => ({
-                                ...prev,
-                                [`hero${heroNum}_desc`]: e.target.value
-                              }))}
-                            />
+                            <textarea name={`hero${heroNum}_desc`} id={`hero${heroNum}_desc`} rows={4} minLength={60} maxLength={600} placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения." className="mixer-input resize-none" value={formData[`hero${heroNum}_desc` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                        ...prev,
+                        [`hero${heroNum}_desc`]: e.target.value
+                      }))} />
                           </div>
                           
                           <div>
                             <label className="mixer-control-label block mb-2">
                               Отношения
                             </label>
-                            <textarea 
-                              name={`hero${heroNum}_rel`}
-                              id={`hero${heroNum}_rel`}
-                              rows={3}
-                              maxLength={300}
-                              placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
-                              className="mixer-input resize-none"
-                              value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
-                              onChange={e => setFormData(prev => ({
-                                ...prev,
-                                [`hero${heroNum}_rel`]: e.target.value
-                              }))}
-                            />
+                            <textarea name={`hero${heroNum}_rel`} id={`hero${heroNum}_rel`} rows={3} maxLength={300} placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой." className="mixer-input resize-none" value={formData[`hero${heroNum}_rel` as keyof FormData] as string} onChange={e => setFormData(prev => ({
+                        ...prev,
+                        [`hero${heroNum}_rel`]: e.target.value
+                      }))} />
                           </div>
                         </div>
                         
@@ -1121,48 +970,38 @@ const Index = () => {
                           <label className="mixer-control-label block mb-2">
                             Фото героя {heroNum}
                           </label>
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png"
-                            className="hidden"
-                            id={`hero${heroNum}-photo-input`}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              
-                              // Validate file type
-                              if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-                                toast({
-                                  variant: "destructive",
-                                  title: "Неверный формат",
-                                  description: "Допустимы JPG/PNG до 3 МБ"
-                                });
-                                return;
-                              }
-                              
-                              // Validate file size (3MB)
-                              if (file.size > 3 * 1024 * 1024) {
-                                toast({
-                                  variant: "destructive",
-                                  title: "Файл слишком большой",
-                                  description: "Допустимы JPG/PNG до 3 МБ"
-                                });
-                                return;
-                              }
-                              
-                              // Store file and create preview URL
-                              setFormData(prev => ({
-                                ...prev,
-                                [`hero${heroNum}_photo`]: file,
-                                [`hero${heroNum}_photo_url`]: URL.createObjectURL(file)
-                              }));
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
-                            onClick={() => document.getElementById(`hero${heroNum}-photo-input`)?.click()}
-                          >
+                          <input type="file" accept=".jpg,.jpeg,.png" className="hidden" id={`hero${heroNum}-photo-input`} onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      // Validate file type
+                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                        toast({
+                          variant: "destructive",
+                          title: "Неверный формат",
+                          description: "Допустимы JPG/PNG до 3 МБ"
+                        });
+                        return;
+                      }
+
+                      // Validate file size (3MB)
+                      if (file.size > 3 * 1024 * 1024) {
+                        toast({
+                          variant: "destructive",
+                          title: "Файл слишком большой",
+                          description: "Допустимы JPG/PNG до 3 МБ"
+                        });
+                        return;
+                      }
+
+                      // Store file and create preview URL
+                      setFormData(prev => ({
+                        ...prev,
+                        [`hero${heroNum}_photo`]: file,
+                        [`hero${heroNum}_photo_url`]: URL.createObjectURL(file)
+                      }));
+                    }} />
+                          <button type="button" className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => document.getElementById(`hero${heroNum}-photo-input`)?.click()}>
                             Загрузить фото
                           </button>
                           <p className="mixer-hint mt-1">
@@ -1170,26 +1009,16 @@ const Index = () => {
                           </p>
                           
                           {/* Preview */}
-                          {formData[`hero${heroNum}_photo_url` as keyof FormData] && (
-                            <div className="mt-3 relative inline-block">
-                              <img 
-                                src={formData[`hero${heroNum}_photo_url` as keyof FormData] as string} 
-                                alt={`Превью героя ${heroNum}`}
-                                className="w-32 h-32 object-cover rounded-md border-2 border-accent"
-                              />
-                              <button
-                                type="button"
-                                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
-                                onClick={() => setFormData(prev => ({
-                                  ...prev,
-                                  [`hero${heroNum}_photo`]: null,
-                                  [`hero${heroNum}_photo_url`]: ''
-                                }))}
-                              >
+                          {formData[`hero${heroNum}_photo_url` as keyof FormData] && <div className="mt-3 relative inline-block">
+                              <img src={formData[`hero${heroNum}_photo_url` as keyof FormData] as string} alt={`Превью героя ${heroNum}`} className="w-32 h-32 object-cover rounded-md border-2 border-accent" />
+                              <button type="button" className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90" onClick={() => setFormData(prev => ({
+                        ...prev,
+                        [`hero${heroNum}_photo`]: null,
+                        [`hero${heroNum}_photo_url`]: ''
+                      }))}>
                                 ×
                               </button>
-                            </div>
-                          )}
+                            </div>}
                         </div>
                       </div>}
                   </div>;
