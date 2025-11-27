@@ -500,10 +500,10 @@ const Index = () => {
       showEmailOverlayWithProgress();
     }
   };
-  return <div className="min-h-screen mixer-desk-bg p-4 md:p-8">
-      <div className="max-w-6xl mx-auto mixer-chassis">
+  return <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-6xl mx-auto container-modern">
       {/* Header */}
-        <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={() => {
+        <div className="hero-section animate-fade-in" onClick={() => {
           setFormData({
             world: 'disney_light',
             newyear_mode: false,
@@ -539,126 +539,20 @@ const Index = () => {
           });
           setHeroSections({ hero2: false, hero3: false, hero4: false });
         }}>
-          {/* Constellation Background Layer with Text Mask */}
-          <div className="hero-constellations" aria-hidden="true">
-            <svg className="constellation-svg-hero" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                {/* Text mask to avoid overlapping letters */}
-                <mask id="textMask">
-                  <rect width="100%" height="100%" fill="white"/>
-                  <rect x="180" y="60" width="440" height="80" rx="12" fill="black"/>
-                </mask>
-              </defs>
-              
-              <g mask="url(#textMask)">
-                {/* Upper Left Constellation - "Большая Медведица" style */}
-                <g className="constellation-group upper-left">
-                  <circle cx="40" cy="25" r="4.5" className="star-hero bright" />
-                  <circle cx="85" cy="35" r="3.8" className="star-hero" />
-                  <circle cx="120" cy="20" r="4.2" className="star-hero bright" />
-                  <circle cx="160" cy="40" r="3.5" className="star-hero" />
-                  <circle cx="75" cy="55" r="3.2" className="star-hero" />
-                  <circle cx="45" cy="50" r="4.0" className="star-hero" />
-                  <circle cx="110" cy="45" r="3.6" className="star-hero" />
-                  <path d="M40,25 L85,35 L120,20 L160,40 M85,35 L110,45 L75,55 L45,50 L40,25" 
-                        className="constellation-line-hero" />
-                </g>
-
-                {/* Upper Right Constellation - "Кассиопея" style */}
-                <g className="constellation-group upper-right">
-                  <circle cx="650" cy="30" r="4.3" className="star-hero bright" />
-                  <circle cx="690" cy="20" r="3.7" className="star-hero" />
-                  <circle cx="720" cy="35" r="4.1" className="star-hero bright" />
-                  <circle cx="750" cy="25" r="3.4" className="star-hero" />
-                  <circle cx="780" cy="40" r="3.9" className="star-hero" />
-                  <circle cx="670" cy="50" r="3.2" className="star-hero" />
-                  <path d="M650,30 L690,20 L720,35 L750,25 L780,40 M690,20 L670,50" 
-                        className="constellation-line-hero" />
-                </g>
-
-                {/* Lower Left Constellation - "Орион" style */}
-                <g className="constellation-group lower-left">
-                  <circle cx="60" cy="160" r="4.4" className="star-hero bright" />
-                  <circle cx="90" cy="175" r="3.6" className="star-hero" />
-                  <circle cx="120" cy="165" r="4.0" className="star-hero" />
-                  <circle cx="80" cy="185" r="3.3" className="star-hero" />
-                  <circle cx="100" cy="195" r="3.8" className="star-hero" />
-                  <circle cx="30" cy="180" r="3.5" className="star-hero" />
-                  <circle cx="50" cy="190" r="4.2" className="star-hero bright" />
-                  <path d="M60,160 L90,175 L120,165 M80,185 L100,195 L50,190 M30,180 L60,160 M90,175 L80,185" 
-                        className="constellation-line-hero" />
-                </g>
-
-                {/* Lower Right Constellation - "Лебедь" style */}
-                <g className="constellation-group lower-right">
-                  <circle cx="680" cy="170" r="4.1" className="star-hero bright" />
-                  <circle cx="720" cy="180" r="3.7" className="star-hero" />
-                  <circle cx="750" cy="165" r="3.9" className="star-hero" />
-                  <circle cx="740" cy="190" r="3.4" className="star-hero" />
-                  <circle cx="770" cy="185" r="4.0" className="star-hero" />
-                  <circle cx="700" cy="195" r="3.6" className="star-hero" />
-                  <path d="M680,170 L720,180 L750,165 M720,180 L740,190 L770,185 M720,180 L700,195" 
-                        className="constellation-line-hero" />
-                </g>
-
-                {/* Scattered Individual Stars */}
-                <g className="scattered-stars">
-                  <circle cx="200" cy="35" r="2.8" className="star-hero dim" />
-                  <circle cx="280" cy="25" r="3.2" className="star-hero dim" />
-                  <circle cx="350" cy="40" r="2.5" className="star-hero dim" />
-                  <circle cx="420" cy="30" r="3.0" className="star-hero dim" />
-                  <circle cx="520" cy="35" r="2.7" className="star-hero dim" />
-                  <circle cx="580" cy="25" r="3.1" className="star-hero dim" />
-                  
-                  <circle cx="150" cy="180" r="2.9" className="star-hero dim" />
-                  <circle cx="220" cy="190" r="2.6" className="star-hero dim" />
-                  <circle cx="300" cy="175" r="3.0" className="star-hero dim" />
-                  <circle cx="380" cy="185" r="2.8" className="star-hero dim" />
-                  <circle cx="450" cy="170" r="3.2" className="star-hero dim" />
-                  <circle cx="520" cy="180" r="2.7" className="star-hero dim" />
-                  <circle cx="590" cy="190" r="2.9" className="star-hero dim" />
-                </g>
-
-                {/* Subtle Milky Way effect */}
-                <g className="milky-way">
-                  <circle cx="380" cy="50" r="1.8" className="star-hero tiny" />
-                  <circle cx="390" cy="55" r="1.5" className="star-hero tiny" />
-                  <circle cx="400" cy="52" r="1.6" className="star-hero tiny" />
-                  <circle cx="410" cy="48" r="1.4" className="star-hero tiny" />
-                  <circle cx="420" cy="53" r="1.7" className="star-hero tiny" />
-                  
-                  <circle cx="370" cy="155" r="1.6" className="star-hero tiny" />
-                  <circle cx="385" cy="160" r="1.5" className="star-hero tiny" />
-                  <circle cx="395" cy="158" r="1.7" className="star-hero tiny" />
-                  <circle cx="405" cy="162" r="1.4" className="star-hero tiny" />
-                  <circle cx="415" cy="157" r="1.6" className="star-hero tiny" />
-                </g>
-              </g>
-            </svg>
-          </div>
-
-          <div className="hero-title-wrapper mb-4">
-            <h1 className="hero-title font-bold mixer-nameplate">
-              <span className="hero-title__text">Конструктор сказок</span>
-              <span className="hero-title__glow" aria-hidden="true">Конструктор сказок</span>
-              <span className="cursor-blink">|</span>
-            </h1>
-          </div>
+          <h1 className="mb-4">Конструктор сказок</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Создавай захватывающие истории о себе и близких
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Left Column - Controls */}
-          <div className="space-y-8">
-            {/* World Selection */}
-            <div className="mixer-control-section mobile-order-1">
-              <label className="mixer-control-label relative">
-                Выбери свой мир
-                <span className="hero-infinity-symbol" aria-hidden="true">∞</span>
-              </label>
-              <p className="mixer-hint mb-4">
-                Каждый мир — это своя атмосфера, законы и настроение. 
-                От выбора зависит, какой получится сказка: лёгкая, философская, приключенческая или кибер-сон.
-              </p>
+        <div className="section-spacing">
+          {/* World Selection */}
+          <div className="mb-12 animate-slide-up">
+            <h2 className="text-center mb-3">Выбери свой мир</h2>
+            <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Каждый мир — это своя атмосфера, законы и настроение. 
+              От выбора зависит, какой получится сказка: лёгкая, философская, приключенческая или кибер-сон.
+            </p>
               
               {/* Carousel Container */}
               <div className="world-carousel-wrapper">
@@ -852,69 +746,91 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            {/* Email Field */}
-            <div className="mixer-control-section mobile-order-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="mixer-control-label">
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Left Column - Email */}
+              <div className="space-y-8">
+                {/* Email Field */}
+                <div className="glass-card animate-slide-up animate-delay-200">
+                  <label className="block text-lg font-semibold mb-3">
                     Почта (обязательно)
                   </label>
-                  <input type="email" className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`} value={formData.email} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))} placeholder="name@example.com" autoComplete="email" required />
-                  <p className="mixer-hint">
+                  <input 
+                    type="email" 
+                    className={`modern-input ${formData.email && !validateEmail(formData.email) ? 'border-destructive' : ''}`} 
+                    value={formData.email} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      email: e.target.value
+                    }))} 
+                    placeholder="name@example.com" 
+                    autoComplete="email" 
+                    required 
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
                     Мы вышлем PDF на этот адрес.
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Right Column - Story Details */}
-          <div className="space-y-8">
-            {/* 8-bit Style Picker */}
-            <div className="mixer-control-section mobile-order-2">
-              <label className="mixer-control-label">
-                Стиль иллюстрации
-              </label>
-              <StylePicker8Bit
-                value={formData.illustration_style}
-                onChange={(value) => setFormData(prev => ({
-                  ...prev,
-                  illustration_style: value,
-                  illustration_style_prompt: ILLUSTRATION_STYLES[value]
-                }))}
-              />
+              {/* Right Column - Style Picker */}
+              <div className="space-y-8">
+                {/* 8-bit Style Picker */}
+                <div className="glass-card animate-slide-up animate-delay-300">
+                  <label className="block text-lg font-semibold mb-6 text-center">
+                    Стиль иллюстрации
+                  </label>
+                  <StylePicker8Bit
+                    value={formData.illustration_style}
+                    onChange={(value) => setFormData(prev => ({
+                      ...prev,
+                      illustration_style: value,
+                      illustration_style_prompt: ILLUSTRATION_STYLES[value]
+                    }))}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Location & Artifact */}
-            <div className="mixer-control-section mobile-order-5">
-              <div className="space-y-4">
+            <div className="glass-card animate-slide-up animate-delay-400">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="mixer-control-label">
+                  <label className="block text-lg font-semibold mb-3">
                     Место действия
                   </label>
-                  <input type="text" className="mixer-input" value={formData.location} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  location: e.target.value
-                }))} placeholder="Мехико или Заколдованный лес..." />
+                  <input 
+                    type="text" 
+                    className="modern-input" 
+                    value={formData.location} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      location: e.target.value
+                    }))} 
+                    placeholder="Мехико или Заколдованный лес..." 
+                  />
                 </div>
                 <div>
-                  <label className="mixer-control-label">
+                  <label className="block text-lg font-semibold mb-3">
                     Артефакт
                   </label>
-                  <input type="text" className="mixer-input" value={formData.artifact} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  artifact: e.target.value
-                }))} placeholder="личный предмет или знакомое событие..." />
+                  <input 
+                    type="text" 
+                    className="modern-input" 
+                    value={formData.artifact} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      artifact: e.target.value
+                    }))} 
+                    placeholder="личный предмет или знакомое событие..." 
+                  />
                 </div>
               </div>
             </div>
 
             {/* Heroes Section */}
-            <div className="mixer-control-section mobile-order-6">
-              <h3 className="mixer-section-title">Персонажи</h3>
+            <div className="glass-card animate-slide-up animate-delay-500">
+              <h3 className="text-2xl font-bold mb-6">Персонажи</h3>
               
               {/* Main Hero */}
               <div className="mixer-hero-panel">
@@ -1191,20 +1107,21 @@ const Index = () => {
                             </div>
                           )}
                         </div>
-                      </div>}
-                  </div>;
+                       </div>}
+                  </div>
             })}
             </div>
           </div>
         </div>
+      </div>
 
         {/* Submit Section */}
-        <div className="mt-12 text-center mixer-panel">
-          <button className="mixer-main-button text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
+        <div className="mt-12 text-center glass-card">
+          <button className="btn-gradient text-2xl px-12 py-6 mb-4" onClick={handleSubmit} disabled={showLoader}>
             {showLoader ? 'Отправка...' : 'Создать сказку'}
           </button>
           
-          <p className="mixer-subtitle mb-6">
+          <p className="text-muted-foreground">
             Время генерации 2–4 мин. PDF придёт на указанную почту.
           </p>
         </div>
@@ -1241,6 +1158,7 @@ const Index = () => {
             </div>
           </div>}
       </div>
-    </div>;
+    </div>
+  );
 };
 export default Index;
