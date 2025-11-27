@@ -1004,9 +1004,8 @@ const Index = () => {
                           <button type="button" className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => document.getElementById(`hero${heroNum}-photo-input`)?.click()}>
                             Загрузить фото
                           </button>
-                          <p className="mixer-hint mt-1">
-                            Лучше всего — лицевая фотография, без фона/фильтров. Используется только для сохранения идентичности персонажа в иллюстрациях.
-                          </p>
+                          <p className="mixer-hint mt-1">Добавьте портретное фото, где хорошо видно лицо. Используется для создания идентичности персонажа. 
+                    </p>
                           
                           {/* Preview */}
                           {formData[`hero${heroNum}_photo_url` as keyof FormData] && <div className="mt-3 relative inline-block">
