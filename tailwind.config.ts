@@ -14,8 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Roboto', 'sans-serif'],
-        orbitron: ['Orbitron', 'monospace'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -41,7 +40,7 @@ export default {
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--foreground))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -51,30 +50,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Blue Brass Steampunk colors
-        panel: {
-          DEFAULT: "hsl(var(--panel))",
-          ink: "hsl(var(--panel-ink))",
-          muted: "hsl(var(--panel-muted))",
-          edge: "hsl(var(--panel-edge))",
+        neutral: {
+          50: "hsl(var(--neutral-50))",
+          100: "hsl(var(--neutral-100))",
+          200: "hsl(var(--neutral-200))",
+          800: "hsl(var(--neutral-800))",
+          900: "hsl(var(--neutral-900))",
         },
-        brass: {
-          DEFAULT: "hsl(var(--brass))",
-          deep: "hsl(var(--brass-deep))",
-        },
-        scratch: {
-          hi: "hsl(var(--scratch-hi))",
-          lo: "hsl(var(--scratch-lo))",
-        },
-        cta: {
-          start: "hsl(var(--cta-start))",
-          end: "hsl(var(--cta-end))",
-          text: "hsl(var(--cta-text))",
-        },
-        glow: "hsl(var(--glow))",
-        ok: "hsl(var(--ok))",
-        warn: "hsl(var(--warn))",
-        err: "hsl(var(--err))",
       },
       borderRadius: {
         lg: "var(--radius)",
