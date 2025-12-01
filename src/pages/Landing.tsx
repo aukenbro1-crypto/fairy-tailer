@@ -31,7 +31,7 @@ const Landing = () => {
             <h1 className="text-2xl font-bold text-[#2D1810]">FairyTeller</h1>
           </div>
           <Link to="/create">
-            <Button className="gap-2 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-xl px-6 py-5">
+            <Button className="gap-2 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-500 border-0 rounded-xl px-8 py-6">
               <Sparkles className="h-4 w-4" />
               Создать сказку
             </Button>
@@ -42,7 +42,7 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-32 relative overflow-hidden min-h-[85vh] flex items-center">
         {/* Decorative Elements - Crescent Moon */}
-        <div className="absolute top-16 right-[15%] w-32 h-32 animate-fade-in" 
+        <div className="absolute top-20 right-[10%] w-24 h-24 md:w-32 md:h-32 animate-fade-in z-0" 
              style={{ animation: 'fade-in 1s ease-out' }}>
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_40px_rgba(245,232,209,0.5)]">
             <path d="M50,10 A40,40 0 1,0 50,90 A30,30 0 1,1 50,10" 
@@ -50,7 +50,7 @@ const Landing = () => {
                   opacity="0.95"/>
           </svg>
         </div>
-        <div className="absolute bottom-0 left-0 w-full h-56 opacity-40">
+        <div className="absolute bottom-0 left-0 w-full h-56 opacity-40 z-0">
           <svg viewBox="0 0 1200 200" className="w-full h-full" preserveAspectRatio="none">
             <path d="M0,100 Q200,20 400,80 T800,100 T1200,80 L1200,200 L0,200 Z" 
                   fill="#7EB3C9" opacity="0.25"/>
@@ -69,7 +69,7 @@ const Landing = () => {
             </p>
             <div className="pt-4">
               <Link to="/create">
-                <Button size="lg" className="gap-3 text-lg px-10 py-7 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl transition-all duration-500 ease-out border-0 rounded-2xl">
+                <Button size="lg" className="gap-3 text-lg px-12 py-8 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl">
                   <Sparkles className="h-5 w-5" />
                   Создать сказку
                 </Button>
@@ -80,13 +80,10 @@ const Landing = () => {
             <img 
               src={mascotImage} 
               alt="FairyTeller - живая книжка с крыльями" 
-              className="h-80 w-80 md:h-96 md:w-96 object-contain animate-fade-in cursor-pointer transition-all duration-700 ease-out hover:scale-105"
-              style={{ transform: mascotTransform, animation: 'none' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.animation = 'wing-flap 1.2s ease-in-out infinite';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.animation = 'none';
+              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-all duration-700 ease-out"
+              style={{ 
+                transform: `translateY(${Math.sin(scrollY * 0.003) * 20}px)`,
+                transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
             />
           </div>
@@ -100,9 +97,9 @@ const Landing = () => {
             Как это работает
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="text-center bg-white/95 shadow-lg hover:shadow-xl transition-shadow duration-500 border-0 rounded-2xl">
+            <Card className="text-center bg-white/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-2xl group cursor-pointer">
               <CardHeader className="pb-4">
-                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#7EB3C9]/20 flex items-center justify-center">
+                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#7EB3C9]/20 flex items-center justify-center group-hover:bg-[#7EB3C9]/30 group-hover:scale-110 transition-all duration-500">
                   <User className="h-7 w-7 text-[#7EB3C9]" />
                 </div>
                 <CardTitle className="text-[#2D1810]">Вы выбираете героя</CardTitle>
@@ -114,9 +111,9 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-white/95 shadow-lg hover:shadow-xl transition-shadow duration-500 border-0 rounded-2xl">
+            <Card className="text-center bg-white/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-2xl group cursor-pointer">
               <CardHeader className="pb-4">
-                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#8CB369]/20 flex items-center justify-center">
+                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#8CB369]/20 flex items-center justify-center group-hover:bg-[#8CB369]/30 group-hover:scale-110 transition-all duration-500">
                   <Sparkles className="h-7 w-7 text-[#8CB369]" />
                 </div>
                 <CardTitle className="text-[#2D1810]">Задаете мир и атмосферу</CardTitle>
@@ -128,9 +125,9 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-white/95 shadow-lg hover:shadow-xl transition-shadow duration-500 border-0 rounded-2xl">
+            <Card className="text-center bg-white/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-2xl group cursor-pointer">
               <CardHeader className="pb-4">
-                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#A8CFD9]/20 flex items-center justify-center">
+                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#A8CFD9]/20 flex items-center justify-center group-hover:bg-[#A8CFD9]/30 group-hover:scale-110 transition-all duration-500">
                   <Wand2 className="h-7 w-7 text-[#A8CFD9]" />
                 </div>
                 <CardTitle className="text-[#2D1810]">Искусственный интеллект пишет и иллюстрирует</CardTitle>
@@ -142,9 +139,9 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-white/95 shadow-lg hover:shadow-xl transition-shadow duration-500 border-0 rounded-2xl">
+            <Card className="text-center bg-white/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-2xl group cursor-pointer">
               <CardHeader className="pb-4">
-                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#7EB3C9]/20 flex items-center justify-center">
+                <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-[#7EB3C9]/20 flex items-center justify-center group-hover:bg-[#7EB3C9]/30 group-hover:scale-110 transition-all duration-500">
                   <Mail className="h-7 w-7 text-[#7EB3C9]" />
                 </div>
                 <CardTitle className="text-[#2D1810]">Получаете готовую сказку</CardTitle>
@@ -176,7 +173,7 @@ const Landing = () => {
                 <BookOpen className="h-24 w-24 text-[#7EB3C9]/60" strokeWidth={1} />
               </div>
               <CardContent className="pt-6 pb-6 px-6">
-                <Button variant="outline" className="w-full border-0 bg-[#7EB3C9]/10 text-[#7EB3C9] hover:bg-[#7EB3C9] hover:text-white transition-all duration-500 py-6 rounded-xl">
+                <Button variant="outline" className="w-full border-0 bg-[#7EB3C9]/10 text-[#7EB3C9] hover:bg-[#7EB3C9] hover:text-white hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
                   Посмотреть пример PDF
                 </Button>
               </CardContent>
@@ -386,7 +383,7 @@ const Landing = () => {
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
-            <Button size="lg" className="gap-3 text-lg px-10 py-7 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl transition-all duration-500 ease-out border-0 rounded-2xl">
+            <Button size="lg" className="gap-3 text-lg px-14 py-9 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl font-semibold">
               <Sparkles className="h-5 w-5" />
               Создать сказку
             </Button>
