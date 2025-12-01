@@ -43,7 +43,7 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-16 md:py-32 relative overflow-visible min-h-[85vh] flex items-center">
         {/* Decorative Elements - Crescent Moon */}
         <div className="absolute top-16 right-[8%] md:right-[12%] w-28 h-28 md:w-36 md:h-36 animate-fade-in z-20 pointer-events-none" 
-             style={{ animation: 'fade-in 1s ease-out' }}>
+             style={{ animation: 'fade-in 1s ease-out', transform: 'scaleX(-1)' }}>
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_50px_rgba(245,232,209,0.6)]">
             <path d="M50,10 A40,40 0 1,0 50,90 A30,30 0 1,1 50,10" 
                   fill="#F5E8D1" 
@@ -78,14 +78,13 @@ const Landing = () => {
               </Link>
             </div>
           </div>
-          <div className="flex justify-center md:justify-start md:order-2 order-1 md:pl-8">
+          <div className="flex justify-center md:justify-center md:order-2 order-1">
             <img 
               src={mascotImage} 
               alt="FairyTeller - живая книжка с крыльями" 
-              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-all duration-700 ease-out"
+              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain"
               style={{ 
-                transform: `translateY(${Math.sin(scrollY * 0.003) * 20}px)`,
-                transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                transform: `translateY(${Math.sin(scrollY * 0.003) * 20}px)`
               }}
             />
           </div>
