@@ -172,7 +172,7 @@ const Landing = () => {
         <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
           <div className="space-y-8 md:order-1 order-2 pt-8 pr-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-              Сказки, где ты<br />— главный герой 
+              Сказки, где ты — главный герой 
             </h1>
             <p className="text-xl text-[#DBA858] leading-relaxed">Создавай бумажные книги про себя и своих близких</p>
             <div className="pt-12 flex justify-end mr-20">
