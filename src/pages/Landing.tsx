@@ -214,7 +214,7 @@ const Landing = () => {
 
               <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-64">
                 <CardHeader className="pb-1 pt-4">
-                  <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">В течение 15 минут готовая сказка окажется у вас на почте</CardTitle>
+                  <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Оплатите заказ, мы отредактируем текст, напечатаем книгу и вышлем по указанному адресу</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
                   <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
