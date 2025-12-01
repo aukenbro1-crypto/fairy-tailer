@@ -26,9 +26,9 @@ const Landing = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#A85844] via-[#C9968A] to-[#E8D9C3] font-serif">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#B8664F]/90 backdrop-blur-sm border-b-0 shadow-sm">
-        <div className="container mx-auto px-4 py-5 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
-            <img src={logoImage} alt="FairyTeller" className="h-36 object-contain" />
+            <img src={logoImage} alt="FairyTeller" className="h-20 md:h-24 object-contain" />
           </div>
           <Link to="/create">
             <Button className="gap-2 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-500 border-0 rounded-xl px-8 py-6">
