@@ -32,10 +32,9 @@ const Landing = () => {
           </div>
           <Link to="/create">
             <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-              <div className="bg-[#D9A054] rounded-[2rem] px-12 py-6 shadow-lg relative overflow-visible">
-                <div className="absolute -top-2 right-8 text-4xl">🧙‍♂️</div>
-                <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
-                <p className="text-white text-3xl md:text-4xl font-serif font-bold whitespace-nowrap">
+              <div className="bg-[#D9A054] rounded-[1.5rem] px-8 py-4 shadow-lg relative overflow-visible">
+                <div className="absolute -bottom-1 right-6 text-2xl">✨</div>
+                <p className="text-white text-xl md:text-2xl font-serif font-bold whitespace-nowrap">
                   Создать сказку
                 </p>
               </div>
@@ -77,10 +76,9 @@ const Landing = () => {
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
                 <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="bg-[#D9A054] rounded-[2rem] px-12 py-6 shadow-lg relative overflow-visible">
-                    <div className="absolute -top-2 right-8 text-4xl">🧙‍♂️</div>
+                  <div className="bg-[#D9A054] rounded-[2rem] px-10 py-5 shadow-lg relative overflow-visible">
                     <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
-                    <p className="text-white text-3xl md:text-4xl font-serif font-bold whitespace-nowrap">
+                    <p className="text-white text-2xl md:text-3xl font-serif font-bold whitespace-nowrap">
                       Создать сказку
                     </p>
                   </div>
