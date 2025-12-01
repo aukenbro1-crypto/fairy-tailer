@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
-import mascotImage from "@/assets/mascot.png";
+import mascotImage from "@/assets/mascot-new.png";
 import logoImage from "@/assets/logo.png";
 import heroSelectionImage from "@/assets/hero-selection.png";
 import worldAtmosphereImage from "@/assets/world-atmosphere.png";
