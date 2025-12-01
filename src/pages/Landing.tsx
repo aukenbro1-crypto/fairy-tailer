@@ -90,9 +90,9 @@ const Landing = () => {
             <img 
               src={mascotImage} 
               alt="FairyTeller - живая книжка с крыльями" 
-              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain"
+              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-transform duration-300 ease-out"
               style={{ 
-                transform: `translateY(${Math.sin(scrollY * 0.003) * 20}px)`
+                transform: `translateY(${Math.sin(scrollY * 0.005) * 40}px)`
               }}
             />
           </div>
