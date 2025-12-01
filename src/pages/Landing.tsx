@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
 import mascotImage from "@/assets/mascot.png";
 import logoImage from "@/assets/logo.png";
@@ -114,75 +113,63 @@ const Landing = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Как это работает
           </h2>
-          <Carousel className="w-full max-w-4xl mx-auto" opts={{ align: "start", loop: true }}>
-            <CarouselContent className="-ml-2">
-              <CarouselItem className="pl-2 basis-4/5 md:basis-1/2 lg:basis-1/4">
-                <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-1 pt-4">
-                    <CardTitle className="text-[#E89C31] text-lg font-bold mb-2">Вы выбираете героя</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-3 pb-3">
-                    <div className="mb-2 rounded-xl overflow-hidden flex justify-center">
-                      <img src={heroSelectionImage} alt="Выбор героя" className="w-3/5 h-auto" />
-                    </div>
-                    <CardDescription className="text-[#DBA858] text-xs leading-relaxed">
-                      Впишите имя, особенности и отношения между героями.
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col h-full">
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Вы выбираете героя</CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-4 flex-1 flex flex-col">
+                <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
+                  <img src={heroSelectionImage} alt="Выбор героя" className="w-3/5 h-auto object-contain" />
+                </div>
+                <CardDescription className="text-[#DBA858] text-xs leading-relaxed min-h-[48px]">
+                  Впишите имя, особенности и отношения между героями.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-              <CarouselItem className="pl-2 basis-4/5 md:basis-1/2 lg:basis-1/4">
-                <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-1 pt-4">
-                    <CardTitle className="text-[#E89C31] text-lg font-bold mb-2">Задаете мир и атмосферу</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-3 pb-3">
-                    <div className="mb-2 rounded-xl overflow-hidden flex justify-center">
-                      <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-3/5 h-auto" />
-                    </div>
-                    <CardDescription className="text-[#DBA858] text-xs leading-relaxed">
-                      Можно указать город, район, любимое место или даже абстрактный мир.
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col h-full">
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Задаете мир и атмосферу</CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-4 flex-1 flex flex-col">
+                <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
+                  <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-3/5 h-auto object-contain" />
+                </div>
+                <CardDescription className="text-[#DBA858] text-xs leading-relaxed min-h-[48px]">
+                  Можно указать город, район, любимое место или даже абстрактный мир.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-              <CarouselItem className="pl-2 basis-4/5 md:basis-1/2 lg:basis-1/4">
-                <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-1 pt-4">
-                    <CardTitle className="text-[#E89C31] text-lg font-bold mb-2">Искусственный интеллект пишет и иллюстрирует</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-3 pb-3">
-                    <div className="mb-2 rounded-xl overflow-hidden flex justify-center">
-                      <img src={aiWritingImage} alt="ИИ пишет и иллюстрирует" className="w-3/5 h-auto" />
-                    </div>
-                    <CardDescription className="text-[#DBA858] text-xs leading-relaxed">
-                      Мы собираем ваши вводные и создаем историю с картинками.
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col h-full">
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Искусственный интеллект пишет и иллюстрирует</CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-4 flex-1 flex flex-col">
+                <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
+                  <img src={aiWritingImage} alt="ИИ пишет и иллюстрирует" className="w-3/5 h-auto object-contain" />
+                </div>
+                <CardDescription className="text-[#DBA858] text-xs leading-relaxed min-h-[48px]">
+                  Мы собираем ваши вводные и создаем историю с картинками.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-              <CarouselItem className="pl-2 basis-4/5 md:basis-1/2 lg:basis-1/4">
-                <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-1 pt-4">
-                    <CardTitle className="text-[#E89C31] text-lg font-bold mb-2">Получаете готовую сказку</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-3 pb-3">
-                    <div className="mb-2 rounded-xl overflow-hidden flex justify-center">
-                      <img src={readyStoryImage} alt="Готовая сказка" className="w-3/5 h-auto" />
-                    </div>
-                    <CardDescription className="text-[#DBA858] text-xs leading-relaxed">
-                      Мы присылаем историю на почту, а вы можете читать ее сами или подарить.
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex -left-12 bg-[#E89C31] text-[#031B28] hover:bg-[#DBA858] border-[#E89C31]" />
-            <CarouselNext className="hidden md:flex -right-12 bg-[#E89C31] text-[#031B28] hover:bg-[#DBA858] border-[#E89C31]" />
-          </Carousel>
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col h-full">
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Получаете готовую сказку</CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-4 flex-1 flex flex-col">
+                <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
+                  <img src={readyStoryImage} alt="Готовая сказка" className="w-3/5 h-auto object-contain" />
+                </div>
+                <CardDescription className="text-[#DBA858] text-xs leading-relaxed min-h-[48px]">
+                  Мы присылаем историю на почту, а вы можете читать ее сами или подарить.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
