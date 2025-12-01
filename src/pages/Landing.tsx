@@ -190,7 +190,10 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Column 1: Choose Your World */}
-          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300">
+          <div 
+            className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+            onClick={() => window.open('/create', '_blank')}
+          >
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Выбери свой мир
@@ -200,10 +203,7 @@ const Landing = () => {
               </p>
             </div>
             
-            <div 
-              className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
-              onClick={() => window.open('/create', '_blank')}
-            >
+            <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
                   {[
@@ -260,7 +260,10 @@ const Landing = () => {
           </div>
 
           {/* Column 2: Illustration Style */}
-          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300">
+          <div 
+            className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+            onClick={() => window.open('/create', '_blank')}
+          >
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Стиль иллюстрации
@@ -270,10 +273,7 @@ const Landing = () => {
               </p>
             </div>
             
-            <div 
-              className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
-              onClick={() => window.open('/create', '_blank')}
-            >
+            <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
                   {[
