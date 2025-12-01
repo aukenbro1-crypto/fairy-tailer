@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -6,6 +7,20 @@ import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Us
 import mascotImage from "@/assets/mascot.png";
 
 const Landing = () => {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Calculate mascot movement based on scroll
+  const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-pink-50">
       {/* Header */}
@@ -45,7 +60,8 @@ const Landing = () => {
             <img 
               src={mascotImage} 
               alt="FairyTeller - живая книжка с крыльями" 
-              className="h-80 w-80 object-contain animate-fade-in"
+              className="h-80 w-80 object-contain animate-fade-in transition-transform duration-100 ease-out"
+              style={{ transform: mascotTransform }}
             />
           </div>
         </div>
