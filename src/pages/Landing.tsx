@@ -252,8 +252,8 @@ const Landing = () => {
                 </div>
               </div>
               <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-sm">
-                  👆 Открыть конструктор
+                <p className="text-[#DBA858] text-base font-semibold">
+                  🪄 Создать историю
                 </p>
               </div>
             </div>
@@ -302,7 +302,7 @@ const Landing = () => {
                 </div>
               </div>
               <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-sm">
+                <p className="text-[#DBA858] text-base font-semibold">
                   🪄 Создать историю
                 </p>
               </div>
