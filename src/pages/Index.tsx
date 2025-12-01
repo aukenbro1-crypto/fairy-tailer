@@ -12,6 +12,7 @@ import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
+import cyberpunkCharacterImage from '@/assets/cyberpunk-character.png';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -188,6 +189,7 @@ const WORLDS = [{
 }, {
   value: 'cyberpunk_dream',
   emoji: '👩‍🎤',
+  image: cyberpunkCharacterImage,
   title: 'Киберпанк',
   description: 'Неоновые вывески и одиночество в Сети.',
   tagline: '— Следуй за белым кроликом.'
