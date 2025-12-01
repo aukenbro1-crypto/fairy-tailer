@@ -184,8 +184,8 @@ const Landing = () => {
                   <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Придумай героя будущей сказки — добавь имя и фото</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
-                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
-                    <img src={heroSelectionImage} alt="Выбор героя" className="w-3/5 h-auto object-contain" />
+                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-center flex-1">
+                    <img src={heroSelectionImage} alt="Выбор героя" className="w-40 h-40 object-contain" />
                   </div>
                 </CardContent>
               </Card>
@@ -195,8 +195,8 @@ const Landing = () => {
                   <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Выбери мир, и жанр, а также место действия</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
-                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
-                    <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-3/5 h-auto object-contain" />
+                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-center flex-1">
+                    <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-40 h-40 object-contain" />
                   </div>
                 </CardContent>
               </Card>
@@ -206,8 +206,8 @@ const Landing = () => {
                   <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">В течение 15 минут готовая сказка придет на email</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
-                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
-                    <img src={aiWritingImage} alt="ИИ пишет историю" className="w-3/5 h-auto object-contain" />
+                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-center flex-1">
+                    <img src={aiWritingImage} alt="ИИ пишет историю" className="w-40 h-40 object-contain" />
                   </div>
                 </CardContent>
               </Card>
@@ -217,8 +217,8 @@ const Landing = () => {
                   <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Оплатите заказ, мы отредактируем текст, напечатаем книгу и вышлем по указанному адресу</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
-                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center flex-1">
-                    <img src={readyStoryImage} alt="Готовая сказка" className="w-3/5 h-auto object-contain" />
+                  <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-center flex-1">
+                    <img src={readyStoryImage} alt="Готовая сказка" className="w-40 h-40 object-contain" />
                   </div>
                 </CardContent>
               </Card>
