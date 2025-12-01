@@ -252,8 +252,8 @@ const Landing = () => {
                 </div>
               </div>
               <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-base font-semibold">
-                  🪄 Создать историю
+                <p className="text-[#DBA858] text-xl font-semibold">
+                  🪄 Создать сказку
                 </p>
               </div>
             </div>
@@ -292,18 +292,13 @@ const Landing = () => {
                           className="w-full h-full object-cover rounded-lg"
                         />
                       </div>
-                      <CardContent className="pt-2 pb-2">
-                        <p className="text-[#E89C31] text-center font-bold text-xs">
-                          {style.name}
-                        </p>
-                      </CardContent>
                     </Card>
                   ))}
                 </div>
               </div>
               <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-base font-semibold">
-                  🪄 Создать историю
+                <p className="text-[#DBA858] text-xl font-semibold">
+                  🪄 Создать сказку
                 </p>
               </div>
             </div>
