@@ -11,6 +11,7 @@ import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import santaNewyearImage from '@/assets/santa-newyear.png';
+import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -180,6 +181,7 @@ const WORLDS = [{
 }, {
   value: 'fantasy_epic',
   emoji: '🧙🏻‍♂️',
+  image: wizardFantasyImage,
   title: 'Фэнтези',
   description: 'Древние миры, тайны и борьба со злом.',
   tagline: '— От судьбы не уйдешь.'
