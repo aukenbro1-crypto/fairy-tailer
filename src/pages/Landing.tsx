@@ -40,14 +40,16 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-32 relative overflow-hidden min-h-[85vh] flex items-center">
+      <section className="container mx-auto px-4 py-16 md:py-32 relative overflow-visible min-h-[85vh] flex items-center">
         {/* Decorative Elements - Crescent Moon */}
-        <div className="absolute top-20 right-[10%] w-24 h-24 md:w-32 md:h-32 animate-fade-in z-0" 
+        <div className="absolute top-16 right-[8%] md:right-[12%] w-28 h-28 md:w-36 md:h-36 animate-fade-in z-20 pointer-events-none" 
              style={{ animation: 'fade-in 1s ease-out' }}>
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_40px_rgba(245,232,209,0.5)]">
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_50px_rgba(245,232,209,0.6)]">
             <path d="M50,10 A40,40 0 1,0 50,90 A30,30 0 1,1 50,10" 
                   fill="#F5E8D1" 
-                  opacity="0.95"/>
+                  opacity="0.95"
+                  stroke="#E8D9C3"
+                  strokeWidth="0.5"/>
           </svg>
         </div>
         <div className="absolute bottom-0 left-0 w-full h-56 opacity-40 z-0">
@@ -59,7 +61,7 @@ const Landing = () => {
           </svg>
         </div>
         
-        <div className="grid md:grid-cols-[38.2%_61.8%] gap-16 items-center relative z-10 w-full">
+        <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
           <div className="space-y-8 md:order-1 order-2">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#2D1810]">
               Персональные иллюстрированные сказки, где ты — главный герой
@@ -76,7 +78,7 @@ const Landing = () => {
               </Link>
             </div>
           </div>
-          <div className="flex justify-center md:justify-end md:order-2 order-1">
+          <div className="flex justify-center md:justify-start md:order-2 order-1 md:pl-8">
             <img 
               src={mascotImage} 
               alt="FairyTeller - живая книжка с крыльями" 
