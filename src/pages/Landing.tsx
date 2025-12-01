@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
 import mascotImage from "@/assets/mascot.png";
 import logoImage from "@/assets/logo.png";
+import createButtonImage from "@/assets/create-button.png";
 
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -28,19 +29,20 @@ const Landing = () => {
       <header className="sticky top-0 z-50 bg-[#B8664F]/90 backdrop-blur-sm border-b-0 shadow-sm">
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
           <div className="flex items-center">
-            <img src={logoImage} alt="FairyTeller" className="h-12 object-contain" />
+            <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <Link to="/create">
-            <Button className="gap-2 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-500 border-0 rounded-xl px-8 py-6">
-              <Sparkles className="h-4 w-4" />
-              Создать сказку
-            </Button>
+            <img 
+              src={createButtonImage} 
+              alt="Создать сказку" 
+              className="h-14 md:h-16 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
+            />
           </Link>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-32 relative overflow-visible min-h-[85vh] flex items-center">
+      <section className="container mx-auto px-4 py-8 md:py-20 relative overflow-visible min-h-[85vh] flex items-center">
         {/* Decorative Elements - Crescent Moon */}
         <div className="absolute top-16 right-[8%] md:right-[12%] w-28 h-28 md:w-36 md:h-36 animate-fade-in z-20 pointer-events-none" 
              style={{ animation: 'fade-in 1s ease-out', transform: 'scaleX(-1)' }}>
@@ -71,10 +73,11 @@ const Landing = () => {
             </p>
             <div className="pt-4">
               <Link to="/create">
-                <Button size="lg" className="gap-3 text-lg px-12 py-8 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl">
-                  <Sparkles className="h-5 w-5" />
-                  Создать сказку
-                </Button>
+                <img 
+                  src={createButtonImage} 
+                  alt="Создать сказку" 
+                  className="h-16 md:h-20 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
+                />
               </Link>
             </div>
           </div>
