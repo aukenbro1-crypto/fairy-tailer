@@ -259,7 +259,7 @@ const Landing = () => {
                   image: wizardFantasyImage,
                   title: 'Фэнтези',
                   tagline: '— От судьбы не уйдешь.'
-                }].map((world, index) => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-105 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
+                }].map((world, index) => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
                       <CardHeader className="pb-2 pt-3">
                         <div className="flex justify-center items-center mb-1">
                           {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" /> : <div className="text-3xl">{world.emoji}</div>}
@@ -303,7 +303,7 @@ const Landing = () => {
                 }, {
                   name: 'Claymotion',
                   image: claymotionStyleImage
-                }].map((style, index) => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-105 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
+                }].map((style, index) => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
                       <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
                         <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" />
                       </div>
