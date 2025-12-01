@@ -24,18 +24,18 @@ const Landing = () => {
 
   // Calculate mascot movement based on scroll
   const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
-  return <div className="min-h-screen bg-gradient-to-br from-[#A85844] via-[#C9968A] to-[#E8D9C3] font-serif">
+  return <div className="min-h-screen bg-gradient-to-br from-[#2f4b5f] via-[#4a7a8f] to-[#7eb3c9] font-serif">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#B8664F]/90 backdrop-blur-sm border-b-0 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#2f4b5f]/90 backdrop-blur-sm border-b-0 shadow-sm">
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <Link to="/create">
             <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-              <div className="bg-[#D9A054] rounded-[1.5rem] px-8 py-4 shadow-lg relative overflow-visible">
+              <div className="bg-[#63d2ff] rounded-[1.5rem] px-8 py-4 shadow-lg hover:shadow-[0_0_30px_rgba(99,210,255,0.5)] transition-all relative overflow-visible">
                 <div className="absolute -bottom-1 right-6 text-2xl">✨</div>
-                <p className="text-white text-xl md:text-2xl font-serif font-bold whitespace-nowrap">
+                <p className="text-[#0e1a22] text-xl md:text-2xl font-serif font-bold whitespace-nowrap">
                   Создать сказку
                 </p>
               </div>
@@ -94,9 +94,9 @@ const Landing = () => {
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
                 <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="bg-[#D9A054] rounded-[2rem] px-10 py-5 shadow-lg relative overflow-visible">
+                  <div className="bg-[#63d2ff] rounded-[2rem] px-10 py-5 shadow-lg hover:shadow-[0_0_40px_rgba(99,210,255,0.6)] transition-all relative overflow-visible">
                     <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
-                    <p className="text-white text-2xl md:text-3xl font-serif font-bold whitespace-nowrap">
+                    <p className="text-[#0e1a22] text-2xl md:text-3xl font-serif font-bold whitespace-nowrap">
                       Создать сказку
                     </p>
                   </div>
@@ -394,7 +394,7 @@ const Landing = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-gradient-to-r from-[#A8CFD9] via-[#7EB3C9] to-[#8CB369] py-20">
+      <section className="bg-gradient-to-r from-[#4a7a8f] via-[#63d2ff] to-[#7eb3c9] py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#2D1810]">
             Попробуйте создать свою сказку прямо сейчас
@@ -403,7 +403,7 @@ const Landing = () => {
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
-            <Button size="lg" className="gap-3 text-lg px-14 py-9 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl font-semibold">
+            <Button size="lg" className="gap-3 text-lg px-14 py-9 bg-[#2f4b5f] hover:bg-[#1e3240] text-white shadow-xl hover:shadow-[0_0_50px_rgba(99,210,255,0.5)] hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl font-semibold">
               <Sparkles className="h-5 w-5" />
               Создать сказку
             </Button>
@@ -412,7 +412,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#B8664F] border-t-0 py-10">
+      <footer className="bg-[#2f4b5f] border-t-0 py-10">
         <div className="container mx-auto px-4 text-center text-[#F0E6D2]">
           <p className="text-lg">© 2024 FairyTeller. Создаем персональные истории с любовью.</p>
         </div>
