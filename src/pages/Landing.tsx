@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
+import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
 import mascotImage from "@/assets/mascot.png";
 import logoImage from "@/assets/logo.png";
 import heroSelectionImage from "@/assets/hero-selection.png";
@@ -28,6 +28,8 @@ import dragonHeaderHoverImage from '@/assets/dragon-header-hover.png';
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -37,6 +39,31 @@ const Landing = () => {
     });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setMenuOpen(false);
+    }
+  };
 
   // Calculate mascot movement based on scroll
   const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
@@ -48,15 +75,72 @@ const Landing = () => {
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <div 
-            className="flex items-center"
-            onMouseEnter={() => setDragonHovered(true)}
-            onMouseLeave={() => setDragonHovered(false)}
+            className="flex items-center relative"
+            ref={menuRef}
           >
-            <img 
-              src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
-              alt="Dragon" 
-              className="h-16 object-contain transition-all duration-200 cursor-pointer" 
-            />
+            <div
+              className="cursor-pointer"
+              onMouseEnter={() => setDragonHovered(true)}
+              onMouseLeave={() => setDragonHovered(false)}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <img 
+                src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
+                alt="Dragon Menu" 
+                className="h-16 object-contain transition-all duration-200" 
+              />
+            </div>
+
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
+                <div className="py-2">
+                  <Link 
+                    to="/"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Home size={20} />
+                    <span>Главная</span>
+                  </Link>
+                  
+                  <button
+                    onClick={() => scrollToSection('how-it-works')}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
+                  >
+                    <BookOpen size={20} />
+                    <span>Как это работает</span>
+                  </button>
+
+                  <button
+                    onClick={() => scrollToSection('examples')}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
+                  >
+                    <Sparkles size={20} />
+                    <span>Примеры сказок</span>
+                  </button>
+
+                  <button
+                    onClick={() => scrollToSection('faq')}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
+                  >
+                    <Mail size={20} />
+                    <span>FAQ</span>
+                  </button>
+
+                  <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
+
+                  <Link
+                    to="/create"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Scroll size={20} />
+                    <span>Создать сказку</span>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -127,7 +211,7 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
+      <section id="how-it-works" className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Как это работает
@@ -315,7 +399,7 @@ const Landing = () => {
       </section>
 
       {/* Examples Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section id="examples" className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Как выглядят готовые сказки
@@ -487,7 +571,7 @@ const Landing = () => {
       </section>
 
       {/* FAQ */}
-      <section className="container mx-auto px-4 py-16">
+      <section id="faq" className="container mx-auto px-4 py-16">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
           Частые вопросы
         </h2>
