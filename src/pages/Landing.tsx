@@ -203,7 +203,7 @@ const Landing = () => {
                     <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-3/5 h-auto object-contain" />
                   </div>
                   <CardDescription className="text-[#DBA858] text-xs leading-relaxed min-h-[48px]">
-                    Можно указать город, район, любимое место или даже абстрактный мир.
+                    Придумайте место, где будет происходить история и жанр
                   </CardDescription>
                 </CardContent>
               </Card>
