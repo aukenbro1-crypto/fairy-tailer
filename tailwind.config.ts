@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['Roboto', 'sans-serif'],
         orbitron: ['Orbitron', 'monospace'],
+        serif: ['Playfair Display', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

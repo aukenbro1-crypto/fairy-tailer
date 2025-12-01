@@ -22,7 +22,7 @@ const Landing = () => {
   const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-pink-50 font-serif">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
