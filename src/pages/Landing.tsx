@@ -25,9 +25,9 @@ const Landing = () => {
 
   // Calculate mascot movement based on scroll
   const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
-  return <div className="min-h-screen bg-gradient-to-br from-[#2f4b5f] via-[#4a7a8f] to-[#7eb3c9] font-serif">
+  return <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] font-serif">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#2f4b5f]/90 backdrop-blur-sm border-b-0 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#031B28]/90 backdrop-blur-sm border-b border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10">
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
@@ -87,8 +87,8 @@ const Landing = () => {
         
         <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
           <div className="space-y-8 md:order-1 order-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#2D1810] text-center">Персональные сказки, где главный герой — это ты</h1>
-            <p className="text-xl text-[#3D2617] leading-relaxed">Задай пару параметров, добавь свое фото и получи настоящую печатную книгу с иллюстрациями</p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Персональные сказки, где главный герой — это ты</h1>
+            <p className="text-xl text-[#DBA858] leading-relaxed">Задай пару параметров, добавь свое фото и получи настоящую печатную книгу с иллюстрациями</p>
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
                 <img 
@@ -108,63 +108,63 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="bg-[#F0E6D2]/40 py-16">
+      <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#2D1810]">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Как это работает
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="text-center bg-[#F5EBD8]/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-3xl overflow-hidden group cursor-pointer">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer">
               <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-[#2D1810] text-2xl font-bold mb-4">Вы выбираете героя</CardTitle>
+                <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Вы выбираете героя</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="mb-3 rounded-2xl overflow-hidden">
                   <img src={heroSelectionImage} alt="Выбор героя" className="w-full h-auto" />
                 </div>
-                <CardDescription className="text-[#4A2F1F] text-sm">
+                <CardDescription className="text-[#DBA858] text-sm">
                   Впишите имя, особенности и отношения между героями.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-[#F5EBD8]/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-3xl overflow-hidden group cursor-pointer">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer">
               <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-[#2D1810] text-2xl font-bold mb-4">Задаете мир и атмосферу</CardTitle>
+                <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Задаете мир и атмосферу</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="mb-3 rounded-2xl overflow-hidden">
                   <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-full h-auto" />
                 </div>
-                <CardDescription className="text-[#4A2F1F] text-sm">
+                <CardDescription className="text-[#DBA858] text-sm">
                   Можно указать город, район, любимое место или даже абстрактный мир.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-[#F5EBD8]/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-3xl overflow-hidden group cursor-pointer">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer">
               <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-[#2D1810] text-2xl font-bold mb-4">Искусственный интеллект пишет и иллюстрирует</CardTitle>
+                <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Искусственный интеллект пишет и иллюстрирует</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="mb-3 rounded-2xl overflow-hidden">
                   <img src={aiWritingImage} alt="ИИ пишет и иллюстрирует" className="w-full h-auto" />
                 </div>
-                <CardDescription className="text-[#4A2F1F] text-sm">
+                <CardDescription className="text-[#DBA858] text-sm">
                   Мы собираем ваши вводные и создаем историю с картинками.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-[#F5EBD8]/95 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 rounded-3xl overflow-hidden group cursor-pointer">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer">
               <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-[#2D1810] text-2xl font-bold mb-4">Получаете готовую сказку</CardTitle>
+                <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Получаете готовую сказку</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="mb-3 rounded-2xl overflow-hidden">
                   <img src={readyStoryImage} alt="Готовая сказка" className="w-full h-auto" />
                 </div>
-                <CardDescription className="text-[#4A2F1F] text-sm">
+                <CardDescription className="text-[#DBA858] text-sm">
                   Мы присылаем историю на почту, а вы можете читать ее сами или подарить.
                 </CardDescription>
               </CardContent>
@@ -176,20 +176,20 @@ const Landing = () => {
       {/* Examples Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#2D1810]">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Как выглядят готовые сказки
           </h2>
-          <p className="text-xl text-[#3D2617]">
+          <p className="text-xl text-[#DBA858]">
             Вот как выглядят страницы с иллюстрациями и фрагментами текста.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map(i => <Card key={i} className="overflow-hidden bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
-              <div className="aspect-[3/4] bg-gradient-to-br from-[#A8CFD9]/40 to-[#8CB369]/40 flex items-center justify-center">
-                <BookOpen className="h-24 w-24 text-[#7EB3C9]/60" strokeWidth={1} />
+          {[1, 2, 3].map(i => <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
+              <div className="aspect-[3/4] bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center">
+                <BookOpen className="h-24 w-24 text-[#E89C31]/60" strokeWidth={1} />
               </div>
               <CardContent className="pt-6 pb-6 px-6">
-                <Button variant="outline" className="w-full border-0 bg-[#7EB3C9]/10 text-[#7EB3C9] hover:bg-[#7EB3C9] hover:text-white hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
+                <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
                   Посмотреть пример PDF
                 </Button>
               </CardContent>
@@ -198,46 +198,46 @@ const Landing = () => {
       </section>
 
       {/* Use Cases */}
-      <section className="bg-[#F0E6D2]/40 py-16">
+      <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#2D1810]">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Когда такая сказка особенно заходит
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <Heart className="h-9 w-9 text-[#A85844]" />
-                <CardTitle className="text-lg text-[#2D1810]">Подарок партнеру или партнерше</CardTitle>
+                <Heart className="h-9 w-9 text-[#8C0E0F]" />
+                <CardTitle className="text-lg text-[#DBA858]">Подарок партнеру или партнерше</CardTitle>
               </CardHeader>
             </Card>
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <Cake className="h-9 w-9 text-[#7EB3C9]" />
-                <CardTitle className="text-lg text-[#2D1810]">Детский День Рождения</CardTitle>
+                <Cake className="h-9 w-9 text-[#E89C31]" />
+                <CardTitle className="text-lg text-[#DBA858]">Детский День Рождения</CardTitle>
               </CardHeader>
             </Card>
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <Snowflake className="h-9 w-9 text-[#A8CFD9]" />
-                <CardTitle className="text-lg text-[#2D1810]">Новогодняя сказка для семьи</CardTitle>
+                <Snowflake className="h-9 w-9 text-[#DBA858]" />
+                <CardTitle className="text-lg text-[#DBA858]">Новогодняя сказка для семьи</CardTitle>
               </CardHeader>
             </Card>
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <User className="h-9 w-9 text-[#8CB369]" />
-                <CardTitle className="text-lg text-[#2D1810]">История «про себя» в сложный или важный период</CardTitle>
+                <User className="h-9 w-9 text-[#E89C31]" />
+                <CardTitle className="text-lg text-[#DBA858]">История «про себя» в сложный или важный период</CardTitle>
               </CardHeader>
             </Card>
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <Users className="h-9 w-9 text-[#7EB3C9]" />
-                <CardTitle className="text-lg text-[#2D1810]">Семейная история про вас и близких</CardTitle>
+                <Users className="h-9 w-9 text-[#DBA858]" />
+                <CardTitle className="text-lg text-[#DBA858]">Семейная история про вас и близких</CardTitle>
               </CardHeader>
             </Card>
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <Gift className="h-9 w-9 text-[#A85844]" />
-                <CardTitle className="text-lg text-[#2D1810]">Особенный подарок для близкого человека</CardTitle>
+                <Gift className="h-9 w-9 text-[#8C0E0F]" />
+                <CardTitle className="text-lg text-[#DBA858]">Особенный подарок для близкого человека</CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -246,61 +246,61 @@ const Landing = () => {
 
       {/* Benefits */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#2D1810]">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
           Почему это не просто текст из нейросети
         </h2>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+          <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-[#2D1810]">
-                <Sparkles className="h-6 w-6 text-[#8CB369]" />
+              <CardTitle className="flex items-center gap-3 text-[#E89C31]">
+                <Sparkles className="h-6 w-6 text-[#E89C31]" />
                 Персонализация под вас
               </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              <p className="text-[#3D2617] leading-relaxed">
+              <p className="text-[#DBA858] leading-relaxed">
                 Герои, мир и детали строятся вокруг вашей жизни и ваших запросов.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+          <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-[#2D1810]">
-                <Wand2 className="h-6 w-6 text-[#A8CFD9]" />
+              <CardTitle className="flex items-center gap-3 text-[#E89C31]">
+                <Wand2 className="h-6 w-6 text-[#E89C31]" />
                 Иллюстрации в едином стиле
               </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              <p className="text-[#3D2617] leading-relaxed">
+              <p className="text-[#DBA858] leading-relaxed">
                 К каждой истории подбираются изображения, чтобы создать цельную атмосферу.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+          <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-[#2D1810]">
-                <BookOpen className="h-6 w-6 text-[#7EB3C9]" />
+              <CardTitle className="flex items-center gap-3 text-[#E89C31]">
+                <BookOpen className="h-6 w-6 text-[#E89C31]" />
                 Готовый формат для чтения и подарка
               </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              <p className="text-[#3D2617] leading-relaxed">
+              <p className="text-[#DBA858] leading-relaxed">
                 История приходит в удобном формате: можно читать с телефона или распечатать как книгу.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+          <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-[#2D1810]">
-                <Mail className="h-6 w-6 text-[#A85844]" />
+              <CardTitle className="flex items-center gap-3 text-[#E89C31]">
+                <Mail className="h-6 w-6 text-[#E89C31]" />
                 Быстрый результат
               </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              <p className="text-[#3D2617] leading-relaxed">
+              <p className="text-[#DBA858] leading-relaxed">
                 Сказка создается в течение примерно 15 минут после заполнения формы.
               </p>
             </CardContent>
@@ -309,36 +309,36 @@ const Landing = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-[#F0E6D2]/40 py-16">
+      <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#2D1810]">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Что говорят читатели
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardContent className="pt-8 pb-8 px-7">
-                <p className="text-[#3D2617] italic mb-6 leading-relaxed">
+                <p className="text-[#DBA858] italic mb-6 leading-relaxed">
                   "Не ожидали, что получится настолько личная история. Прочитали вслух и все немного расчувствовались."
                 </p>
-                <p className="font-semibold text-[#2D1810]">— Анна</p>
+                <p className="font-semibold text-[#E89C31]">— Анна</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardContent className="pt-8 pb-8 px-7">
-                <p className="text-[#3D2617] italic mb-6 leading-relaxed">
+                <p className="text-[#DBA858] italic mb-6 leading-relaxed">
                   "Ребенок три дня подряд просил читать одну и ту же сказку. Сказал, что это лучшая книга про него."
                 </p>
-                <p className="font-semibold text-[#2D1810]">— Михаил</p>
+                <p className="font-semibold text-[#E89C31]">— Михаил</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 shadow-lg hover:shadow-xl transition-all duration-500 border-0 rounded-2xl">
+            <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardContent className="pt-8 pb-8 px-7">
-                <p className="text-[#3D2617] italic mb-6 leading-relaxed">
+                <p className="text-[#DBA858] italic mb-6 leading-relaxed">
                   "Очень бережный и деликатный текст, как разговор с близким человеком."
                 </p>
-                <p className="font-semibold text-[#2D1810]">— Елена</p>
+                <p className="font-semibold text-[#E89C31]">— Елена</p>
               </CardContent>
             </Card>
           </div>
@@ -347,41 +347,41 @@ const Landing = () => {
 
       {/* FAQ */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#2D1810]">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
           Частые вопросы
         </h2>
-        <Accordion type="single" collapsible className="max-w-3xl mx-auto bg-white/80 rounded-2xl p-6 shadow-lg border-0">
-          <AccordionItem value="item-1" className="border-0 border-b border-[#D4A89A]/30 last:border-0">
-            <AccordionTrigger className="text-[#2D1810] hover:text-[#7EB3C9] py-5 transition-colors duration-500">Сколько времени создается сказка?</AccordionTrigger>
-            <AccordionContent className="text-[#3D2617]">
+        <Accordion type="single" collapsible className="max-w-3xl mx-auto bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl p-6 shadow-lg shadow-[#E89C31]/10">
+          <AccordionItem value="item-1" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">Сколько времени создается сказка?</AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80">
               Обычно до 15 минут после того, как вы заполнили форму. Мы пришлем письмо, как только история будет готова.
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="item-2" className="border-0 border-b border-[#D4A89A]/30 last:border-0">
-            <AccordionTrigger className="text-[#2D1810] hover:text-[#7EB3C9] py-5 transition-colors duration-500">Для кого подходит формат?</AccordionTrigger>
-            <AccordionContent className="text-[#3D2617]">
+          <AccordionItem value="item-2" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">Для кого подходит формат?</AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80">
               Для взрослых и детей. Можно сделать романтическую, семейную, детскую или медитативную историю.
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="item-3" className="border-0 border-b border-[#D4A89A]/30 last:border-0">
-            <AccordionTrigger className="text-[#2D1810] hover:text-[#7EB3C9] py-5 transition-colors duration-500">Я могу выбрать стиль иллюстраций?</AccordionTrigger>
-            <AccordionContent className="text-[#3D2617]">
+          <AccordionItem value="item-3" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">Я могу выбрать стиль иллюстраций?</AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80">
               Сейчас стиль задается автоматически, но вы можете описать желаемую атмосферу, и мы постараемся к ней приблизиться.
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="item-4" className="border-0 border-b border-[#D4A89A]/30 last:border-0">
-            <AccordionTrigger className="text-[#2D1810] hover:text-[#7EB3C9] py-5 transition-colors duration-500">В каком виде я получу сказку?</AccordionTrigger>
-            <AccordionContent className="text-[#3D2617]">
+          <AccordionItem value="item-4" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">В каком виде я получу сказку?</AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80">
               История приходит на электронную почту в виде файла, удобного для чтения и печати.
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="item-5" className="border-0 border-b border-[#D4A89A]/30 last:border-0">
-            <AccordionTrigger className="text-[#2D1810] hover:text-[#7EB3C9] py-5 transition-colors duration-500">Можно ли подарить сказку другому человеку?</AccordionTrigger>
-            <AccordionContent className="text-[#3D2617]">
+          <AccordionItem value="item-5" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">Можно ли подарить сказку другому человеку?</AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80">
               Да, вы можете указать его в качестве героя, а файл отправить или распечатать и подарить как книгу.
             </AccordionContent>
           </AccordionItem>
@@ -389,27 +389,27 @@ const Landing = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-gradient-to-r from-[#4a7a8f] via-[#63d2ff] to-[#7eb3c9] py-20">
+      <section className="bg-gradient-to-r from-[#083248] via-[#0B2838] to-[#031B28] py-20 border-t border-[#E89C31]/20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#2D1810]">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Попробуйте создать свою сказку прямо сейчас
           </h2>
-          <p className="text-xl text-[#3D2617] mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-[#DBA858] mb-10 max-w-2xl mx-auto leading-relaxed">
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
             <img 
               src={createButtonImage} 
               alt="Создать сказку" 
-              className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(230,166,72,0.6)]"
+              className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto"
             />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#2f4b5f] border-t-0 py-10">
-        <div className="container mx-auto px-4 text-center text-[#F0E6D2]">
+      <footer className="bg-[#031B28] border-t border-[#E89C31]/20 py-10">
+        <div className="container mx-auto px-4 text-center text-[#DBA858]">
           <p className="text-lg">© 2024 FairyTeller. Создаем персональные истории с любовью.</p>
         </div>
       </footer>
