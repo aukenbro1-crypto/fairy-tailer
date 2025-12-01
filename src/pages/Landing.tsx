@@ -10,7 +10,7 @@ const Landing = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">Fairyteller</h1>
+          <h1 className="text-2xl font-bold text-primary">FairyTeller</h1>
           <Link to="/create">
             <Button className="gap-2">
               <Sparkles className="h-4 w-4" />
@@ -350,7 +350,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="bg-background border-t py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2024 Fairyteller. Создаем персональные истории с любовью.</p>
+          <p>© 2024 FairyTeller. Создаем персональные истории с любовью.</p>
         </div>
       </footer>
     </div>
