@@ -19,6 +19,9 @@ import disneyStyleImage from '@/assets/disney-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
+import dragonAdventureImage from '@/assets/dragon-adventure.png';
+import santaNewyearImage from '@/assets/santa-newyear.png';
+import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -206,16 +209,19 @@ const Landing = () => {
                   {[
                     {
                       emoji: '🦜',
+                      image: dragonAdventureImage,
                       title: 'Приключения',
                       tagline: '— Лови момент!'
                     },
                     {
                       emoji: '🎅🏻',
+                      image: santaNewyearImage,
                       title: 'Новогодняя сказка',
                       tagline: '— С Новым годом!'
                     },
                     {
                       emoji: '🧙🏻‍♂️',
+                      image: wizardFantasyImage,
                       title: 'Фэнтези',
                       tagline: '— От судьбы не уйдешь.'
                     }
@@ -225,7 +231,17 @@ const Landing = () => {
                       className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none"
                     >
                       <CardHeader className="pb-2 pt-3">
-                        <div className="text-3xl mb-1">{world.emoji}</div>
+                        <div className="flex justify-center items-center mb-1">
+                          {world.image ? (
+                            <img 
+                              src={world.image} 
+                              alt={world.title} 
+                              className="w-12 h-12 object-contain"
+                            />
+                          ) : (
+                            <div className="text-3xl">{world.emoji}</div>
+                          )}
+                        </div>
                         <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="px-2 pb-3">
