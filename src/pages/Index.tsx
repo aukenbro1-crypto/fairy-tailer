@@ -13,6 +13,7 @@ import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import cyberpunkCharacterImage from '@/assets/cyberpunk-character.png';
+import romanticStoryImage from '@/assets/romantic-story.png';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -196,6 +197,7 @@ const WORLDS = [{
 }, {
   value: 'disney_light',
   emoji: '💖',
+  image: romanticStoryImage,
   title: 'Романтическая история',
   description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
   tagline: '— И жили они долго и счастливо.'
