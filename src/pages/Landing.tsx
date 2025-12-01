@@ -94,7 +94,7 @@ const Landing = () => {
                 <img 
                   src={createButtonImage} 
                   alt="Создать сказку" 
-                  className="h-20 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
+                  className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
                 />
               </Link>
             </div>
