@@ -183,133 +183,113 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Interactive Preview: Choose Your World */}
+      {/* Interactive Preview: Two Columns */}
       <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-            Выбери свой мир
-          </h2>
-          <p className="text-xl text-[#DBA858]">
-            Каждый мир — это своя атмосфера, законы и настроение
-          </p>
-        </div>
-        
-        <div 
-          className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
-          onClick={() => window.open('/create', '_blank')}
-        >
-          <div className="overflow-x-auto pb-4 -mx-4 px-4">
-            <div className="flex gap-6 min-w-max justify-center">
-              {[
-                {
-                  emoji: '🦜',
-                  title: 'Приключения',
-                  description: 'Мир открытий, где герои идут навстречу новым возможностям.',
-                  tagline: '— Лови момент!'
-                },
-                {
-                  emoji: '🎅🏻',
-                  title: 'Новогодняя сказка',
-                  description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
-                  tagline: '— Счастливого Нового года!'
-                },
-                {
-                  emoji: '🧙🏻‍♂️',
-                  title: 'Фэнтези',
-                  description: 'Древние миры, тайны и борьба со злом.',
-                  tagline: '— От судьбы не уйдешь.'
-                },
-                {
-                  emoji: '👩‍🎤',
-                  title: 'Киберпанк',
-                  description: 'Неоновые вывески и одиночество в Сети.',
-                  tagline: '— Следуй за белым кроликом.'
-                },
-                {
-                  emoji: '💖',
-                  title: 'Романтическая история',
-                  description: 'Доброжелательный мир, где герои влюбляются друг в друга.',
-                  tagline: '— И жили они долго и счастливо.'
-                }
-              ].map((world) => (
-                <Card 
-                  key={world.title}
-                  className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-64 pointer-events-none"
-                >
-                  <CardHeader className="pb-2 pt-4">
-                    <div className="text-5xl mb-2">{world.emoji}</div>
-                    <CardTitle className="text-[#E89C31] text-lg font-bold mb-2">{world.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 flex-1 flex flex-col justify-between">
-                    <CardDescription className="text-[#DBA858] text-sm leading-relaxed mb-2">
-                      {world.description}
-                    </CardDescription>
-                    <p className="text-[#E89C31]/80 text-xs italic">{world.tagline}</p>
-                  </CardContent>
-                </Card>
-              ))}
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Column 1: Choose Your World */}
+          <div>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
+                Выбери свой мир
+              </h2>
+              <p className="text-base text-[#DBA858]">
+                Каждый мир — это своя атмосфера
+              </p>
             </div>
-          </div>
-          <div className="text-center mt-6">
-            <p className="text-[#DBA858] text-lg">
-              👆 Нажми, чтобы открыть конструктор и выбрать свой мир
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Preview: Illustration Style */}
-      <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-              Стиль иллюстрации
-            </h2>
-            <p className="text-xl text-[#DBA858]">
-              Выбери визуальный стиль для твоей сказки
-            </p>
-          </div>
-          
-          <div 
-            className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
-            onClick={() => window.open('/create', '_blank')}
-          >
-            <div className="overflow-x-auto pb-4 -mx-4 px-4">
-              <div className="flex gap-6 min-w-max justify-center">
-                {[
-                  { name: 'Disney', image: disneyStyleImage },
-                  { name: 'Toonflat', image: toonflatStyleImage },
-                  { name: 'Minibrick', image: minibrickStyleImage },
-                  { name: 'Naive', image: naiveStyleImage },
-                  { name: 'Watercolor', image: watercolorStyleImage },
-                  { name: 'Claymotion', image: claymotionStyleImage },
-                  { name: 'Yarncraft', image: yarncraftStyleImage },
-                  { name: 'Celcinema', image: celcinemaStyleImage }
-                ].map((style) => (
-                  <Card 
-                    key={style.name}
-                    className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-56 pointer-events-none"
-                  >
-                    <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-4">
-                      <img 
-                        src={style.image} 
-                        alt={style.name}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </div>
-                    <CardContent className="pt-4 pb-4">
-                      <p className="text-[#E89C31] text-center font-bold text-lg">
-                        {style.name}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+            
+            <div 
+              className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
+              onClick={() => window.open('/create', '_blank')}
+            >
+              <div className="overflow-x-auto pb-4 -mx-4 px-4">
+                <div className="flex gap-4 min-w-max justify-center">
+                  {[
+                    {
+                      emoji: '🦜',
+                      title: 'Приключения',
+                      tagline: '— Лови момент!'
+                    },
+                    {
+                      emoji: '🎅🏻',
+                      title: 'Новогодняя сказка',
+                      tagline: '— С Новым годом!'
+                    },
+                    {
+                      emoji: '🧙🏻‍♂️',
+                      title: 'Фэнтези',
+                      tagline: '— От судьбы не уйдешь.'
+                    }
+                  ].map((world) => (
+                    <Card 
+                      key={world.title}
+                      className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none"
+                    >
+                      <CardHeader className="pb-2 pt-3">
+                        <div className="text-3xl mb-1">{world.emoji}</div>
+                        <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-2 pb-3">
+                        <p className="text-[#E89C31]/80 text-[10px] italic">{world.tagline}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+              <div className="text-center mt-4">
+                <p className="text-[#DBA858] text-sm">
+                  👆 Открыть конструктор
+                </p>
               </div>
             </div>
-            <div className="text-center mt-6">
-              <p className="text-[#DBA858] text-lg">
-                👆 Нажми, чтобы открыть конструктор и выбрать стиль
+          </div>
+
+          {/* Column 2: Illustration Style */}
+          <div>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
+                Стиль иллюстрации
+              </h2>
+              <p className="text-base text-[#DBA858]">
+                Выбери визуальный стиль
               </p>
+            </div>
+            
+            <div 
+              className="cursor-pointer hover:scale-[1.02] transition-transform duration-300"
+              onClick={() => window.open('/create', '_blank')}
+            >
+              <div className="overflow-x-auto pb-4 -mx-4 px-4">
+                <div className="flex gap-4 min-w-max justify-center">
+                  {[
+                    { name: 'Disney', image: disneyStyleImage },
+                    { name: 'Toonflat', image: toonflatStyleImage },
+                    { name: 'Claymotion', image: claymotionStyleImage }
+                  ].map((style) => (
+                    <Card 
+                      key={style.name}
+                      className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none"
+                    >
+                      <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
+                        <img 
+                          src={style.image} 
+                          alt={style.name}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                      <CardContent className="pt-2 pb-2">
+                        <p className="text-[#E89C31] text-center font-bold text-xs">
+                          {style.name}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+              <div className="text-center mt-4">
+                <p className="text-[#DBA858] text-sm">
+                  👆 Открыть конструктор
+                </p>
+              </div>
             </div>
           </div>
         </div>
