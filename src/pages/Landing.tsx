@@ -23,8 +23,11 @@ import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import dragonHeaderImage from '@/assets/dragon-header.png';
+import dragonHeaderHoverImage from '@/assets/dragon-header-hover.png';
+
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
+  const [dragonHovered, setDragonHovered] = useState(false);
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -44,8 +47,16 @@ const Landing = () => {
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
-          <div className="flex items-center">
-            <img src={dragonHeaderImage} alt="Dragon" className="h-16 object-contain" />
+          <div 
+            className="flex items-center"
+            onMouseEnter={() => setDragonHovered(true)}
+            onMouseLeave={() => setDragonHovered(false)}
+          >
+            <img 
+              src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
+              alt="Dragon" 
+              className="h-16 object-contain transition-all duration-200 cursor-pointer" 
+            />
           </div>
         </div>
       </header>
