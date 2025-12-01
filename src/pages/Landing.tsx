@@ -102,7 +102,7 @@ const Landing = () => {
           </div>
           <div className="flex justify-center md:justify-center md:order-2 order-1">
             <img src={mascotImage} alt="FairyTeller - живая книжка с крыльями" className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-transform duration-300 ease-out" style={{
-            transform: `translateY(${Math.sin(scrollY * 0.005) * 40}px)`
+            transform: `translate(1.5rem, 1.5rem) translateY(${Math.sin(scrollY * 0.005) * 40}px)`
           }} />
           </div>
         </div>
