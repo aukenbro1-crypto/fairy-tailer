@@ -10,7 +10,7 @@ import heroSelectionImage from "@/assets/hero-selection.png";
 import worldAtmosphereImage from "@/assets/world-atmosphere.png";
 import aiWritingImage from "@/assets/ai-writing.png";
 import readyStoryImage from "@/assets/ready-story.png";
-import createButtonImage from "@/assets/create-button.png";
+import createButtonImage from "@/assets/create-button-new.png";
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
