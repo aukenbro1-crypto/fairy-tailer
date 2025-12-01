@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
+import mascotImage from "@/assets/mascot.png";
 
 const Landing = () => {
   return (
@@ -10,7 +11,10 @@ const Landing = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">FairyTeller</h1>
+          <div className="flex items-center gap-3">
+            <img src={mascotImage} alt="FairyTeller mascot" className="h-10 w-10 object-contain" />
+            <h1 className="text-2xl font-bold text-primary">FairyTeller</h1>
+          </div>
           <Link to="/create">
             <Button className="gap-2">
               <Sparkles className="h-4 w-4" />
@@ -38,10 +42,11 @@ const Landing = () => {
             </Link>
           </div>
           <div className="flex justify-center">
-            <div className="relative">
-              <BookOpen className="h-64 w-64 text-primary/20" strokeWidth={1} />
-              <Sparkles className="h-12 w-12 text-primary absolute top-0 right-0 animate-pulse" />
-            </div>
+            <img 
+              src={mascotImage} 
+              alt="FairyTeller - живая книжка с крыльями" 
+              className="h-80 w-80 object-contain animate-fade-in"
+            />
           </div>
         </div>
       </section>
