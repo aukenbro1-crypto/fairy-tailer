@@ -185,9 +185,9 @@ const Landing = () => {
 
       {/* Interactive Preview: Two Columns */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-[1fr_auto_1fr] gap-8 items-center">
           {/* Column 1: Choose Your World */}
-          <div>
+          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300">
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Выбери свой мир
@@ -243,8 +243,15 @@ const Landing = () => {
             </div>
           </div>
 
+          {/* Middle Divider with Text */}
+          <div className="hidden md:flex flex-col items-center justify-center px-4">
+            <div className="text-[#E89C31] font-bold text-xl writing-mode-vertical transform rotate-180" style={{ writingMode: 'vertical-rl' }}>
+              Конструктор
+            </div>
+          </div>
+
           {/* Column 2: Illustration Style */}
-          <div>
+          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300">
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Стиль иллюстрации
