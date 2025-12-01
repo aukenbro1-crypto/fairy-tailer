@@ -114,7 +114,7 @@ const Landing = () => {
             Как это работает
           </h2>
           <div className="overflow-x-auto pb-4 -mx-4 px-4">
-            <div className="flex gap-6 min-w-max">
+            <div className="flex gap-6 min-w-max justify-center">
               <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-64">
                 <CardHeader className="pb-1 pt-4">
                   <CardTitle className="text-[#E89C31] text-lg font-bold mb-2 min-h-[56px] flex items-center justify-center">Вы выбираете героя</CardTitle>
