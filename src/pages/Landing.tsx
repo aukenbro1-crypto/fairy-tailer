@@ -24,7 +24,6 @@ import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import dragonHeaderImage from '@/assets/dragon-header.png';
 import dragonHeaderHoverImage from '@/assets/dragon-header-hover.png';
-
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
@@ -47,20 +46,20 @@ const Landing = () => {
         setMenuOpen(false);
       }
     };
-    
     if (menuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
       setMenuOpen(false);
     }
   };
@@ -74,73 +73,42 @@ const Landing = () => {
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
-          <div 
-            className="flex items-center relative"
-            ref={menuRef}
-          >
-            <div
-              className="cursor-pointer"
-              onMouseEnter={() => setDragonHovered(true)}
-              onMouseLeave={() => setDragonHovered(false)}
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              <img 
-                src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
-                alt="Dragon Menu" 
-                className="h-16 object-contain transition-all duration-200" 
-              />
+          <div className="flex items-center relative" ref={menuRef}>
+            <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
+              <img src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} alt="Dragon Menu" className="h-16 object-contain transition-all duration-200" />
             </div>
 
             {/* Dropdown Menu */}
-            {menuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
+            {menuOpen && <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
                 <div className="py-2">
-                  <Link 
-                    to="/"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                    onClick={() => setMenuOpen(false)}
-                  >
+                  <Link to="/" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
                     <Home size={20} />
                     <span>Главная</span>
                   </Link>
                   
-                  <button
-                    onClick={() => scrollToSection('how-it-works')}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('how-it-works')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <BookOpen size={20} />
                     <span>Как это работает</span>
                   </button>
 
-                  <button
-                    onClick={() => scrollToSection('examples')}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('examples')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <Sparkles size={20} />
                     <span>Примеры сказок</span>
                   </button>
 
-                  <button
-                    onClick={() => scrollToSection('faq')}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('faq')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <Mail size={20} />
                     <span>FAQ</span>
                   </button>
 
                   <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
 
-                  <Link
-                    to="/create"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold"
-                    onClick={() => setMenuOpen(false)}
-                  >
+                  <Link to="/create" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold" onClick={() => setMenuOpen(false)}>
                     <Scroll size={20} />
                     <span>Создать сказку</span>
                   </Link>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
       </header>
@@ -190,15 +158,11 @@ const Landing = () => {
         
         <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
           <div className="space-y-8 md:order-1 order-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Персональные сказки, где главный герой — это ты</h1>
-            <p className="text-xl text-[#DBA858] leading-relaxed">Задай пару параметров, добавь свое фото и получи настоящую печатную книгу с иллюстрациями</p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Главный герой — это ты</h1>
+            <p className="text-xl text-[#DBA858] leading-relaxed">Создавай иллюстрированные сказки про себя и своих близких</p>
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
-                <img 
-                  src={createButtonImage} 
-                  alt="Создать сказку" 
-                  className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
-                />
+                <img src={createButtonImage} alt="Создать сказку" className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl" />
               </Link>
             </div>
           </div>
@@ -282,10 +246,7 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Column 1: Choose Your World */}
-          <div 
-            className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]"
-            onClick={() => window.open('/create', '_blank')}
-          >
+          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]" onClick={() => window.open('/create', '_blank')}>
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Выбери свой мир
@@ -298,49 +259,32 @@ const Landing = () => {
             <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
-                  {[
-                    {
-                      emoji: '🦜',
-                      image: dragonAdventureImage,
-                      title: 'Приключения',
-                      tagline: '— Лови момент!'
-                    },
-                    {
-                      emoji: '🎅🏻',
-                      image: santaNewyearImage,
-                      title: 'Новогодняя сказка',
-                      tagline: '— С Новым годом!'
-                    },
-                    {
-                      emoji: '🧙🏻‍♂️',
-                      image: wizardFantasyImage,
-                      title: 'Фэнтези',
-                      tagline: '— От судьбы не уйдешь.'
-                    }
-                  ].map((world) => (
-                    <Card 
-                      key={world.title}
-                      className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none"
-                    >
+                  {[{
+                  emoji: '🦜',
+                  image: dragonAdventureImage,
+                  title: 'Приключения',
+                  tagline: '— Лови момент!'
+                }, {
+                  emoji: '🎅🏻',
+                  image: santaNewyearImage,
+                  title: 'Новогодняя сказка',
+                  tagline: '— С Новым годом!'
+                }, {
+                  emoji: '🧙🏻‍♂️',
+                  image: wizardFantasyImage,
+                  title: 'Фэнтези',
+                  tagline: '— От судьбы не уйдешь.'
+                }].map(world => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none">
                       <CardHeader className="pb-2 pt-3">
                         <div className="flex justify-center items-center mb-1">
-                          {world.image ? (
-                            <img 
-                              src={world.image} 
-                              alt={world.title} 
-                              className="w-12 h-12 object-contain"
-                            />
-                          ) : (
-                            <div className="text-3xl">{world.emoji}</div>
-                          )}
+                          {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" /> : <div className="text-3xl">{world.emoji}</div>}
                         </div>
                         <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="px-2 pb-3">
                         <p className="text-[#E89C31]/80 text-[10px] italic">{world.tagline}</p>
                       </CardContent>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
               </div>
               <div className="text-center mt-4">
@@ -352,10 +296,7 @@ const Landing = () => {
           </div>
 
           {/* Column 2: Illustration Style */}
-          <div 
-            className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]"
-            onClick={() => window.open('/create', '_blank')}
-          >
+          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]" onClick={() => window.open('/create', '_blank')}>
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
                 Стиль иллюстрации
@@ -368,24 +309,20 @@ const Landing = () => {
             <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
-                  {[
-                    { name: 'Disney', image: disneyStyleImage },
-                    { name: 'Toonflat', image: toonflatStyleImage },
-                    { name: 'Claymotion', image: claymotionStyleImage }
-                  ].map((style) => (
-                    <Card 
-                      key={style.name}
-                      className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none"
-                    >
+                  {[{
+                  name: 'Disney',
+                  image: disneyStyleImage
+                }, {
+                  name: 'Toonflat',
+                  image: toonflatStyleImage
+                }, {
+                  name: 'Claymotion',
+                  image: claymotionStyleImage
+                }].map(style => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none">
                       <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
-                        <img 
-                          src={style.image} 
-                          alt={style.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+                        <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" />
                       </div>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
               </div>
               <div className="text-center mt-4">
@@ -623,11 +560,7 @@ const Landing = () => {
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
-            <img 
-              src={createButtonImage} 
-              alt="Создать сказку" 
-              className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto"
-            />
+            <img src={createButtonImage} alt="Создать сказку" className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto" />
           </Link>
         </div>
       </section>
