@@ -9,6 +9,7 @@ import disneyStyleImage from '@/assets/disney-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
+import dragonAdventureImage from '@/assets/dragon-adventure.png';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -164,6 +165,7 @@ interface FormData {
 const WORLDS = [{
   value: 'adventure_classic',
   emoji: '🦜',
+  image: dragonAdventureImage,
   title: 'Приключения',
   description: 'Мир открытий, где герои идут навстречу новым возможностям.',
   tagline: '— Лови момент!'
@@ -701,7 +703,11 @@ const Index = () => {
                 }))}>
                       <div className="world-card-content">
                         <div className="world-card-header">
-                          <span className="world-card-emoji">{world.emoji}</span>
+                          {world.image ? (
+                            <img src={world.image} alt={world.title} className="world-card-emoji" style={{ width: '3rem', height: '3rem', objectFit: 'contain' }} />
+                          ) : (
+                            <span className="world-card-emoji">{world.emoji}</span>
+                          )}
                           <h4 className="world-card-title">{world.title}</h4>
                         </div>
                         <p className="world-card-description">{world.description}</p>
