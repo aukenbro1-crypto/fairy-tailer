@@ -22,6 +22,7 @@ import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
+import dragonHeaderImage from '@/assets/dragon-header.png';
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -42,6 +43,9 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
+          </div>
+          <div className="flex items-center">
+            <img src={dragonHeaderImage} alt="Dragon" className="h-16 object-contain" />
           </div>
         </div>
       </header>
