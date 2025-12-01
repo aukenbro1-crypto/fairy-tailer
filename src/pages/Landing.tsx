@@ -24,13 +24,11 @@ import santaNewyearImage from '@/assets/santa-newyear.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import dragonHeaderImage from '@/assets/dragon-header.png';
 import dragonHeaderHoverImage from '@/assets/dragon-header-hover.png';
-
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -40,7 +38,6 @@ const Landing = () => {
     });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -54,7 +51,6 @@ const Landing = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -65,11 +61,8 @@ const Landing = () => {
       setMenuOpen(false);
     }
   };
-
   const mascotTransform = `translateY(${scrollY * 0.15}px) rotate(${Math.sin(scrollY * 0.005) * 5}deg)`;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] font-serif">
+  return <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] font-serif">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#031B28]/90 backdrop-blur-sm border-b border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10">
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
@@ -77,68 +70,40 @@ const Landing = () => {
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <div className="flex items-center relative" ref={menuRef}>
-            <div 
-              className="cursor-pointer" 
-              onMouseEnter={() => setDragonHovered(true)} 
-              onMouseLeave={() => setDragonHovered(false)} 
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              <img 
-                src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
-                alt="Dragon Menu" 
-                className="h-16 object-contain transition-all duration-200" 
-              />
+            <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
+              <img src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} alt="Dragon Menu" className="h-16 object-contain transition-all duration-200" />
             </div>
 
-            {menuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
+            {menuOpen && <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
                 <div className="py-2">
-                  <Link 
-                    to="/" 
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" 
-                    onClick={() => setMenuOpen(false)}
-                  >
+                  <Link to="/" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
                     <Home size={20} />
                     <span>Главная</span>
                   </Link>
                   
-                  <button 
-                    onClick={() => scrollToSection('how-it-works')} 
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('how-it-works')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <BookOpen size={20} />
                     <span>Как это работает</span>
                   </button>
 
-                  <button 
-                    onClick={() => scrollToSection('examples')} 
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('examples')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <Sparkles size={20} />
                     <span>Примеры сказок</span>
                   </button>
 
-                  <button 
-                    onClick={() => scrollToSection('faq')} 
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]"
-                  >
+                  <button onClick={() => scrollToSection('faq')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]">
                     <Mail size={20} />
                     <span>FAQ</span>
                   </button>
 
                   <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
 
-                  <Link 
-                    to="/create" 
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold" 
-                    onClick={() => setMenuOpen(false)}
-                  >
+                  <Link to="/create" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold" onClick={() => setMenuOpen(false)}>
                     <Scroll size={20} />
                     <span>Создать сказку</span>
                   </Link>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
       </header>
@@ -147,20 +112,37 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-8 md:py-20 relative overflow-visible min-h-[85vh] flex items-center">
         {/* Decorative Elements - Crescent Moon with Stars */}
         <div className="absolute top-16 right-[8%] md:right-[12%] w-28 h-28 md:w-36 md:h-36 animate-fade-in z-20 pointer-events-none" style={{
-          animation: 'fade-in 1s ease-out',
-          transform: 'scaleX(-1)'
-        }}>
+        animation: 'fade-in 1s ease-out',
+        transform: 'scaleX(-1)'
+      }}>
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_50px_rgba(245,232,209,0.6)]">
             <path d="M50,10 A40,40 0 1,0 50,90 A30,30 0 1,1 50,10" fill="#F5E8D1" opacity="0.95" stroke="#E8D9C3" strokeWidth="0.5" />
           </svg>
         </div>
         
-        <div className="absolute top-12 right-[5%] md:right-[10%] text-yellow-200 text-xl animate-pulse" style={{ animationDuration: '2s' }}>✦</div>
-        <div className="absolute top-20 right-[15%] md:right-[18%] text-yellow-100 text-sm animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }}>✦</div>
-        <div className="absolute top-8 right-[12%] md:right-[15%] text-yellow-200 text-base animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '1s' }}>✦</div>
-        <div className="absolute top-28 right-[7%] md:right-[11%] text-yellow-100 text-xs animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '0.8s' }}>✦</div>
-        <div className="absolute top-24 right-[17%] md:right-[20%] text-yellow-200 text-sm animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '1.5s' }}>✦</div>
-        <div className="absolute top-14 right-[3%] md:right-[8%] text-yellow-100 text-base animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '0.3s' }}>✦</div>
+        <div className="absolute top-12 right-[5%] md:right-[10%] text-yellow-200 text-xl animate-pulse" style={{
+        animationDuration: '2s'
+      }}>✦</div>
+        <div className="absolute top-20 right-[15%] md:right-[18%] text-yellow-100 text-sm animate-pulse" style={{
+        animationDuration: '3s',
+        animationDelay: '0.5s'
+      }}>✦</div>
+        <div className="absolute top-8 right-[12%] md:right-[15%] text-yellow-200 text-base animate-pulse" style={{
+        animationDuration: '2.5s',
+        animationDelay: '1s'
+      }}>✦</div>
+        <div className="absolute top-28 right-[7%] md:right-[11%] text-yellow-100 text-xs animate-pulse" style={{
+        animationDuration: '3.5s',
+        animationDelay: '0.8s'
+      }}>✦</div>
+        <div className="absolute top-24 right-[17%] md:right-[20%] text-yellow-200 text-sm animate-pulse" style={{
+        animationDuration: '2.8s',
+        animationDelay: '1.5s'
+      }}>✦</div>
+        <div className="absolute top-14 right-[3%] md:right-[8%] text-yellow-100 text-base animate-pulse" style={{
+        animationDuration: '3.2s',
+        animationDelay: '0.3s'
+      }}>✦</div>
         
         <div className="absolute bottom-0 left-0 w-full h-56 opacity-40 z-0">
           <svg viewBox="0 0 1200 200" className="w-full h-full" preserveAspectRatio="none">
@@ -171,29 +153,20 @@ const Landing = () => {
         
         <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
           <div className="space-y-8 md:order-1 order-2 pt-8 pr-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-              Персональные сказки, где ты<br />— настоящий главный герой 
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Сказки, где главный герой — это ты
+            <br />— настоящий главный герой 
             </h1>
             <p className="text-xl text-[#DBA858] leading-relaxed">Создавай бумажные книги про себя и своих близких</p>
             <div className="pt-12 flex justify-end mr-20">
               <Link to="/create">
-                <img 
-                  src={createButtonImage} 
-                  alt="Создать сказку" 
-                  className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl" 
-                />
+                <img src={createButtonImage} alt="Создать сказку" className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl" />
               </Link>
             </div>
           </div>
           <div className="flex justify-center md:justify-center md:order-2 order-1">
-            <img 
-              src={mascotImage} 
-              alt="FairyTeller - живая книжка с крыльями" 
-              className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-transform duration-300 ease-out" 
-              style={{
-                transform: `translate(1.5rem, 1.5rem) translateY(${Math.sin(scrollY * 0.005) * 40}px)`
-              }} 
-            />
+            <img src={mascotImage} alt="FairyTeller - живая книжка с крыльями" className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-transform duration-300 ease-out" style={{
+            transform: `translate(1.5rem, 1.5rem) translateY(${Math.sin(scrollY * 0.005) * 40}px)`
+          }} />
           </div>
         </div>
       </section>
@@ -281,27 +254,32 @@ const Landing = () => {
             <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
-                  {[
-                    { emoji: '🦜', image: dragonAdventureImage, title: 'Приключения', tagline: '— Лови момент!' },
-                    { emoji: '🎅🏻', image: santaNewyearImage, title: 'Новогодняя сказка', tagline: '— С Новым годом!' },
-                    { emoji: '🧙🏻‍♂️', image: wizardFantasyImage, title: 'Фэнтези', tagline: '— От судьбы не уйдешь.' }
-                  ].map((world) => (
-                    <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none">
+                  {[{
+                  emoji: '🦜',
+                  image: dragonAdventureImage,
+                  title: 'Приключения',
+                  tagline: '— Лови момент!'
+                }, {
+                  emoji: '🎅🏻',
+                  image: santaNewyearImage,
+                  title: 'Новогодняя сказка',
+                  tagline: '— С Новым годом!'
+                }, {
+                  emoji: '🧙🏻‍♂️',
+                  image: wizardFantasyImage,
+                  title: 'Фэнтези',
+                  tagline: '— От судьбы не уйдешь.'
+                }].map(world => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 pointer-events-none">
                       <CardHeader className="pb-2 pt-3">
                         <div className="flex justify-center items-center mb-1">
-                          {world.image ? (
-                            <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" />
-                          ) : (
-                            <div className="text-3xl">{world.emoji}</div>
-                          )}
+                          {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" /> : <div className="text-3xl">{world.emoji}</div>}
                         </div>
                         <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="px-2 pb-3">
                         <p className="text-[#E89C31]/80 text-[10px] italic">{world.tagline}</p>
                       </CardContent>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
               </div>
               <div className="text-center mt-4">
@@ -326,17 +304,20 @@ const Landing = () => {
             <div>
               <div className="overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-4 min-w-max justify-center">
-                  {[
-                    { name: 'Disney', image: disneyStyleImage },
-                    { name: 'Toonflat', image: toonflatStyleImage },
-                    { name: 'Claymotion', image: claymotionStyleImage }
-                  ].map((style) => (
-                    <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none">
+                  {[{
+                  name: 'Disney',
+                  image: disneyStyleImage
+                }, {
+                  name: 'Toonflat',
+                  image: toonflatStyleImage
+                }, {
+                  name: 'Claymotion',
+                  image: claymotionStyleImage
+                }].map(style => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 pointer-events-none">
                       <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
                         <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" />
                       </div>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
               </div>
               <div className="text-center mt-4">
@@ -360,21 +341,16 @@ const Landing = () => {
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
+          {[1, 2, 3].map(i => <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <div className="aspect-[3/4] bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center">
                 <BookOpen className="h-24 w-24 text-[#E89C31]/60" strokeWidth={1} />
               </div>
               <CardContent className="pt-6 pb-6 px-6">
-                <Button 
-                  variant="outline" 
-                  className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium"
-                >
+                <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
                   Посмотреть пример PDF
                 </Button>
               </CardContent>
-            </Card>
-          ))}
+            </Card>)}
         </div>
       </section>
 
@@ -589,11 +565,7 @@ const Landing = () => {
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
-            <img 
-              src={createButtonImage} 
-              alt="Создать сказку" 
-              className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto" 
-            />
+            <img src={createButtonImage} alt="Создать сказку" className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto" />
           </Link>
         </div>
       </section>
@@ -604,8 +576,6 @@ const Landing = () => {
           <p className="text-lg">© 2024 FairyTeller. Создаем персональные истории с любовью.</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Landing;
