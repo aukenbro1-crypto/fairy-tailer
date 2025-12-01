@@ -156,13 +156,13 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer">
+            <Card className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-2xl hover:shadow-[#E89C31]/20 hover:scale-105 transition-all duration-500 border border-[#E89C31]/20 rounded-3xl overflow-hidden group cursor-pointer max-w-xs mx-auto">
               <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Получаете готовую сказку</CardTitle>
+                <CardTitle className="text-[#E89C31] text-xl font-bold mb-4">Получаете готовую сказку</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="mb-3 rounded-2xl overflow-hidden">
-                  <img src={readyStoryImage} alt="Готовая сказка" className="w-full h-auto" />
+                <div className="mb-3 rounded-2xl overflow-hidden flex justify-center">
+                  <img src={readyStoryImage} alt="Готовая сказка" className="w-2/3 h-auto" />
                 </div>
                 <CardDescription className="text-[#DBA858] text-sm">
                   Мы присылаем историю на почту, а вы можете читать ее сами или подарить.
