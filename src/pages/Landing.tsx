@@ -10,6 +10,7 @@ import heroSelectionImage from "@/assets/hero-selection.png";
 import worldAtmosphereImage from "@/assets/world-atmosphere.png";
 import aiWritingImage from "@/assets/ai-writing.png";
 import readyStoryImage from "@/assets/ready-story.png";
+import createButtonImage from "@/assets/create-button.png";
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -32,14 +33,11 @@ const Landing = () => {
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <Link to="/create">
-            <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-              <div className="bg-[#63d2ff] rounded-[1.5rem] px-8 py-4 shadow-lg hover:shadow-[0_0_30px_rgba(99,210,255,0.5)] transition-all relative overflow-visible">
-                <div className="absolute -bottom-1 right-6 text-2xl">✨</div>
-                <p className="text-[#0e1a22] text-xl md:text-2xl font-serif font-bold whitespace-nowrap">
-                  Создать сказку
-                </p>
-              </div>
-            </div>
+            <img 
+              src={createButtonImage} 
+              alt="Создать сказку" 
+              className="h-14 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
+            />
           </Link>
         </div>
       </header>
@@ -93,14 +91,11 @@ const Landing = () => {
             <p className="text-xl text-[#3D2617] leading-relaxed">Задай пару параметров, добавь свое фото и получи настоящую печатную книгу с иллюстрациями</p>
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
-                <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="bg-[#63d2ff] rounded-[2rem] px-10 py-5 shadow-lg hover:shadow-[0_0_40px_rgba(99,210,255,0.6)] transition-all relative overflow-visible">
-                    <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
-                    <p className="text-[#0e1a22] text-2xl md:text-3xl font-serif font-bold whitespace-nowrap">
-                      Создать сказку
-                    </p>
-                  </div>
-                </div>
+                <img 
+                  src={createButtonImage} 
+                  alt="Создать сказку" 
+                  className="h-20 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
+                />
               </Link>
             </div>
           </div>
@@ -403,10 +398,11 @@ const Landing = () => {
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
           <Link to="/create">
-            <Button size="lg" className="gap-3 text-lg px-14 py-9 bg-[#2f4b5f] hover:bg-[#1e3240] text-white shadow-xl hover:shadow-[0_0_50px_rgba(99,210,255,0.5)] hover:scale-105 transition-all duration-500 ease-out border-0 rounded-2xl font-semibold">
-              <Sparkles className="h-5 w-5" />
-              Создать сказку
-            </Button>
+            <img 
+              src={createButtonImage} 
+              alt="Создать сказку" 
+              className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(230,166,72,0.6)]"
+            />
           </Link>
         </div>
       </section>
