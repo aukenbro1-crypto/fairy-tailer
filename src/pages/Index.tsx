@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -598,11 +599,13 @@ const Index = () => {
           </div>
 
           <div className="hero-title-wrapper mb-4">
-            <h1 className="hero-title font-bold mixer-nameplate">
-              <span className="hero-title__text">Конструктор сказок</span>
-              <span className="hero-title__glow" aria-hidden="true">Конструктор сказок</span>
-              <span className="cursor-blink">|</span>
-            </h1>
+            <Link to="/" className="block">
+              <h1 className="hero-title font-bold mixer-nameplate cursor-pointer hover:opacity-80 transition-opacity">
+                <span className="hero-title__text">Конструктор сказок</span>
+                <span className="hero-title__glow" aria-hidden="true">Конструктор сказок</span>
+                <span className="cursor-blink">|</span>
+              </h1>
+            </Link>
           </div>
         </div>
 
