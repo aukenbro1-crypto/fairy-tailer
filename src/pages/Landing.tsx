@@ -45,7 +45,7 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-8 md:py-20 relative overflow-visible min-h-[85vh] flex items-center">
-        {/* Decorative Elements - Crescent Moon */}
+        {/* Decorative Elements - Crescent Moon with Stars */}
         <div className="absolute top-16 right-[8%] md:right-[12%] w-28 h-28 md:w-36 md:h-36 animate-fade-in z-20 pointer-events-none" 
              style={{ animation: 'fade-in 1s ease-out', transform: 'scaleX(-1)' }}>
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_50px_rgba(245,232,209,0.6)]">
@@ -56,6 +56,14 @@ const Landing = () => {
                   strokeWidth="0.5"/>
           </svg>
         </div>
+        
+        {/* Twinkling Stars around Moon */}
+        <div className="absolute top-12 right-[5%] md:right-[10%] text-yellow-200 text-xl animate-pulse" style={{ animationDuration: '2s' }}>✦</div>
+        <div className="absolute top-20 right-[15%] md:right-[18%] text-yellow-100 text-sm animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }}>✦</div>
+        <div className="absolute top-8 right-[12%] md:right-[15%] text-yellow-200 text-base animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '1s' }}>✦</div>
+        <div className="absolute top-28 right-[7%] md:right-[11%] text-yellow-100 text-xs animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '0.8s' }}>✦</div>
+        <div className="absolute top-24 right-[17%] md:right-[20%] text-yellow-200 text-sm animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '1.5s' }}>✦</div>
+        <div className="absolute top-14 right-[3%] md:right-[8%] text-yellow-100 text-base animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '0.3s' }}>✦</div>
         <div className="absolute bottom-0 left-0 w-full h-56 opacity-40 z-0">
           <svg viewBox="0 0 1200 200" className="w-full h-full" preserveAspectRatio="none">
             <path d="M0,100 Q200,20 400,80 T800,100 T1200,80 L1200,200 L0,200 Z" 
