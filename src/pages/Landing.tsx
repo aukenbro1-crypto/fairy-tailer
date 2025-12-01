@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
 import mascotImage from "@/assets/mascot.png";
+import logoImage from "@/assets/logo.png";
 
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -26,9 +27,8 @@ const Landing = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#B8664F]/90 backdrop-blur-sm border-b-0 shadow-sm">
         <div className="container mx-auto px-4 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src={mascotImage} alt="FairyTeller mascot" className="h-10 w-10 object-contain" />
-            <h1 className="text-2xl font-bold text-[#2D1810]">FairyTeller</h1>
+          <div className="flex items-center">
+            <img src={logoImage} alt="FairyTeller" className="h-12 object-contain" />
           </div>
           <Link to="/create">
             <Button className="gap-2 bg-[#E85D4A] hover:bg-[#D14836] text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-500 border-0 rounded-xl px-8 py-6">
