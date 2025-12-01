@@ -10,6 +10,7 @@ import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
+import santaNewyearImage from '@/assets/santa-newyear.png';
 
 // Compass Selector Component
 interface CompassSelectorProps {
@@ -172,6 +173,7 @@ const WORLDS = [{
 }, {
   value: 'new_year',
   emoji: '🎅🏻',
+  image: santaNewyearImage,
   title: 'Новогодняя сказка',
   description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
   tagline: '— Счастливого Нового года!'
