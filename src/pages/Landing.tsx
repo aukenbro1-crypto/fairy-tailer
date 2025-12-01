@@ -119,8 +119,8 @@ const Landing = () => {
                 <CardTitle className="text-[#E89C31] text-2xl font-bold mb-4">Вы выбираете героя</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="mb-3 rounded-2xl overflow-hidden">
-                  <img src={heroSelectionImage} alt="Выбор героя" className="w-full h-auto" />
+                <div className="mb-3 rounded-2xl overflow-hidden flex justify-center">
+                  <img src={heroSelectionImage} alt="Выбор героя" className="w-1/2 h-auto" />
                 </div>
                 <CardDescription className="text-[#DBA858] text-sm">
                   Впишите имя, особенности и отношения между героями.
