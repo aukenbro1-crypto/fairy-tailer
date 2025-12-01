@@ -157,10 +157,10 @@ const Landing = () => {
         </div>
         
         <div className="grid md:grid-cols-[42%_58%] gap-12 items-center relative z-10 w-full">
-          <div className="space-y-8 md:order-1 order-2">
+          <div className="space-y-8 md:order-1 order-2 pt-8 pr-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#E89C31] text-center drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Главный герой — это ты</h1>
             <p className="text-xl text-[#DBA858] leading-relaxed">Создавай иллюстрированные сказки про себя и своих близких</p>
-            <div className="pt-8 flex justify-end mr-16">
+            <div className="pt-12 flex justify-end mr-20">
               <Link to="/create">
                 <img src={createButtonImage} alt="Создать сказку" className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl" />
               </Link>
