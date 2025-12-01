@@ -43,13 +43,6 @@ const Landing = () => {
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
-          <Link to="/create">
-            <img 
-              src={createButtonImage} 
-              alt="Создать сказку" 
-              className="h-20 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl"
-            />
-          </Link>
         </div>
       </header>
 
