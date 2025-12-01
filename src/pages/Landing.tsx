@@ -6,7 +6,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users } from "lucide-react";
 import mascotImage from "@/assets/mascot.png";
 import logoImage from "@/assets/logo.png";
-import createButtonImage from "@/assets/create-button.png";
 
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -32,11 +31,15 @@ const Landing = () => {
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           <Link to="/create">
-            <img 
-              src={createButtonImage} 
-              alt="Создать сказку" 
-              className="h-14 md:h-16 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
-            />
+            <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
+              <div className="bg-[#D9A054] rounded-[2rem] px-12 py-6 shadow-lg relative overflow-visible">
+                <div className="absolute -top-2 right-8 text-4xl">🧙‍♂️</div>
+                <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
+                <p className="text-white text-3xl md:text-4xl font-serif font-bold whitespace-nowrap">
+                  Создать сказку
+                </p>
+              </div>
+            </div>
           </Link>
         </div>
       </header>
@@ -73,11 +76,15 @@ const Landing = () => {
             </p>
             <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
-                <img 
-                  src={createButtonImage} 
-                  alt="Создать сказку" 
-                  className="h-48 md:h-60 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
-                />
+                <div className="relative inline-block hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <div className="bg-[#D9A054] rounded-[2rem] px-12 py-6 shadow-lg relative overflow-visible">
+                    <div className="absolute -top-2 right-8 text-4xl">🧙‍♂️</div>
+                    <div className="absolute -bottom-1 right-6 text-3xl">✨</div>
+                    <p className="text-white text-3xl md:text-4xl font-serif font-bold whitespace-nowrap">
+                      Создать сказку
+                    </p>
+                  </div>
+                </div>
               </Link>
             </div>
           </div>
