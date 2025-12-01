@@ -303,7 +303,7 @@ const Landing = () => {
               </div>
               <div className="text-center mt-4">
                 <p className="text-[#DBA858] text-sm">
-                  👆 Открыть конструктор
+                  🪄 Создать историю
                 </p>
               </div>
             </div>
