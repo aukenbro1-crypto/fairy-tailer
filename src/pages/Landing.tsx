@@ -71,12 +71,12 @@ const Landing = () => {
             <p className="text-xl text-[#3D2617] leading-relaxed">
               Задай пару параметров и получи настоящую печатную книгу с иллюстрациями
             </p>
-            <div className="pt-4">
+            <div className="pt-0 -mt-4 flex justify-end mr-8">
               <Link to="/create">
                 <img 
                   src={createButtonImage} 
                   alt="Создать сказку" 
-                  className="h-16 md:h-20 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
+                  className="h-48 md:h-60 object-contain hover:scale-105 transition-all duration-300 cursor-pointer"
                 />
               </Link>
             </div>
