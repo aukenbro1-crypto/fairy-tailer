@@ -322,6 +322,113 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
+          Частые вопросы
+        </h2>
+        <Accordion type="single" collapsible className="max-w-3xl mx-auto bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl p-6 shadow-lg shadow-[#E89C31]/10">
+          <AccordionItem value="item-1" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Сколько стоит сказка?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Полноценная бумажная книга стоит 2 500₽. В эту сумму входит печать, доставка до ПВЗ и финальная вычитка текста редактором.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-2" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Как я получу сказку? Есть ли доставка?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Сначала вы получаете PDF на почту в течение 10–20 минут. Если вам нравится результат, вы оплачиваете заказ. Через 5 рабочих дней книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»).
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-3" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Как работает конструктор?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Вы заполняете параметры — герои, характеры, возраст, локацию, жанр, тон и стиль иллюстраций. Искусственный интеллект создает текст, генерирует иллюстрации и собирает все в аккуратный PDF из пяти глав. Если вы выбираете печать, перед отправкой в типографию текст вручную вычитывает редактор и исправляет досадные ошибки, допущенные искусственным интеллектом.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-4" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Могу ли я добавить фотографии?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Да. Фото делают героев похожими на вас и ваших близких. Мы используем только черты лица — фон не копируется. Фото не хранятся и не используются повторно.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-5" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Насколько персональной будет история?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              На 100%. Даже при одинаковых параметрах истории получаются разными. Привычки, страхи, профессии и особенности героев органично вплетаются в сюжет.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-6" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Можно указать абстрактные локации — «улица детства», «летний ветер», «желтый город»?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Да. Конструктор одинаково хорошо работает с реальными адресами, районами и полностью абстрактными пространствами.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-7" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Можно ли создавать истории для взрослых?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Да. Вы сами выбираете жанр и тон — это могут быть романтические, философские, приключенческие или даже футуристические истории.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-8" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Это хороший подарок?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Прекрасный. Книга подойдет ребенку, партнеру, родителям, друзьям, коллеге — герой в сказке будет именно тем, кого вы хотите. Например, вы можете отвлечь своего ребенка от гаджетов и показать ему удивительный мир книг через одну из историй, созданных специально для него. Или отправить своим друзьям сказку о совместном путешествии или каком-то важном событии.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-9" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Что делать, если хочу изменить данные или сгенерировать новый вариант?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Заполните форму еще раз. Можно создавать столько версий, сколько нужно.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-10" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              Письмо не пришло — что делать?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Проверьте папки «Спам» и «Промоакции». Если письма все же нет — напишите через форму обратной связи, и мы отправим PDF вручную.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-11" className="border-0 border-b border-[#E89C31]/20 last:border-0">
+            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
+              У меня оставались вопросы, с кем я могу связаться?
+            </AccordionTrigger>
+            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
+              Пишите в Telegram: @nikita0shch
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
+
       {/* Examples Section */}
       <section id="examples" className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
@@ -344,113 +451,6 @@ const Landing = () => {
               </CardContent>
             </Card>)}
         </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-          Частые вопросы
-        </h2>
-        <Accordion type="single" collapsible className="max-w-3xl mx-auto bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl p-6 shadow-lg shadow-[#E89C31]/10">
-          <AccordionItem value="item-1" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Сколько стоит сказка?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Полноценная бумажная книга стоит 2 500₽. В эту сумму входит печать, доставка до ПВЗ и финальная вычитка текста редактором.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-2" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Как я получу сказку? Есть ли доставка?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Сначала вы получаете PDF на почту в течение 10–20 минут. Если вам нравится результат, вы оплачиваете заказ. Через 5 рабочих дней книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»).
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-3" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Как работает конструктор?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Вы заполняете параметры — герои, характеры, возраст, локацию, жанр, тон и стиль иллюстраций. Искусственный интеллект создает текст, генерирует иллюстрации и собирает все в аккуратный PDF из пяти глав. Если вы выбираете печать, перед отправкой в типографию текст вручную вычитывает редактор и исправляет досадные ошибки, допущенные искусственным интеллектом.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-4" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Могу ли я добавить фотографии?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Да. Фото делают героев похожими на вас и ваших близких. Мы используем только черты лица — фон не копируется. Фото не хранятся и не используются повторно.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-5" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Насколько персональной будет история?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              На 100%. Даже при одинаковых параметрах истории получаются разными. Привычки, страхи, профессии и особенности героев органично вплетаются в сюжет.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-6" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Можно указать абстрактные локации — «улица детства», «летний ветер», «желтый город»?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Да. Конструктор одинаково хорошо работает с реальными адресами, районами и полностью абстрактными пространствами.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-7" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Можно ли создавать истории для взрослых?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Да. Вы сами выбираете жанр и тон — это могут быть романтические, философские, приключенческие или даже футуристические истории.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-8" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Это хороший подарок?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Прекрасный. Книга подойдет ребенку, партнеру, родителям, друзьям, коллеге — герой в сказке будет именно тем, кого вы хотите. Например, вы можете отвлечь своего ребенка от гаджетов и показать ему удивительный мир книг через одну из историй, созданных специально для него. Или отправить своим друзьям сказку о совместном путешествии или каком-то важном событии.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-9" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Что делать, если хочу изменить данные или сгенерировать новый вариант?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Заполните форму еще раз. Можно создавать столько версий, сколько нужно.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-10" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              Письмо не пришло — что делать?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Проверьте папки «Спам» и «Промоакции». Если письма все же нет — напишите через форму обратной связи, и мы отправим PDF вручную.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-11" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500">
-              У меня оставались вопросы, с кем я могу связаться?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80">
-              Пишите в Telegram: @nikita0shch
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </section>
 
       {/* Use Cases - Кому подарить */}
