@@ -1,29 +1,33 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Sparkles, BookOpen, Wand2, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
+import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
+
+// Critical above-the-fold images - load immediately
 import mascotImage from "@/assets/mascot-new.png";
 import logoImage from "@/assets/logo.png";
+import createButtonImage from "@/assets/create-button-new.png";
+import dragonHeaderImage from "@/assets/dragon-header.png";
+import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
+
+// Below-the-fold images - will be lazy loaded via native loading="lazy"
 import heroSelectionImage from "@/assets/hero-selection.png";
 import worldAtmosphereImage from "@/assets/world-atmosphere.png";
 import aiWritingImage from "@/assets/ai-writing.png";
 import readyStoryImage from "@/assets/ready-story.png";
-import createButtonImage from "@/assets/create-button-new.png";
-import claymotionStyleImage from '@/assets/claymotion-style.png';
-import naiveStyleImage from '@/assets/naive-style.jpg';
-import minibrickStyleImage from '@/assets/minibrick-style.jpg';
-import watercolorStyleImage from '@/assets/watercolor-style.jpg';
-import disneyStyleImage from '@/assets/disney-style.jpg';
-import toonflatStyleImage from '@/assets/toonflat-style.jpg';
-import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
-import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
-import dragonAdventureImage from '@/assets/dragon-adventure.png';
-import santaNewyearImage from '@/assets/santa-newyear.png';
-import wizardFantasyImage from '@/assets/wizard-fantasy.png';
-import dragonHeaderImage from '@/assets/dragon-header.png';
-import dragonHeaderHoverImage from '@/assets/dragon-header-hover.png';
+import claymotionStyleImage from "@/assets/claymotion-style.png";
+import naiveStyleImage from "@/assets/naive-style.jpg";
+import minibrickStyleImage from "@/assets/minibrick-style.jpg";
+import watercolorStyleImage from "@/assets/watercolor-style.jpg";
+import disneyStyleImage from "@/assets/disney-style.jpg";
+import toonflatStyleImage from "@/assets/toonflat-style.jpg";
+import celcinemaStyleImage from "@/assets/celcinema-style.jpg";
+import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
+import dragonAdventureImage from "@/assets/dragon-adventure.png";
+import santaNewyearImage from "@/assets/santa-newyear.png";
+import wizardFantasyImage from "@/assets/wizard-fantasy.png";
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
@@ -187,7 +191,7 @@ const Landing = () => {
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
                   <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-end flex-1">
-                    <img src={heroSelectionImage} alt="Выбор героя" className="w-40 h-40 object-contain" />
+                    <img src={heroSelectionImage} alt="Выбор героя" className="w-40 h-40 object-contain" loading="lazy" decoding="async" />
                   </div>
                 </CardContent>
               </Card>
@@ -198,7 +202,7 @@ const Landing = () => {
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
                   <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-end flex-1">
-                    <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-40 h-40 object-contain" />
+                    <img src={worldAtmosphereImage} alt="Мир и атмосфера" className="w-40 h-40 object-contain" loading="lazy" decoding="async" />
                   </div>
                 </CardContent>
               </Card>
@@ -209,7 +213,7 @@ const Landing = () => {
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
                   <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-end flex-1">
-                    <img src={aiWritingImage} alt="ИИ пишет историю" className="w-40 h-40 object-contain" />
+                    <img src={aiWritingImage} alt="ИИ пишет историю" className="w-40 h-40 object-contain" loading="lazy" decoding="async" />
                   </div>
                 </CardContent>
               </Card>
@@ -220,7 +224,7 @@ const Landing = () => {
                 </CardHeader>
                 <CardContent className="px-3 pb-4 flex-1 flex flex-col">
                   <div className="mb-2 rounded-xl overflow-hidden flex justify-center items-end flex-1">
-                    <img src={readyStoryImage} alt="Готовая сказка" className="w-40 h-40 object-contain" />
+                    <img src={readyStoryImage} alt="Готовая сказка" className="w-40 h-40 object-contain" loading="lazy" decoding="async" />
                   </div>
                 </CardContent>
               </Card>
@@ -266,7 +270,7 @@ const Landing = () => {
                 }}>
                       <CardHeader className="pb-2 pt-3">
                         <div className="flex justify-center items-center mb-1">
-                          {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" /> : <div className="text-3xl">{world.emoji}</div>}
+                          {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" loading="lazy" decoding="async" /> : <div className="text-3xl">{world.emoji}</div>}
                         </div>
                         <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
                       </CardHeader>
@@ -311,7 +315,7 @@ const Landing = () => {
                   animationDelay: `${index * 150}ms`
                 }}>
                       <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
-                        <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" />
+                        <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" loading="lazy" decoding="async" />
                       </div>
                     </Card>)}
                 </div>
