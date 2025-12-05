@@ -401,24 +401,6 @@ const Landing = () => {
 
           <AccordionItem value="item-8" className="border-0 border-b border-[#E89C31]/20 last:border-0">
             <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
-              Это хороший подарок?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
-              Прекрасный. Книга подойдет ребенку, партнеру, родителям, друзьям, коллеге — герой в сказке будет именно тем, кого вы хотите. Например, вы можете отвлечь своего ребенка от гаджетов и показать ему удивительный мир книг через одну из историй, созданных специально для него. Или отправить своим друзьям сказку о совместном путешествии или каком-то важном событии.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-9" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
-              Что делать, если хочу изменить данные или сгенерировать новый вариант?
-            </AccordionTrigger>
-            <AccordionContent className="text-[#DBA858]/80 text-base text-left">
-              Заполните форму еще раз. Можно создавать столько версий, сколько нужно.
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-10" className="border-0 border-b border-[#E89C31]/20 last:border-0">
-            <AccordionTrigger className="text-[#DBA858] hover:text-[#E89C31] py-5 transition-colors duration-500 text-lg text-left">
               Письмо не пришло — что делать?
             </AccordionTrigger>
             <AccordionContent className="text-[#DBA858]/80 text-base text-left">
