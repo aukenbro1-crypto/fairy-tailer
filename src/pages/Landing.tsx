@@ -261,7 +261,9 @@ const Landing = () => {
                   image: wizardFantasyImage,
                   title: 'Фэнтези',
                   tagline: '— От судьбы не уйдешь.'
-                }].map((world, index) => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
+                }].map((world, index) => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 cursor-pointer animate-fade-in" style={{
+                  animationDelay: `${index * 150}ms`
+                }}>
                       <CardHeader className="pb-2 pt-3">
                         <div className="flex justify-center items-center mb-1">
                           {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" /> : <div className="text-3xl">{world.emoji}</div>}
@@ -305,7 +307,9 @@ const Landing = () => {
                 }, {
                   name: 'Claymotion',
                   image: claymotionStyleImage
-                }].map((style, index) => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 150}ms` }}>
+                }].map((style, index) => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 cursor-pointer animate-fade-in" style={{
+                  animationDelay: `${index * 150}ms`
+                }}>
                       <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
                         <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" />
                       </div>
@@ -456,9 +460,7 @@ const Landing = () => {
       {/* Use Cases - Кому подарить */}
       <section className="bg-[#0B2838]/60 py-16 border-y border-[#E89C31]/10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-            Кому подарить
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">Кому подарить?</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <Card className="bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
               <CardHeader className="p-6">
