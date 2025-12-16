@@ -3,9 +3,8 @@ import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
+import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
 
 // Critical above-the-fold images - load immediately
 import mascotImage from "@/assets/mascot-new.png";
@@ -44,26 +43,43 @@ import exampleFantasyBack from "@/assets/example-fantasy-back.jpeg";
 
 // Example Carousel Card Component
 const ExampleCarouselCard = ({ images, pdfLink, index }: { images: string[], pdfLink: string, index: number }) => {
-  const [emblaRef] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 3000, stopOnInteraction: false })]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
   
   return (
     <Card className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
-      <div className="overflow-hidden p-3" ref={emblaRef}>
-        <div className="flex">
-          {images.map((img, idx) => (
-            <div key={idx} className="flex-[0_0_100%] min-w-0">
-              <div className="aspect-[3/4] rounded-lg overflow-hidden">
-                <img 
-                  src={img} 
-                  alt={`Пример книги ${index + 1} - фото ${idx + 1}`} 
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
+      <div className="relative p-3">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-4">
+            {images.map((img, idx) => (
+              <div key={idx} className="flex-[0_0_100%] min-w-0 px-2">
+                <div className="aspect-[3/4] rounded-lg overflow-hidden">
+                  <img 
+                    src={img} 
+                    alt={`Пример книги ${index + 1} - фото ${idx + 1}`} 
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+        <button 
+          onClick={scrollPrev}
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[#031B28]/70 text-[#E89C31] hover:bg-[#031B28] transition-colors"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button 
+          onClick={scrollNext}
+          className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[#031B28]/70 text-[#E89C31] hover:bg-[#031B28] transition-colors"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
       <CardContent className="pt-4 pb-6 px-6">
         <a href={pdfLink} target="_blank" rel="noopener noreferrer">
