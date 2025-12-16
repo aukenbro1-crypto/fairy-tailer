@@ -496,7 +496,7 @@ const Landing = () => {
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
-              images: [exampleAdventureCover, exampleAdventureSpread, exampleAdventureBack],
+              images: [exampleAdventureSpread, exampleAdventureCover, exampleAdventureBack],
               pdfLink: "https://docs.google.com/presentation/d/1DkayCET9ZvFRzOiHPAGPNrapY0TKgGKzhJx47539SKY/edit?slide=id.g3a78a44d4fe_2_0#slide=id.g3a78a44d4fe_2_0"
             },
             {
@@ -504,7 +504,7 @@ const Landing = () => {
               pdfLink: "https://docs.google.com/presentation/d/1A2sQEaDfgFYUu1HDs60KynaAwVnPePFl54smyMJq704/edit?slide=id.g39dc5d58b83_0_251#slide=id.g39dc5d58b83_0_251"
             },
             {
-              images: [exampleFantasyCover, exampleFantasySpread, exampleFantasyBack],
+              images: [exampleFantasyBack, exampleFantasyCover, exampleFantasySpread],
               pdfLink: "https://docs.google.com/presentation/d/1-F0OKE2hrSIAvms7DOsXRDkNfJWyxky7NJlImG0QgFc/edit?slide=id.g3b0f300bfe7_0_0#slide=id.g3b0f300bfe7_0_0"
             }
           ].map((example, i) => (
