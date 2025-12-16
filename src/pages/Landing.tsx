@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 
 // Critical above-the-fold images - load immediately
 import mascotImage from "@/assets/mascot-new.png";
@@ -39,6 +41,41 @@ import exampleNewyearBack from "@/assets/example-newyear-back.jpg";
 import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
 import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
 import exampleFantasyBack from "@/assets/example-fantasy-back.jpeg";
+
+// Example Carousel Card Component
+const ExampleCarouselCard = ({ images, pdfLink, index }: { images: string[], pdfLink: string, index: number }) => {
+  const [emblaRef] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 3000, stopOnInteraction: false })]);
+  
+  return (
+    <Card className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
+      <div className="overflow-hidden p-3" ref={emblaRef}>
+        <div className="flex">
+          {images.map((img, idx) => (
+            <div key={idx} className="flex-[0_0_100%] min-w-0">
+              <div className="aspect-[3/4] rounded-lg overflow-hidden">
+                <img 
+                  src={img} 
+                  alt={`Пример книги ${index + 1} - фото ${idx + 1}`} 
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <CardContent className="pt-4 pb-6 px-6">
+        <a href={pdfLink} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
+            Посмотреть пример PDF
+          </Button>
+        </a>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
@@ -455,28 +492,7 @@ const Landing = () => {
               pdfLink: "https://docs.google.com/presentation/d/1-F0OKE2hrSIAvms7DOsXRDkNfJWyxky7NJlImG0QgFc/edit?slide=id.g3b0f300bfe7_0_0#slide=id.g3b0f300bfe7_0_0"
             }
           ].map((example, i) => (
-            <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
-              <div className="grid grid-cols-3 gap-2 p-3">
-                {example.images.map((img, idx) => (
-                  <div key={idx} className="aspect-[3/4] rounded-lg overflow-hidden">
-                    <img 
-                      src={img} 
-                      alt={`Пример книги ${i + 1} - фото ${idx + 1}`} 
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                ))}
-              </div>
-              <CardContent className="pt-4 pb-6 px-6">
-                <a href={example.pdfLink} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
-                    Посмотреть пример PDF
-                  </Button>
-                </a>
-              </CardContent>
-            </Card>
+            <ExampleCarouselCard key={i} images={example.images} pdfLink={example.pdfLink} index={i} />
           ))}
         </div>
       </section>
