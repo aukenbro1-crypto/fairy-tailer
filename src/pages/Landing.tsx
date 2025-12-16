@@ -28,6 +28,17 @@ import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
 import dragonAdventureImage from "@/assets/dragon-adventure.png";
 import santaNewyearImage from "@/assets/santa-newyear.png";
 import wizardFantasyImage from "@/assets/wizard-fantasy.png";
+
+// Example book images
+import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
+import exampleAdventureSpread from "@/assets/example-adventure-spread.jpg";
+import exampleAdventureBack from "@/assets/example-adventure-back.jpg";
+import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
+import exampleNewyearSpread from "@/assets/example-newyear-spread.jpg";
+import exampleNewyearBack from "@/assets/example-newyear-back.jpg";
+import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
+import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
+import exampleFantasyBack from "@/assets/example-fantasy-back.jpeg";
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
   const [dragonHovered, setDragonHovered] = useState(false);
@@ -430,16 +441,43 @@ const Landing = () => {
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map(i => <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
-              <div className="aspect-[3/4] bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center">
-                <BookOpen className="h-24 w-24 text-[#E89C31]/60" strokeWidth={1} />
+          {[
+            {
+              images: [exampleAdventureCover, exampleAdventureSpread, exampleAdventureBack],
+              pdfLink: "https://docs.google.com/presentation/d/1DkayCET9ZvFRzOiHPAGPNrapY0TKgGKzhJx47539SKY/edit?slide=id.g3a78a44d4fe_2_0#slide=id.g3a78a44d4fe_2_0"
+            },
+            {
+              images: [exampleNewyearCover, exampleNewyearSpread, exampleNewyearBack],
+              pdfLink: "https://docs.google.com/presentation/d/1A2sQEaDfgFYUu1HDs60KynaAwVnPePFl54smyMJq704/edit?slide=id.g39dc5d58b83_0_251#slide=id.g39dc5d58b83_0_251"
+            },
+            {
+              images: [exampleFantasyCover, exampleFantasySpread, exampleFantasyBack],
+              pdfLink: "https://docs.google.com/presentation/d/1-F0OKE2hrSIAvms7DOsXRDkNfJWyxky7NJlImG0QgFc/edit?slide=id.g3b0f300bfe7_0_0#slide=id.g3b0f300bfe7_0_0"
+            }
+          ].map((example, i) => (
+            <Card key={i} className="overflow-hidden bg-[#083248]/80 border border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 rounded-2xl">
+              <div className="grid grid-cols-3 gap-2 p-3">
+                {example.images.map((img, idx) => (
+                  <div key={idx} className="aspect-[3/4] rounded-lg overflow-hidden">
+                    <img 
+                      src={img} 
+                      alt={`Пример книги ${i + 1} - фото ${idx + 1}`} 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                ))}
               </div>
-              <CardContent className="pt-6 pb-6 px-6">
-                <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
-                  Посмотреть пример PDF
-                </Button>
+              <CardContent className="pt-4 pb-6 px-6">
+                <a href={example.pdfLink} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="w-full border border-[#E89C31]/30 bg-[#E89C31]/10 text-[#E89C31] hover:bg-[#E89C31] hover:text-[#031B28] hover:scale-105 transition-all duration-500 py-7 rounded-xl font-medium">
+                    Посмотреть пример PDF
+                  </Button>
+                </a>
               </CardContent>
-            </Card>)}
+            </Card>
+          ))}
         </div>
       </section>
 
