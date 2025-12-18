@@ -144,11 +144,11 @@ const Print = () => {
               display: flex !important;
               flex-direction: column !important;
               align-items: center !important;
-              gap: 16px !important;
+              gap: 24px !important;
               margin-top: 20px !important;
             }
             .yoomoney-payment-form .ym-logo {
-              margin-top: 8px !important;
+              margin-top: 16px !important;
             }
           `}</style>
           <form 
@@ -190,7 +190,7 @@ const Print = () => {
         </div>
 
         {/* F. Доверие */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-[#DBA858]/70 text-sm mt-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-[#DBA858]/70 text-sm mt-14">
           <span className="flex items-center gap-2">
             <span>🔒</span> Оплата проходит через Юкассу
           </span>
