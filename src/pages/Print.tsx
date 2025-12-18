@@ -104,15 +104,34 @@ const Print = () => {
               font-size: 16px !important;
               margin-bottom: 12px !important;
               display: block !important;
+              color: #000000 !important;
+              background: #ffffff !important;
+            }
+            .yoomoney-payment-form .ym-input::placeholder {
+              color: #666666 !important;
             }
             .yoomoney-payment-form .ym-customer-info {
               display: flex !important;
               flex-direction: column !important;
             }
-            .yoomoney-payment-form .ym-btn-pay {
-              padding: 18px 32px !important;
+            .yoomoney-payment-form .ym-block-title {
+              color: #E89C31 !important;
               font-size: 18px !important;
+              font-weight: 600 !important;
+            }
+            .yoomoney-payment-form .ym-btn-pay {
+              padding: 20px 40px !important;
+              font-size: 20px !important;
               width: 100% !important;
+              min-height: 60px !important;
+              background: #E89C31 !important;
+              border: none !important;
+              border-radius: 8px !important;
+              cursor: pointer !important;
+            }
+            .yoomoney-payment-form .ym-btn-pay .ym-text-crop {
+              color: #000000 !important;
+              font-weight: 600 !important;
             }
             .yoomoney-payment-form .ym-price-output {
               display: none !important;
@@ -142,7 +161,7 @@ const Print = () => {
 
             <div className="ym-payment-btn-block ym-before-line">
               <button className="ym-btn-pay" type="submit">
-                <span className="ym-text-crop">Оплатить заказ</span>
+                <span className="ym-text-crop">Оплатить</span>
               </button>
               <img 
                 src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.30.0"
