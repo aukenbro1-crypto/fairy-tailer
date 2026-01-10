@@ -228,7 +228,12 @@ const Index = () => {
   });
   
   const [heroSections, setHeroSections] = useState({
-    hero2: false,
+    hero2: true,
+    hero3: false,
+    hero4: false
+  });
+  
+  const [heroExpanded, setHeroExpanded] = useState({
     hero3: false,
     hero4: false
   });
@@ -396,7 +401,8 @@ const Index = () => {
       hero4_photo: null,
       hero4_photo_url: ''
     });
-    setHeroSections({ hero2: false, hero3: false, hero4: false });
+    setHeroSections({ hero2: true, hero3: false, hero4: false });
+    setHeroExpanded({ hero3: false, hero4: false });
     setCurrentStep(1);
     setConsentChecked(false);
   };
@@ -821,31 +827,41 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Heroes 3 and 4 - Collapsible dropdowns */}
+            {/* Heroes 3 and 4 - Collapsible dropdowns with toggles */}
             <div className="mt-8 space-y-4">
               {[3, 4].map(heroNum => {
                 const heroKey = `hero${heroNum}` as keyof typeof heroSections;
-                const isVisible = heroSections[heroKey];
+                const expandedKey = `hero${heroNum}` as keyof typeof heroExpanded;
+                const isEnabled = heroSections[heroKey];
+                const isExpanded = heroExpanded[expandedKey];
                 
                 return (
                   <div key={heroNum} className="mixer-control-section">
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between p-4 hover:bg-accent/5 transition-colors rounded-lg"
-                      onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
-                    >
-                      <h4 className="mixer-control-label">Герой {heroNum}</h4>
-                      <svg
-                        className={`w-6 h-6 text-accent transition-transform duration-300 ${isVisible ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center justify-between p-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 hover:bg-accent/5 transition-colors rounded-lg flex-1"
+                        onClick={() => setHeroExpanded(prev => ({ ...prev, [expandedKey]: !prev[expandedKey] }))}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                        <svg
+                          className={`w-6 h-6 text-accent transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <h4 className="mixer-control-label">Герой {heroNum}</h4>
+                      </button>
+                      <div
+                        className={`mixer-toggle ${isEnabled ? 'active' : ''}`}
+                        onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
+                      >
+                        <div className="mixer-toggle-handle" />
+                      </div>
+                    </div>
                     
-                    {isVisible && (
+                    {isExpanded && (
                       <div className="px-4 pb-4 space-y-4 animate-fade-in">
                         <input
                           type="text"
