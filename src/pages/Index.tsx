@@ -910,14 +910,8 @@ const Index = () => {
               })}
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="mt-12 flex justify-center gap-4">
-              <button
-                className="mixer-main-button text-lg px-8 py-4 bg-muted hover:bg-muted/80"
-                onClick={() => setCurrentStep(1)}
-              >
-                ← Назад
-              </button>
+            {/* Navigation Button */}
+            <div className="mt-12 flex justify-center">
               <button
                 className="mixer-main-button text-xl px-10 py-5"
                 onClick={() => setCurrentStep(3)}
