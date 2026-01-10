@@ -838,30 +838,19 @@ const Index = () => {
                 return (
                   <div key={heroNum} className="mixer-control-section">
                     <div className="flex items-center justify-between p-4">
-                      <button
-                        type="button"
-                        className="flex items-center gap-3 hover:bg-accent/5 transition-colors rounded-lg flex-1"
-                        onClick={() => setHeroExpanded(prev => ({ ...prev, [expandedKey]: !prev[expandedKey] }))}
-                      >
-                        <svg
-                          className={`w-6 h-6 text-accent transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                        <h4 className="mixer-control-label">Герой {heroNum}</h4>
-                      </button>
+                      <h4 className="mixer-control-label">Герой {heroNum}</h4>
                       <div
                         className={`mixer-toggle ${isEnabled ? 'active' : ''}`}
-                        onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
+                        onClick={() => {
+                          setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }));
+                          setHeroExpanded(prev => ({ ...prev, [expandedKey]: !prev[expandedKey] }));
+                        }}
                       >
                         <div className="mixer-toggle-handle" />
                       </div>
                     </div>
                     
-                    {isExpanded && (
+                    {isEnabled && (
                       <div className="px-4 pb-4 space-y-4 animate-fade-in">
                         <input
                           type="text"
