@@ -506,15 +506,12 @@ const Index = () => {
           {[1, 2, 3].map((step) => (
             <button
               key={step}
-              onClick={() => step < currentStep && setCurrentStep(step)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+              onClick={() => setCurrentStep(step)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer ${
                 currentStep === step
                   ? 'bg-accent text-accent-foreground scale-110'
-                  : currentStep > step
-                  ? 'bg-accent/50 text-accent-foreground cursor-pointer hover:bg-accent/70'
-                  : 'bg-muted text-muted-foreground'
+                  : 'bg-accent/50 text-accent-foreground hover:bg-accent/70'
               }`}
-              disabled={step > currentStep}
             >
               {step}
             </button>
@@ -984,48 +981,38 @@ const Index = () => {
               </div>
 
               {/* Right Column - Email & Consent */}
-              <div className="mixer-control-section">
-                <div className="space-y-6">
-                  <div>
-                    <label className="mixer-control-label">Почта (обязательно)</label>
-                    <input
-                      type="email"
-                      className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`}
-                      value={formData.email}
-                      onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      required
-                    />
-                    <p className="mixer-hint">Мы вышлем PDF на этот адрес.</p>
-                  </div>
+              <div className="mixer-control-section h-fit">
+                <label className="mixer-control-label">Почта (обязательно)</label>
+                <input
+                  type="email"
+                  className={`mixer-input ${formData.email && !validateEmail(formData.email) ? 'mixer-input-error' : ''}`}
+                  value={formData.email}
+                  onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  required
+                />
+                <p className="mixer-hint">Мы вышлем PDF на этот адрес.</p>
 
-                  {/* Consent Checkbox */}
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="consent-checkbox"
-                      checked={consentChecked}
-                      onChange={(e) => setConsentChecked(e.target.checked)}
-                      className="mt-1 w-5 h-5 accent-accent cursor-pointer"
-                      required
-                    />
-                    <label htmlFor="consent-checkbox" className="text-sm text-accent cursor-pointer leading-tight">
-                      Согласие на обработку персональных данных
-                    </label>
-                  </div>
+                {/* Consent Checkbox */}
+                <div className="flex items-start gap-3 mt-4">
+                  <input
+                    type="checkbox"
+                    id="consent-checkbox"
+                    checked={consentChecked}
+                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    className="mt-1 w-5 h-5 accent-accent cursor-pointer"
+                    required
+                  />
+                  <label htmlFor="consent-checkbox" className="text-sm text-accent cursor-pointer leading-tight">
+                    Согласие на обработку персональных данных
+                  </label>
                 </div>
               </div>
             </div>
 
-            {/* Navigation & Submit Buttons */}
-            <div className="mt-12 flex justify-center gap-4">
-              <button
-                className="mixer-main-button text-lg px-8 py-4 bg-muted hover:bg-muted/80"
-                onClick={() => setCurrentStep(2)}
-              >
-                ← Назад
-              </button>
+            {/* Submit Button */}
+            <div className="mt-12 flex justify-center">
               <button
                 className="mixer-main-button text-2xl px-12 py-6"
                 onClick={handleSubmit}
