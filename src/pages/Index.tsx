@@ -635,12 +635,13 @@ const Index = () => {
         {/* STEP 2: Characters */}
         {currentStep === 2 && (
           <div className="animate-fade-in">
-            <div className="mixer-control-section">
-              <h3 className="mixer-section-title text-center mb-6">Персонажи</h3>
-              
-              {/* Main Hero */}
-              <div className="mixer-hero-panel mb-6">
-                <h4 className="mixer-hero-title">Главный герой</h4>
+            <h3 className="mixer-section-title text-center mb-6">Персонажи</h3>
+            
+            {/* Hero 1 and Hero 2 - Left and Right columns */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Left Column - Hero 1 (Main Hero) */}
+              <div className="mixer-control-section">
+                <h4 className="mixer-control-label mb-4">Главный герой</h4>
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -674,110 +675,213 @@ const Index = () => {
                       onChange={e => setFormData(prev => ({ ...prev, hero1_rel: e.target.value }))}
                     />
                   </div>
-                </div>
-                
-                {/* Photo Upload for Hero 1 */}
-                <div className="mt-4">
-                  <label className="mixer-control-label block mb-2">Фото героя 1</label>
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png"
-                    className="hidden"
-                    id="hero1-photo-input"
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-                        toast({ variant: "destructive", title: "Неверный формат", description: "Допустимы JPG/PNG до 3 МБ" });
-                        return;
-                      }
-                      if (file.size > 3 * 1024 * 1024) {
-                        toast({ variant: "destructive", title: "Файл слишком большой", description: "Допустимы JPG/PNG до 3 МБ" });
-                        return;
-                      }
-                      setFormData(prev => ({ ...prev, hero1_photo: file, hero1_photo_url: URL.createObjectURL(file) }));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
-                    onClick={() => document.getElementById('hero1-photo-input')?.click()}
-                  >
-                    Загрузить фото
-                  </button>
-                  <p className="mixer-hint mt-1">Добавьте портретное фото, где хорошо видно лицо.</p>
                   
-                  {formData.hero1_photo_url && (
-                    <div className="mt-3 relative inline-block">
-                      <img src={formData.hero1_photo_url} alt="Превью героя 1" className="w-32 h-32 object-cover rounded-md border-2 border-accent" />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
-                        onClick={() => setFormData(prev => ({ ...prev, hero1_photo: null, hero1_photo_url: '' }))}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
+                  {/* Photo Upload for Hero 1 */}
+                  <div>
+                    <label className="mixer-control-label block mb-2">Фото героя</label>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      className="hidden"
+                      id="hero1-photo-input"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                          toast({ variant: "destructive", title: "Неверный формат", description: "Допустимы JPG/PNG до 3 МБ" });
+                          return;
+                        }
+                        if (file.size > 3 * 1024 * 1024) {
+                          toast({ variant: "destructive", title: "Файл слишком большой", description: "Допустимы JPG/PNG до 3 МБ" });
+                          return;
+                        }
+                        setFormData(prev => ({ ...prev, hero1_photo: file, hero1_photo_url: URL.createObjectURL(file) }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
+                      onClick={() => document.getElementById('hero1-photo-input')?.click()}
+                    >
+                      Загрузить фото
+                    </button>
+                    <p className="mixer-hint mt-1">Добавьте портретное фото, где хорошо видно лицо.</p>
+                    
+                    {formData.hero1_photo_url && (
+                      <div className="mt-3 relative inline-block">
+                        <img src={formData.hero1_photo_url} alt="Превью героя 1" className="w-32 h-32 object-cover rounded-md border-2 border-accent" />
+                        <button
+                          type="button"
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
+                          onClick={() => setFormData(prev => ({ ...prev, hero1_photo: null, hero1_photo_url: '' }))}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Additional Heroes with Toggles */}
-              {[2, 3, 4].map(heroNum => {
+              {/* Right Column - Hero 2 */}
+              <div className="mixer-control-section">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="mixer-control-label">Герой 2</h4>
+                  <div
+                    className={`mixer-toggle ${heroSections.hero2 ? 'active' : ''}`}
+                    onClick={() => setHeroSections(prev => ({ ...prev, hero2: !prev.hero2 }))}
+                  >
+                    <div className="mixer-toggle-handle" />
+                  </div>
+                </div>
+                
+                {heroSections.hero2 ? (
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Имя"
+                      className="mixer-input"
+                      value={formData.hero2_name}
+                      onChange={e => setFormData(prev => ({ ...prev, hero2_name: e.target.value }))}
+                    />
+                    
+                    <div>
+                      <label className="mixer-control-label block mb-2">Описание героя</label>
+                      <textarea
+                        rows={4}
+                        minLength={60}
+                        maxLength={600}
+                        placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
+                        className="mixer-input resize-none"
+                        value={formData.hero2_desc}
+                        onChange={e => setFormData(prev => ({ ...prev, hero2_desc: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="mixer-control-label block mb-2">Отношения</label>
+                      <textarea
+                        rows={3}
+                        maxLength={300}
+                        placeholder="Уточните отношения с другими героями."
+                        className="mixer-input resize-none"
+                        value={formData.hero2_rel}
+                        onChange={e => setFormData(prev => ({ ...prev, hero2_rel: e.target.value }))}
+                      />
+                    </div>
+                    
+                    {/* Photo Upload for Hero 2 */}
+                    <div>
+                      <label className="mixer-control-label block mb-2">Фото героя</label>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        className="hidden"
+                        id="hero2-photo-input"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                            toast({ variant: "destructive", title: "Неверный формат", description: "Допустимы JPG/PNG до 3 МБ" });
+                            return;
+                          }
+                          if (file.size > 3 * 1024 * 1024) {
+                            toast({ variant: "destructive", title: "Файл слишком большой", description: "Допустимы JPG/PNG до 3 МБ" });
+                            return;
+                          }
+                          setFormData(prev => ({ ...prev, hero2_photo: file, hero2_photo_url: URL.createObjectURL(file) }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="mixer-input cursor-pointer hover:bg-accent/10 transition-colors"
+                        onClick={() => document.getElementById('hero2-photo-input')?.click()}
+                      >
+                        Загрузить фото
+                      </button>
+                      <p className="mixer-hint mt-1">Добавьте портретное фото, где хорошо видно лицо.</p>
+                      
+                      {formData.hero2_photo_url && (
+                        <div className="mt-3 relative inline-block">
+                          <img src={formData.hero2_photo_url} alt="Превью героя 2" className="w-32 h-32 object-cover rounded-md border-2 border-accent" />
+                          <button
+                            type="button"
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-destructive/90"
+                            onClick={() => setFormData(prev => ({ ...prev, hero2_photo: null, hero2_photo_url: '' }))}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mixer-hint">Включите переключатель, чтобы добавить второго героя</p>
+                )}
+              </div>
+            </div>
+
+            {/* Heroes 3 and 4 - Collapsible dropdowns */}
+            <div className="mt-8 space-y-4">
+              {[3, 4].map(heroNum => {
                 const heroKey = `hero${heroNum}` as keyof typeof heroSections;
                 const isVisible = heroSections[heroKey];
                 
                 return (
-                  <div key={heroNum} className="mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="mixer-hero-title">Герой {heroNum}</h4>
-                      <div
-                        className={`mixer-toggle ${isVisible ? 'active' : ''}`}
-                        onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
+                  <div key={heroNum} className="mixer-control-section">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between p-4 hover:bg-accent/5 transition-colors rounded-lg"
+                      onClick={() => setHeroSections(prev => ({ ...prev, [heroKey]: !prev[heroKey] }))}
+                    >
+                      <h4 className="mixer-control-label">Герой {heroNum}</h4>
+                      <svg
+                        className={`w-6 h-6 text-accent transition-transform duration-300 ${isVisible ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <div className="mixer-toggle-handle" />
-                      </div>
-                    </div>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                     
                     {isVisible && (
-                      <div className="mixer-hero-panel">
-                        <div className="space-y-4">
-                          <input
-                            type="text"
-                            placeholder="Имя"
-                            className="mixer-input"
-                            value={formData[`hero${heroNum}_name` as keyof FormData] as string}
-                            onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_name`]: e.target.value }))}
+                      <div className="px-4 pb-4 space-y-4 animate-fade-in">
+                        <input
+                          type="text"
+                          placeholder="Имя"
+                          className="mixer-input"
+                          value={formData[`hero${heroNum}_name` as keyof FormData] as string}
+                          onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_name`]: e.target.value }))}
+                        />
+                        
+                        <div>
+                          <label className="mixer-control-label block mb-2">Описание героя</label>
+                          <textarea
+                            rows={4}
+                            minLength={60}
+                            maxLength={600}
+                            placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
+                            className="mixer-input resize-none"
+                            value={formData[`hero${heroNum}_desc` as keyof FormData] as string}
+                            onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_desc`]: e.target.value }))}
                           />
-                          
-                          <div>
-                            <label className="mixer-control-label block mb-2">Описание героя</label>
-                            <textarea
-                              rows={4}
-                              minLength={60}
-                              maxLength={600}
-                              placeholder="2–4 фразы: кто это, заметная деталь/предмет, маленькая цель или особенность поведения."
-                              className="mixer-input resize-none"
-                              value={formData[`hero${heroNum}_desc` as keyof FormData] as string}
-                              onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_desc`]: e.target.value }))}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="mixer-control-label block mb-2">Отношения</label>
-                            <textarea
-                              rows={3}
-                              maxLength={300}
-                              placeholder="Уточните отношения с другими героями."
-                              className="mixer-input resize-none"
-                              value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
-                              onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_rel`]: e.target.value }))}
-                            />
-                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="mixer-control-label block mb-2">Отношения</label>
+                          <textarea
+                            rows={3}
+                            maxLength={300}
+                            placeholder="Уточните отношения с другими героями."
+                            className="mixer-input resize-none"
+                            value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
+                            onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_rel`]: e.target.value }))}
+                          />
                         </div>
                         
                         {/* Photo Upload */}
-                        <div className="mt-4">
+                        <div>
                           <label className="mixer-control-label block mb-2">Фото героя {heroNum}</label>
                           <input
                             type="file"
