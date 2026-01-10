@@ -667,17 +667,6 @@ const Index = () => {
                     />
                   </div>
                   
-                  <div>
-                    <label className="mixer-control-label block mb-2">Отношения</label>
-                    <textarea
-                      rows={3}
-                      maxLength={300}
-                      placeholder="Уточните отношения с другими героями. Например, Маша встречается с Олегом и дружит с Ирой."
-                      className="mixer-input resize-none"
-                      value={formData.hero1_rel}
-                      onChange={e => setFormData(prev => ({ ...prev, hero1_rel: e.target.value }))}
-                    />
-                  </div>
                   
                   {/* Photo Upload for Hero 1 */}
                   <div>
@@ -758,18 +747,6 @@ const Index = () => {
                         className="mixer-input resize-none"
                         value={formData.hero2_desc}
                         onChange={e => setFormData(prev => ({ ...prev, hero2_desc: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="mixer-control-label block mb-2">Отношения</label>
-                      <textarea
-                        rows={3}
-                        maxLength={300}
-                        placeholder="Уточните отношения с другими героями."
-                        className="mixer-input resize-none"
-                        value={formData.hero2_rel}
-                        onChange={e => setFormData(prev => ({ ...prev, hero2_rel: e.target.value }))}
                       />
                     </div>
                     
@@ -867,18 +844,6 @@ const Index = () => {
                             className="mixer-input resize-none"
                             value={formData[`hero${heroNum}_desc` as keyof FormData] as string}
                             onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_desc`]: e.target.value }))}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="mixer-control-label block mb-2">Отношения</label>
-                          <textarea
-                            rows={3}
-                            maxLength={300}
-                            placeholder="Уточните отношения с другими героями."
-                            className="mixer-input resize-none"
-                            value={formData[`hero${heroNum}_rel` as keyof FormData] as string}
-                            onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_rel`]: e.target.value }))}
                           />
                         </div>
                         
