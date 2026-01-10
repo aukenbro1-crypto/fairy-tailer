@@ -13,6 +13,15 @@ const Print = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailModal, setShowFailModal] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!consentChecked) {
+      e.preventDefault();
+      alert("Пожалуйста, подтвердите согласие на обработку персональных данных");
+      return;
+    }
+  };
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -156,6 +165,7 @@ const Print = () => {
             action="https://yookassa.ru/integration/simplepay/payment"
             method="post"
             acceptCharset="utf-8"
+            onSubmit={handleSubmit}
           >
             <div className="ym-customer-info">
               <div className="ym-block-title">Информация для оплаты</div>
@@ -163,6 +173,18 @@ const Print = () => {
               <input name="cps_phone" className="ym-input" placeholder="Телефон" type="text" />
               <input name="custName" className="ym-input" placeholder="ФИО получателя" type="text" />
               <input name="custAddr" className="ym-input" placeholder="Адрес доставки (город, улица, дом, квартира)" type="text" />
+              
+              <label className="flex items-start gap-3 mt-4 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-1 w-5 h-5 accent-[#E89C31] cursor-pointer"
+                />
+                <span className="text-[#DBA858]/90 text-sm leading-relaxed">
+                  Даю согласие на обработку персональных данных <span className="text-red-400">*</span>
+                </span>
+              </label>
             </div>
 
             <div className="ym-hidden-inputs">
