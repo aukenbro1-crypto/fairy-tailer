@@ -204,9 +204,49 @@ const Romantic = () => {
         </div>
       </header>
 
-      {/* SCREEN 1: HERO with gradient - animated on mount */}
-      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 py-20">
-        <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''}`}>
+      {/* SCREEN 1: HERO with gradient and lava lamp effect */}
+      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
+        {/* Lava lamp bubbles */}
+        <div className="romantic-lava-container">
+          {/* Round bubbles */}
+          <div className="romantic-bubble romantic-bubble-1" />
+          <div className="romantic-bubble romantic-bubble-2" />
+          <div className="romantic-bubble romantic-bubble-3" />
+          <div className="romantic-bubble romantic-bubble-4" />
+          <div className="romantic-bubble romantic-bubble-5" />
+          <div className="romantic-bubble romantic-bubble-6" />
+          <div className="romantic-bubble romantic-bubble-7" />
+          <div className="romantic-bubble romantic-bubble-8" />
+          
+          {/* Heart-shaped bubbles */}
+          <div className="romantic-heart romantic-heart-1">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z"/>
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-2">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z"/>
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-3">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z"/>
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-4">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z"/>
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-5">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
           <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">
             книга про вас двоих.
             <br />
