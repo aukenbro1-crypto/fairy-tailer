@@ -237,9 +237,7 @@ const Romantic = () => {
             {/* Text right */}
             <div className="flex-1">
               <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
-                Fairyteller — это персональная романтическая история,
-                <br className="hidden md:block" />
-                созданная специально под вашу пару.
+                FairyTeller — это персональная романтическая история, созданная про вашу пару.
               </p>
               <div className="space-y-4 romantic-text text-lg">
                 <p className="romantic-stagger-1">• вы вводите имена, детали, фото</p>
