@@ -249,9 +249,10 @@ const Romantic = () => {
             а не очередную вещь «для галочки».
           </p>
           <div className="romantic-accent-block p-8 rounded-lg">
-            <p className="text-lg md:text-xl leading-relaxed font-medium">
-              Персональная книга — это жест.
-              <br />
+            <p className="text-lg md:text-xl leading-relaxed font-medium">Персональная книга — это жест.
+Она станет вашим общим воспоминанием. 
+Её будут хранить и перечитывать. 
+            <br />
               Ее не передаривают.
               <br />
               Ее хранят.
