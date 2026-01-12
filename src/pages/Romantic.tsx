@@ -392,7 +392,7 @@ const Romantic = () => {
                 Как быстро книга будет готова?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
-                PDF готов за минуты. Печатная версия — за несколько дней. Успеете к 14 февраля.
+                PDF будет готов через несколько минут. Печатная версия — за несколько дней. Точные сроки доставки зависят от адреса, мы используем инфраструктуру 5Post и Почты России.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
