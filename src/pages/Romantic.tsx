@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Home, BookOpen, Sparkles, Mail, Scroll } from "lucide-react";
+import envelopeLetterImage from "@/assets/envelope-letter.png";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Import logo and dragon
@@ -252,14 +253,15 @@ const Romantic = () => {
             <br className="hidden md:block" />
             а не очередную вещь «для галочки».
           </p>
-          <div className="romantic-accent-block p-8 rounded-lg">
-            <p className="text-lg md:text-xl leading-relaxed font-medium">
-              Персональная книга — это жест.
-              <br />
-              Она станет вашим общим воспоминанием.
-              <br />
-              Её будут хранить и перечитывать.
-            </p>
+          <div className="flex justify-center">
+            <img 
+              src={envelopeLetterImage} 
+              alt="Персональная книга — это жест" 
+              className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+              style={{
+                filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)'
+              }}
+            />
           </div>
         </div>
       </AnimatedSection>
