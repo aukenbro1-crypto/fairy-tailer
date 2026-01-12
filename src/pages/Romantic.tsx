@@ -195,8 +195,15 @@ const Romantic = () => {
         </div>
       </section>
 
+      {/* Wave divider: Hero → Section 2 */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,60 C200,120 400,0 600,60 C800,120 1000,0 1200,60 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 2: WHAT IS IT */}
-      <AnimatedSection className="romantic-section-warm py-20 px-6">
+      <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
             Fairyteller — это персональная романтическая история,
@@ -211,8 +218,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 2 → Section 3 */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,40 C150,100 350,0 600,50 C850,100 1050,20 1200,40 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 3: PAIN → SOLUTION */}
-      <AnimatedSection className="romantic-section-light py-20 px-6">
+      <AnimatedSection className="romantic-section-light py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">
             14 февраля — всегда стресс
@@ -234,8 +248,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 3 → Section 4 */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,80 C300,20 500,100 700,60 C900,20 1100,80 1200,50 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 4: HOW THE BOOK LOOKS */}
-      <AnimatedSection id="romantic-examples" className="romantic-section-warm py-20 px-6">
+      <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {bookImages.map((img, index) => (
@@ -258,8 +279,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 4 → Section 5 */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,60 C200,100 400,20 600,70 C800,120 1000,40 1200,60 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 5: HOW IT WORKS */}
-      <AnimatedSection id="romantic-how-it-works" className="romantic-section-light py-20 px-6">
+      <AnimatedSection id="romantic-how-it-works" className="romantic-section-light py-16 md:py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[
@@ -290,8 +318,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 5 → Section 6 */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,50 C250,100 450,10 650,60 C850,110 1050,30 1200,70 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 6: FOR WHOM */}
-      <AnimatedSection className="romantic-section-warm py-20 px-6">
+      <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <p className="romantic-text text-lg md:text-xl leading-relaxed mb-6">
             Для тех, кто хочет:
@@ -304,8 +339,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 6 → Section 7 (dark) */}
+      <div className="romantic-wave-divider romantic-wave-to-dark">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,40 C180,90 380,10 580,55 C780,100 980,25 1200,65 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* SCREEN 7: FINAL CTA */}
-      <AnimatedSection className="romantic-section-dark py-24 px-6">
+      <AnimatedSection className="romantic-section-dark py-20 md:py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <p className="romantic-light-text text-2xl md:text-3xl lg:text-4xl leading-relaxed mb-12">
             ваша история — одна
@@ -321,8 +363,15 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
+      {/* Wave divider: Section 7 → FAQ */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,70 C220,30 420,100 620,50 C820,0 1020,80 1200,40 L1200,120 L0,120 Z" />
+        </svg>
+      </div>
+
       {/* FAQ */}
-      <AnimatedSection id="romantic-faq" className="romantic-section-light py-20 px-6">
+      <AnimatedSection id="romantic-faq" className="romantic-section-light py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <Accordion type="single" collapsible className="w-full space-y-4">
             <AccordionItem value="faq-1" className="romantic-faq-item border-none">

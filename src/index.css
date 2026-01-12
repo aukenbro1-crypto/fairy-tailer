@@ -2825,3 +2825,77 @@ html, body {
     transform: translateX(0);
   }
 }
+
+/* ========================================
+   ROMANTIC PAGE WAVE DIVIDERS
+   ======================================== */
+
+.romantic-wave-divider {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  margin-top: -1px;
+  overflow: hidden;
+}
+
+.romantic-wave-divider svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Wave to warm section (peachy) */
+.romantic-wave-to-warm {
+  background-color: var(--romantic-pale-pink);
+}
+
+.romantic-wave-to-warm svg path {
+  fill: var(--romantic-light-peachy);
+}
+
+/* Special case: from hero gradient */
+.romantic-hero-gradient + .romantic-wave-to-warm {
+  background: linear-gradient(180deg, var(--romantic-desert-coral) 0%, var(--romantic-light-peachy) 100%);
+}
+
+.romantic-hero-gradient + .romantic-wave-to-warm svg path {
+  fill: var(--romantic-light-peachy);
+}
+
+/* Wave to light section (pale pink) */
+.romantic-wave-to-light {
+  background-color: var(--romantic-light-peachy);
+}
+
+.romantic-wave-to-light svg path {
+  fill: var(--romantic-pale-pink);
+}
+
+/* Wave to dark section (terracotta) */
+.romantic-wave-to-dark {
+  background-color: var(--romantic-light-peachy);
+}
+
+.romantic-wave-to-dark svg path {
+  fill: var(--romantic-dark-terracotta);
+}
+
+/* From dark to light */
+.romantic-section-dark + .romantic-wave-to-light {
+  background-color: var(--romantic-dark-terracotta);
+}
+
+/* Responsive wave height */
+@media (min-width: 768px) {
+  .romantic-wave-divider {
+    height: 80px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .romantic-wave-divider {
+    height: 100px;
+  }
+}
