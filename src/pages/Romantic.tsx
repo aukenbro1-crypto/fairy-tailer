@@ -302,7 +302,7 @@ const Romantic = () => {
             text: "Искусственный интеллект создает историю и иллюстрации"
           }, {
             num: "3",
-            text: "Вы получаете книгу — сразу или в печати"
+            text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
           }].map((step, index) => <div key={index} className="text-center romantic-step-card" style={{
             transitionDelay: `${index * 150}ms`
           }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
