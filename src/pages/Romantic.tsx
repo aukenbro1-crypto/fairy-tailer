@@ -8,7 +8,8 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 // Import logo and dragon
 import logoImage from "@/assets/logo.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
-import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
+import loveDragonImage from "@/assets/lovedragon-romantic.png";
+import productFeaturesImage from "@/assets/product-features.png";
 
 // Import book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
@@ -120,7 +121,7 @@ const Romantic = () => {
           </div>
           <div className="flex items-center relative" ref={menuRef}>
             <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
-              <img src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} alt="Menu" className="h-12 md:h-14 object-contain romantic-logo-filter transition-all duration-200" />
+              <img src={dragonHovered ? loveDragonImage : dragonHeaderImage} alt="Menu" className="h-12 md:h-14 object-contain romantic-logo-filter transition-all duration-200" />
             </div>
 
             {menuOpen && <div className="romantic-menu absolute top-full right-0 mt-2 w-64 z-50">
@@ -223,16 +224,29 @@ const Romantic = () => {
 
       {/* SCREEN 2: WHAT IS IT */}
       <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
-        <div className="max-w-2xl mx-auto">
-          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
-            Fairyteller — это персональная романтическая история,
-            <br className="hidden md:block" />
-            созданная специально под вашу пару.
-          </p>
-          <div className="space-y-4 romantic-text text-lg">
-            <p className="romantic-stagger-1">• вы вводите имена, детали, фото</p>
-            <p className="romantic-stagger-2">• выбираете настроение и стиль иллюстраций</p>
-            <p className="romantic-stagger-3">• получаете бумажную книгу</p>
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
+            {/* Image left */}
+            <div className="flex justify-center mb-8 md:mb-0 md:flex-shrink-0">
+              <img 
+                src={productFeaturesImage} 
+                alt="Особенности книги" 
+                className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[400px] h-auto drop-shadow-xl"
+              />
+            </div>
+            {/* Text right */}
+            <div className="flex-1">
+              <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
+                Fairyteller — это персональная романтическая история,
+                <br className="hidden md:block" />
+                созданная специально под вашу пару.
+              </p>
+              <div className="space-y-4 romantic-text text-lg">
+                <p className="romantic-stagger-1">• вы вводите имена, детали, фото</p>
+                <p className="romantic-stagger-2">• выбираете настроение и стиль иллюстраций</p>
+                <p className="romantic-stagger-3">• получаете бумажную книгу</p>
+              </div>
+            </div>
           </div>
         </div>
       </AnimatedSection>
