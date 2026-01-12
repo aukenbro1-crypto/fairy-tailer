@@ -199,10 +199,7 @@ const Romantic = () => {
         </div>
 
         <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
-          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">Книга про вас двоих 
-Это лучший подарок на 14 февраля
-Это лучший подарок на 14 февраля
-
+          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">Книга про вас двоих  Это лучший подарок на 14 февраля Это лучший подарок на 14 февраля
           <br />
             лучший подарок на 14 февраля.
           </h1>
