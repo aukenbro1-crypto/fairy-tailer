@@ -262,7 +262,7 @@ const Romantic = () => {
               <img 
                 src={envelopeLetterImage} 
                 alt="Персональная книга — это жест" 
-                className="w-full max-w-[240px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-[340px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+                className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[420px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
                 style={{
                   filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)'
                 }}
