@@ -1,11 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Home, BookOpen, Sparkles, Mail, Scroll } from "lucide-react";
+
+// Import logo and dragon
+import logoImage from "@/assets/logo.png";
+import dragonHeaderImage from "@/assets/dragon-header.png";
+import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
 
 // Import book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
@@ -17,9 +23,37 @@ import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const [dragonHovered, setDragonHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const handleCreateClick = () => {
     navigate("/create");
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      setMenuOpen(false);
+    }
   };
 
   const bookImages = [
@@ -32,8 +66,83 @@ const Romantic = () => {
 
   return (
     <div className="romantic-page min-h-screen">
-      {/* SCREEN 1: HERO */}
-      <section className="romantic-hero min-h-screen flex flex-col items-center justify-center px-6 py-20">
+      {/* Header */}
+      <header className="romantic-header sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <Link to="/">
+              <img src={logoImage} alt="FairyTeller" className="h-12 md:h-14 object-contain romantic-logo-filter" />
+            </Link>
+          </div>
+          <div className="flex items-center relative" ref={menuRef}>
+            <div 
+              className="cursor-pointer" 
+              onMouseEnter={() => setDragonHovered(true)} 
+              onMouseLeave={() => setDragonHovered(false)} 
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <img 
+                src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} 
+                alt="Menu" 
+                className="h-12 md:h-14 object-contain romantic-logo-filter transition-all duration-200" 
+              />
+            </div>
+
+            {menuOpen && (
+              <div className="romantic-menu absolute top-full right-0 mt-2 w-64 z-50">
+                <div className="py-2">
+                  <Link 
+                    to="/" 
+                    className="romantic-menu-item flex items-center gap-3 px-4 py-3 transition-colors" 
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Home size={20} />
+                    <span>Главная</span>
+                  </Link>
+                  
+                  <button 
+                    onClick={() => scrollToSection('romantic-how-it-works')} 
+                    className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                  >
+                    <BookOpen size={20} />
+                    <span>Как это работает</span>
+                  </button>
+
+                  <button 
+                    onClick={() => scrollToSection('romantic-examples')} 
+                    className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                  >
+                    <Sparkles size={20} />
+                    <span>Примеры</span>
+                  </button>
+
+                  <button 
+                    onClick={() => scrollToSection('romantic-faq')} 
+                    className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                  >
+                    <Mail size={20} />
+                    <span>FAQ</span>
+                  </button>
+
+                  <div className="h-px bg-[#D99985]/30 my-2 mx-4" />
+
+                  <Link 
+                    to="/create" 
+                    className="romantic-menu-item-accent flex items-center gap-3 px-4 py-3 transition-colors font-semibold" 
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Scroll size={20} />
+                    <span>Создать книгу</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* SCREEN 1: HERO with gradient */}
+      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 py-20">
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
             книга про вас двоих.
@@ -92,7 +201,7 @@ const Romantic = () => {
       </section>
 
       {/* SCREEN 4: HOW THE BOOK LOOKS */}
-      <section className="romantic-section-warm py-20 px-6">
+      <section id="romantic-examples" className="romantic-section-warm py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {bookImages.map((img, index) => (
@@ -112,7 +221,7 @@ const Romantic = () => {
       </section>
 
       {/* SCREEN 5: HOW IT WORKS */}
-      <section className="romantic-section-light py-20 px-6">
+      <section id="romantic-how-it-works" className="romantic-section-light py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[
@@ -174,7 +283,7 @@ const Romantic = () => {
       </section>
 
       {/* FAQ */}
-      <section className="romantic-section-light py-20 px-6">
+      <section id="romantic-faq" className="romantic-section-light py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <Accordion type="single" collapsible className="w-full space-y-4">
             <AccordionItem value="faq-1" className="romantic-faq-item border-none">

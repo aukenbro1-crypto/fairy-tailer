@@ -2519,23 +2519,72 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-/* Section backgrounds */
-.romantic-section-light {
-  background-color: var(--romantic-pale-pink);
-}
-
-.romantic-section-warm {
-  background-color: var(--romantic-light-peachy);
-}
-
-.romantic-section-dark {
-  background-color: var(--romantic-dark-terracotta);
-}
-
-/* Hero section */
+/* Hero section with gradient */
 .romantic-hero {
   background-color: var(--romantic-pale-pink);
 }
+
+.romantic-hero-gradient {
+  background: linear-gradient(
+    180deg,
+    var(--romantic-pale-pink) 0%,
+    var(--romantic-light-peachy) 60%,
+    var(--romantic-desert-coral) 100%
+  );
+}
+
+/* Header */
+.romantic-header {
+  background-color: rgba(244, 246, 245, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--romantic-light-peachy);
+  box-shadow: 0 2px 12px rgba(90, 58, 51, 0.08);
+}
+
+.romantic-logo-filter {
+  filter: sepia(20%) saturate(80%) hue-rotate(-10deg) brightness(0.7);
+}
+
+/* Menu dropdown */
+.romantic-menu {
+  background-color: var(--romantic-pale-pink);
+  border: 1px solid var(--romantic-light-peachy);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(90, 58, 51, 0.15);
+  animation: romantic-fade-in 0.2s ease-out;
+}
+
+@keyframes romantic-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.romantic-menu-item {
+  color: var(--romantic-earthy-olive);
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.romantic-menu-item:hover {
+  background-color: var(--romantic-light-peachy);
+  color: var(--romantic-dark-terracotta);
+}
+
+.romantic-menu-item-accent {
+  color: var(--romantic-dark-terracotta);
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.romantic-menu-item-accent:hover {
+  background-color: var(--romantic-desert-coral);
+  color: var(--romantic-dark-terracotta);
+}
+
 
 /* Typography */
 .romantic-h1 {
