@@ -12,7 +12,7 @@ import logoImage from "@/assets/logo.png";
 import createButtonImage from "@/assets/create-button-new.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
 import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
-import romanticPromoImage from "@/assets/romantic-promo.jxl";
+import romanticPromoImage from "@/assets/romantic-promo.jpg";
 
 // Below-the-fold images - will be lazy loaded via native loading="lazy"
 import heroSelectionImage from "@/assets/hero-selection.png";
