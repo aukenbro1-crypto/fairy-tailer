@@ -1,0 +1,216 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+// Import book images
+import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
+import exampleAdventureSpread from "@/assets/example-adventure-spread.jpg";
+import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
+import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
+import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
+
+const Romantic = () => {
+  const navigate = useNavigate();
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+
+  const handleCreateClick = () => {
+    navigate("/create");
+  };
+
+  const bookImages = [
+    exampleAdventureCover,
+    exampleAdventureSpread,
+    exampleFantasyCover,
+    exampleFantasySpread,
+    exampleNewyearCover,
+  ];
+
+  return (
+    <div className="romantic-page min-h-screen">
+      {/* SCREEN 1: HERO */}
+      <section className="romantic-hero min-h-screen flex flex-col items-center justify-center px-6 py-20">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
+            книга про вас двоих.
+            <br />
+            лучший подарок на 14 февраля.
+          </h1>
+          <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed">
+            история любви, где главные герои — вы
+          </p>
+          <button
+            onClick={handleCreateClick}
+            className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300"
+          >
+            Создать нашу книгу
+          </button>
+        </div>
+      </section>
+
+      {/* SCREEN 2: WHAT IS IT */}
+      <section className="romantic-section-warm py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
+            Fairyteller — это персональная романтическая история,
+            <br className="hidden md:block" />
+            созданная специально под вашу пару.
+          </p>
+          <div className="space-y-4 romantic-text text-lg">
+            <p>• вы вводите имена, детали, фото</p>
+            <p>• выбираете мир и настроение</p>
+            <p>• получаете книгу — в PDF или в печати</p>
+          </div>
+        </div>
+      </section>
+
+      {/* SCREEN 3: PAIN → SOLUTION */}
+      <section className="romantic-section-light py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">
+            14 февраля — всегда стресс
+          </h2>
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">
+            Хочется подарить что-то значимое,
+            <br className="hidden md:block" />
+            а не очередную вещь «для галочки».
+          </p>
+          <div className="romantic-accent-block p-8 rounded-lg">
+            <p className="text-lg md:text-xl leading-relaxed font-medium">
+              Персональная книга — это жест.
+              <br />
+              Ее не передаривают.
+              <br />
+              Ее хранят.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SCREEN 4: HOW THE BOOK LOOKS */}
+      <section className="romantic-section-warm py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            {bookImages.map((img, index) => (
+              <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm">
+                <img
+                  src={img}
+                  alt={`Пример книги ${index + 1}`}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="romantic-caption text-center mt-8 text-sm">
+            настоящая книга с иллюстрациями и историей
+          </p>
+        </div>
+      </section>
+
+      {/* SCREEN 5: HOW IT WORKS */}
+      <section className="romantic-section-light py-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+            {[
+              { num: "1", text: "Вы отвечаете на несколько вопросов" },
+              { num: "2", text: "История и иллюстрации создаются" },
+              { num: "3", text: "Вы получаете книгу — сразу или в печати" },
+            ].map((step, index) => (
+              <div
+                key={index}
+                className="text-center"
+                onMouseEnter={() => setHoveredStep(index)}
+                onMouseLeave={() => setHoveredStep(null)}
+              >
+                <div
+                  className={`romantic-step-number text-4xl md:text-5xl font-serif mb-4 transition-all duration-300 ${
+                    hoveredStep === index ? "scale-110" : ""
+                  }`}
+                >
+                  {step.num}
+                </div>
+                <p className="romantic-text text-base md:text-lg leading-relaxed">
+                  {step.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SCREEN 6: FOR WHOM */}
+      <section className="romantic-section-warm py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-6">
+            Для тех, кто хочет:
+          </p>
+          <div className="space-y-3 romantic-text text-lg md:text-xl">
+            <p>— удивить</p>
+            <p>— сделать личный подарок</p>
+            <p>— оставить след, а не просто отметить дату</p>
+          </div>
+        </div>
+      </section>
+
+      {/* SCREEN 7: FINAL CTA */}
+      <section className="romantic-section-dark py-24 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="romantic-light-text text-2xl md:text-3xl lg:text-4xl leading-relaxed mb-12">
+            ваша история — одна
+            <br />
+            сделайте из нее книгу
+          </p>
+          <button
+            onClick={handleCreateClick}
+            className="romantic-cta-secondary text-lg md:text-xl px-10 py-5 transition-all duration-300"
+          >
+            Создать нашу книгу
+          </button>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="romantic-section-light py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            <AccordionItem value="faq-1" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Это не будет кринжом?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Нет. Книга получается искренней и теплой. Мы не добавляем шаблонные фразы — только то, что важно вам.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-2" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Подойдет ли как подарок мужчине / женщине?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Да. Это не «женский» или «мужской» подарок. Это история про вас двоих — она подходит каждому.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-3" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Это быстро?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                PDF готов за минуты. Печатная версия — за несколько дней. Успеете к 14 февраля.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Footer spacer */}
+      <div className="romantic-section-light h-16"></div>
+    </div>
+  );
+};
+
+export default Romantic;

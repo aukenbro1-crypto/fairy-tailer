@@ -2498,3 +2498,186 @@ html, body {
     display: contents; /* Makes children direct children of grid for ordering */
   }
 }
+
+/* ========================================
+   ROMANTIC LANDING PAGE STYLES
+   Valentine's Day Special - /romantic
+   ======================================== */
+
+/* Color Palette */
+.romantic-page {
+  --romantic-dark-terracotta: #5A3A33;
+  --romantic-earthy-olive: #796E54;
+  --romantic-desert-coral: #D99985;
+  --romantic-light-peachy: #E8C6B5;
+  --romantic-pale-pink: #F4F6F5;
+  
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background-color: var(--romantic-pale-pink);
+  color: var(--romantic-dark-terracotta);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Section backgrounds */
+.romantic-section-light {
+  background-color: var(--romantic-pale-pink);
+}
+
+.romantic-section-warm {
+  background-color: var(--romantic-light-peachy);
+}
+
+.romantic-section-dark {
+  background-color: var(--romantic-dark-terracotta);
+}
+
+/* Hero section */
+.romantic-hero {
+  background-color: var(--romantic-pale-pink);
+}
+
+/* Typography */
+.romantic-h1 {
+  color: var(--romantic-dark-terracotta);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.romantic-h2 {
+  color: var(--romantic-dark-terracotta);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.romantic-subtitle {
+  color: var(--romantic-earthy-olive);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.romantic-text {
+  color: var(--romantic-earthy-olive);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+}
+
+.romantic-caption {
+  color: var(--romantic-earthy-olive);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-style: italic;
+}
+
+.romantic-light-text {
+  color: var(--romantic-pale-pink);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+}
+
+/* Step numbers */
+.romantic-step-number {
+  color: var(--romantic-dark-terracotta);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* Accent block */
+.romantic-accent-block {
+  background-color: var(--romantic-desert-coral);
+  color: var(--romantic-dark-terracotta);
+}
+
+/* CTA Buttons */
+.romantic-cta-primary {
+  background-color: var(--romantic-dark-terracotta);
+  color: var(--romantic-pale-pink);
+  border: none;
+  border-radius: 4px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.romantic-cta-primary:hover {
+  background-color: var(--romantic-desert-coral);
+  color: var(--romantic-dark-terracotta);
+}
+
+.romantic-cta-secondary {
+  background-color: var(--romantic-desert-coral);
+  color: var(--romantic-dark-terracotta);
+  border: none;
+  border-radius: 4px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 400;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.romantic-cta-secondary:hover {
+  background-color: var(--romantic-light-peachy);
+  color: var(--romantic-dark-terracotta);
+}
+
+/* FAQ Styles */
+.romantic-faq-item {
+  background-color: transparent;
+  border-bottom: 1px solid var(--romantic-light-peachy) !important;
+}
+
+.romantic-faq-trigger {
+  color: var(--romantic-dark-terracotta) !important;
+  font-family: 'Georgia', 'Times New Roman', serif !important;
+  font-weight: 400 !important;
+}
+
+.romantic-faq-trigger:hover {
+  color: var(--romantic-desert-coral) !important;
+}
+
+.romantic-faq-trigger[data-state="open"] {
+  color: var(--romantic-desert-coral) !important;
+}
+
+.romantic-faq-content {
+  color: var(--romantic-earthy-olive);
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+/* Accordion chevron color override */
+.romantic-faq-trigger svg {
+  color: var(--romantic-dark-terracotta);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.romantic-faq-trigger:hover svg,
+.romantic-faq-trigger[data-state="open"] svg {
+  color: var(--romantic-desert-coral);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .romantic-h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+  }
+  
+  .romantic-h2 {
+    font-size: 1.5rem;
+  }
+  
+  .romantic-text,
+  .romantic-subtitle {
+    font-size: 1rem;
+  }
+  
+  .romantic-step-number {
+    font-size: 2.5rem;
+  }
+}
