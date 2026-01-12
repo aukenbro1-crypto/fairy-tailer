@@ -7,8 +7,7 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Import logo and dragon
 import logoImage from "@/assets/logo.png";
-import dragonHeaderImage from "@/assets/dragon-header.png";
-import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
+import loveDragonImage from "@/assets/lovedragon-romantic.png";
 
 // Import book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
@@ -44,7 +43,6 @@ const AnimatedSection = ({
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
-  const [dragonHovered, setDragonHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -119,8 +117,8 @@ const Romantic = () => {
             </Link>
           </div>
           <div className="flex items-center relative" ref={menuRef}>
-            <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
-              <img src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} alt="Menu" className="h-12 md:h-14 object-contain romantic-logo-filter transition-all duration-200" />
+            <div className="cursor-pointer" onClick={() => setMenuOpen(!menuOpen)}>
+              <img src={loveDragonImage} alt="Menu" className="h-14 md:h-16 object-contain transition-transform duration-200 hover:scale-110" />
             </div>
 
             {menuOpen && <div className="romantic-menu absolute top-full right-0 mt-2 w-64 z-50">
