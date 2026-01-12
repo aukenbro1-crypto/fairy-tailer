@@ -245,23 +245,29 @@ const Romantic = () => {
       </div>
 
       {/* SCREEN 3: PAIN → SOLUTION */}
-      <AnimatedSection className="romantic-section-light py-16 md:py-20 px-6">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
-          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">
-            Хочется подарить что-то значимое,
-            <br className="hidden md:block" />
-            а не очередную вещь «для галочки».
-          </p>
-          <div className="flex justify-center md:justify-end md:-mt-8 md:mr-8 lg:mr-16">
-            <img 
-              src={envelopeLetterImage} 
-              alt="Персональная книга — это жест" 
-              className="w-full max-w-[260px] sm:max-w-[300px] md:max-w-[340px] lg:max-w-[380px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
-              style={{
-                filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)'
-              }}
-            />
+      <AnimatedSection className="romantic-section-light py-12 md:py-16 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
+            {/* Text left */}
+            <div className="flex-1 mb-8 md:mb-0">
+              <h2 className="romantic-h2 text-2xl md:text-3xl mb-4">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
+              <p className="romantic-text text-lg md:text-xl leading-relaxed">
+                Хочется подарить что-то значимое,
+                <br className="hidden md:block" />
+                а не очередную вещь «для галочки».
+              </p>
+            </div>
+            {/* Envelope right */}
+            <div className="flex justify-center md:flex-shrink-0">
+              <img 
+                src={envelopeLetterImage} 
+                alt="Персональная книга — это жест" 
+                className="w-full max-w-[240px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-[340px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+                style={{
+                  filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)'
+                }}
+              />
+            </div>
           </div>
         </div>
       </AnimatedSection>
