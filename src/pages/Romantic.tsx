@@ -389,7 +389,7 @@ const Romantic = () => {
 
             <AccordionItem value="faq-3" className="romantic-faq-item border-none">
               <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
-                Это быстро?
+                Как быстро книга будет готова?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
                 PDF готов за минуты. Печатная версия — за несколько дней. Успеете к 14 февраля.
