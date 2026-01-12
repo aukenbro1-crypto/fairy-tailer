@@ -40,6 +40,7 @@ const AnimatedSection = ({
       {children}
     </section>;
 };
+
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
@@ -81,6 +82,7 @@ const Romantic = () => {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -94,9 +96,11 @@ const Romantic = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
   const handleCreateClick = () => {
     navigate("/create");
   };
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -107,8 +111,11 @@ const Romantic = () => {
       setMenuOpen(false);
     }
   };
+
   const bookImages = [exampleAdventureCover, exampleAdventureSpread, exampleFantasyCover, exampleFantasySpread, exampleNewyearCover];
-  return <div className="romantic-page min-h-screen">
+
+  return (
+    <div className="romantic-page min-h-screen">
       {/* Header */}
       <header className="romantic-header sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -199,14 +206,17 @@ const Romantic = () => {
         </div>
 
         <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
-          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">Книга про вас двоих  Это лучший подарок на 14 февраля Это лучший подарок на 14 февраля
-          <br />
+          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">
+            Книга про вас двоих —
+            <br />
             лучший подарок на 14 февраля.
           </h1>
           <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
             история любви, где главные герои — вы
           </p>
-          <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">Создать книгу </button>
+          <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
+            Создать книгу
+          </button>
         </div>
       </section>
 
@@ -220,8 +230,9 @@ const Romantic = () => {
       {/* SCREEN 2: WHAT IS IT */}
       <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
-          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">Fairyteller — это персональная романтическая история,
-созданная специально про вас<br className="hidden md:block" />
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
+            Fairyteller — это персональная романтическая история,
+            <br className="hidden md:block" />
             созданная специально под вашу пару.
           </p>
           <div className="space-y-4 romantic-text text-lg">
@@ -243,17 +254,18 @@ const Romantic = () => {
       <AnimatedSection className="romantic-section-light py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
-          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">Хочется подарить что-то значимое, а не очередную вещь «для галочки»?<br className="hidden md:block" />
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">
+            Хочется подарить что-то значимое,
+            <br className="hidden md:block" />
             а не очередную вещь «для галочки».
           </p>
           <div className="romantic-accent-block p-8 rounded-lg">
-            <p className="text-lg md:text-xl leading-relaxed font-medium">Персональная книга — это жест.
-Она станет вашим общим воспоминанием. 
-Её будут хранить и перечитывать. 
-            <br />
-              Ее не передаривают.
+            <p className="text-lg md:text-xl leading-relaxed font-medium">
+              Персональная книга — это жест.
               <br />
-              Ее хранят.
+              Она станет вашим общим воспоминанием.
+              <br />
+              Её будут хранить и перечитывать.
             </p>
           </div>
         </div>
@@ -270,11 +282,13 @@ const Romantic = () => {
       <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {bookImages.map((img, index) => <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card" style={{
-            transitionDelay: `${index * 100}ms`
-          }}>
+            {bookImages.map((img, index) => (
+              <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card" style={{
+                transitionDelay: `${index * 100}ms`
+              }}>
                 <img src={img} alt={`Пример книги ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
-              </div>)}
+              </div>
+            ))}
           </div>
           <p className="romantic-caption text-center mt-8 text-sm">
             настоящая книга с иллюстрациями и историей
@@ -294,24 +308,26 @@ const Romantic = () => {
         <div className="max-w-3xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[{
-            num: "1",
-            text: "Вы отвечаете на несколько вопросов"
-          }, {
-            num: "2",
-            text: "Искусственный интеллект создает историю и иллюстрации"
-          }, {
-            num: "3",
-            text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
-          }].map((step, index) => <div key={index} className="text-center romantic-step-card" style={{
-            transitionDelay: `${index * 150}ms`
-          }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
+              num: "1",
+              text: "Вы отвечаете на несколько вопросов"
+            }, {
+              num: "2",
+              text: "Искусственный интеллект создает историю и иллюстрации"
+            }, {
+              num: "3",
+              text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
+            }].map((step, index) => (
+              <div key={index} className="text-center romantic-step-card" style={{
+                transitionDelay: `${index * 150}ms`
+              }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
                 <div className={`romantic-step-number text-4xl md:text-5xl font-serif mb-4 transition-all duration-300 ${hoveredStep === index ? "scale-110" : ""}`}>
                   {step.num}
                 </div>
                 <p className="romantic-text text-base md:text-lg leading-relaxed">
                   {step.text}
                 </p>
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>
       </AnimatedSection>
@@ -401,6 +417,8 @@ const Romantic = () => {
 
       {/* Footer spacer */}
       <div className="romantic-section-light h-16"></div>
-    </div>;
+    </div>
+  );
 };
+
 export default Romantic;
