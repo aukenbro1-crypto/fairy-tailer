@@ -2730,3 +2730,98 @@ html, body {
     font-size: 2.5rem;
   }
 }
+
+/* ========================================
+   ROMANTIC PAGE ANIMATIONS
+   ======================================== */
+
+/* Hero animations */
+.romantic-hero-content {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.romantic-hero-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.romantic-hero-title {
+  transition-delay: 0.1s;
+}
+
+.romantic-hero-subtitle {
+  transition-delay: 0.3s;
+}
+
+.romantic-hero-cta {
+  transition-delay: 0.5s;
+}
+
+/* Scroll reveal animations */
+.romantic-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.romantic-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Book cards stagger animation */
+.romantic-reveal-visible .romantic-book-card {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  animation: romantic-book-appear 0.5s ease-out forwards;
+}
+
+@keyframes romantic-book-appear {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Step cards stagger animation */
+.romantic-reveal-visible .romantic-step-card {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: romantic-step-appear 0.5s ease-out forwards;
+}
+
+@keyframes romantic-step-appear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger text animations */
+.romantic-reveal-visible .romantic-stagger-1 {
+  opacity: 0;
+  animation: romantic-text-appear 0.4s ease-out 0.1s forwards;
+}
+
+.romantic-reveal-visible .romantic-stagger-2 {
+  opacity: 0;
+  animation: romantic-text-appear 0.4s ease-out 0.2s forwards;
+}
+
+.romantic-reveal-visible .romantic-stagger-3 {
+  opacity: 0;
+  animation: romantic-text-appear 0.4s ease-out 0.3s forwards;
+}
+
+@keyframes romantic-text-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
