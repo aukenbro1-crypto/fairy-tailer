@@ -2535,10 +2535,10 @@ html, body {
 
 /* Header */
 .romantic-header {
-  background-color: rgba(244, 246, 245, 0.95);
+  background-color: rgba(232, 198, 181, 0.95);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--romantic-light-peachy);
-  box-shadow: 0 2px 12px rgba(90, 58, 51, 0.08);
+  border-bottom: 1px solid var(--romantic-desert-coral);
+  box-shadow: 0 2px 12px rgba(90, 58, 51, 0.1);
 }
 
 .romantic-logo-filter {
