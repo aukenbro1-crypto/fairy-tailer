@@ -10,6 +10,7 @@ import logoImage from "@/assets/logo.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
 import loveDragonImage from "@/assets/lovedragon-romantic.png";
 import productFeaturesImage from "@/assets/product-features.png";
+import bookHandsImage from "@/assets/book-hands-romantic.png";
 
 // Import book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
@@ -200,18 +201,32 @@ const Romantic = () => {
           </div>
         </div>
 
-        <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
-          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">
-            Книга про вас двоих —
-            <br />
-            лучший подарок на 14 февраля.
-          </h1>
-          <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
-            история любви, где главные герои — вы
-          </p>
-          <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
-            Создать книгу
-          </button>
+        <div className={`max-w-6xl mx-auto w-full flex flex-col md:flex-row md:items-center md:gap-8 lg:gap-12 romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
+          {/* Text left */}
+          <div className="flex-1 text-center md:text-left mb-8 md:mb-0">
+            <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">
+              Книга про вас двоих —
+              <br />
+              лучший подарок на 14 февраля.
+            </h1>
+            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
+              история любви, где главные герои — вы
+            </p>
+            <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
+              Создать книгу
+            </button>
+          </div>
+          {/* Image right */}
+          <div className="flex-1 flex justify-center md:justify-end">
+            <img 
+              src={bookHandsImage} 
+              alt="Книга в руках" 
+              className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[450px] lg:max-w-[520px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+              style={{
+                filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
+              }}
+            />
+          </div>
         </div>
       </section>
 
