@@ -253,11 +253,11 @@ const Romantic = () => {
             <br className="hidden md:block" />
             а не очередную вещь «для галочки».
           </p>
-          <div className="flex justify-center">
+          <div className="flex justify-center md:justify-end md:-mt-8 md:mr-8 lg:mr-16">
             <img 
               src={envelopeLetterImage} 
               alt="Персональная книга — это жест" 
-              className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+              className="w-full max-w-[260px] sm:max-w-[300px] md:max-w-[340px] lg:max-w-[380px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
               style={{
                 filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)'
               }}
