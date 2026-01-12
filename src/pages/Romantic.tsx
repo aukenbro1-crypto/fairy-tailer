@@ -40,7 +40,6 @@ const AnimatedSection = ({
       {children}
     </section>;
 };
-
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
@@ -82,7 +81,6 @@ const Romantic = () => {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -96,11 +94,9 @@ const Romantic = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
-
   const handleCreateClick = () => {
     navigate("/create");
   };
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -111,11 +107,8 @@ const Romantic = () => {
       setMenuOpen(false);
     }
   };
-
   const bookImages = [exampleAdventureCover, exampleAdventureSpread, exampleFantasyCover, exampleFantasySpread, exampleNewyearCover];
-
-  return (
-    <div className="romantic-page min-h-screen">
+  return <div className="romantic-page min-h-screen">
       {/* Header */}
       <header className="romantic-header sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -164,7 +157,7 @@ const Romantic = () => {
       </header>
 
       {/* SCREEN 1: HERO with gradient and lava lamp effect */}
-      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
+      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]">
         {/* Lava lamp bubbles */}
         <div className="romantic-lava-container">
           {/* Round bubbles */}
@@ -282,13 +275,11 @@ const Romantic = () => {
       <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {bookImages.map((img, index) => (
-              <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card" style={{
-                transitionDelay: `${index * 100}ms`
-              }}>
+            {bookImages.map((img, index) => <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card" style={{
+            transitionDelay: `${index * 100}ms`
+          }}>
                 <img src={img} alt={`Пример книги ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
-              </div>
-            ))}
+              </div>)}
           </div>
           <p className="romantic-caption text-center mt-8 text-sm">
             настоящая книга с иллюстрациями и историей
@@ -308,26 +299,24 @@ const Romantic = () => {
         <div className="max-w-3xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[{
-              num: "1",
-              text: "Вы отвечаете на несколько вопросов"
-            }, {
-              num: "2",
-              text: "Искусственный интеллект создает историю и иллюстрации"
-            }, {
-              num: "3",
-              text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
-            }].map((step, index) => (
-              <div key={index} className="text-center romantic-step-card" style={{
-                transitionDelay: `${index * 150}ms`
-              }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
+            num: "1",
+            text: "Вы отвечаете на несколько вопросов"
+          }, {
+            num: "2",
+            text: "Искусственный интеллект создает историю и иллюстрации"
+          }, {
+            num: "3",
+            text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
+          }].map((step, index) => <div key={index} className="text-center romantic-step-card" style={{
+            transitionDelay: `${index * 150}ms`
+          }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
                 <div className={`romantic-step-number text-4xl md:text-5xl font-serif mb-4 transition-all duration-300 ${hoveredStep === index ? "scale-110" : ""}`}>
                   {step.num}
                 </div>
                 <p className="romantic-text text-base md:text-lg leading-relaxed">
                   {step.text}
                 </p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </AnimatedSection>
@@ -417,8 +406,6 @@ const Romantic = () => {
 
       {/* Footer spacer */}
       <div className="romantic-section-light h-16"></div>
-    </div>
-  );
+    </div>;
 };
-
 export default Romantic;
