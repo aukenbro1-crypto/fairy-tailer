@@ -336,7 +336,7 @@ const Romantic = () => {
           <div className="space-y-3 romantic-text text-lg md:text-xl">
             <p className="romantic-stagger-1">— удивить</p>
             <p className="romantic-stagger-2">— сделать личный подарок</p>
-            <p className="romantic-stagger-3">— оставить след, а не просто отметить дату</p>
+            <p className="romantic-stagger-3">— создать общие воспоминания</p>
           </div>
         </div>
       </AnimatedSection>
