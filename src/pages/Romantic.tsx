@@ -243,9 +243,8 @@ const Romantic = () => {
       <AnimatedSection className="romantic-section-light py-16 md:py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
-          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">
-            Хочется подарить что-то значимое,
-            <br className="hidden md:block" />
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-10">Хочется подарить что-то значимое,
+а не очередную вещь «для галочки»?<br className="hidden md:block" />
             а не очередную вещь «для галочки».
           </p>
           <div className="romantic-accent-block p-8 rounded-lg">
