@@ -61,6 +61,35 @@ const Romantic = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Wave animation on scroll
+  useEffect(() => {
+    const waves = document.querySelectorAll('.romantic-wave-divider');
+    
+    const handleScroll = () => {
+      waves.forEach((wave, index) => {
+        const rect = wave.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        
+        if (isVisible) {
+          wave.classList.add('wave-animated');
+          
+          // Parallax effect based on scroll position
+          const scrollProgress = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+          const offset = (scrollProgress - 0.5) * 20;
+          const svg = wave.querySelector('svg') as SVGElement;
+          if (svg) {
+            svg.style.transform = `translateX(-10%) translateY(${offset}px)`;
+          }
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -197,8 +226,8 @@ const Romantic = () => {
 
       {/* Wave divider: Hero → Section 2 */}
       <div className="romantic-wave-divider romantic-wave-to-warm">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,60 C200,120 400,0 600,60 C800,120 1000,0 1200,60 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,75 C150,150 300,0 450,75 C600,150 750,0 900,75 C1050,150 1200,0 1200,75 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -220,8 +249,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 2 → Section 3 */}
       <div className="romantic-wave-divider romantic-wave-to-light">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,40 C150,100 350,0 600,50 C850,100 1050,20 1200,40 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,50 C200,130 350,10 550,80 C750,150 950,20 1200,60 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -250,8 +279,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 3 → Section 4 */}
       <div className="romantic-wave-divider romantic-wave-to-warm">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,80 C300,20 500,100 700,60 C900,20 1100,80 1200,50 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,100 C200,30 400,130 600,70 C800,10 1000,110 1200,60 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -281,8 +310,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 4 → Section 5 */}
       <div className="romantic-wave-divider romantic-wave-to-light">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,60 C200,100 400,20 600,70 C800,120 1000,40 1200,60 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,70 C150,140 350,20 550,90 C750,160 950,30 1200,80 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -320,8 +349,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 5 → Section 6 */}
       <div className="romantic-wave-divider romantic-wave-to-warm">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,50 C250,100 450,10 650,60 C850,110 1050,30 1200,70 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,60 C200,130 400,10 600,80 C800,150 1000,20 1200,90 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -341,8 +370,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 6 → Section 7 (dark) */}
       <div className="romantic-wave-divider romantic-wave-to-dark">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,40 C180,90 380,10 580,55 C780,100 980,25 1200,65 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,50 C150,120 350,0 550,70 C750,140 950,20 1200,80 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
@@ -365,8 +394,8 @@ const Romantic = () => {
 
       {/* Wave divider: Section 7 → FAQ */}
       <div className="romantic-wave-divider romantic-wave-to-light">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,70 C220,30 420,100 620,50 C820,0 1020,80 1200,40 L1200,120 L0,120 Z" />
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,90 C200,20 400,130 600,60 C800,0 1000,110 1200,50 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
