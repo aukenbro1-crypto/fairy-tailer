@@ -12,6 +12,7 @@ import logoImage from "@/assets/logo.png";
 import createButtonImage from "@/assets/create-button-new.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
 import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
+import romanticPromoImage from "@/assets/romantic-promo.jxl";
 
 // Below-the-fold images - will be lazy loaded via native loading="lazy"
 import heroSelectionImage from "@/assets/hero-selection.png";
@@ -137,6 +138,12 @@ const Landing = () => {
           <div className="flex items-center">
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
+          
+          {/* Romantic Valentine Promo - Center */}
+          <Link to="/romantic" className="absolute left-1/2 -translate-x-1/2 hover:scale-105 transition-transform duration-300">
+            <img src={romanticPromoImage} alt="Романтические сказки" className="h-14 md:h-16 object-contain drop-shadow-lg hover:drop-shadow-2xl" />
+          </Link>
+          
           <div className="flex items-center relative" ref={menuRef}>
             <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
               <img src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage} alt="Dragon Menu" className="h-16 object-contain transition-all duration-200" />
