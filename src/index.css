@@ -2933,3 +2933,310 @@ html, body {
     height: 140px;
   }
 }
+
+/* ========================================
+   ROMANTIC LAVA LAMP EFFECT
+   ======================================== */
+
+.romantic-lava-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Base bubble styles */
+.romantic-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(217, 153, 133, 0.6) 0%,
+    rgba(232, 198, 181, 0.5) 50%,
+    rgba(217, 153, 133, 0.4) 100%
+  );
+  filter: blur(1px);
+  box-shadow: 
+    inset 0 -10px 20px rgba(90, 58, 51, 0.15),
+    inset 0 10px 20px rgba(255, 255, 255, 0.2),
+    0 5px 20px rgba(217, 153, 133, 0.3);
+}
+
+/* Individual bubble animations */
+.romantic-bubble-1 {
+  width: 60px;
+  height: 60px;
+  left: 10%;
+  bottom: -80px;
+  animation: lava-float-1 12s ease-in-out infinite;
+}
+
+.romantic-bubble-2 {
+  width: 40px;
+  height: 40px;
+  left: 25%;
+  bottom: -60px;
+  animation: lava-float-2 15s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.romantic-bubble-3 {
+  width: 80px;
+  height: 80px;
+  left: 70%;
+  bottom: -100px;
+  animation: lava-float-3 18s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.romantic-bubble-4 {
+  width: 35px;
+  height: 35px;
+  left: 85%;
+  bottom: -50px;
+  animation: lava-float-1 14s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.romantic-bubble-5 {
+  width: 50px;
+  height: 50px;
+  left: 45%;
+  bottom: -70px;
+  animation: lava-float-2 16s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+.romantic-bubble-6 {
+  width: 25px;
+  height: 25px;
+  left: 55%;
+  bottom: -40px;
+  animation: lava-float-3 11s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.romantic-bubble-7 {
+  width: 45px;
+  height: 45px;
+  left: 5%;
+  bottom: -60px;
+  animation: lava-float-2 13s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+.romantic-bubble-8 {
+  width: 55px;
+  height: 55px;
+  left: 92%;
+  bottom: -75px;
+  animation: lava-float-1 17s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+/* Heart-shaped bubbles */
+.romantic-heart {
+  position: absolute;
+  color: rgba(217, 153, 133, 0.5);
+  filter: blur(0.5px) drop-shadow(0 5px 15px rgba(217, 153, 133, 0.3));
+}
+
+.romantic-heart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.romantic-heart-1 {
+  width: 35px;
+  height: 35px;
+  left: 15%;
+  bottom: -50px;
+  animation: lava-heart-1 14s ease-in-out infinite;
+}
+
+.romantic-heart-2 {
+  width: 25px;
+  height: 25px;
+  left: 35%;
+  bottom: -40px;
+  animation: lava-heart-2 16s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.romantic-heart-3 {
+  width: 40px;
+  height: 40px;
+  left: 60%;
+  bottom: -55px;
+  animation: lava-heart-1 18s ease-in-out infinite;
+  animation-delay: -9s;
+}
+
+.romantic-heart-4 {
+  width: 20px;
+  height: 20px;
+  left: 78%;
+  bottom: -35px;
+  animation: lava-heart-2 12s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.romantic-heart-5 {
+  width: 30px;
+  height: 30px;
+  left: 50%;
+  bottom: -45px;
+  animation: lava-heart-1 15s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+/* Lava lamp float animations - bubbles */
+@keyframes lava-float-1 {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.7;
+  }
+  25% {
+    transform: translateY(-40vh) translateX(20px) scale(1.1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-70vh) translateX(-15px) scale(0.9);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-40vh) translateX(25px) scale(1.05);
+    opacity: 0.7;
+  }
+  95% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes lava-float-2 {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.6;
+  }
+  30% {
+    transform: translateY(-50vh) translateX(-25px) scale(1.15) rotate(10deg);
+    opacity: 0.75;
+  }
+  60% {
+    transform: translateY(-80vh) translateX(20px) scale(0.85) rotate(-5deg);
+    opacity: 0.5;
+  }
+  80% {
+    transform: translateY(-50vh) translateX(-10px) scale(1) rotate(5deg);
+    opacity: 0.65;
+  }
+  95% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes lava-float-3 {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.5;
+  }
+  20% {
+    transform: translateY(-30vh) translateX(30px) scale(1.2);
+    opacity: 0.7;
+  }
+  45% {
+    transform: translateY(-60vh) translateX(-20px) scale(0.95);
+    opacity: 0.6;
+  }
+  70% {
+    transform: translateY(-75vh) translateX(15px) scale(0.8);
+    opacity: 0.45;
+  }
+  85% {
+    transform: translateY(-55vh) translateX(-25px) scale(0.9);
+    opacity: 0.55;
+  }
+  95% {
+    opacity: 0.35;
+  }
+}
+
+/* Lava lamp float animations - hearts */
+@keyframes lava-heart-1 {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.6;
+  }
+  20% {
+    transform: translateY(-35vh) translateX(15px) scale(1.1) rotate(10deg);
+    opacity: 0.7;
+  }
+  40% {
+    transform: translateY(-55vh) translateX(-20px) scale(0.95) rotate(-15deg);
+    opacity: 0.6;
+  }
+  60% {
+    transform: translateY(-70vh) translateX(10px) scale(0.85) rotate(5deg);
+    opacity: 0.5;
+  }
+  80% {
+    transform: translateY(-50vh) translateX(-15px) scale(0.95) rotate(-10deg);
+    opacity: 0.55;
+  }
+  95% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes lava-heart-2 {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.55;
+  }
+  25% {
+    transform: translateY(-45vh) translateX(-20px) scale(1.15) rotate(-12deg);
+    opacity: 0.65;
+  }
+  50% {
+    transform: translateY(-65vh) translateX(25px) scale(0.9) rotate(8deg);
+    opacity: 0.55;
+  }
+  75% {
+    transform: translateY(-45vh) translateX(-10px) scale(1) rotate(-5deg);
+    opacity: 0.6;
+  }
+  95% {
+    opacity: 0.35;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .romantic-bubble-1,
+  .romantic-bubble-3,
+  .romantic-bubble-5,
+  .romantic-bubble-7 {
+    transform: scale(0.7);
+  }
+  
+  .romantic-heart-1,
+  .romantic-heart-3,
+  .romantic-heart-5 {
+    transform: scale(0.8);
+  }
+}
