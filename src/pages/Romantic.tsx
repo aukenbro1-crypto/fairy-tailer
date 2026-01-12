@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Home, BookOpen, Sparkles, Mail, Scroll } from "lucide-react";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Import logo and dragon
 import logoImage from "@/assets/logo.png";
@@ -20,12 +21,45 @@ import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
 import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
 import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
 
+// Animated Section Component
+const AnimatedSection = ({ 
+  children, 
+  className = "", 
+  delay = 0,
+  id
+}: { 
+  children: React.ReactNode; 
+  className?: string; 
+  delay?: number;
+  id?: string;
+}) => {
+  const { ref, isVisible } = useScrollReveal({ threshold: 0.15 });
+  
+  return (
+    <section
+      ref={ref as React.RefObject<HTMLElement>}
+      id={id}
+      className={`${className} romantic-reveal ${isVisible ? 'romantic-reveal-visible' : ''}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </section>
+  );
+};
+
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
   const [dragonHovered, setDragonHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Hero animation on mount
+  const [heroVisible, setHeroVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setHeroVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -141,20 +175,20 @@ const Romantic = () => {
         </div>
       </header>
 
-      {/* SCREEN 1: HERO with gradient */}
+      {/* SCREEN 1: HERO with gradient - animated on mount */}
       <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 py-20">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
+        <div className={`max-w-2xl mx-auto text-center romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''}`}>
+          <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">
             книга про вас двоих.
             <br />
             лучший подарок на 14 февраля.
           </h1>
-          <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed">
+          <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
             история любви, где главные герои — вы
           </p>
           <button
             onClick={handleCreateClick}
-            className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300"
+            className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta"
           >
             Создать нашу книгу
           </button>
@@ -162,7 +196,7 @@ const Romantic = () => {
       </section>
 
       {/* SCREEN 2: WHAT IS IT */}
-      <section className="romantic-section-warm py-20 px-6">
+      <AnimatedSection className="romantic-section-warm py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
             Fairyteller — это персональная романтическая история,
@@ -170,15 +204,15 @@ const Romantic = () => {
             созданная специально под вашу пару.
           </p>
           <div className="space-y-4 romantic-text text-lg">
-            <p>• вы вводите имена, детали, фото</p>
-            <p>• выбираете мир и настроение</p>
-            <p>• получаете книгу — в PDF или в печати</p>
+            <p className="romantic-stagger-1">• вы вводите имена, детали, фото</p>
+            <p className="romantic-stagger-2">• выбираете мир и настроение</p>
+            <p className="romantic-stagger-3">• получаете книгу — в PDF или в печати</p>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* SCREEN 3: PAIN → SOLUTION */}
-      <section className="romantic-section-light py-20 px-6">
+      <AnimatedSection className="romantic-section-light py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <h2 className="romantic-h2 text-2xl md:text-3xl mb-6">
             14 февраля — всегда стресс
@@ -198,14 +232,18 @@ const Romantic = () => {
             </p>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* SCREEN 4: HOW THE BOOK LOOKS */}
-      <section id="romantic-examples" className="romantic-section-warm py-20 px-6">
+      <AnimatedSection id="romantic-examples" className="romantic-section-warm py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {bookImages.map((img, index) => (
-              <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm">
+              <div 
+                key={index} 
+                className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card"
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
                 <img
                   src={img}
                   alt={`Пример книги ${index + 1}`}
@@ -218,10 +256,10 @@ const Romantic = () => {
             настоящая книга с иллюстрациями и историей
           </p>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* SCREEN 5: HOW IT WORKS */}
-      <section id="romantic-how-it-works" className="romantic-section-light py-20 px-6">
+      <AnimatedSection id="romantic-how-it-works" className="romantic-section-light py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[
@@ -231,7 +269,8 @@ const Romantic = () => {
             ].map((step, index) => (
               <div
                 key={index}
-                className="text-center"
+                className="text-center romantic-step-card"
+                style={{ transitionDelay: `${index * 150}ms` }}
                 onMouseEnter={() => setHoveredStep(index)}
                 onMouseLeave={() => setHoveredStep(null)}
               >
@@ -249,24 +288,24 @@ const Romantic = () => {
             ))}
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* SCREEN 6: FOR WHOM */}
-      <section className="romantic-section-warm py-20 px-6">
+      <AnimatedSection className="romantic-section-warm py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <p className="romantic-text text-lg md:text-xl leading-relaxed mb-6">
             Для тех, кто хочет:
           </p>
           <div className="space-y-3 romantic-text text-lg md:text-xl">
-            <p>— удивить</p>
-            <p>— сделать личный подарок</p>
-            <p>— оставить след, а не просто отметить дату</p>
+            <p className="romantic-stagger-1">— удивить</p>
+            <p className="romantic-stagger-2">— сделать личный подарок</p>
+            <p className="romantic-stagger-3">— оставить след, а не просто отметить дату</p>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* SCREEN 7: FINAL CTA */}
-      <section className="romantic-section-dark py-24 px-6">
+      <AnimatedSection className="romantic-section-dark py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <p className="romantic-light-text text-2xl md:text-3xl lg:text-4xl leading-relaxed mb-12">
             ваша история — одна
@@ -280,10 +319,10 @@ const Romantic = () => {
             Создать нашу книгу
           </button>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* FAQ */}
-      <section id="romantic-faq" className="romantic-section-light py-20 px-6">
+      <AnimatedSection id="romantic-faq" className="romantic-section-light py-20 px-6">
         <div className="max-w-2xl mx-auto">
           <Accordion type="single" collapsible className="w-full space-y-4">
             <AccordionItem value="faq-1" className="romantic-faq-item border-none">
@@ -314,7 +353,7 @@ const Romantic = () => {
             </AccordionItem>
           </Accordion>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* Footer spacer */}
       <div className="romantic-section-light h-16"></div>
