@@ -231,7 +231,7 @@ const Romantic = () => {
               <img 
                 src={productFeaturesImage} 
                 alt="Особенности книги" 
-                className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[400px] h-auto drop-shadow-xl"
+                className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-xl transition-transform duration-500 hover:scale-105 hover:rotate-1"
               />
             </div>
             {/* Text right */}
