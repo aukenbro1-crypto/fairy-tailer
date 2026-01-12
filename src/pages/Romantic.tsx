@@ -132,14 +132,14 @@ const Romantic = () => {
                     <span>Главная</span>
                   </Link>
                   
-                  <button onClick={() => scrollToSection('romantic-how-it-works')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
-                    <BookOpen size={20} />
-                    <span>Как это работает</span>
-                  </button>
-
                   <button onClick={() => scrollToSection('romantic-examples')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
                     <Sparkles size={20} />
                     <span>Примеры</span>
+                  </button>
+
+                  <button onClick={() => scrollToSection('romantic-how-it-works')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
+                    <BookOpen size={20} />
+                    <span>Как это работает</span>
                   </button>
 
                   <button onClick={() => scrollToSection('romantic-faq')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
