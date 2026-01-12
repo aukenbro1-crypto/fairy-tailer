@@ -141,7 +141,7 @@ const Landing = () => {
           
           {/* Romantic Valentine Promo - Center */}
           <Link to="/romantic" className="absolute left-1/2 -translate-x-1/2 hover:scale-105 transition-transform duration-300">
-            <img src={romanticPromoImage} alt="Романтические сказки" className="h-14 md:h-16 object-contain drop-shadow-lg hover:drop-shadow-2xl" />
+            <img src={romanticPromoImage} alt="Романтические сказки" className="h-28 md:h-32 object-contain drop-shadow-lg hover:drop-shadow-2xl" />
           </Link>
           
           <div className="flex items-center relative" ref={menuRef}>
