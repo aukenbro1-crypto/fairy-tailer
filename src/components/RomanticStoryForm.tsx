@@ -412,13 +412,6 @@ const RomanticStoryForm: React.FC = () => {
                     placeholder="Опишите героя: внешность, характер..."
                     rows={3}
                   />
-                  <input
-                    type="text"
-                    className="romantic-form-input"
-                    value={formData.hero1.rel}
-                    onChange={e => updateHero('hero1', 'rel', e.target.value)}
-                    placeholder="Роль в истории (муж, жена...)"
-                  />
                   <div>
                     <input
                       ref={hero1PhotoRef}
@@ -459,13 +452,6 @@ const RomanticStoryForm: React.FC = () => {
                     onChange={e => updateHero('hero2', 'desc', e.target.value)}
                     placeholder="Опишите героя: внешность, характер..."
                     rows={3}
-                  />
-                  <input
-                    type="text"
-                    className="romantic-form-input"
-                    value={formData.hero2.rel}
-                    onChange={e => updateHero('hero2', 'rel', e.target.value)}
-                    placeholder="Роль в истории (муж, жена...)"
                   />
                   <div>
                     <input
@@ -517,13 +503,6 @@ const RomanticStoryForm: React.FC = () => {
                     onChange={e => updateHero('hero3', 'desc', e.target.value)}
                     placeholder="Опишите героя: внешность, характер..."
                     rows={3}
-                  />
-                  <input
-                    type="text"
-                    className="romantic-form-input"
-                    value={formData.hero3.rel}
-                    onChange={e => updateHero('hero3', 'rel', e.target.value)}
-                    placeholder="Роль в истории (друг, питомец...)"
                   />
                   <div>
                     <input
