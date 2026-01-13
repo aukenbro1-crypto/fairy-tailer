@@ -4,6 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Home, BookOpen, Sparkles, Mail, Scroll } from "lucide-react";
 import envelopeLetterImage from "@/assets/envelope-letter.png";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import RomanticStoryForm from "@/components/RomanticStoryForm";
 
 // Import logo and dragon
 import logoImage from "@/assets/logo.png";
@@ -98,7 +99,7 @@ const Romantic = () => {
     };
   }, [menuOpen]);
   const handleCreateClick = () => {
-    navigate("/create");
+    scrollToSection('romantic-form');
   };
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -149,10 +150,10 @@ const Romantic = () => {
 
                   <div className="h-px bg-[#D99985]/30 my-2 mx-4" />
 
-                  <Link to="/create" className="romantic-menu-item-accent flex items-center gap-3 px-4 py-3 transition-colors font-semibold" onClick={() => setMenuOpen(false)}>
+                  <button onClick={() => scrollToSection('romantic-form')} className="romantic-menu-item-accent w-full flex items-center gap-3 px-4 py-3 transition-colors font-semibold">
                     <Scroll size={20} />
                     <span>Создать книгу</span>
-                  </Link>
+                  </button>
                 </div>
               </div>}
           </div>
@@ -361,29 +362,30 @@ const Romantic = () => {
         </div>
       </AnimatedSection>
 
-      {/* Wave divider: Section 6 → Section 7 (dark) */}
-      <div className="romantic-wave-divider romantic-wave-to-dark">
+      {/* Wave divider: Section 6 → Form */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
         <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
           <path d="M0,50 C150,120 350,0 550,70 C750,140 950,20 1200,80 L1200,150 L0,150 Z" />
         </svg>
       </div>
 
-      {/* SCREEN 7: FINAL CTA */}
-      <AnimatedSection className="romantic-section-dark py-20 md:py-24 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <p className="romantic-light-text text-2xl md:text-3xl lg:text-4xl leading-relaxed mb-12">
-            ваша история — одна
-            <br />
-            сделайте из нее книгу
-          </p>
-          <button onClick={handleCreateClick} className="romantic-cta-secondary text-lg md:text-xl px-10 py-5 transition-all duration-300">
-            Создать нашу книгу
-          </button>
+      {/* STORY FORM SECTION */}
+      <AnimatedSection id="romantic-form" className="romantic-section-light py-16 md:py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="romantic-h2 text-2xl md:text-3xl lg:text-4xl mb-4">
+              Создайте вашу историю
+            </h2>
+            <p className="romantic-text text-lg md:text-xl">
+              Заполните форму — и получите книгу на почту
+            </p>
+          </div>
+          <RomanticStoryForm />
         </div>
       </AnimatedSection>
 
-      {/* Wave divider: Section 7 → FAQ */}
-      <div className="romantic-wave-divider romantic-wave-to-light">
+      {/* Wave divider: Form → FAQ */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
         <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
           <path d="M0,90 C200,20 400,130 600,60 C800,0 1000,110 1200,50 L1200,150 L0,150 Z" />
         </svg>
