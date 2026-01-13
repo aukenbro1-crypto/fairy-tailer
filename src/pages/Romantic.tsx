@@ -340,7 +340,7 @@ const Romantic = () => {
               <img 
                 src={bookAnimationGif} 
                 alt="Анимация книги" 
-                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto rounded-lg shadow-xl"
+                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto mix-blend-multiply drop-shadow-2xl"
               />
             </div>
           </div>
