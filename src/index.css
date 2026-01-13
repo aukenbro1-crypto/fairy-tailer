@@ -3451,3 +3451,200 @@ html, body {
 .romantic-success-icon svg {
   margin: 0 auto;
 }
+
+/* ========================================
+   ROMANTIC STYLE PICKER
+   ======================================== */
+
+.romantic-style-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.romantic-sp-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.romantic-sp-arrow {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--romantic-light-peachy);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--romantic-dark-terracotta);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(90, 58, 51, 0.1);
+}
+
+.romantic-sp-arrow:hover {
+  border-color: var(--romantic-desert-coral);
+  background: var(--romantic-desert-coral);
+  color: white;
+  transform: scale(1.05);
+}
+
+.romantic-sp-arrow:active {
+  transform: scale(0.95);
+}
+
+.romantic-sp-screen {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--romantic-light-peachy);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(90, 58, 51, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.romantic-sp-preview {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.romantic-sp-sprite {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease;
+}
+
+.romantic-sp-screen:hover .romantic-sp-sprite {
+  transform: scale(1.05);
+}
+
+.romantic-sp-label {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--romantic-dark-terracotta);
+  text-align: center;
+  padding: 10px 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid var(--romantic-light-peachy);
+}
+
+.romantic-sp-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.romantic-sp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--romantic-light-peachy);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.romantic-sp-dot:hover {
+  background: var(--romantic-desert-coral);
+  transform: scale(1.2);
+}
+
+.romantic-sp-dot.active {
+  background: var(--romantic-desert-coral);
+  transform: scale(1.3);
+}
+
+/* ========================================
+   ROMANTIC FORM STEPS
+   ======================================== */
+
+.romantic-step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  align-items: center;
+}
+
+.romantic-step-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid var(--romantic-light-peachy);
+  color: var(--romantic-earthy-olive);
+  transition: all 0.3s ease;
+}
+
+.romantic-step-dot.active {
+  background: var(--romantic-desert-coral);
+  border-color: var(--romantic-desert-coral);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(217, 153, 133, 0.4);
+}
+
+.romantic-step-dot.completed {
+  background: var(--romantic-light-peachy);
+  border-color: var(--romantic-desert-coral);
+  color: var(--romantic-dark-terracotta);
+}
+
+.romantic-form-step {
+  animation: romantic-fade-in 0.3s ease-out;
+}
+
+.romantic-form-hint {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 0.85rem;
+  color: var(--romantic-earthy-olive);
+  opacity: 0.8;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .romantic-sp-screen {
+    max-width: 180px;
+    height: 160px;
+  }
+  
+  .romantic-sp-arrow {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .romantic-sp-label {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+  
+  .romantic-step-dot {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .romantic-step-indicator {
+    gap: 16px;
+  }
+}
