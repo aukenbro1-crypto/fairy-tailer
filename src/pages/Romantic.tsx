@@ -20,6 +20,7 @@ import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
 import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
 import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
 import bookAnimationGif from "@/assets/book-animation.gif";
+import bookCoverRedImage from "@/assets/book-cover-red.png";
 
 // Animated Section Component
 const AnimatedSection = ({
@@ -325,15 +326,21 @@ const Romantic = () => {
       <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 lg:gap-16">
-            {/* Clickable image gallery - left */}
-            <BookImageGallery images={bookImages} />
+            {/* Book cover image - left */}
+            <div className="flex-1 flex justify-center">
+              <img 
+                src={bookCoverRedImage} 
+                alt="Обложка книги" 
+                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto drop-shadow-2xl"
+              />
+            </div>
             
             {/* GIF - right */}
             <div className="flex-1 flex justify-center">
               <img 
                 src={bookAnimationGif} 
                 alt="Анимация книги" 
-                className="w-full max-w-[450px] md:max-w-[550px] lg:max-w-[650px] h-auto rounded-lg shadow-xl"
+                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto rounded-lg shadow-xl"
               />
             </div>
           </div>
