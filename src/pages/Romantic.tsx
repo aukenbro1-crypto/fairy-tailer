@@ -201,20 +201,17 @@ const Romantic = () => {
           </div>
         </div>
 
-        <div className={`max-w-6xl mx-auto w-full flex flex-col-reverse md:flex-row md:items-center md:gap-8 lg:gap-12 romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
-          {/* Image left */}
-          <div className="flex-1 flex justify-center md:justify-start">
-            <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[750px] sm:max-w-[900px] md:max-w-[1050px] lg:max-w-[1275px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
+        <div className={`max-w-7xl mx-auto w-full flex flex-col-reverse md:flex-row md:items-center md:gap-8 lg:gap-12 romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
+          {/* Image left - larger */}
+          <div className="md:flex-[1.5] flex justify-center md:justify-start">
+            <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
             filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
           }} />
           </div>
-          {/* Text right */}
-          <div className="flex-1 text-center md:text-right mb-8 md:mb-0">
-            <h1 className="romantic-h1 text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 romantic-hero-title">Книга про вас — 
-лучший подарок на 14 февраля.
-
-            <br />
-              лучший подарок на 14 февраля.
+          {/* Text right - smaller */}
+          <div className="md:flex-[0.8] text-center md:text-right mb-8 md:mb-0">
+            <h1 className="romantic-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 romantic-hero-title">
+              Книга про вас — лучший подарок на 14 февраля.
             </h1>
             <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
               история любви, где главные герои — вы
