@@ -25,16 +25,101 @@ import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
 
-const STYLE_OPTIONS = [
-  { value: 'disney', label: 'Диснеевский', image: disneyStyleImage },
-  { value: 'watercolor', label: 'Акварель', image: watercolorStyleImage },
-  { value: 'claymotion', label: 'Пластилин', image: claymotionStyleImage },
-  { value: 'yarncraft', label: 'Вязаный мир', image: yarncraftStyleImage },
-  { value: 'naive', label: 'Наивный', image: naiveStyleImage },
-  { value: 'celcinema', label: 'Кинематограф', image: celcinemaStyleImage },
-  { value: 'toonflat', label: 'Мультяшный', image: toonflatStyleImage },
-  { value: 'minibrick', label: 'Лего', image: minibrickStyleImage },
-];
+const STYLE_SPRITES: Record<string, string> = {
+  'disney': disneyStyleImage,
+  'toonflat': toonflatStyleImage,
+  'minibrick': minibrickStyleImage,
+  'naive': naiveStyleImage,
+  'watercolor': watercolorStyleImage,
+  'claymotion': claymotionStyleImage,
+  'yarncraft': yarncraftStyleImage,
+  'celcinema': celcinemaStyleImage
+};
+
+const STYLE_LABELS: Record<string, string> = {
+  'disney': 'Диснеевский',
+  'toonflat': 'Мультяшный',
+  'minibrick': 'Лего',
+  'naive': 'Наивный',
+  'watercolor': 'Акварель',
+  'claymotion': 'Пластилин',
+  'yarncraft': 'Вязаный мир',
+  'celcinema': 'Кинематограф'
+};
+
+const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
+
+// Romantic Style Picker Component (adapted from 8-bit style)
+interface RomanticStylePickerProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const RomanticStylePicker: React.FC<RomanticStylePickerProps> = ({ value, onChange }) => {
+  const currentIndex = ILLUSTRATION_STYLE_KEYS.indexOf(value);
+  
+  const handlePrevious = () => {
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : ILLUSTRATION_STYLE_KEYS.length - 1;
+    onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
+  };
+  
+  const handleNext = () => {
+    const newIndex = currentIndex < ILLUSTRATION_STYLE_KEYS.length - 1 ? currentIndex + 1 : 0;
+    onChange(ILLUSTRATION_STYLE_KEYS[newIndex]);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      handlePrevious();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      handleNext();
+    }
+  };
+  
+  return (
+    <section className="romantic-style-picker" onKeyDown={handleKeyDown}>
+      <div className="romantic-sp-controls">
+        <button type="button" className="romantic-sp-arrow" onClick={handlePrevious} aria-label="Предыдущий стиль">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        <div className="romantic-sp-screen" tabIndex={0} role="img" aria-label={`Стиль: ${STYLE_LABELS[value]}`}>
+          <div className="romantic-sp-preview">
+            <div 
+              className="romantic-sp-sprite" 
+              style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }} 
+              aria-hidden="true"
+            />
+          </div>
+          <div className="romantic-sp-label">{STYLE_LABELS[value]}</div>
+        </div>
+
+        <button type="button" className="romantic-sp-arrow" onClick={handleNext} aria-label="Следующий стиль">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Dots indicator */}
+      <div className="romantic-sp-dots">
+        {ILLUSTRATION_STYLE_KEYS.map((key, index) => (
+          <button
+            key={key}
+            type="button"
+            className={`romantic-sp-dot ${value === key ? 'active' : ''}`}
+            onClick={() => onChange(key)}
+            aria-label={STYLE_LABELS[key]}
+          />
+        ))}
+      </div>
+    </section>
+  );
+};
 
 interface HeroData {
   name: string;
@@ -65,6 +150,7 @@ const initialHero = (): HeroData => ({
 
 const RomanticStoryForm: React.FC = () => {
   const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showHero3, setShowHero3] = useState(false);
@@ -114,10 +200,29 @@ const RomanticStoryForm: React.FC = () => {
     updateHero(heroKey, 'photo', file);
   };
 
+  const goToStep2 = () => {
+    if (!formData.location.trim()) {
+      toast({ variant: "destructive", title: "Ошибка", description: "Укажите место действия" });
+      return;
+    }
+    if (!formData.artifact.trim()) {
+      toast({ variant: "destructive", title: "Ошибка", description: "Укажите артефакт" });
+      return;
+    }
+    setCurrentStep(2);
+  };
+
+  const goToStep3 = () => {
+    if (!formData.hero1.name.trim() || !formData.hero2.name.trim()) {
+      toast({ variant: "destructive", title: "Ошибка", description: "Укажите имена главных героев" });
+      return;
+    }
+    setCurrentStep(3);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!formData.consent) {
       toast({ variant: "destructive", title: "Требуется согласие", description: "Пожалуйста, подтвердите согласие на обработку персональных данных" });
       return;
@@ -125,21 +230,6 @@ const RomanticStoryForm: React.FC = () => {
 
     if (!validateEmail(formData.email)) {
       toast({ variant: "destructive", title: "Ошибка", description: "Введите корректный email" });
-      return;
-    }
-
-    if (!formData.location.trim()) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Укажите место действия" });
-      return;
-    }
-
-    if (!formData.artifact.trim()) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Укажите артефакт" });
-      return;
-    }
-
-    if (!formData.hero1.name.trim() || !formData.hero2.name.trim()) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Укажите имена главных героев" });
       return;
     }
 
@@ -233,255 +323,301 @@ const RomanticStoryForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="romantic-story-form">
-      {/* Block A: Illustration Style */}
-      <div className="romantic-form-section mb-10">
-        <h3 className="romantic-form-label mb-4">Стиль иллюстраций</h3>
-        <div className="romantic-style-grid">
-          {STYLE_OPTIONS.map(style => (
-            <button
-              key={style.value}
-              type="button"
-              className={`romantic-style-card ${formData.illustrationStyle === style.value ? 'romantic-style-card-active' : ''}`}
-              onClick={() => setFormData(prev => ({ ...prev, illustrationStyle: style.value }))}
-            >
-              <div className="romantic-style-image-wrapper">
-                <img src={style.image} alt={style.label} className="romantic-style-image" />
-              </div>
-              <span className="romantic-style-label">{style.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Block B: Location & Artifact */}
-      <div className="romantic-form-section mb-10">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="romantic-form-label">Место действия вашей истории</label>
-            <textarea
-              className="romantic-form-input romantic-form-textarea"
-              value={formData.location}
-              onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="Париж, берег моря, уютное кафе..."
-              rows={3}
-              required
-            />
-          </div>
-          <div>
-            <label className="romantic-form-label">Артефакт — особенный предмет</label>
-            <textarea
-              className="romantic-form-input romantic-form-textarea"
-              value={formData.artifact}
-              onChange={e => setFormData(prev => ({ ...prev, artifact: e.target.value }))}
-              placeholder="Кольцо, письмо, общая песня..."
-              rows={3}
-              required
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Block C: Heroes */}
-      <div className="romantic-form-section mb-10">
-        <h3 className="romantic-form-label mb-4">Главные герои вашей истории</h3>
-        
-        <div className="grid md:grid-cols-2 gap-8 mb-6">
-          {/* Hero 1 */}
-          <div className="romantic-hero-card">
-            <h4 className="romantic-hero-title">Первый герой</h4>
-            <div className="space-y-4">
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero1.name}
-                onChange={e => updateHero('hero1', 'name', e.target.value)}
-                placeholder="Имя"
-                required
-              />
-              <textarea
-                className="romantic-form-input romantic-form-textarea"
-                value={formData.hero1.desc}
-                onChange={e => updateHero('hero1', 'desc', e.target.value)}
-                placeholder="Опишите героя: внешность, характер..."
-                rows={3}
-              />
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero1.rel}
-                onChange={e => updateHero('hero1', 'rel', e.target.value)}
-                placeholder="Роль в истории (муж, жена, друг...)"
-              />
-              <div>
-                <input
-                  ref={hero1PhotoRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  className="hidden"
-                  onChange={e => handlePhotoChange('hero1', e)}
-                />
-                <button
-                  type="button"
-                  className="romantic-photo-upload"
-                  onClick={() => hero1PhotoRef.current?.click()}
-                >
-                  {formData.hero1.photoUrl ? (
-                    <img src={formData.hero1.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
-                  ) : (
-                    <span>📷 Загрузить фото</span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero 2 */}
-          <div className="romantic-hero-card">
-            <h4 className="romantic-hero-title">Второй герой</h4>
-            <div className="space-y-4">
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero2.name}
-                onChange={e => updateHero('hero2', 'name', e.target.value)}
-                placeholder="Имя"
-                required
-              />
-              <textarea
-                className="romantic-form-input romantic-form-textarea"
-                value={formData.hero2.desc}
-                onChange={e => updateHero('hero2', 'desc', e.target.value)}
-                placeholder="Опишите героя: внешность, характер..."
-                rows={3}
-              />
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero2.rel}
-                onChange={e => updateHero('hero2', 'rel', e.target.value)}
-                placeholder="Роль в истории (муж, жена, друг...)"
-              />
-              <div>
-                <input
-                  ref={hero2PhotoRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  className="hidden"
-                  onChange={e => handlePhotoChange('hero2', e)}
-                />
-                <button
-                  type="button"
-                  className="romantic-photo-upload"
-                  onClick={() => hero2PhotoRef.current?.click()}
-                >
-                  {formData.hero2.photoUrl ? (
-                    <img src={formData.hero2.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
-                  ) : (
-                    <span>📷 Загрузить фото</span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero 3 Toggle */}
-        {!showHero3 ? (
-          <button
-            type="button"
-            className="romantic-add-hero-btn"
-            onClick={() => setShowHero3(true)}
+      {/* Step Indicator */}
+      <div className="romantic-step-indicator mb-8">
+        {[1, 2, 3].map((step) => (
+          <div
+            key={step}
+            className={`romantic-step-dot ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}
           >
-            + Добавить третьего героя
-          </button>
-        ) : (
-          <div className="romantic-hero-card romantic-hero-card-optional">
-            <h4 className="romantic-hero-title">Третий герой (опционально)</h4>
-            <div className="space-y-4">
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero3.name}
-                onChange={e => updateHero('hero3', 'name', e.target.value)}
-                placeholder="Имя"
+            {step}
+          </div>
+        ))}
+      </div>
+
+      {/* STEP 1: Style + Location & Artifact */}
+      {currentStep === 1 && (
+        <div className="romantic-form-step animate-fade-in">
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            {/* Left: Style Picker */}
+            <div className="romantic-form-section">
+              <h3 className="romantic-form-label mb-4 text-center">Стиль иллюстраций</h3>
+              <RomanticStylePicker 
+                value={formData.illustrationStyle} 
+                onChange={(value) => setFormData(prev => ({ ...prev, illustrationStyle: value }))} 
               />
-              <textarea
-                className="romantic-form-input romantic-form-textarea"
-                value={formData.hero3.desc}
-                onChange={e => updateHero('hero3', 'desc', e.target.value)}
-                placeholder="Опишите героя: внешность, характер..."
-                rows={3}
-              />
-              <input
-                type="text"
-                className="romantic-form-input"
-                value={formData.hero3.rel}
-                onChange={e => updateHero('hero3', 'rel', e.target.value)}
-                placeholder="Роль в истории (друг, питомец...)"
-              />
-              <div>
-                <input
-                  ref={hero3PhotoRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  className="hidden"
-                  onChange={e => handlePhotoChange('hero3', e)}
-                />
-                <button
-                  type="button"
-                  className="romantic-photo-upload"
-                  onClick={() => hero3PhotoRef.current?.click()}
-                >
-                  {formData.hero3.photoUrl ? (
-                    <img src={formData.hero3.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
-                  ) : (
-                    <span>📷 Загрузить фото</span>
-                  )}
-                </button>
+            </div>
+
+            {/* Right: Location & Artifact */}
+            <div className="romantic-form-section">
+              <div className="space-y-6">
+                <div>
+                  <label className="romantic-form-label">Место действия вашей истории</label>
+                  <textarea
+                    className="romantic-form-input romantic-form-textarea"
+                    value={formData.location}
+                    onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Париж, берег моря, уютное кафе..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="romantic-form-label">Артефакт — особенный предмет</label>
+                  <textarea
+                    className="romantic-form-input romantic-form-textarea"
+                    value={formData.artifact}
+                    onChange={e => setFormData(prev => ({ ...prev, artifact: e.target.value }))}
+                    placeholder="Кольцо, письмо, общая песня..."
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Block D: Email & Consent */}
-      <div className="romantic-form-section mb-10">
-        <div className="max-w-md mx-auto space-y-4">
-          <div>
-            <label className="romantic-form-label">Ваш email</label>
-            <input
-              type="email"
-              className="romantic-form-input"
-              value={formData.email}
-              onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="email@example.com"
-              required
-            />
+          <div className="text-center mt-10">
+            <button
+              type="button"
+              className="romantic-cta-primary text-lg px-10 py-4 transition-all duration-300"
+              onClick={goToStep2}
+            >
+              Далее →
+            </button>
           </div>
-          
-          <label className="romantic-consent-label">
-            <input
-              type="checkbox"
-              className="romantic-consent-checkbox"
-              checked={formData.consent}
-              onChange={e => setFormData(prev => ({ ...prev, consent: e.target.checked }))}
-              required
-            />
-            <span>Согласие на обработку персональных данных</span>
-          </label>
         </div>
-      </div>
+      )}
 
-      {/* Submit Button */}
-      <div className="text-center">
-        <button
-          type="submit"
-          className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Отправка...' : 'Создать нашу книгу'}
-        </button>
-      </div>
+      {/* STEP 2: Heroes */}
+      {currentStep === 2 && (
+        <div className="romantic-form-step animate-fade-in">
+          <div className="romantic-form-section mb-8">
+            <h3 className="romantic-form-label mb-6 text-center text-xl">Главные герои вашей истории</h3>
+            
+            <div className="grid md:grid-cols-2 gap-8 mb-6">
+              {/* Hero 1 */}
+              <div className="romantic-hero-card">
+                <h4 className="romantic-hero-title">Первый герой</h4>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero1.name}
+                    onChange={e => updateHero('hero1', 'name', e.target.value)}
+                    placeholder="Имя"
+                  />
+                  <textarea
+                    className="romantic-form-input romantic-form-textarea"
+                    value={formData.hero1.desc}
+                    onChange={e => updateHero('hero1', 'desc', e.target.value)}
+                    placeholder="Опишите героя: внешность, характер..."
+                    rows={3}
+                  />
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero1.rel}
+                    onChange={e => updateHero('hero1', 'rel', e.target.value)}
+                    placeholder="Роль в истории (муж, жена...)"
+                  />
+                  <div>
+                    <input
+                      ref={hero1PhotoRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={e => handlePhotoChange('hero1', e)}
+                    />
+                    <button
+                      type="button"
+                      className="romantic-photo-upload"
+                      onClick={() => hero1PhotoRef.current?.click()}
+                    >
+                      {formData.hero1.photoUrl ? (
+                        <img src={formData.hero1.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
+                      ) : (
+                        <span>📷 Загрузить фото</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hero 2 */}
+              <div className="romantic-hero-card">
+                <h4 className="romantic-hero-title">Второй герой</h4>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero2.name}
+                    onChange={e => updateHero('hero2', 'name', e.target.value)}
+                    placeholder="Имя"
+                  />
+                  <textarea
+                    className="romantic-form-input romantic-form-textarea"
+                    value={formData.hero2.desc}
+                    onChange={e => updateHero('hero2', 'desc', e.target.value)}
+                    placeholder="Опишите героя: внешность, характер..."
+                    rows={3}
+                  />
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero2.rel}
+                    onChange={e => updateHero('hero2', 'rel', e.target.value)}
+                    placeholder="Роль в истории (муж, жена...)"
+                  />
+                  <div>
+                    <input
+                      ref={hero2PhotoRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={e => handlePhotoChange('hero2', e)}
+                    />
+                    <button
+                      type="button"
+                      className="romantic-photo-upload"
+                      onClick={() => hero2PhotoRef.current?.click()}
+                    >
+                      {formData.hero2.photoUrl ? (
+                        <img src={formData.hero2.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
+                      ) : (
+                        <span>📷 Загрузить фото</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hero 3 Toggle */}
+            {!showHero3 ? (
+              <button
+                type="button"
+                className="romantic-add-hero-btn"
+                onClick={() => setShowHero3(true)}
+              >
+                + Добавить третьего героя
+              </button>
+            ) : (
+              <div className="romantic-hero-card romantic-hero-card-optional">
+                <h4 className="romantic-hero-title">Третий герой (опционально)</h4>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero3.name}
+                    onChange={e => updateHero('hero3', 'name', e.target.value)}
+                    placeholder="Имя"
+                  />
+                  <textarea
+                    className="romantic-form-input romantic-form-textarea"
+                    value={formData.hero3.desc}
+                    onChange={e => updateHero('hero3', 'desc', e.target.value)}
+                    placeholder="Опишите героя: внешность, характер..."
+                    rows={3}
+                  />
+                  <input
+                    type="text"
+                    className="romantic-form-input"
+                    value={formData.hero3.rel}
+                    onChange={e => updateHero('hero3', 'rel', e.target.value)}
+                    placeholder="Роль в истории (друг, питомец...)"
+                  />
+                  <div>
+                    <input
+                      ref={hero3PhotoRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={e => handlePhotoChange('hero3', e)}
+                    />
+                    <button
+                      type="button"
+                      className="romantic-photo-upload"
+                      onClick={() => hero3PhotoRef.current?.click()}
+                    >
+                      {formData.hero3.photoUrl ? (
+                        <img src={formData.hero3.photoUrl} alt="Фото героя" className="romantic-photo-preview" />
+                      ) : (
+                        <span>📷 Загрузить фото</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-center gap-4 mt-10">
+            <button
+              type="button"
+              className="romantic-cta-secondary text-lg px-8 py-4 transition-all duration-300"
+              onClick={() => setCurrentStep(1)}
+            >
+              ← Назад
+            </button>
+            <button
+              type="button"
+              className="romantic-cta-primary text-lg px-10 py-4 transition-all duration-300"
+              onClick={goToStep3}
+            >
+              Почти готово →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: Email & Consent */}
+      {currentStep === 3 && (
+        <div className="romantic-form-step animate-fade-in">
+          <div className="romantic-form-section max-w-md mx-auto">
+            <h3 className="romantic-form-label mb-6 text-center text-xl">Последний шаг</h3>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="romantic-form-label">Ваш email</label>
+                <input
+                  type="email"
+                  className="romantic-form-input"
+                  value={formData.email}
+                  onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@example.com"
+                />
+                <p className="romantic-form-hint mt-2">На эту почту придет готовая книга</p>
+              </div>
+              
+              <label className="romantic-consent-label">
+                <input
+                  type="checkbox"
+                  className="romantic-consent-checkbox"
+                  checked={formData.consent}
+                  onChange={e => setFormData(prev => ({ ...prev, consent: e.target.checked }))}
+                />
+                <span>Согласие на обработку персональных данных</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-4 mt-10">
+            <button
+              type="button"
+              className="romantic-cta-secondary text-lg px-8 py-4 transition-all duration-300"
+              onClick={() => setCurrentStep(2)}
+            >
+              ← Назад
+            </button>
+            <button
+              type="submit"
+              className="romantic-cta-primary text-lg px-10 py-4 transition-all duration-300"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Отправка...' : 'Создать нашу книгу'}
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 };
