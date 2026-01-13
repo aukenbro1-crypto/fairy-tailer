@@ -221,7 +221,7 @@ const Romantic = () => {
             <img 
               src={bookHandsImage} 
               alt="Книга в руках" 
-              className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[450px] lg:max-w-[520px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+              className="w-full max-w-[380px] sm:max-w-[480px] md:max-w-[550px] lg:max-w-[650px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
               style={{
                 filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
               }}
