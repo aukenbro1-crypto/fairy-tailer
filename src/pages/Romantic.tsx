@@ -19,6 +19,7 @@ import exampleAdventureSpread from "@/assets/example-adventure-spread.jpg";
 import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
 import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
 import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
+import bookAnimationGif from "@/assets/book-animation.gif";
 
 // Animated Section Component
 const AnimatedSection = ({
@@ -44,6 +45,35 @@ const AnimatedSection = ({
       {children}
     </section>;
 };
+
+// Book Image Gallery Component
+const BookImageGallery = ({ images }: { images: string[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const handleClick = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+  
+  return (
+    <div 
+      className="flex-1 flex justify-center cursor-pointer group"
+      onClick={handleClick}
+    >
+      <div className="relative">
+        <img 
+          src={images[currentIndex]} 
+          alt={`Пример книги ${currentIndex + 1}`} 
+          className="w-full max-w-[300px] md:max-w-[350px] lg:max-w-[400px] h-auto rounded-lg shadow-xl transition-transform duration-300 group-hover:scale-105"
+        />
+        {/* Click indicator */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full opacity-70 group-hover:opacity-100 transition-opacity">
+          нажмите для смены • {currentIndex + 1}/{images.length}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
@@ -293,13 +323,19 @@ const Romantic = () => {
 
       {/* SCREEN 4: HOW THE BOOK LOOKS */}
       <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {bookImages.map((img, index) => <div key={index} className="aspect-[3/4] overflow-hidden rounded-sm romantic-book-card" style={{
-            transitionDelay: `${index * 100}ms`
-          }}>
-                <img src={img} alt={`Пример книги ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
-              </div>)}
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 lg:gap-16">
+            {/* Clickable image gallery - left */}
+            <BookImageGallery images={bookImages} />
+            
+            {/* GIF - right */}
+            <div className="flex-1 flex justify-center">
+              <img 
+                src={bookAnimationGif} 
+                alt="Анимация книги" 
+                className="w-full max-w-[400px] md:max-w-[450px] lg:max-w-[500px] h-auto rounded-lg shadow-xl"
+              />
+            </div>
           </div>
           <p className="romantic-caption text-center mt-8 text-sm">
             настоящая книга с иллюстрациями и историей
