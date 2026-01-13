@@ -325,22 +325,22 @@ const Romantic = () => {
       {/* SCREEN 4: HOW THE BOOK LOOKS */}
       <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 lg:gap-16">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 lg:gap-16">
             {/* Book cover image - left */}
-            <div className="flex-1 flex justify-center">
+            <div className="flex justify-center">
               <img 
                 src={bookCoverRedImage} 
                 alt="Обложка книги" 
-                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto drop-shadow-2xl"
+                className="h-[280px] md:h-[320px] lg:h-[380px] w-auto drop-shadow-2xl"
               />
             </div>
             
             {/* GIF - right */}
-            <div className="flex-1 flex justify-center">
+            <div className="flex justify-center">
               <img 
                 src={bookAnimationGif} 
                 alt="Анимация книги" 
-                className="w-full max-w-[350px] md:max-w-[400px] lg:max-w-[450px] h-auto mix-blend-multiply drop-shadow-2xl"
+                className="h-[280px] md:h-[320px] lg:h-[380px] w-auto mix-blend-multiply drop-shadow-2xl"
               />
             </div>
           </div>
