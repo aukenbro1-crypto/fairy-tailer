@@ -37,14 +37,14 @@ const STYLE_SPRITES: Record<string, string> = {
 };
 
 const STYLE_LABELS: Record<string, string> = {
-  'disney': 'Диснеевский',
-  'toonflat': 'Мультяшный',
+  'disney': 'Дисней',
+  'toonflat': 'Старые мультфильмы',
   'minibrick': 'Лего',
   'naive': 'Наивный',
   'watercolor': 'Акварель',
   'claymotion': 'Пластилин',
   'yarncraft': 'Вязаный мир',
-  'celcinema': 'Кинематограф'
+  'celcinema': 'Аниме'
 };
 
 const ILLUSTRATION_STYLE_KEYS = Object.keys(ILLUSTRATION_STYLES);
