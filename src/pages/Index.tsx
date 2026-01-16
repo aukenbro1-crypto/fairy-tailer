@@ -190,7 +190,7 @@ const Index = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [showLoader, setShowLoader] = useState(false);
-  const [showEmailOverlay, setShowEmailOverlay] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -241,23 +241,8 @@ const Index = () => {
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   const validateEmail = (email: string) => EMAIL_RX.test(email);
 
-  const showEmailOverlayWithProgress = () => {
-    setShowEmailOverlay(true);
-    const DURATION = 90_000;
-    const start = performance.now();
-    const tick = (t: number) => {
-      const k = Math.min(1, (t - start) / DURATION);
-      const progressBar = document.getElementById('email-progress');
-      if (progressBar) {
-        progressBar.style.width = (k * 100).toFixed(2) + '%';
-      }
-      if (k < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  };
-
-  const hideEmailOverlayHandler = () => {
-    setShowEmailOverlay(false);
+  const showSuccessScreen = () => {
+    setShowSuccessOverlay(true);
   };
 
   const handleSubmit = async () => {
@@ -363,7 +348,7 @@ const Index = () => {
     
     setShowLoader(false);
     if (ok) {
-      showEmailOverlayWithProgress();
+      showSuccessScreen();
     }
   };
 
@@ -998,27 +983,31 @@ const Index = () => {
           </div>
         )}
 
-        {/* Email Progress Overlay */}
-        {showEmailOverlay && (
-          <div
-            className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50"
-            onClick={hideEmailOverlayHandler}
-          >
+        {/* Success Overlay */}
+        {showSuccessOverlay && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
             <div
-              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-[#031B28] text-[#DBA858] border border-[#E89C31] rounded-2xl shadow-2xl p-6"
+              className="w-full max-w-lg mx-4 bg-[#031B28] text-[#DBA858] border-2 border-[#E89C31] rounded-2xl shadow-2xl p-8 text-center"
               role="dialog"
               aria-modal="true"
-              onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-semibold mb-2 mixer-nameplate">Почти готово!</h3>
-              <p className="mb-4 mixer-subtitle">Через несколько минут сказка окажется у вас на почте.</p>
-              <div className="w-full h-3 border border-white/8 rounded-lg bg-white/8 overflow-hidden">
-                <div
-                  id="email-progress"
-                  className="h-full bg-gradient-to-r from-[#E89C31] to-[#DBA858] transition-all duration-200 ease-linear"
-                  style={{ width: '0%' }}
-                />
-              </div>
+              <div className="text-6xl mb-4">✨📚</div>
+              <h3 className="text-2xl md:text-3xl font-semibold mb-4 mixer-nameplate">Запрос принят!</h3>
+              <p className="text-lg md:text-xl mixer-subtitle mb-6">
+                Книга придёт на почту в течение 15 минут.
+              </p>
+              <p className="text-sm text-[#DBA858]/70">
+                Проверьте папку «Спам», если письмо не появится во входящих.
+              </p>
+              <button
+                onClick={() => {
+                  setShowSuccessOverlay(false);
+                  resetForm();
+                }}
+                className="mt-6 mixer-main-button px-8 py-3"
+              >
+                Создать ещё одну сказку
+              </button>
             </div>
           </div>
         )}
