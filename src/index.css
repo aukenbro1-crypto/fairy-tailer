@@ -3648,3 +3648,46 @@ html, body {
     gap: 16px;
   }
 }
+
+/* ========================================
+   ROMANTIC PULSATING GLOW
+   ======================================== */
+
+.romantic-glow-pulse {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(217, 153, 133, 0.35) 0%,
+    rgba(217, 153, 133, 0.2) 30%,
+    rgba(217, 153, 133, 0.08) 60%,
+    transparent 80%
+  );
+  filter: blur(40px);
+  animation: romantic-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes romantic-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .romantic-glow-pulse {
+    width: 280px;
+    height: 280px;
+  }
+}
