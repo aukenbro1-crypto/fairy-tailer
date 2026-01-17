@@ -417,7 +417,7 @@ const Romantic = () => {
         {/* Pulsating red glow */}
         <div className="romantic-glow-pulse" />
         
-        <div className="max-w-4xl mx-auto relative z-10">
+        <div className="max-w-4xl mx-auto relative z-20">
           <div className="text-center mb-12">
             <h2 className="romantic-h2 text-2xl md:text-3xl lg:text-4xl mb-4">
               Создайте вашу историю
