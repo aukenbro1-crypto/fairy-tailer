@@ -441,24 +441,6 @@ const Romantic = () => {
 
             <AccordionItem value="faq-2" className="romantic-faq-item border-none">
               <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
-                Подойдет ли как подарок мужчине / женщине?
-              </AccordionTrigger>
-              <AccordionContent className="romantic-faq-content text-base pb-4">
-                Да. Это подарок в первую очередь для пары — в нем рассказана история про вас двоих и она подойдет каждому из вас. Сказка будет состоять из 6 персонифицированных иллюстраций и пяти глав, прочтение которых займет до получаса.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="faq-3" className="romantic-faq-item border-none">
-              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
-                Как быстро книга будет готова?
-              </AccordionTrigger>
-              <AccordionContent className="romantic-faq-content text-base pb-4">
-                PDF будет готов через несколько минут. Печатная версия — за несколько дней. Точные сроки доставки зависят от вашего города. Мы используем инфраструктуру 5Post и Почты России.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="faq-4" className="romantic-faq-item border-none">
-              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
                 Как быть с ошибками в текстах и иллюстрациях, которые делает ИИ?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
@@ -466,7 +448,7 @@ const Romantic = () => {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="faq-5" className="romantic-faq-item border-none">
+            <AccordionItem value="faq-3" className="romantic-faq-item border-none">
               <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
                 Нужно ли загружать фото? Что вы с ними делаете?
               </AccordionTrigger>
@@ -475,7 +457,7 @@ const Romantic = () => {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="faq-6" className="romantic-faq-item border-none">
+            <AccordionItem value="faq-4" className="romantic-faq-item border-none">
               <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
                 А что именно я получу на выходе?
               </AccordionTrigger>
@@ -484,12 +466,30 @@ const Romantic = () => {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="faq-7" className="romantic-faq-item border-none">
+            <AccordionItem value="faq-5" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Подойдет ли как подарок мужчине / женщине?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Да. Это подарок в первую очередь для пары — в нем рассказана история про вас двоих и она подойдет каждому из вас. Сказка будет состоять из 6 персонифицированных иллюстраций и пяти глав, прочтение которых займет до получаса.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-6" className="romantic-faq-item border-none">
               <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
                 Мне пришла история с кривой версткой, можно ли это исправить?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
                 После оплаты печатной версии, редактор обязательно приведет в порядок текст — проверит на ошибки, исправит верстку и поработает над стилистикой там, где это необходимо.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-7" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Как быстро книга будет готова?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                PDF будет готов через несколько минут. Печатная версия — за несколько дней. Точные сроки доставки зависят от вашего города. Мы используем инфраструктуру 5Post и Почты России.
               </AccordionContent>
             </AccordionItem>
 
