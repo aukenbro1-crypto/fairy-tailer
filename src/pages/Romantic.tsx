@@ -294,10 +294,7 @@ const Romantic = () => {
             {/* Text left */}
             <div className="flex-1 mb-8 md:mb-0">
               <h2 className="romantic-h2 text-2xl md:text-3xl mb-4">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
-              <p className="romantic-text text-lg md:text-xl leading-relaxed">Хочется подарить что-то значимое,
-а не очередную вещь «для галочки»?<br className="hidden md:block" />
-                а не очередную вещь «для галочки».
-              </p>
+              <p className="romantic-text text-lg md:text-xl leading-relaxed">Хочется подарить что-то значимое, а не очередную вещь «для галочки»?</p>
             </div>
             {/* Envelope right */}
             <div className="flex justify-center md:flex-shrink-0">
@@ -345,24 +342,30 @@ const Romantic = () => {
 
       {/* SCREEN 5: HOW IT WORKS */}
       <AnimatedSection id="romantic-how-it-works" className="romantic-section-light py-16 md:py-20 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
             {[{
             num: "1",
-            text: "Вы отвечаете на несколько вопросов"
+            text: "Вы заполняете форму и отвечаете на несколько вопросов"
           }, {
             num: "2",
             text: "Искусственный интеллект создает историю и иллюстрации"
           }, {
             num: "3",
-            text: "Вы получаете книгу на почту, утверждаете ее, а мы — редактируем и отправляем в печать"
-          }].map((step, index) => <div key={index} className="text-center romantic-step-card" style={{
+            text: "Вы получаете книгу на почту, оплачиваете заказ и утверждаете ее"
+          }, {
+            num: "4",
+            text: "В течение дня опытный редактор работает с материалом и отправляет в печать"
+          }, {
+            num: "5",
+            text: "Готовая книга будет доставлена в течение нескольких дней с момента оплаты"
+          }].map((step, index) => <div key={index} className={`text-center romantic-step-card ${index === 4 ? 'col-span-2 md:col-span-1' : ''}`} style={{
             transitionDelay: `${index * 150}ms`
           }} onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
-                <div className={`romantic-step-number text-4xl md:text-5xl font-serif mb-4 transition-all duration-300 ${hoveredStep === index ? "scale-110" : ""}`}>
+                <div className={`romantic-step-number text-3xl md:text-4xl font-serif mb-3 transition-all duration-300 ${hoveredStep === index ? "scale-110" : ""}`}>
                   {step.num}
                 </div>
-                <p className="romantic-text text-base md:text-lg leading-relaxed">
+                <p className="romantic-text text-sm md:text-base leading-relaxed">
                   {step.text}
                 </p>
               </div>)}
