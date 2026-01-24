@@ -231,8 +231,8 @@ const Romantic = () => {
             <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
             filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
           }} />
-            {/* Price banner overlapping the book */}
-            <div className="absolute left-24 md:left-36 -bottom-2 md:-bottom-4 z-20">
+            {/* Price banner centered on screen */}
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 md:-bottom-4 z-20">
               <div className="romantic-price-banner">
                 <span className="romantic-price-label">итоговая цена</span>
                 <span className="romantic-price-value">2500₽</span>
