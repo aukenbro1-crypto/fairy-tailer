@@ -11,7 +11,7 @@ import logoImage from "@/assets/logo.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
 import loveDragonImage from "@/assets/lovedragon-romantic.png";
 import productFeaturesImage from "@/assets/product-features.png";
-import bookHandsImage from "@/assets/book-hands-romantic.png";
+import bookHandsImage from "@/assets/romantic-book-cover-new.png";
 
 // Import book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
