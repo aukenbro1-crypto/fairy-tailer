@@ -2641,21 +2641,38 @@ html, body {
   color: var(--romantic-dark-terracotta);
 }
 
-/* CTA Buttons */
+/* CTA Buttons - Glassmorphism Style */
 .romantic-cta-primary {
-  background-color: var(--romantic-dark-terracotta);
-  color: var(--romantic-pale-pink);
-  border: none;
-  border-radius: 4px;
+  background: linear-gradient(135deg, 
+    hsl(var(--romantic-desert-coral)) 0%, 
+    hsl(12 60% 55%) 100%
+  );
+  color: #ffffff;
+  border: 3px solid hsl(var(--romantic-desert-coral));
+  border-radius: 1.25rem;
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 400;
+  font-weight: 600;
   cursor: pointer;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 
+    0 12px 40px rgba(200, 100, 80, 0.4),
+    0 4px 16px rgba(200, 100, 80, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
 .romantic-cta-primary:hover {
-  background-color: var(--romantic-desert-coral);
-  color: var(--romantic-dark-terracotta);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 16px 50px rgba(200, 100, 80, 0.5),
+    0 6px 20px rgba(200, 100, 80, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, 
+    hsl(12 55% 58%) 0%, 
+    hsl(12 60% 50%) 100%
+  );
 }
 
 .romantic-cta-secondary {
