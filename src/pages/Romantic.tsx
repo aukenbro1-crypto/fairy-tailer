@@ -240,7 +240,7 @@ const Romantic = () => {
               filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
             }} />
             {/* Price banner overlapping the book */}
-            <div className="absolute left-4 md:left-8 bottom-4 md:bottom-8 z-20">
+            <div className="absolute left-12 md:left-20 -bottom-2 md:-bottom-4 z-20">
               <div className="romantic-price-banner">
                 <span className="romantic-price-label">итоговая цена</span>
                 <span className="romantic-price-value">2500₽</span>
