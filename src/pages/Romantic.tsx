@@ -231,13 +231,6 @@ const Romantic = () => {
             <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
             filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
           }} />
-            {/* Price banner centered on screen */}
-            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 md:-bottom-4 z-20">
-              <div className="romantic-price-banner">
-                <span className="romantic-price-label">итоговая цена</span>
-                <span className="romantic-price-value">2500₽</span>
-              </div>
-            </div>
           </div>
           {/* Text right - smaller */}
           <div className="md:flex-[0.8] text-center md:text-right mb-8 md:mb-0">
@@ -246,6 +239,13 @@ const Romantic = () => {
             <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
               Создать книгу
             </button>
+          </div>
+        </div>
+        {/* Price banner centered on entire screen */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-8 md:bottom-12 z-20">
+          <div className="romantic-price-banner">
+            <span className="romantic-price-label">итоговая цена</span>
+            <span className="romantic-price-value">2500₽</span>
           </div>
         </div>
       </section>
