@@ -48,33 +48,25 @@ const AnimatedSection = ({
 };
 
 // Book Image Gallery Component
-const BookImageGallery = ({ images }: { images: string[] }) => {
+const BookImageGallery = ({
+  images
+}: {
+  images: string[];
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
   const handleClick = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
+    setCurrentIndex(prev => (prev + 1) % images.length);
   };
-  
-  return (
-    <div 
-      className="flex-1 flex justify-center cursor-pointer group"
-      onClick={handleClick}
-    >
+  return <div className="flex-1 flex justify-center cursor-pointer group" onClick={handleClick}>
       <div className="relative">
-        <img 
-          src={images[currentIndex]} 
-          alt={`Пример книги ${currentIndex + 1}`} 
-          className="w-full max-w-[300px] md:max-w-[350px] lg:max-w-[400px] h-auto rounded-lg shadow-xl transition-transform duration-300 group-hover:scale-105"
-        />
+        <img src={images[currentIndex]} alt={`Пример книги ${currentIndex + 1}`} className="w-full max-w-[300px] md:max-w-[350px] lg:max-w-[400px] h-auto rounded-lg shadow-xl transition-transform duration-300 group-hover:scale-105" />
         {/* Click indicator */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full opacity-70 group-hover:opacity-100 transition-opacity">
           нажмите для смены • {currentIndex + 1}/{images.length}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 const Romantic = () => {
   const navigate = useNavigate();
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
@@ -237,8 +229,8 @@ const Romantic = () => {
           {/* Image left - larger */}
           <div className="md:flex-[1.5] flex justify-center md:justify-start relative">
             <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
-              filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
-            }} />
+            filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
+          }} />
             {/* Price banner overlapping the book */}
             <div className="absolute left-24 md:left-36 -bottom-2 md:-bottom-4 z-20">
               <div className="romantic-price-banner">
@@ -252,9 +244,7 @@ const Romantic = () => {
             <h1 className="romantic-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 romantic-hero-title">
               Книга про вас — лучший подарок на 14 февраля.
             </h1>
-            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
-              история любви, где главные герои — вы
-            </p>
+            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">история любви, где главные герои вы</p>
             <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
               Создать книгу
             </button>
@@ -335,20 +325,12 @@ const Romantic = () => {
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 lg:gap-16">
             {/* Book cover image - left */}
             <div className="flex justify-center">
-              <img 
-                src={bookCoverRedImage} 
-                alt="Обложка книги" 
-                className="h-[280px] md:h-[320px] lg:h-[380px] w-auto drop-shadow-2xl"
-              />
+              <img src={bookCoverRedImage} alt="Обложка книги" className="h-[280px] md:h-[320px] lg:h-[380px] w-auto drop-shadow-2xl" />
             </div>
             
             {/* GIF - right */}
             <div className="flex justify-center">
-              <img 
-                src={bookAnimationGif} 
-                alt="Анимация книги" 
-                className="h-[280px] md:h-[320px] lg:h-[380px] w-auto mix-blend-multiply drop-shadow-2xl"
-              />
+              <img src={bookAnimationGif} alt="Анимация книги" className="h-[280px] md:h-[320px] lg:h-[380px] w-auto mix-blend-multiply drop-shadow-2xl" />
             </div>
           </div>
           <p className="romantic-caption text-center mt-8 text-sm">
