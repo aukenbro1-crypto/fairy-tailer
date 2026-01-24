@@ -294,9 +294,8 @@ const Romantic = () => {
             {/* Text left */}
             <div className="flex-1 mb-8 md:mb-0">
               <h2 className="romantic-h2 text-2xl md:text-3xl mb-4">14 февраля — прекрасный повод, чтобы впечатлить партнера</h2>
-              <p className="romantic-text text-lg md:text-xl leading-relaxed">
-                Хочется подарить что-то значимое,
-                <br className="hidden md:block" />
+              <p className="romantic-text text-lg md:text-xl leading-relaxed">Хочется подарить что-то значимое,
+а не очередную вещь «для галочки»?<br className="hidden md:block" />
                 а не очередную вещь «для галочки».
               </p>
             </div>
