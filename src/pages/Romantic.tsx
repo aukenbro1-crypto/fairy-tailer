@@ -498,7 +498,7 @@ const Romantic = () => {
                 Доставка: куда, сколько стоит, успеет ли к 14 февраля?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
-                Мы отправляем заказ в течение дня после оплаты. В зависимости от региона, доставка занимает от одного до семи рабочих дней. Например, доставка по Москве занимает около двух дней. Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
+                Стоимость готовой книги — 2 500₽, с учетом доставки. Мы отправляем заказ в течение дня после оплаты. В зависимости от региона, доставка занимает от одного до семи рабочих дней. Например, доставка по Москве занимает около двух дней. Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
               </AccordionContent>
             </AccordionItem>
 
