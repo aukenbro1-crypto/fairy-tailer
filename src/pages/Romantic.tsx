@@ -244,7 +244,7 @@ const Romantic = () => {
             <h1 className="romantic-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 romantic-hero-title">
               Книга про вас — лучший подарок на 14 февраля.
             </h1>
-            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">история любви, где главные герои вы</p>
+            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">история любви, где главные герои — это вы</p>
             <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
               Создать книгу
             </button>
