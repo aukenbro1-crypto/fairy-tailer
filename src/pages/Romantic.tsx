@@ -234,22 +234,14 @@ const Romantic = () => {
         </div>
 
         <div className={`max-w-7xl mx-auto w-full flex flex-col-reverse md:flex-row md:items-center md:gap-8 lg:gap-12 romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
-          {/* Price banner left */}
-          <div className="hidden md:flex flex-col items-center justify-center md:flex-[0.4]">
-            <div className="romantic-price-banner">
-              <span className="romantic-price-label">Цена за книгу</span>
-              <span className="romantic-price-value">2500₽</span>
-            </div>
-          </div>
-          
-          {/* Image center - larger */}
-          <div className="md:flex-[1.3] flex justify-center relative">
-            <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1000px] lg:max-w-[1200px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
+          {/* Image left - larger */}
+          <div className="md:flex-[1.5] flex justify-center md:justify-start relative">
+            <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{
               filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)'
             }} />
-            {/* Mobile price banner */}
-            <div className="md:hidden absolute -bottom-4 left-1/2 -translate-x-1/2">
-              <div className="romantic-price-banner romantic-price-banner-mobile">
+            {/* Price banner overlapping the book */}
+            <div className="absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-20">
+              <div className="romantic-price-banner">
                 <span className="romantic-price-label">Цена за книгу</span>
                 <span className="romantic-price-value">2500₽</span>
               </div>
