@@ -3692,3 +3692,62 @@ html, body {
     height: 550px;
   }
 }
+
+/* Price Banner */
+.romantic-price-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  background: linear-gradient(135deg, 
+    rgba(200, 100, 80, 0.15) 0%, 
+    rgba(217, 153, 133, 0.1) 100%
+  );
+  border: 2px solid hsl(var(--romantic-desert-coral) / 0.4);
+  border-radius: 1rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    0 8px 32px rgba(200, 100, 80, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: price-float 3s ease-in-out infinite;
+}
+
+.romantic-price-banner-mobile {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, 
+    rgba(200, 100, 80, 0.25) 0%, 
+    rgba(217, 153, 133, 0.2) 100%
+  );
+}
+
+.romantic-price-label {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: hsl(var(--romantic-warm-brown));
+  margin-bottom: 0.25rem;
+}
+
+.romantic-price-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: hsl(var(--romantic-desert-coral));
+  text-shadow: 0 2px 8px rgba(200, 100, 80, 0.3);
+}
+
+.romantic-price-banner-mobile .romantic-price-label {
+  font-size: 0.75rem;
+}
+
+.romantic-price-banner-mobile .romantic-price-value {
+  font-size: 1.5rem;
+}
+
+@keyframes price-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
