@@ -510,7 +510,7 @@ const Romantic = () => {
                 Вы создаете только истории в жанре love story?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
-                Нет! FairyTeller — это очень универсальный сервис. Вы можете создавать сказки для детей, захватывающие приключения про друзей и коллег, эпическое фэнтези и истории в жанре киберпанк. Конструктор сказок находится по ссылке <a href="https://fairyteller.ru/create" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">fairyteller.ru/create</a> — пробуйте и создавайте вместе с FairyTeller!
+                Нет! FairyTeller — это очень универсальный сервис. Вы можете создавать сказки для детей, захватывающие приключения про друзей и коллег, эпическое фэнтези и истории в жанре киберпанк. Конструктор сказок находится <a href="https://fairyteller.ru/create" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">по ссылке</a> — пробуйте и создавайте вместе с FairyTeller!
               </AccordionContent>
             </AccordionItem>
           </Accordion>
