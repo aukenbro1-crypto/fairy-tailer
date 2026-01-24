@@ -456,6 +456,60 @@ const Romantic = () => {
                 PDF будет готов через несколько минут. Печатная версия — за несколько дней. Точные сроки доставки зависят от вашего города. Мы используем инфраструктуру 5Post и Почты России.
               </AccordionContent>
             </AccordionItem>
+
+            <AccordionItem value="faq-4" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Как быть с ошибками в текстах и иллюстрациях, которые делает ИИ?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Мы постарались минимизировать их с помощью специальных фреймворков. И если ошибки в текстах легко устраняются редактурой, с картинками все бывает немного сложнее. Мы предлагаем не обращать внимания на небольшие неточности — все же это нейросетевой контент, а огрехи придают ему особый шарм.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-5" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Нужно ли загружать фото? Что вы с ними делаете?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Не обязательно, но очень желательно. Если вы добавите фото, тогда модель будет генерировать изображения по этим изображениям и герои будут очень похожи на вас. Мы не сохраняем присланные вами фотографии — они отправляются прямиком в модель, поэтому не можем никак их использовать.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-6" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                А что именно я получу на выходе?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Готовую историю в PDF — бесплатно. После оплаты — печатную книгу, которую доставят в удобное для вас место по всей России.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-7" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Мне пришла история с кривой версткой, можно ли это исправить?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                После оплаты печатной версии, редактор обязательно приведет в порядок текст — проверит на ошибки, исправит верстку и поработает над стилистикой там, где это необходимо.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-8" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Доставка: куда, сколько стоит, успеет ли к 14 февраля?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Мы отправляем заказ в течение дня после оплаты. В зависимости от региона, доставка занимает от одного до семи рабочих дней. Например, доставка по Москве занимает около двух дней. Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-9" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Вы создаете только истории в жанре love story?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Нет! FairyTeller — это очень универсальный сервис. Вы можете создавать сказки для детей, захватывающие приключения про друзей и коллег, эпическое фэнтези и истории в жанре киберпанк. <a href="https://fairy-tailer.lovable.app/create" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">Конструктор сказок</a> — пробуйте и создавайте вместе с FairyTeller!
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
       </AnimatedSection>
