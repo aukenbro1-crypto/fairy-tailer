@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -21,6 +21,35 @@ import exampleNewyearBack from "@/assets/example-newyear-back.jpg";
 import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
 import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
 import exampleFantasyBack from "@/assets/example-fantasy-back.jpeg";
+
+// Indian-style section wrapper
+const IndianSection = ({ 
+  children, 
+  backgroundImage, 
+  className = "",
+  id
+}: { 
+  children: React.ReactNode; 
+  backgroundImage: string;
+  className?: string;
+  id?: string;
+}) => (
+  <section 
+    id={id}
+    className={`relative w-full min-h-screen flex items-center justify-center py-8 md:py-16 ${className}`}
+    style={{
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none" />
+    <div className="relative z-10 w-full max-w-6xl mx-auto px-4">
+      {children}
+    </div>
+  </section>
+);
 
 // Example Carousel Card Component with Indian styling
 const ExampleCarouselCard = ({ 
@@ -86,9 +115,9 @@ const ExampleCarouselCard = ({
         href={pdfLink} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="block mt-4"
+        className="block mt-3"
       >
-        <div className="text-center py-3 px-4 rounded-lg border-2 border-amber-700/60 bg-gradient-to-b from-amber-200/90 to-amber-100/80 text-amber-900 font-serif font-semibold text-sm hover:from-amber-300/90 hover:to-amber-200/80 transition-all shadow-lg hover:shadow-xl hover:scale-105 duration-300"
+        <div className="text-center py-2 px-4 rounded border-2 border-amber-700/60 bg-gradient-to-b from-amber-200/90 to-amber-100/80 text-amber-900 font-serif font-semibold text-sm hover:from-amber-300/90 hover:to-amber-200/80 transition-all shadow-md hover:shadow-lg"
           style={{ textShadow: '0 1px 0 rgba(255,255,255,0.5)' }}
         >
           Посмотреть пример PDF
@@ -97,174 +126,6 @@ const ExampleCarouselCard = ({
     </div>
   );
 };
-
-// Volumetric Logo Component
-const VolumetricLogo = () => (
-  <div className="relative inline-block group">
-    {/* Shadow layers for depth */}
-    <div 
-      className="absolute inset-0 blur-md opacity-50"
-      style={{
-        background: 'linear-gradient(180deg, #1a4a6b 0%, #0d2a3d 100%)',
-        transform: 'translateY(8px) scaleY(0.95)',
-        borderRadius: '12px',
-      }}
-    />
-    
-    {/* Main banner */}
-    <div 
-      className="relative px-8 md:px-16 py-3 md:py-5 rounded-xl"
-      style={{
-        background: 'linear-gradient(180deg, #2a5a7b 0%, #1a4a6b 30%, #0d3a55 70%, #082838 100%)',
-        border: '4px solid #c9a227',
-        boxShadow: `
-          inset 0 2px 4px rgba(255,255,255,0.3),
-          inset 0 -4px 8px rgba(0,0,0,0.4),
-          0 8px 24px rgba(0,0,0,0.5),
-          0 4px 8px rgba(0,0,0,0.3)
-        `,
-      }}
-    >
-      {/* Decorative corners */}
-      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-8 bg-gradient-to-r from-amber-600 to-amber-500 rounded-l-full shadow-lg" 
-        style={{ boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.3)' }}
-      />
-      <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-8 bg-gradient-to-l from-amber-600 to-amber-500 rounded-r-full shadow-lg"
-        style={{ boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.3)' }}
-      />
-      
-      {/* Text with 3D effect */}
-      <h1 
-        className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-wider"
-        style={{
-          fontFamily: 'Georgia, serif',
-          color: '#f4d03f',
-          textShadow: `
-            0 1px 0 #c9a227,
-            0 2px 0 #b8922a,
-            0 3px 0 #a7822d,
-            0 4px 0 #967230,
-            0 5px 8px rgba(0,0,0,0.5),
-            0 0 20px rgba(244,208,63,0.3)
-          `,
-          letterSpacing: '0.05em',
-        }}
-      >
-        FAIRYTELLER
-      </h1>
-    </div>
-  </div>
-);
-
-// Volumetric CTA Button
-const VolumetricCTAButton = () => (
-  <Link to="/create" className="inline-block group">
-    <div className="relative">
-      {/* Shadow layer */}
-      <div 
-        className="absolute inset-0 rounded-lg opacity-60"
-        style={{
-          background: '#4a2810',
-          transform: 'translateY(6px)',
-          filter: 'blur(4px)',
-        }}
-      />
-      
-      {/* Main button */}
-      <div 
-        className="relative px-6 md:px-10 py-4 md:py-5 rounded-lg transition-all duration-300 group-hover:translate-y-[-2px] group-hover:shadow-2xl"
-        style={{
-          background: 'linear-gradient(180deg, #8B4513 0%, #6B3410 40%, #5a2a0d 70%, #4a200a 100%)',
-          border: '3px solid #c9a227',
-          boxShadow: `
-            inset 0 2px 4px rgba(255,255,255,0.2),
-            inset 0 -3px 6px rgba(0,0,0,0.4),
-            0 6px 16px rgba(0,0,0,0.4),
-            0 2px 4px rgba(0,0,0,0.2)
-          `,
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <span 
-            className="text-lg md:text-2xl font-bold uppercase tracking-wide"
-            style={{
-              color: '#f4d03f',
-              textShadow: `
-                0 1px 0 #c9a227,
-                0 2px 0 #b8922a,
-                0 2px 4px rgba(0,0,0,0.5)
-              `,
-            }}
-          >
-            Создать сказку
-          </span>
-          <span 
-            className="text-2xl md:text-3xl transition-transform duration-300 group-hover:translate-x-1"
-            style={{ color: '#f4d03f' }}
-          >
-            →
-          </span>
-        </div>
-      </div>
-    </div>
-  </Link>
-);
-
-// How It Works Card
-const HowItWorksCard = ({ 
-  step, 
-  title, 
-  subtitle 
-}: { 
-  step: number; 
-  title: string; 
-  subtitle: string;
-}) => (
-  <div 
-    className="group cursor-default transition-all duration-500 hover:scale-105 hover:-translate-y-2"
-  >
-    <div 
-      className="relative p-5 md:p-6 rounded-xl h-full"
-      style={{
-        background: 'linear-gradient(180deg, rgba(42,90,123,0.95) 0%, rgba(26,74,107,0.95) 50%, rgba(13,58,85,0.95) 100%)',
-        border: '3px solid #c9a227',
-        boxShadow: `
-          inset 0 2px 4px rgba(255,255,255,0.15),
-          inset 0 -4px 8px rgba(0,0,0,0.3),
-          0 8px 24px rgba(0,0,0,0.4),
-          0 4px 8px rgba(0,0,0,0.2)
-        `,
-      }}
-    >
-      {/* Corner ornaments */}
-      <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-amber-500/60 rounded-tl" />
-      <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-amber-500/60 rounded-tr" />
-      <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-amber-500/60 rounded-bl" />
-      <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-amber-500/60 rounded-br" />
-      
-      {/* Content */}
-      <div className="text-center space-y-3">
-        <p 
-          className="text-sm md:text-base font-serif leading-relaxed"
-          style={{
-            color: '#f5e6c8',
-            textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-          }}
-        >
-          {title}
-        </p>
-        <p 
-          className="text-xs md:text-sm font-serif opacity-80"
-          style={{
-            color: '#d4c4a8',
-          }}
-        >
-          {subtitle}
-        </p>
-      </div>
-    </div>
-  </div>
-);
 
 const Indian = () => {
   const exampleBooks = [
@@ -282,83 +143,32 @@ const Indian = () => {
     }
   ];
 
-  const howItWorksSteps = [
-    { title: "Придумай героя будущей сказки — добавь имя и фото", subtitle: "Имя Фото →" },
-    { title: "Выбери мир, жанр и место действия", subtitle: "Фэнтези — Башня в лесу →" },
-    { title: "Искусственный интеллект создаст материал и в течение 15 минут готовая сказка придет на email", subtitle: "Жили-были... →" },
-    { title: "Оплатите заказ, мы отредактируем текст, напечатаем книгу вышлем по указанному адресу", subtitle: "Адрес ✓" },
-  ];
-
   return (
     <div className="min-h-screen font-serif overflow-x-hidden" style={{ background: '#B8A898' }}>
       
       {/* SCREEN 1: HERO */}
-      <section 
-        className="relative w-full min-h-screen flex flex-col items-center justify-center py-16 md:py-24 px-4"
-        style={{
-          backgroundImage: `url(${heroBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col items-center text-center space-y-8 md:space-y-12 mt-8 md:mt-16">
-          {/* Volumetric Logo */}
-          <VolumetricLogo />
-          
-          {/* Spacer for visual breathing room */}
-          <div className="h-4 md:h-8" />
-          
-          {/* Main tagline - invisible, content is in background */}
-          <div className="h-32 md:h-48" />
-          
-          {/* CTA Button */}
-          <div className="pt-4 md:pt-8">
-            <VolumetricCTAButton />
-          </div>
+      <IndianSection backgroundImage={heroBackground}>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
+          {/* Invisible clickable CTA area over the "Создать сказку" button position */}
+          <Link 
+            to="/create"
+            className="absolute bottom-[15%] right-[10%] md:bottom-[18%] md:right-[15%] w-48 h-20 md:w-64 md:h-24 cursor-pointer z-20 hover:scale-105 transition-transform"
+            aria-label="Создать сказку"
+          />
         </div>
-      </section>
+      </IndianSection>
 
       {/* SCREEN 2: HOW IT WORKS */}
-      <section 
-        id="how-it-works"
-        className="relative w-full py-20 md:py-32"
-        style={{
-          backgroundImage: `url(${howItWorksBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none" />
-        
-        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-8">
-          {/* Header spacer */}
-          <div className="h-20 md:h-32" />
-          
-          {/* Cards grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {howItWorksSteps.map((step, i) => (
-              <HowItWorksCard 
-                key={i} 
-                step={i + 1} 
-                title={step.title} 
-                subtitle={step.subtitle} 
-              />
-            ))}
-          </div>
-          
-          {/* Bottom spacer */}
-          <div className="h-16 md:h-24" />
+      <IndianSection backgroundImage={howItWorksBackground} id="how-it-works">
+        <div className="min-h-[80vh]">
+          {/* Content is in the background image */}
         </div>
-      </section>
+      </IndianSection>
 
-      {/* SCREEN 3: EXAMPLES */}
+      {/* SCREEN 3: EXAMPLES - with real interactive content */}
       <section 
         id="examples"
-        className="relative w-full py-20 md:py-32"
+        className="relative w-full py-12 md:py-20"
         style={{
           backgroundImage: `url(${examplesBackground})`,
           backgroundSize: 'cover',
@@ -368,12 +178,12 @@ const Indian = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
         
-        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-8">
-          {/* Header spacer */}
-          <div className="h-32 md:h-52" />
+        <div className="relative z-10 max-w-6xl mx-auto px-4">
+          {/* Spacer for the header in background image */}
+          <div className="h-32 md:h-48" />
           
           {/* Interactive book examples */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 px-4 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 px-4 md:px-12">
             {exampleBooks.map((example, i) => (
               <ExampleCarouselCard 
                 key={i} 
@@ -385,38 +195,26 @@ const Indian = () => {
           </div>
           
           {/* Bottom spacer */}
-          <div className="h-20 md:h-32" />
+          <div className="h-16 md:h-24" />
         </div>
       </section>
 
       {/* SCREEN 4: WHO TO GIFT */}
-      <section 
-        id="gift"
-        className="relative w-full min-h-screen flex items-center justify-center py-20 md:py-32"
-        style={{
-          backgroundImage: `url(${giftBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
-        
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 md:px-8">
-          {/* Content is in the background image */}
-          <div className="min-h-[60vh]" />
-          
-          {/* CTA at bottom */}
-          <div className="flex justify-center pb-8">
-            <VolumetricCTAButton />
-          </div>
+      <IndianSection backgroundImage={giftBackground} id="gift">
+        <div className="flex flex-col items-center justify-center min-h-[80vh]">
+          {/* CTA button area */}
+          <Link 
+            to="/create"
+            className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-72 h-16 md:w-96 md:h-20 cursor-pointer z-20 hover:scale-105 transition-transform"
+            aria-label="Создать свою сказку"
+          />
         </div>
-      </section>
+      </IndianSection>
 
-      {/* SCREEN 5: FAQ */}
+      {/* SCREEN 5: FAQ - with real accordion */}
       <section 
         id="faq"
-        className="relative w-full py-20 md:py-32"
+        className="relative w-full py-12 md:py-20"
         style={{
           backgroundImage: `url(${faqBackground})`,
           backgroundSize: 'cover',
@@ -426,59 +224,182 @@ const Indian = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
         
-        <div className="relative z-10 max-w-4xl mx-auto px-6 md:px-12">
-          {/* Decorative header spacer */}
-          <div className="h-28 md:h-44" />
+        <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-16">
+          {/* Spacer for the decorative header */}
+          <div className="h-24 md:h-36" />
           
-          {/* FAQ Accordion */}
-          <div className="space-y-3 md:space-y-4">
+          {/* FAQ Accordion - styled to match Indian aesthetic */}
+          <div className="space-y-2 md:space-y-3">
             <Accordion type="single" collapsible className="w-full">
-              {[
-                { value: "item-1", q: "Сколько стоит сказка?", a: "Полноценная бумажная книга стоит 2 500₽. В эту сумму входит печать, доставка до ПВЗ и финальная вычитка текста редактором." },
-                { value: "item-2", q: "Как я получу сказку? Есть ли доставка?", a: "Сначала вы получаете PDF на почту в течение 10–20 минут. Если вам нравится результат, вы оплачиваете заказ. Через 5 рабочих дней книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»)." },
-                { value: "item-3", q: "Как работает конструктор?", a: "Вы заполняете параметры — герои, характеры, возраст, локацию, жанр, тон и стиль иллюстраций. Искусственный интеллект создает текст, генерирует иллюстрации и собирает все в аккуратный PDF из пяти глав. Если вы выбираете печать, перед отправкой в типографию текст вручную вычитывает редактор." },
-                { value: "item-4", q: "Могу ли я добавить фотографий?", a: "Да. Фото делают героев похожими на вас и ваших близких. Мы используем только черты лица — фон не копируется. Фото не хранятся и не используются повторно." },
-                { value: "item-5", q: "Насколько персональной будет история?", a: "На 100%. Даже при одинаковых параметрах истории получаются разными. Привычки, страхи, профессии и особенности героев органично вплетаются в сюжет." },
-                { value: "item-6", q: "Можно указать абстрактные локации?", a: "Да. Конструктор одинаково хорошо работает с реальными адресами, районами и полностью абстрактными пространствами — «улица детства», «летний ветер», «желтый город»." },
-                { value: "item-7", q: "Можно ли создавать истории для взрослых?", a: "Да. Вы сами выбираете жанр и тон — это могут быть романтические, философские, приключенческие или даже футуристические истории." },
-                { value: "item-8", q: "Письмо не пришло — что делать?", a: "Проверьте папки «Спам» и «Промоакции». Если письма все же нет — напишите через форму обратной связи, и мы отправим PDF вручную." },
-                { value: "item-9", q: "У меня остались вопросы, с кем связаться?", a: "Пишите в Telegram: @nikita0shch — мы поможем!" },
-              ].map((item) => (
-                <AccordionItem 
-                  key={item.value}
-                  value={item.value} 
-                  className="border-0 mb-3 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
-                  style={{
-                    background: 'linear-gradient(180deg, rgba(222,199,166,0.97) 0%, rgba(200,175,140,0.95) 100%)',
-                    border: '3px solid rgba(139,115,85,0.6)',
-                    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.4), 0 4px 12px rgba(0,0,0,0.25)',
-                  }}
-                >
-                  <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-4 md:py-5 px-5 md:px-7 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
-                    ✦ {item.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-amber-900/90 text-sm md:text-base px-5 md:px-7 pb-5">
-                    {item.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+              <AccordionItem 
+                value="item-1" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Сколько стоит сказка?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Полноценная бумажная книга стоит 2 500₽. В эту сумму входит печать, доставка до ПВЗ и финальная вычитка текста редактором.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-2" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Как я получу сказку? Есть ли доставка?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Сначала вы получаете PDF на почту в течение 10–20 минут. Если вам нравится результат, вы оплачиваете заказ. Через 5 рабочих дней книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»).
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-3" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Как работает конструктор?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Вы заполняете параметры — герои, характеры, возраст, локацию, жанр, тон и стиль иллюстраций. Искусственный интеллект создает текст, генерирует иллюстрации и собирает все в аккуратный PDF из пяти глав. Если вы выбираете печать, перед отправкой в типографию текст вручную вычитывает редактор и исправляет досадные ошибки, допущенные искусственным интеллектом.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-4" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Могу ли я добавить фотографий?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Да. Фото делают героев похожими на вас и ваших близких. Мы используем только черты лица — фон не копируется. Фото не хранятся и не используются повторно.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-5" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Насколько персональной будет история?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  На 100%. Даже при одинаковых параметрах истории получаются разными. Привычки, страхи, профессии и особенности героев органично вплетаются в сюжет.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-6" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Можно указать абстрактные локации — «улица детства», «летний ветер», «желтый город»?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Да. Конструктор одинаково хорошо работает с реальными адресами, районами и полностью абстрактными пространствами.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-7" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Можно ли создавать истории для взрослых?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Да. Вы сами выбираете жанр и тон — это могут быть романтические, философские, приключенческие или даже футуристические истории.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-8" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ Письмо не пришло — что делать?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Проверьте папки «Спам» и «Промоакции». Если письма все же нет — напишите через форму обратной связи, и мы отправим PDF вручную.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-9" 
+                className="border-0 mb-2 rounded-lg overflow-hidden"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(222,199,166,0.95) 0%, rgba(200,175,140,0.9) 100%)',
+                  border: '2px solid rgba(139,115,85,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                <AccordionTrigger className="text-amber-900 hover:text-amber-800 py-3 md:py-4 px-4 md:px-6 text-sm md:text-base font-serif font-semibold text-left [&[data-state=open]>svg]:text-amber-700 [&>svg]:text-amber-600 [&>svg]:w-5 [&>svg]:h-5">
+                  ✦ У меня остались вопросы, с кем я могу связаться?
+                </AccordionTrigger>
+                <AccordionContent className="text-amber-900/90 text-sm md:text-base px-4 md:px-6 pb-4">
+                  Пишите в Telegram: <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-600 underline">@nikita0shch</a> — мы поможем!
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
           
           {/* Bottom spacer */}
-          <div className="h-20 md:h-32" />
+          <div className="h-16 md:h-24" />
         </div>
       </section>
 
       {/* Footer */}
       <footer 
-        className="py-8 md:py-10 text-center"
+        className="py-6 text-center"
         style={{
           background: 'linear-gradient(180deg, #9A8878 0%, #7A6858 100%)',
-          borderTop: '4px solid rgba(139,115,85,0.7)',
+          borderTop: '3px solid rgba(139,115,85,0.6)',
         }}
       >
-        <p className="text-amber-100/90 font-serif text-sm md:text-base">
+        <p className="text-amber-100/80 font-serif text-sm">
           © 2026 FairyTeller. Все права защищены.
         </p>
       </footer>
