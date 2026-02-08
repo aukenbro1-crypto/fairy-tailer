@@ -205,11 +205,11 @@ const RomanticStoryForm: React.FC = () => {
       toast({ variant: "destructive", title: "Ошибка", description: "Укажите место действия" });
       return;
     }
-    if (!formData.artifact.trim()) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Укажите артефакт" });
-      return;
-    }
     setCurrentStep(2);
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
   };
 
   const goToStep3 = () => {
@@ -326,12 +326,15 @@ const RomanticStoryForm: React.FC = () => {
       {/* Step Indicator */}
       <div className="romantic-step-indicator mb-8">
         {[1, 2, 3].map((step) => (
-          <div
+          <button
             key={step}
+            type="button"
+            onClick={() => goToStep(step)}
             className={`romantic-step-dot ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}
+            style={{ cursor: 'pointer' }}
           >
             {step}
-          </div>
+          </button>
         ))}
       </div>
 
