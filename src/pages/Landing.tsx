@@ -355,7 +355,7 @@ const Landing = () => {
       <section className="py-16 mixer-desk-bg">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-            Создай свою сказку
+            Создай свою сказку прямо сейчас
           </h2>
           <StoryConstructor showHeader={false} />
         </div>

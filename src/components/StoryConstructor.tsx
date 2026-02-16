@@ -100,14 +100,14 @@ export const ILLUSTRATION_STYLES: Record<string, string> = {
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
-  'disney': 'disney',
-  'toonflat': 'toonflat',
-  'minibrick': 'minibrick',
-  'naive': 'naive',
-  'watercolor': 'watercolor',
-  'claymotion': 'claymotion',
-  'yarncraft': 'yarncraft',
-  'celcinema': 'celcinema'
+  'disney': 'Диснейный',
+  'toonflat': 'Мультяшный',
+  'minibrick': 'Лего',
+  'naive': 'Наивный',
+  'watercolor': 'Акварель',
+  'claymotion': 'Пластилин',
+  'yarncraft': 'Вязаный',
+  'celcinema': 'Кинематограф'
 };
 
 const STYLE_SPRITES: Record<string, string> = {
@@ -164,11 +164,9 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
           <div className="sp-scanlines" aria-hidden="true"></div>
           <div className="sp-preview">
             <div className="sp-sprite" style={{ backgroundImage: `url("${STYLE_SPRITES[value]}")` }} aria-hidden="true"></div>
-            {value !== 'claymotion' && value !== 'naive' && value !== 'minibrick' && value !== 'watercolor' && value !== 'disney' && value !== 'toonflat' && value !== 'celcinema' && value !== 'yarncraft' && (
-              <div className="sp-label" aria-live="polite">
-                {ILLUSTRATION_STYLE_LABELS[value]}
-              </div>
-            )}
+            <div className="sp-label" aria-live="polite">
+              {ILLUSTRATION_STYLE_LABELS[value]}
+            </div>
           </div>
         </div>
 
@@ -961,7 +959,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
               onClick={handleSubmit}
               disabled={showLoader}
             >
-              {showLoader ? 'Отправка...' : 'Создать сказку ✨'}
+              {showLoader ? 'Отправка...' : 'Создать сказку'}
             </button>
           </div>
           
