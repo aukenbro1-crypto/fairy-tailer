@@ -100,14 +100,14 @@ export const ILLUSTRATION_STYLES: Record<string, string> = {
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
-  'disney': 'Диснейный',
+  'disney': 'Дисней',
   'toonflat': 'Мультяшный',
   'minibrick': 'Лего',
   'naive': 'Наивный',
   'watercolor': 'Акварель',
   'claymotion': 'Пластилин',
   'yarncraft': 'Вязаный',
-  'celcinema': 'Кинематограф'
+  'celcinema': 'Аниме'
 };
 
 const STYLE_SPRITES: Record<string, string> = {
