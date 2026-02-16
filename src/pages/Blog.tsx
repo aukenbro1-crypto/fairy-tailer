@@ -11,14 +11,14 @@ const Blog = () => {
 
       <main className="container mx-auto px-4 py-12">
         <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-          Блог
+          Журнал
         </h1>
         <p className="text-center text-[#DBA858]/80 text-lg mb-12 max-w-2xl mx-auto">
           Идеи подарков, советы и вдохновение для создания персональных историй
         </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {blogPosts.map((post) => (
+          {blogPosts.filter(p => !p.hidden).map((post) => (
             <Link key={post.slug} to={`/blog/${post.slug}`} className="group">
               <article className="bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl overflow-hidden shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 h-full flex flex-col">
                 <div className="aspect-[16/10] overflow-hidden">
