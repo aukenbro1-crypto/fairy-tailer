@@ -13,8 +13,8 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
-    slug: "zolotaya-dryan-s-bloshinogo-rynka",
-    title: "Золотая дрянь с блошиного рынка: самый неудачный подарок близкому",
+    slug: "samyj-neudachnyj-podarok-blizkomu",
+    title: "Самый неудачный подарок близкому",
     description: "Как правильно дарить подарки? На примере легендарного телесериала «Друзья» разбираемся, почему важен контекст, а не цена.",
     date: "2026-02-03T10:00:00Z",
     coverImage: "https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_6981949a2a15c83268e6a24f_698195105ed4212035c5b8a1/scale_1200",
