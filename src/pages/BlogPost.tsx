@@ -16,7 +16,7 @@ const BlogPostPage = () => {
   // Related posts by tags (exclude current)
   const related = post.tags
     .flatMap(tag => getBlogPostsByTag(tag))
-    .filter((p, i, arr) => p.slug !== post.slug && arr.findIndex(x => x.slug === p.slug) === i)
+    .filter((p, i, arr) => p.slug !== post.slug && !p.hidden && arr.findIndex(x => x.slug === p.slug) === i)
     .slice(0, 4);
 
   const content = post.contentMarkdown || "";
