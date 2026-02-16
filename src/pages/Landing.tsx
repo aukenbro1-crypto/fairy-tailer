@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
+import StoryConstructor from "@/components/StoryConstructor";
 
 // Critical above-the-fold images - load immediately
 import mascotImage from "@/assets/mascot-new.png";
@@ -18,17 +19,6 @@ import heroSelectionImage from "@/assets/hero-selection.png";
 import worldAtmosphereImage from "@/assets/world-atmosphere.png";
 import aiWritingImage from "@/assets/ai-writing.png";
 import readyStoryImage from "@/assets/ready-story.png";
-import claymotionStyleImage from "@/assets/claymotion-style.png";
-import naiveStyleImage from "@/assets/naive-style.jpg";
-import minibrickStyleImage from "@/assets/minibrick-style.jpg";
-import watercolorStyleImage from "@/assets/watercolor-style.jpg";
-import disneyStyleImage from "@/assets/disney-style.jpg";
-import toonflatStyleImage from "@/assets/toonflat-style.jpg";
-import celcinemaStyleImage from "@/assets/celcinema-style.jpg";
-import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
-import dragonAdventureImage from "@/assets/dragon-adventure.png";
-import santaNewyearImage from "@/assets/santa-newyear.png";
-import wizardFantasyImage from "@/assets/wizard-fantasy.png";
 
 // Example book images
 import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
@@ -361,100 +351,13 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Interactive Preview: Two Columns */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Column 1: Choose Your World */}
-          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]" onClick={() => window.open('/create', '_blank')}>
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-                Выбери свой мир
-              </h2>
-              <p className="text-base text-[#DBA858]">
-                Каждый мир — это своя атмосфера
-              </p>
-            </div>
-            
-            <div>
-              <div className="overflow-x-auto pb-4 -mx-4 px-4">
-                <div className="flex gap-4 min-w-max justify-center">
-                  {[{
-                  emoji: '🦜',
-                  image: dragonAdventureImage,
-                  title: 'Приключения',
-                  tagline: '— Лови момент!'
-                }, {
-                  emoji: '🎅🏻',
-                  image: santaNewyearImage,
-                  title: 'Новогодняя сказка',
-                  tagline: '— С Новым годом!'
-                }, {
-                  emoji: '🧙🏻‍♂️',
-                  image: wizardFantasyImage,
-                  title: 'Фэнтези',
-                  tagline: '— От судьбы не уйдешь.'
-                }].map((world, index) => <Card key={world.title} className="text-center bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden flex flex-col w-32 cursor-pointer animate-fade-in" style={{
-                  animationDelay: `${index * 150}ms`
-                }}>
-                      <CardHeader className="pb-2 pt-3">
-                        <div className="flex justify-center items-center mb-1">
-                          {world.image ? <img src={world.image} alt={world.title} className="w-12 h-12 object-contain" loading="lazy" decoding="async" /> : <div className="text-3xl">{world.emoji}</div>}
-                        </div>
-                        <CardTitle className="text-[#E89C31] text-xs font-bold mb-1">{world.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-2 pb-3">
-                        <p className="text-[#E89C31]/80 text-[10px] italic">{world.tagline}</p>
-                      </CardContent>
-                    </Card>)}
-                </div>
-              </div>
-              <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-xl font-semibold">
-                  🪄 Начать!
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 2: Illustration Style */}
-          <div className="border-2 border-[#E89C31]/30 rounded-3xl p-6 bg-[#083248]/30 hover:border-[#E89C31]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02]" onClick={() => window.open('/create', '_blank')}>
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
-                Стиль иллюстрации
-              </h2>
-              <p className="text-base text-[#DBA858]">
-                Выбери визуальный стиль
-              </p>
-            </div>
-            
-            <div>
-              <div className="overflow-x-auto pb-4 -mx-4 px-4">
-                <div className="flex gap-4 min-w-max justify-center">
-                  {[{
-                  name: 'Disney',
-                  image: disneyStyleImage
-                }, {
-                  name: 'Toonflat',
-                  image: toonflatStyleImage
-                }, {
-                  name: 'Claymotion',
-                  image: claymotionStyleImage
-                }].map((style, index) => <Card key={style.name} className="bg-[#083248]/95 shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/15 hover:scale-110 transition-all duration-300 border border-[#E89C31]/20 rounded-2xl overflow-hidden w-32 cursor-pointer animate-fade-in" style={{
-                  animationDelay: `${index * 150}ms`
-                }}>
-                      <div className="aspect-square bg-gradient-to-br from-[#0B2838] to-[#031B28] flex items-center justify-center p-2">
-                        <img src={style.image} alt={style.name} className="w-full h-full object-cover rounded-lg" loading="lazy" decoding="async" />
-                      </div>
-                    </Card>)}
-                </div>
-              </div>
-              <div className="text-center mt-4">
-                <p className="text-[#DBA858] text-xl font-semibold">
-                  🪄 Начать!
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Story Constructor - embedded */}
+      <section className="py-16 mixer-desk-bg">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
+            Создай свою сказку
+          </h2>
+          <StoryConstructor showHeader={false} />
         </div>
       </section>
 
