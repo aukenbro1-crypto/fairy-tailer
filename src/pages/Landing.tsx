@@ -220,10 +220,10 @@ const Landing = () => {
 
                   <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
 
-                  <Link to="/create" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold" onClick={() => setMenuOpen(false)}>
+                  <button onClick={() => scrollToSection('constructor')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold">
                     <Scroll size={20} />
                     <span>Создать сказку</span>
-                  </Link>
+                  </button>
                 </div>
               </div>}
           </div>
@@ -280,9 +280,9 @@ const Landing = () => {
             </h1>
             <p className="text-xl text-[#DBA858] leading-relaxed">Создавай бумажные книги про себя и своих близких</p>
             <div className="pt-12 flex justify-end mr-20">
-              <Link to="/create">
+              <a href="#constructor" onClick={(e) => { e.preventDefault(); scrollToSection('constructor'); }}>
                 <img src={createButtonImage} alt="Создать сказку" className="h-60 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-lg hover:drop-shadow-2xl" />
-              </Link>
+              </a>
             </div>
           </div>
           <div className="flex justify-center md:justify-center md:order-2 order-1">
@@ -352,7 +352,7 @@ const Landing = () => {
       </section>
 
       {/* Story Constructor - embedded */}
-      <section className="py-16 mixer-desk-bg">
+      <section id="constructor" className="py-16 mixer-desk-bg">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-[#E89C31] drop-shadow-[0_0_15px_rgba(232,156,49,0.3)]">
             Создай свою сказку прямо сейчас
@@ -471,9 +471,9 @@ const Landing = () => {
           <p className="text-xl text-[#DBA858] mb-10 max-w-2xl mx-auto leading-relaxed">
             Заполните несколько полей — и получите историю, где герои и события будут связаны с вашей жизнью.
           </p>
-          <Link to="/create">
+          <a href="#constructor" onClick={(e) => { e.preventDefault(); scrollToSection('constructor'); }}>
             <img src={createButtonImage} alt="Создать сказку" className="h-24 w-auto hover:scale-105 transition-all duration-300 cursor-pointer drop-shadow-2xl hover:drop-shadow-[0_0_40px_rgba(232,156,49,0.6)] mx-auto" />
-          </Link>
+          </a>
         </div>
       </section>
 
