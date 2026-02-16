@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown, Newspaper } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import StoryConstructor from "@/components/StoryConstructor";
 
@@ -217,6 +217,11 @@ const Landing = () => {
                     <Mail size={20} />
                     <span>FAQ</span>
                   </button>
+
+                  <Link to="/blog" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
+                    <Newspaper size={20} />
+                    <span>Журнал</span>
+                  </Link>
 
                   <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
 
