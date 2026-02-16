@@ -11,6 +11,10 @@ const Index = lazy(() => import("./pages/Index"));
 const Print = lazy(() => import("./pages/Print"));
 const Romantic = lazy(() => import("./pages/Romantic"));
 const Indian = lazy(() => import("./pages/Indian"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const BlogTag = lazy(() => import("./pages/BlogTag"));
+const BlogAdmin = lazy(() => import("./pages/BlogAdmin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -35,6 +39,10 @@ const App = () => (
             <Route path="/print" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
             <Route path="/indian" element={<Indian />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/tag/:tag" element={<BlogTag />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/blog-admin" element={<BlogAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
