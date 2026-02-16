@@ -17,7 +17,7 @@ export const blogPosts: BlogPost[] = [
     title: "Нейросказки на заказ: персональная бумажная книга с иллюстрациями",
     description: "FairyTeller.ru создаёт сказки про вас и близких: внятный сюжет, выбранный стиль иллюстраций, редактура перед печатью — и настоящая книга, которую приятно держать в руках.",
     date: "2026-02-16T10:00:00Z",
-    coverImage: "https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_699314af18737037857c1a32_6993182a97368105548f7cf1/scale_1200",
+    coverImage: "/images/book-exmpl6.jpg",
     tags: ["нейросказки", "подарки", "книги"],
     source: "zen",
     sourceUrl: "https://dzen.ru/a/aZMUrxhzcDeFfBoy",
