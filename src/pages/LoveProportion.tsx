@@ -789,16 +789,33 @@ const LP_STYLES = `
 .lp-pill {
   padding: 8px 18px;
   border-radius: 100px;
-  border: 1px solid rgba(17,17,17,0.12);
-  background: #ffffff;
+  border: 1px solid rgba(91,184,245,0.35);
+  background: rgba(255,255,255,0.85);
   color: #111111;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  animation: lp-pill-breathe 3.2s ease-in-out infinite;
+  backdrop-filter: blur(4px);
+}
+.lp-pill:nth-child(2) {
+  animation-delay: 0.4s;
+}
+.lp-pill:nth-child(3) {
+  animation-delay: 0.8s;
 }
 .lp-pill:hover {
-  background: rgba(17,17,17,0.05);
-  border-color: rgba(17,17,17,0.2);
+  background: rgba(91,184,245,0.1);
+  border-color: rgba(91,184,245,0.65);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(91,184,245,0.3);
+  animation: none;
+}
+
+@keyframes lp-pill-breathe {
+  0%   { box-shadow: 0 0 0px rgba(91,184,245,0); border-color: rgba(91,184,245,0.25); }
+  50%  { box-shadow: 0 0 14px rgba(91,184,245,0.35), 0 0 4px rgba(168,218,255,0.3); border-color: rgba(91,184,245,0.55); }
+  100% { box-shadow: 0 0 0px rgba(91,184,245,0); border-color: rgba(91,184,245,0.25); }
 }
 
 /* Text input */
