@@ -699,11 +699,30 @@ const LP_STYLES = `
 }
 .lp-hero-title {
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.5px;
-  color: #111111;
   margin: 0 0 10px;
   line-height: 1.2;
+  background: linear-gradient(
+    90deg,
+    #5BB8F5 0%,
+    #A78BFA 18%,
+    #F472B6 34%,
+    #34D399 50%,
+    #60A5FA 66%,
+    #C084FC 82%,
+    #5BB8F5 100%
+  );
+  background-size: 280% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: lp-siri-flow 5s linear infinite;
+}
+
+@keyframes lp-siri-flow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 280% 50%; }
 }
 .lp-hero-subtitle {
   font-size: 15px;
