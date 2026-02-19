@@ -53,44 +53,91 @@ const VESSEL_BORDER_COLORS = [
   "rgba(100,210,175,0.3)",
 ];
 
+// Blend two distributions: proportional vs equal, weight 0–1 toward equal
+function blendedRedistribute(
+  next: Proportions,
+  others: (keyof Proportions)[],
+  remaining: number,
+  prev: Proportions,
+  equalWeight = 0.5
+) {
+  const equalShare = remaining / others.length;
+  const prevTotal = others.reduce((s, k) => s + prev[k], 0);
+
+  let assigned = 0;
+  others.forEach((k, i) => {
+    if (i < others.length - 1) {
+      const propShare = prevTotal > 0 ? (prev[k] / prevTotal) * remaining : equalShare;
+      const blended = Math.round(propShare * (1 - equalWeight) + equalShare * equalWeight);
+      next[k] = Math.max(0, blended);
+      assigned += next[k];
+    } else {
+      next[k] = Math.max(0, remaining - assigned);
+    }
+  });
+}
+
+function fixRounding(next: Proportions, others: (keyof Proportions)[]) {
+  const total = VESSEL_KEYS.reduce((s, k) => s + next[k], 0);
+  if (total !== 100) {
+    const largest = others.reduce((a, b) => (next[a] >= next[b] ? a : b));
+    next[largest] = Math.max(0, next[largest] + (100 - total));
+  }
+}
+
 function distributeChange(
   proportions: Proportions,
   key: keyof Proportions,
   newVal: number
 ): Proportions {
   const clamped = Math.max(0, Math.min(100, Math.round(newVal)));
+  if (clamped === proportions[key]) return proportions;
+
+  const delta = clamped - proportions[key]; // + means key grew
   const others = VESSEL_KEYS.filter((k) => k !== key) as (keyof Proportions)[];
   const remaining = 100 - clamped;
-
-  const otherTotal = others.reduce((s, k) => s + proportions[k], 0);
-  if (otherTotal === 0) {
-    const each = Math.floor(remaining / others.length);
-    const extra = remaining - each * others.length;
-    const next = { ...proportions, [key]: clamped };
-    others.forEach((k, i) => {
-      next[k] = each + (i === 0 ? extra : 0);
-    });
-    return next;
-  }
-
   const next: Proportions = { ...proportions, [key]: clamped };
-  let assigned = 0;
-  others.forEach((k, i) => {
-    if (i < others.length - 1) {
-      const share = Math.round((proportions[k] / otherTotal) * remaining);
-      next[k] = Math.max(0, share);
-      assigned += next[k];
-    } else {
-      next[k] = Math.max(0, remaining - assigned);
-    }
-  });
 
-  // fix rounding drift
-  const total = VESSEL_KEYS.reduce((s, k) => s + next[k], 0);
-  if (total !== 100) {
-    const largest = others.reduce((a, b) => (next[a] >= next[b] ? a : b));
-    next[largest] = Math.max(0, next[largest] + (100 - total));
+  if (key === "cosmic") {
+    // Equalise others: target equal share for everyone
+    const base = Math.floor(remaining / 3);
+    const extra = remaining - base * 3;
+    // Give the rounding extra to whichever is currently smallest (smooth toward equal)
+    const sorted = [...others].sort((a, b) => proportions[a] - proportions[b]);
+    sorted.forEach((k, i) => {
+      next[k] = Math.max(0, base + (i === 0 ? extra : 0));
+    });
+
+  } else if ((key === "atomic" || key === "ether") && delta > 0 && clamped > 50) {
+    // Growing past 50%: pull from metals first, then blend the rest
+    const metals: keyof Proportions = "metals";
+    const otherTwo = others.filter((k) => k !== metals) as (keyof Proportions)[];
+
+    const fromMetals = Math.min(next[metals], delta);
+    next[metals] = Math.max(0, next[metals] - fromMetals);
+    const stillNeeded = delta - fromMetals;
+
+    if (stillNeeded > 0) {
+      const otherTwoTotal = otherTwo.reduce((s, k) => s + next[k], 0);
+      let taken = 0;
+      otherTwo.forEach((k, i) => {
+        const share = otherTwoTotal > 0
+          ? i < otherTwo.length - 1
+            ? Math.round((next[k] / otherTwoTotal) * stillNeeded)
+            : stillNeeded - taken
+          : Math.floor(stillNeeded / otherTwo.length);
+        const actual = Math.min(next[k], share);
+        next[k] = Math.max(0, next[k] - actual);
+        taken += actual;
+      });
+    }
+
+  } else {
+    // Default: blended proportional+equal redistribution (60% proportional, 40% equal)
+    blendedRedistribute(next, others, remaining, proportions, 0.4);
   }
+
+  fixRounding(next, others);
   return next;
 }
 
@@ -939,7 +986,7 @@ const LP_STYLES = `
   left: 0;
   right: 0;
   border-radius: 0 0 11px 11px;
-  transition: height 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: height 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .lp-vessel-pct {
   position: absolute;
@@ -948,7 +995,7 @@ const LP_STYLES = `
   font-size: 10px;
   font-weight: 600;
   color: rgba(17,17,17,0.5);
-  transition: bottom 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: bottom 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -963,7 +1010,7 @@ const LP_STYLES = `
   cursor: ns-resize;
   z-index: 2;
   touch-action: none;
-  transition: bottom 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: bottom 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 .lp-vessel-label {
