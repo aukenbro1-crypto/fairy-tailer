@@ -255,7 +255,7 @@ function TextInputStep({
 export default function LoveProportion() {
   const [step, setStep] = useState<Step>(1);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "init", role: "cupid", text: "Назови себя." },
+    { id: "init", role: "cupid", text: "Как тебя зовут?" },
   ]);
   const [form, setForm] = useState<FormState>({
     name: "",
@@ -362,7 +362,7 @@ export default function LoveProportion() {
       `Космос ${cosmic}%`,
     ];
     addMsg({ role: "user", text: labels.join(" · ") });
-    goStep(7, "И ещё одно: чем занимаешься?");
+    goStep(7, "И последнее: чем ты занимаешься?");
   }
 
   function handleActivity(activity: string) {
@@ -442,7 +442,7 @@ export default function LoveProportion() {
             <p className="lp-hero-eyebrow">✦</p>
             <h1 className="lp-hero-title">Пропорции любви</h1>
             <p className="lp-hero-subtitle">
-              Купидон смешает ингредиенты и запустит твою историю прямо в выставку.
+              Купидон смешивает ингредиенты и готов запустить стрелу
             </p>
             <p className="lp-hero-helper">
               История появится сразу на экране. Почта — по желанию.
