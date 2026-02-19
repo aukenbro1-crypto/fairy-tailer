@@ -53,17 +53,18 @@ const VESSEL_BORDER_COLORS = [
   "rgba(100,210,175,0.3)",
 ];
 
-// Blend two distributions: proportional vs equal, weight 0–1 toward equal
+// Sympathetic coupling: when atomic or ether increases, metals rises with it
+const METALS_COUPLING = 0.45; // metals gets 45% of atomic/ether delta
+
 function blendedRedistribute(
   next: Proportions,
   others: (keyof Proportions)[],
   remaining: number,
   prev: Proportions,
-  equalWeight = 0.5
+  equalWeight = 0.4
 ) {
   const equalShare = remaining / others.length;
   const prevTotal = others.reduce((s, k) => s + prev[k], 0);
-
   let assigned = 0;
   others.forEach((k, i) => {
     if (i < others.length - 1) {
@@ -77,10 +78,10 @@ function blendedRedistribute(
   });
 }
 
-function fixRounding(next: Proportions, others: (keyof Proportions)[]) {
+function fixRounding(next: Proportions, candidates: (keyof Proportions)[]) {
   const total = VESSEL_KEYS.reduce((s, k) => s + next[k], 0);
   if (total !== 100) {
-    const largest = others.reduce((a, b) => (next[a] >= next[b] ? a : b));
+    const largest = candidates.reduce((a, b) => (next[a] >= next[b] ? a : b));
     next[largest] = Math.max(0, next[largest] + (100 - total));
   }
 }
@@ -93,51 +94,38 @@ function distributeChange(
   const clamped = Math.max(0, Math.min(100, Math.round(newVal)));
   if (clamped === proportions[key]) return proportions;
 
-  const delta = clamped - proportions[key]; // + means key grew
-  const others = VESSEL_KEYS.filter((k) => k !== key) as (keyof Proportions)[];
-  const remaining = 100 - clamped;
+  const delta = clamped - proportions[key];
   const next: Proportions = { ...proportions, [key]: clamped };
 
   if (key === "cosmic") {
-    // Equalise others: target equal share for everyone
+    // Cosmic: tries to equalize all others
+    const remaining = 100 - clamped;
     const base = Math.floor(remaining / 3);
     const extra = remaining - base * 3;
-    // Give the rounding extra to whichever is currently smallest (smooth toward equal)
-    const sorted = [...others].sort((a, b) => proportions[a] - proportions[b]);
+    const sorted = (["atomic", "ether", "metals"] as (keyof Proportions)[])
+      .sort((a, b) => proportions[a] - proportions[b]);
     sorted.forEach((k, i) => {
       next[k] = Math.max(0, base + (i === 0 ? extra : 0));
     });
 
-  } else if ((key === "atomic" || key === "ether") && delta > 0 && clamped > 50) {
-    // Growing past 50%: pull from metals first, then blend the rest
-    const metals: keyof Proportions = "metals";
-    const otherTwo = others.filter((k) => k !== metals) as (keyof Proportions)[];
+  } else if (key === "atomic" || key === "ether") {
+    // Sympathetic: metals moves in the same direction as atomic/ether
+    const metalsRaw = proportions.metals + delta * METALS_COUPLING;
+    next.metals = Math.max(0, Math.min(100, Math.round(metalsRaw)));
 
-    const fromMetals = Math.min(next[metals], delta);
-    next[metals] = Math.max(0, next[metals] - fromMetals);
-    const stillNeeded = delta - fromMetals;
-
-    if (stillNeeded > 0) {
-      const otherTwoTotal = otherTwo.reduce((s, k) => s + next[k], 0);
-      let taken = 0;
-      otherTwo.forEach((k, i) => {
-        const share = otherTwoTotal > 0
-          ? i < otherTwo.length - 1
-            ? Math.round((next[k] / otherTwoTotal) * stillNeeded)
-            : stillNeeded - taken
-          : Math.floor(stillNeeded / otherTwo.length);
-        const actual = Math.min(next[k], share);
-        next[k] = Math.max(0, next[k] - actual);
-        taken += actual;
-      });
-    }
+    // Remaining budget split between the two uninvolved vessels
+    const bystanders = (["atomic", "ether", "metals"] as (keyof Proportions)[])
+      .filter((k) => k !== key && k !== "metals") as (keyof Proportions)[];
+    const remaining = 100 - clamped - next.metals;
+    blendedRedistribute(next, bystanders, remaining, proportions, 0.4);
 
   } else {
-    // Default: blended proportional+equal redistribution (60% proportional, 40% equal)
-    blendedRedistribute(next, others, remaining, proportions, 0.4);
+    // Metals or default: proportional+equal blend across others
+    const others = VESSEL_KEYS.filter((k) => k !== key) as (keyof Proportions)[];
+    blendedRedistribute(next, others, 100 - clamped, proportions, 0.4);
   }
 
-  fixRounding(next, others);
+  fixRounding(next, VESSEL_KEYS.filter((k) => k !== key));
   return next;
 }
 
