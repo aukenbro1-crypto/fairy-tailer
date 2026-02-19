@@ -717,7 +717,7 @@ const LP_STYLES = `
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: lp-siri-flow 5s linear infinite;
+  animation: lp-siri-flow 14s linear infinite;
 }
 
 @keyframes lp-siri-flow {
