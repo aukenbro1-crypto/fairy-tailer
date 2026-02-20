@@ -519,6 +519,48 @@ export default function LoveProportion() {
     setDebugInfo(null);
   }
 
+  // ── Chapter parsing ──
+  function parseChapters(text: string) {
+    // Clean markdown symbols
+    const clean = text.replace(/\*{1,3}/g, '');
+    // Split by chapter headings: "Глава N" with optional markdown prefix
+    const chapterRegex = /^(?:#{1,4}\s*)?((Глава\s+\d+[^:\n]*)(?::?\s*(.*))?)/im;
+    const lines = clean.split('\n');
+    const sections: { heading: string; body: string }[] = [];
+    let currentHeading = '';
+    let currentBody: string[] = [];
+
+    for (const line of lines) {
+      const match = line.match(/^(?:#{1,4}\s*)?(Глава\s+\d+[^]*?)$/i);
+      if (match) {
+        // Save previous section
+        if (currentHeading || currentBody.length > 0) {
+          sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
+        }
+        currentHeading = match[1].replace(/^#+\s*/, '').trim();
+        currentBody = [];
+      } else {
+        currentBody.push(line);
+      }
+    }
+    // Push last section
+    if (currentHeading || currentBody.length > 0) {
+      sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
+    }
+    return sections;
+  }
+
+  function renderParagraphs(text: string) {
+    if (!text) return null;
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+    if (paragraphs.length <= 1) {
+      // Single block — split by single newlines
+      const lines = text.split('\n').filter(l => l.trim());
+      return lines.map((line, i) => <p key={i} className="lp-story-p">{line.trim()}</p>);
+    }
+    return paragraphs.map((p, i) => <p key={i} className="lp-story-p">{p.trim()}</p>);
+  }
+
   // ── Render ──
 
   return (
@@ -541,23 +583,31 @@ export default function LoveProportion() {
         <div className="lp-container">
           {/* Show story result when available */}
           {showResult && result?.story_text ? (
-            <div className="lp-story-result">
+            <div className="lp-story-result" lang="ru">
               <h1 className="lp-story-title">
                 {result.story_title || "Пропорции любви"}
               </h1>
-              <div className="lp-story-text">
-                {result.story_text}
-              </div>
+
+              {(() => {
+                const sections = parseChapters(result.story_text!);
+                const hasChapters = sections.some(s => s.heading);
+                if (hasChapters) {
+                  return sections.map((sec, i) => (
+                    <div key={i} className="lp-chapter">
+                      {sec.heading && (
+                        <h2 className="lp-chapter-heading">{sec.heading}</h2>
+                      )}
+                      <div className="lp-chapter-body">{renderParagraphs(sec.body)}</div>
+                    </div>
+                  ));
+                }
+                return <div className="lp-chapter-body">{renderParagraphs(result.story_text!)}</div>;
+              })()}
 
               {result.images && result.images.length > 0 && (
                 <div className="lp-story-images">
                   {result.images.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`Иллюстрация ${i + 1}`}
-                      className="lp-story-img"
-                    />
+                    <img key={i} src={url} alt={`Иллюстрация ${i + 1}`} className="lp-story-img" />
                   ))}
                 </div>
               )}
@@ -565,6 +615,9 @@ export default function LoveProportion() {
               <div className="lp-story-actions">
                 <button className="lp-copy-btn" onClick={handleCopy}>
                   {copied ? "Скопировано ✓" : "Скопировать текст"}
+                </button>
+                <button className="lp-again-link" onClick={handleReset}>
+                  Сгенерировать ещё
                 </button>
               </div>
             </div>
@@ -1261,29 +1314,67 @@ const LP_STYLES = `
 
 /* Story result */
 .lp-story-result {
-  max-width: 520px;
-  margin: 32px auto 0;
-  padding: 0 20px 40px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 60px;
+  animation: lp-fade-in 0.6s ease-out both;
+}
+@media (max-width: 480px) {
+  .lp-story-result { padding: 36px 20px 48px; }
 }
 .lp-story-title {
-  font-size: 24px;
+  font-size: 34px;
+  font-weight: 500;
+  color: #111111;
+  margin: 0 0 36px;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .lp-story-title { font-size: 28px; margin-bottom: 28px; }
+}
+
+/* Chapters */
+.lp-chapter {
+  margin-bottom: 8px;
+}
+.lp-chapter-heading {
+  font-size: 18px;
   font-weight: 600;
   color: #111111;
-  margin-bottom: 20px;
-  line-height: 1.3;
+  margin: 32px 0 6px;
+  padding-bottom: 8px;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid rgba(17,17,17,0.08);
 }
-.lp-story-text {
-  font-size: 17px;
-  line-height: 1.7;
+@media (max-width: 480px) {
+  .lp-chapter-heading { font-size: 16px; margin-top: 28px; }
+}
+
+/* Body paragraphs */
+.lp-chapter-body {
+  margin-bottom: 4px;
+}
+.lp-story-p {
+  font-size: 18px;
+  line-height: 1.75;
   color: #222222;
-  white-space: pre-line;
-  margin-bottom: 28px;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  text-justify: inter-word;
+  margin: 0 0 16px;
 }
+@media (max-width: 480px) {
+  .lp-story-p { font-size: 17px; line-height: 1.7; margin-bottom: 14px; }
+}
+
 .lp-story-images {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 28px;
+  margin: 32px 0;
 }
 .lp-story-img {
   width: 100%;
@@ -1293,7 +1384,8 @@ const LP_STYLES = `
 .lp-story-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  margin-top: 36px;
 }
 `;
