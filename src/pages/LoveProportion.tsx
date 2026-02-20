@@ -469,11 +469,21 @@ export default function LoveProportion() {
         }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: WebhookResult = await res.json();
+      const raw = await res.text();
+      let data: WebhookResult;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        // Make sometimes returns plain text or wrapped response
+        console.warn("LoveProportion: response is not JSON, raw:", raw);
+        throw new Error("Invalid JSON response");
+      }
+      console.log("LoveProportion: webhook response parsed:", data);
       stopCountdown();
       setResult(data);
       setLoading(false);
-    } catch {
+    } catch (err) {
+      console.error("LoveProportion: webhook error:", err);
       stopCountdown();
       setError(true);
       setLoading(false);
