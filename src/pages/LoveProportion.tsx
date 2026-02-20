@@ -312,9 +312,11 @@ export default function LoveProportion() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(50);
   const [result, setResult] = useState<WebhookResult | null>(null);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -423,9 +425,31 @@ export default function LoveProportion() {
 
   // ── Webhook ──
 
+  function stopCountdown() {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  }
+
   async function sendToWebhook() {
     setLoading(true);
     setError(false);
+    setResult(null);
+    setCountdown(50);
+
+    // Start countdown 50 → 1
+    stopCountdown();
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          // stay at 1, don't go below
+          return 1;
+        }
+        return c - 1;
+      });
+    }, 1000);
+
     const payload = {
       source: "loveproportion_exhibition",
       name: form.name,
@@ -446,13 +470,19 @@ export default function LoveProportion() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: WebhookResult = await res.json();
+      stopCountdown();
       setResult(data);
+      setLoading(false);
     } catch {
+      stopCountdown();
       setError(true);
-    } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    return () => stopCountdown();
+  }, []);
 
   function handleCopy() {
     if (!result?.story_text) return;
@@ -472,6 +502,14 @@ export default function LoveProportion() {
   return (
     <>
       <style>{LP_STYLES}</style>
+      {/* Countdown overlay */}
+      {loading && (
+        <div className="lp-countdown-overlay">
+          <div className="lp-countdown-number">{countdown}</div>
+          <p className="lp-countdown-subtitle">Купидон смешивает ингредиенты…</p>
+        </div>
+      )}
+
       <div className="lp-root">
         {/* Background glow blobs */}
         <div className="lp-blob lp-blob--tl" />
@@ -589,44 +627,31 @@ export default function LoveProportion() {
           </div>
 
           {/* Result */}
-          {result && (
-            <div className="lp-result">
-              <h2 className="lp-result-title">
+          {result && result.story_text && (
+            <div className="lp-story-result">
+              <h2 className="lp-story-title">
                 {result.story_title || "Твоя история"}
               </h2>
-              <div className="lp-result-text">
-                {result.story_text || ""}
+              <div className="lp-story-text">
+                {result.story_text}
               </div>
 
-              {/* Images */}
-              <div className="lp-result-gallery">
-                {result.images && result.images.length > 0 ? (
-                  result.images.slice(0, 3).map((url, i) => (
+              {result.images && result.images.length > 0 && (
+                <div className="lp-story-images">
+                  {result.images.map((url, i) => (
                     <img
                       key={i}
                       src={url}
                       alt={`Иллюстрация ${i + 1}`}
-                      className="lp-result-img"
+                      className="lp-story-img"
                     />
-                  ))
-                ) : (
-                  <>
-                    <div className="lp-result-img-placeholder">
-                      <span>Купидон у лаборатории пропорций</span>
-                    </div>
-                    <div className="lp-result-img-placeholder">
-                      <span>Путь героя в доминирующей пропорции</span>
-                    </div>
-                  </>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
 
-              <div className="lp-result-actions">
+              <div className="lp-story-actions">
                 <button className="lp-copy-btn" onClick={handleCopy}>
                   {copied ? "Скопировано ✓" : "Скопировать текст"}
-                </button>
-                <button className="lp-again-link" onClick={handleReset}>
-                  Сгенерировать ещё раз
                 </button>
               </div>
             </div>
@@ -1173,4 +1198,68 @@ const LP_STYLES = `
   text-underline-offset: 3px;
 }
 .lp-again-link:hover { color: rgba(17,17,17,0.7); }
+
+/* Countdown overlay */
+.lp-countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.lp-countdown-number {
+  font-size: 96px;
+  font-weight: 200;
+  color: #111111;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.lp-countdown-subtitle {
+  font-size: 15px;
+  color: rgba(17,17,17,0.45);
+  font-weight: 400;
+}
+
+/* Story result */
+.lp-story-result {
+  max-width: 520px;
+  margin: 32px auto 0;
+  padding: 0 20px 40px;
+}
+.lp-story-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+.lp-story-text {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #222222;
+  white-space: pre-line;
+  margin-bottom: 28px;
+}
+.lp-story-images {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.lp-story-img {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+.lp-story-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
 `;
