@@ -372,11 +372,11 @@ export default function LoveProportion() {
 
   function handleInLove(choice: boolean) {
     addMsg({ role: "user", text: choice ? "Да" : "Нет" });
-    setForm((f) => ({ ...f, isInLove: choice }));
     if (choice) {
-      setForm((f) => ({ ...f, branch: "love" }));
+      setForm((f) => ({ ...f, isInLove: true, wantsLove: true, branch: "love" }));
       goStep(5, "Смешай пропорции. Всего 100%.");
     } else {
+      setForm((f) => ({ ...f, isInLove: false }));
       goStep(4, "А хотелось бы?");
     }
   }
@@ -431,7 +431,7 @@ export default function LoveProportion() {
       name: form.name,
       photo_url: form.photoUrl,
       isInLove: form.isInLove ?? false,
-      wantsLove: form.wantsLove,
+      wantsLove: form.wantsLove ?? false,
       activity: form.activity,
       proportions: form.proportions,
     };
