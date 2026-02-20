@@ -314,7 +314,9 @@ export default function LoveProportion() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(50);
   const [result, setResult] = useState<WebhookResult | null>(null);
+  const [showResult, setShowResult] = useState(false);
   const [error, setError] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -436,18 +438,14 @@ export default function LoveProportion() {
     setLoading(true);
     setError(false);
     setResult(null);
+    setShowResult(false);
+    setDebugInfo(null);
     setCountdown(50);
 
     // Start countdown 50 → 1
     stopCountdown();
     countdownRef.current = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          // stay at 1, don't go below
-          return 1;
-        }
-        return c - 1;
-      });
+      setCountdown((c) => (c <= 1 ? 1 : c - 1));
     }, 1000);
 
     const payload = {
@@ -459,6 +457,7 @@ export default function LoveProportion() {
       activity: form.activity,
       proportions: form.proportions,
     };
+
     try {
       const res = await fetch(
         "https://hook.eu2.make.com/xvafun9ng5sknbt6mrot0azs46p65rdr",
@@ -468,22 +467,33 @@ export default function LoveProportion() {
           body: JSON.stringify(payload),
         }
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const raw = await res.text();
+      console.log("LoveProportion: status", res.status, "raw", raw.slice(0, 300));
+
+      if (!res.ok) throw new Error(`Bad status ${res.status}`);
+
       let data: WebhookResult;
       try {
         data = JSON.parse(raw);
       } catch {
-        // Make sometimes returns plain text or wrapped response
-        console.warn("LoveProportion: response is not JSON, raw:", raw);
-        throw new Error("Invalid JSON response");
+        console.warn("LoveProportion: not JSON, using raw as story_text. Raw:", raw.slice(0, 200));
+        // Fallback: treat raw text as the story itself
+        data = {
+          story_title: "Пропорции любви",
+          story_text: raw,
+          images: [],
+        };
       }
-      console.log("LoveProportion: webhook response parsed:", data);
+
+      console.log("LoveProportion: parsed data:", data);
       stopCountdown();
       setResult(data);
+      setShowResult(true);
       setLoading(false);
     } catch (err) {
       console.error("LoveProportion: webhook error:", err);
+      setDebugInfo(String(err));
       stopCountdown();
       setError(true);
       setLoading(false);
@@ -504,7 +514,9 @@ export default function LoveProportion() {
 
   function handleReset() {
     setResult(null);
+    setShowResult(false);
     setError(false);
+    setDebugInfo(null);
   }
 
   // ── Render ──
@@ -527,121 +539,12 @@ export default function LoveProportion() {
         <div className="lp-blob lp-blob--bc" />
 
         <div className="lp-container">
-          {/* Hero */}
-          <header className="lp-hero">
-            <p className="lp-hero-eyebrow">✦</p>
-            <h1 className="lp-hero-title">Пропорции любви</h1>
-            <p className="lp-hero-subtitle">
-              Купидон смешивает ингредиенты и готов запустить стрелу
-            </p>
-            <p className="lp-hero-helper">
-              История появится сразу на экране.
-            </p>
-          </header>
-
-          {/* Chat card */}
-          <div className="lp-chat-card">
-            <div className="lp-chat-messages">
-              {messages.map((m) => (
-                <Bubble key={m.id} msg={m} />
-              ))}
-
-              {/* Interactive widgets per step */}
-              {step === 1 && (
-                <TextInputStep placeholder="Имя" onSubmit={handleName} />
-              )}
-
-              {step === 2 && (
-                <div className="lp-pills-row">
-                  <Pill label="Добавить фото" onClick={() => handlePhotoChoice("add")} />
-                  <Pill label="Пропустить" onClick={() => handlePhotoChoice("skip")} />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="lp-hidden-file"
-                    onChange={handleFileChange}
-                  />
-                </div>
-              )}
-
-              {photoPreview && step > 2 && (
-                <div className="lp-photo-preview">
-                  <img src={photoPreview} alt="Твоё фото" />
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="lp-pills-row">
-                  <Pill label="Да" onClick={() => handleInLove(true)} />
-                  <Pill label="Нет" onClick={() => handleInLove(false)} />
-                </div>
-              )}
-
-              {step === 4 && (
-                <div className="lp-pills-row">
-                  <Pill label="Да" onClick={() => handleWantsLove(true)} />
-                  <Pill label="Нет" onClick={() => handleWantsLove(false)} />
-                </div>
-              )}
-
-              {step === 5 && (
-                <div className="lp-vessels-wrapper">
-                  <CommunicatingVessels
-                    proportions={form.proportions}
-                    onChange={(p) => setForm((f) => ({ ...f, proportions: p }))}
-                  />
-                  <p className="lp-vessels-hint">
-                    Перелей одну часть — остальное перераспределится само.
-                  </p>
-                  <button
-                    className="lp-ok-btn lp-ok-btn--full"
-                    onClick={handleProportionsDone}
-                  >
-                    Готово
-                  </button>
-                </div>
-              )}
-
-              {(step === 6 || step === 7) && (
-                <TextInputStep
-                  placeholder="Например: дизайнер, предприниматель, редактор…"
-                  onSubmit={handleActivity}
-                />
-              )}
-
-              {step === 8 && (
-                <p className="lp-step8-hint">
-                  {form.name} · {form.branch === "love" ? `Влюблён(а)` : "Свободен(а)"} · {form.activity}
-                  {form.photoUrl || photoFile ? " · 📷" : ""}
-                </p>
-              )}
-
-              {/* Error bubble */}
-              {error && (
-                <div className="lp-bubble-row lp-bubble-row--cupid">
-                  <div className="lp-avatar">💘</div>
-                  <div className="lp-bubble lp-bubble--cupid">
-                    Похоже, во Вселенной помехи. Попробуем ещё раз?
-                  </div>
-                </div>
-              )}
-              {error && (
-                <button className="lp-retry-btn" onClick={sendToWebhook}>
-                  Попробовать ещё раз
-                </button>
-              )}
-
-              <div ref={chatEndRef} />
-            </div>
-          </div>
-
-          {/* Result */}
-          {result && result.story_text && (
+          {/* Show story result when available */}
+          {showResult && result?.story_text ? (
             <div className="lp-story-result">
-              <h2 className="lp-story-title">
-                {result.story_title || "Твоя история"}
-              </h2>
+              <h1 className="lp-story-title">
+                {result.story_title || "Пропорции любви"}
+              </h1>
               <div className="lp-story-text">
                 {result.story_text}
               </div>
@@ -665,14 +568,135 @@ export default function LoveProportion() {
                 </button>
               </div>
             </div>
-          )}
+          ) : showResult && debugInfo ? (
+            /* Debug block: response received but no story_text parsed */
+            <div style={{ padding: 24, maxWidth: 520, margin: "0 auto", fontFamily: "monospace", fontSize: 13, color: "#666", wordBreak: "break-all" }}>
+              <p style={{ fontWeight: 600, color: "#c00" }}>Debug: response received but story_text missing</p>
+              <p>{debugInfo}</p>
+              <button className="lp-retry-btn" onClick={handleReset}>Назад</button>
+            </div>
+          ) : (
+            <>
+              {/* Hero */}
+              <header className="lp-hero">
+                <p className="lp-hero-eyebrow">✦</p>
+                <h1 className="lp-hero-title">Пропорции любви</h1>
+                <p className="lp-hero-subtitle">
+                  Купидон смешивает ингредиенты и готов запустить стрелу
+                </p>
+                <p className="lp-hero-helper">
+                  История появится сразу на экране.
+                </p>
+              </header>
 
-          {/* Spacer for sticky CTA */}
-          <div style={{ height: 96 }} />
+              {/* Chat card */}
+              <div className="lp-chat-card">
+                <div className="lp-chat-messages">
+                  {messages.map((m) => (
+                    <Bubble key={m.id} msg={m} />
+                  ))}
+
+                  {step === 1 && (
+                    <TextInputStep placeholder="Имя" onSubmit={handleName} />
+                  )}
+
+                  {step === 2 && (
+                    <div className="lp-pills-row">
+                      <Pill label="Добавить фото" onClick={() => handlePhotoChoice("add")} />
+                      <Pill label="Пропустить" onClick={() => handlePhotoChoice("skip")} />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="lp-hidden-file"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  )}
+
+                  {photoPreview && step > 2 && (
+                    <div className="lp-photo-preview">
+                      <img src={photoPreview} alt="Твоё фото" />
+                    </div>
+                  )}
+
+                  {step === 3 && (
+                    <div className="lp-pills-row">
+                      <Pill label="Да" onClick={() => handleInLove(true)} />
+                      <Pill label="Нет" onClick={() => handleInLove(false)} />
+                    </div>
+                  )}
+
+                  {step === 4 && (
+                    <div className="lp-pills-row">
+                      <Pill label="Да" onClick={() => handleWantsLove(true)} />
+                      <Pill label="Нет" onClick={() => handleWantsLove(false)} />
+                    </div>
+                  )}
+
+                  {step === 5 && (
+                    <div className="lp-vessels-wrapper">
+                      <CommunicatingVessels
+                        proportions={form.proportions}
+                        onChange={(p) => setForm((f) => ({ ...f, proportions: p }))}
+                      />
+                      <p className="lp-vessels-hint">
+                        Перелей одну часть — остальное перераспределится само.
+                      </p>
+                      <button
+                        className="lp-ok-btn lp-ok-btn--full"
+                        onClick={handleProportionsDone}
+                      >
+                        Готово
+                      </button>
+                    </div>
+                  )}
+
+                  {(step === 6 || step === 7) && (
+                    <TextInputStep
+                      placeholder="Например: дизайнер, предприниматель, редактор…"
+                      onSubmit={handleActivity}
+                    />
+                  )}
+
+                  {step === 8 && (
+                    <p className="lp-step8-hint">
+                      {form.name} · {form.branch === "love" ? `Влюблён(а)` : "Свободен(а)"} · {form.activity}
+                      {form.photoUrl || photoFile ? " · 📷" : ""}
+                    </p>
+                  )}
+
+                  {error && (
+                    <div className="lp-bubble-row lp-bubble-row--cupid">
+                      <div className="lp-avatar">💘</div>
+                      <div className="lp-bubble lp-bubble--cupid">
+                        Похоже, во Вселенной помехи. Попробуем ещё раз?
+                      </div>
+                    </div>
+                  )}
+                  {error && debugInfo && (
+                    <p style={{ fontSize: 11, color: "#999", padding: "0 16px", fontFamily: "monospace", wordBreak: "break-all" }}>
+                      Debug: {debugInfo}
+                    </p>
+                  )}
+                  {error && (
+                    <button className="lp-retry-btn" onClick={sendToWebhook}>
+                      Попробовать ещё раз
+                    </button>
+                  )}
+
+                  <div ref={chatEndRef} />
+                </div>
+              </div>
+
+              {/* Spacer for sticky CTA */}
+              <div style={{ height: 96 }} />
+            </>
+          )}
         </div>
 
         {/* Sticky CTA */}
-        {!result && (
+        {!showResult && !result && (
           <div className="lp-sticky-cta">
             <button
               className="lp-cta-btn"
