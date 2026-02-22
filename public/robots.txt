@@ -13,4 +13,6 @@ Allow: /
 User-agent: *
 Allow: /
 
+Allow: /yandex_baada5b5141774f3.html
+
 Sitemap: https://fairyteller.ru/sitemap.xml
