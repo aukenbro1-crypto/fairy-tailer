@@ -317,6 +317,8 @@ export default function LoveProportion() {
   const [showResult, setShowResult] = useState(false);
   const [error, setError] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const [rawResponseText, setRawResponseText] = useState<string | null>(null);
+  const [responseStatus, setResponseStatus] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -440,6 +442,8 @@ export default function LoveProportion() {
     setResult(null);
     setShowResult(false);
     setDebugInfo(null);
+    setRawResponseText(null);
+    setResponseStatus(null);
     setCountdown(50);
 
     // Start countdown 50 → 1
@@ -470,26 +474,37 @@ export default function LoveProportion() {
 
       const raw = await res.text();
       console.log("LoveProportion: status", res.status, "raw", raw.slice(0, 300));
+      setRawResponseText(raw);
+      setResponseStatus(res.status);
 
       if (!res.ok) throw new Error(`Bad status ${res.status}`);
 
-      let data: WebhookResult;
+      let storyTitle = "Пропорции любви";
+      let storyText = "";
+      let images: string[] = [];
+
       try {
-        data = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // Extract only the fields we need, ignoring ok/story_id/etc.
+        storyTitle = parsed.story_title || parsed.title || storyTitle;
+        storyText = parsed.story_text || parsed.text || "";
+        images = Array.isArray(parsed.images) ? parsed.images : [];
       } catch {
-        console.warn("LoveProportion: not JSON, using raw as story_text. Raw:", raw.slice(0, 200));
-        // Fallback: treat raw text as the story itself
-        data = {
-          story_title: "Пропорции любви",
-          story_text: raw,
-          images: [],
-        };
+        console.warn("LoveProportion: not JSON, using raw as story_text");
+        storyText = raw;
       }
 
-      console.log("LoveProportion: parsed data:", data);
+      console.log("LoveProportion: storyTitle:", storyTitle, "storyText length:", storyText.length);
       stopCountdown();
-      setResult(data);
-      setShowResult(true);
+
+      if (!storyText.trim()) {
+        // No story text found — treat as error with debug
+        setDebugInfo("Response received but story_text is empty or missing");
+        setError(true);
+      } else {
+        setResult({ story_title: storyTitle, story_text: storyText, images });
+        setShowResult(true);
+      }
       setLoading(false);
     } catch (err) {
       console.error("LoveProportion: webhook error:", err);
@@ -517,6 +532,8 @@ export default function LoveProportion() {
     setShowResult(false);
     setError(false);
     setDebugInfo(null);
+    setRawResponseText(null);
+    setResponseStatus(null);
   }
 
   // ── Chapter parsing ──
@@ -621,11 +638,18 @@ export default function LoveProportion() {
                 </button>
               </div>
             </div>
-          ) : showResult && debugInfo ? (
-            /* Debug block: response received but no story_text parsed */
-            <div style={{ padding: 24, maxWidth: 520, margin: "0 auto", fontFamily: "monospace", fontSize: 13, color: "#666", wordBreak: "break-all" }}>
-              <p style={{ fontWeight: 600, color: "#c00" }}>Debug: response received but story_text missing</p>
-              <p>{debugInfo}</p>
+          ) : (showResult || error) && debugInfo ? (
+            /* Debug block: only shown when story_text is missing or error */
+            <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
+              <p style={{ fontWeight: 600, color: "#c00", marginBottom: 12 }}>Не удалось получить историю</p>
+              <details style={{ fontFamily: "monospace", fontSize: 13, color: "#666", wordBreak: "break-all", marginBottom: 16 }}>
+                <summary style={{ cursor: "pointer", marginBottom: 8 }}>Показать отладочную информацию</summary>
+                <p><strong>Статус:</strong> {responseStatus ?? "—"}</p>
+                <p><strong>Ошибка:</strong> {debugInfo}</p>
+                {rawResponseText && (
+                  <p><strong>Ответ (первые 300 символов):</strong> {rawResponseText.slice(0, 300)}</p>
+                )}
+              </details>
               <button className="lp-retry-btn" onClick={handleReset}>Назад</button>
             </div>
           ) : (
