@@ -484,14 +484,33 @@ export default function LoveProportion() {
       let images: string[] = [];
 
       try {
-        const parsed = JSON.parse(raw);
-        // Extract only the fields we need, ignoring ok/story_id/etc.
-        storyTitle = parsed.story_title || parsed.title || storyTitle;
-        storyText = parsed.story_text || parsed.text || "";
-        images = Array.isArray(parsed.images) ? parsed.images : [];
+        let parsed = JSON.parse(raw);
+        // Handle double-encoded JSON (string inside string)
+        if (typeof parsed === "string") {
+          try { parsed = JSON.parse(parsed); } catch { /* use as-is */ }
+        }
+        if (typeof parsed === "object" && parsed !== null) {
+          storyTitle = parsed.story_title || parsed.title || storyTitle;
+          storyText = parsed.story_text || parsed.text || "";
+          images = Array.isArray(parsed.images) ? parsed.images : [];
+        } else {
+          // parsed is a plain string
+          storyText = String(parsed);
+        }
       } catch {
         console.warn("LoveProportion: not JSON, using raw as story_text");
         storyText = raw;
+      }
+
+      // Guard: if storyText itself looks like JSON, try to extract story_text from it
+      if (storyText.trim().startsWith("{")) {
+        try {
+          const inner = JSON.parse(storyText);
+          if (inner.story_text) {
+            storyTitle = inner.story_title || inner.title || storyTitle;
+            storyText = inner.story_text;
+          }
+        } catch { /* not JSON, keep as-is */ }
       }
 
       console.log("LoveProportion: storyTitle:", storyTitle, "storyText length:", storyText.length);
