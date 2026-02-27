@@ -818,12 +818,30 @@ export default function LoveProportion() {
 // ─── Scoped Styles ───────────────────────────────────────────────────────────
 
 const LP_STYLES = `
+@font-face {
+  font-family: 'Myra';
+  src: url('/fonts/Myra-Typeface.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Mira';
+  src: url('/fonts/Mira-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Reset scope */
 .lp-root {
   min-height: 100vh;
   background: #ffffff;
   color: #111111;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: 'Mira', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
   position: relative;
   overflow-x: hidden;
 }
@@ -895,6 +913,7 @@ const LP_STYLES = `
   letter-spacing: 4px;
 }
 .lp-hero-title {
+  font-family: 'Myra', serif;
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -1342,6 +1361,7 @@ const LP_STYLES = `
   gap: 16px;
 }
 .lp-countdown-number {
+  font-family: 'Myra', serif;
   font-size: 96px;
   font-weight: 200;
   color: #111111;
@@ -1366,6 +1386,7 @@ const LP_STYLES = `
   .lp-story-result { padding: 36px 20px 48px; }
 }
 .lp-story-title {
+  font-family: 'Myra', serif;
   font-size: 34px;
   font-weight: 500;
   color: #111111;
@@ -1383,6 +1404,7 @@ const LP_STYLES = `
   margin-bottom: 8px;
 }
 .lp-chapter-heading {
+  font-family: 'Myra', serif;
   font-size: 18px;
   font-weight: 600;
   color: #111111;
