@@ -10,7 +10,7 @@ import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
-import santaNewyearImage from '@/assets/santa-newyear.png';
+import hogwartsMagicImage from '@/assets/hogwarts-magic.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import cyberpunkCharacterImage from '@/assets/cyberpunk-character.png';
 import romanticStoryImage from '@/assets/romantic-story.png';
@@ -61,7 +61,7 @@ export const WORLDS = [{
 }, {
   value: 'new_year',
   emoji: '🧙‍♂️',
-  image: santaNewyearImage,
+  image: hogwartsMagicImage,
   title: 'Мир Хогварства',
   description: 'Увлекательное приключение во всеми любимой вселенной, где есть магия и магглы.',
   tagline: '— Алахамор-ра!'
