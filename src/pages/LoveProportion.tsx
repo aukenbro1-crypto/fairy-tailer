@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import angelCupidImg from "@/assets/angel-cupid.png";
+import angelCutout2Img from "@/assets/angel-cutout-2.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -657,7 +658,15 @@ export default function LoveProportion() {
                   return sections.map((sec, i) => (
                     <div key={i} className="lp-chapter">
                       {sec.heading && (
-                        <h2 className="lp-chapter-heading">{sec.heading}</h2>
+                        <div className={`lp-chapter-heading-wrap ${sec.heading.match(/Глава\s+2\b/i) ? 'lp-chapter-heading-wrap--angels' : ''}`}>
+                          {sec.heading.match(/Глава\s+2\b/i) && (
+                            <img src={angelCutout2Img} alt="" className="lp-chapter-angel lp-chapter-angel--left" />
+                          )}
+                          <h2 className="lp-chapter-heading">{sec.heading}</h2>
+                          {sec.heading.match(/Глава\s+2\b/i) && (
+                            <img src={angelCutout2Img} alt="" className="lp-chapter-angel lp-chapter-angel--right" />
+                          )}
+                        </div>
                       )}
                       <div className="lp-chapter-body">{renderParagraphs(sec.body)}</div>
                     </div>
@@ -1424,6 +1433,32 @@ const LP_STYLES = `
 }
 @media (max-width: 480px) {
   .lp-chapter-heading { font-size: 16px; margin-top: 28px; }
+}
+.lp-chapter-heading-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.lp-chapter-heading-wrap .lp-chapter-heading {
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.lp-chapter-heading-wrap--angels {
+  margin: 32px 0 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(192,69,40,0.15);
+}
+.lp-chapter-angel {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.lp-chapter-angel--right {
+  transform: scaleX(-1);
 }
 
 /* Body paragraphs */
