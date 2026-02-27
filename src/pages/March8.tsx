@@ -1,0 +1,478 @@
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Home, BookOpen, Sparkles, Mail, Scroll } from "lucide-react";
+import envelopeLetterImage from "@/assets/envelope-letter.png";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
+import RomanticStoryForm from "@/components/RomanticStoryForm";
+
+import logoImage from "@/assets/logo.png";
+import dragonHeaderImage from "@/assets/dragon-header.png";
+import loveDragonImage from "@/assets/lovedragon-romantic.png";
+import productFeaturesImage from "@/assets/product-features.png";
+import bookHandsImage from "@/assets/romantic-book-cover-new.png";
+
+import exampleAdventureCover from "@/assets/example-adventure-cover.jpg";
+import exampleAdventureSpread from "@/assets/example-adventure-spread.jpg";
+import exampleFantasyCover from "@/assets/example-fantasy-cover.jpg";
+import exampleFantasySpread from "@/assets/example-fantasy-spread.jpg";
+import exampleNewyearCover from "@/assets/example-newyear-cover.jpg";
+import bookAnimationGif from "@/assets/book-animation.gif";
+import bookCoverRedImage from "@/assets/book-cover-red.png";
+
+const AnimatedSection = ({
+  children,
+  className = "",
+  delay = 0,
+  id
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  id?: string;
+}) => {
+  const { ref, isVisible } = useScrollReveal({ threshold: 0.15 });
+  return (
+    <section
+      ref={ref as React.RefObject<HTMLElement>}
+      id={id}
+      className={`${className} romantic-reveal ${isVisible ? 'romantic-reveal-visible' : ''}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </section>
+  );
+};
+
+const March8 = () => {
+  const navigate = useNavigate();
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const [dragonHovered, setDragonHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const [heroVisible, setHeroVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setHeroVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const waves = document.querySelectorAll('.romantic-wave-divider');
+    const handleScroll = () => {
+      waves.forEach((wave) => {
+        const rect = wave.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isVisible) {
+          wave.classList.add('wave-animated');
+          const scrollProgress = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+          const offset = (scrollProgress - 0.5) * 20;
+          const svg = wave.querySelector('svg') as SVGElement;
+          if (svg) {
+            svg.style.transform = `translateX(-10%) translateY(${offset}px)`;
+          }
+        }
+      });
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const handleCreateClick = () => {
+    scrollToSection('romantic-form');
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setMenuOpen(false);
+    }
+  };
+
+  return (
+    <div className="romantic-page min-h-screen">
+      {/* Header */}
+      <header className="romantic-header sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <Link to="/">
+              <img src={logoImage} alt="FairyTeller" className="h-12 md:h-14 object-contain romantic-logo-filter" />
+            </Link>
+          </div>
+          <div className="flex items-center relative" ref={menuRef}>
+            <div className="cursor-pointer" onMouseEnter={() => setDragonHovered(true)} onMouseLeave={() => setDragonHovered(false)} onClick={() => setMenuOpen(!menuOpen)}>
+              <img src={dragonHovered ? loveDragonImage : dragonHeaderImage} alt="Menu" className="h-12 md:h-14 object-contain romantic-logo-filter transition-all duration-200" />
+            </div>
+
+            {menuOpen && (
+              <div className="romantic-menu absolute top-full right-0 mt-2 w-64 z-50">
+                <div className="py-2">
+                  <Link to="/" className="romantic-menu-item flex items-center gap-3 px-4 py-3 transition-colors" onClick={() => setMenuOpen(false)}>
+                    <Home size={20} />
+                    <span>Главная</span>
+                  </Link>
+                  <button onClick={() => scrollToSection('romantic-examples')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
+                    <Sparkles size={20} />
+                    <span>Примеры</span>
+                  </button>
+                  <button onClick={() => scrollToSection('romantic-how-it-works')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
+                    <BookOpen size={20} />
+                    <span>Как это работает</span>
+                  </button>
+                  <button onClick={() => scrollToSection('romantic-faq')} className="romantic-menu-item w-full flex items-center gap-3 px-4 py-3 transition-colors">
+                    <Mail size={20} />
+                    <span>FAQ</span>
+                  </button>
+                  <div className="h-px bg-[#D99985]/30 my-2 mx-4" />
+                  <button onClick={() => scrollToSection('romantic-form')} className="romantic-menu-item-accent w-full flex items-center gap-3 px-4 py-3 transition-colors font-semibold">
+                    <Scroll size={20} />
+                    <span>Создать книгу</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* SCREEN 1: HERO */}
+      <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]">
+        {/* Lava lamp bubbles */}
+        <div className="romantic-lava-container">
+          <div className="romantic-bubble romantic-bubble-1" />
+          <div className="romantic-bubble romantic-bubble-2" />
+          <div className="romantic-bubble romantic-bubble-3" />
+          <div className="romantic-bubble romantic-bubble-4" />
+          <div className="romantic-bubble romantic-bubble-5" />
+          <div className="romantic-bubble romantic-bubble-6" />
+          <div className="romantic-bubble romantic-bubble-7" />
+          <div className="romantic-bubble romantic-bubble-8" />
+          
+          <div className="romantic-heart romantic-heart-1">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z" />
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-2">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z" />
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-3">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z" />
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-4">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z" />
+            </svg>
+          </div>
+          <div className="romantic-heart romantic-heart-5">
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M16 28C16 28 3 18 3 10C3 5.58 6.58 2 11 2C13.76 2 16.22 3.41 17.5 5.59L16 8L14.5 5.59C15.78 3.41 18.24 2 21 2C25.42 2 29 5.58 29 10C29 18 16 28 16 28Z" />
+            </svg>
+          </div>
+        </div>
+
+        <div className={`max-w-7xl mx-auto w-full flex flex-col-reverse md:flex-row md:items-center md:gap-8 lg:gap-12 romantic-hero-content ${heroVisible ? 'romantic-hero-visible' : ''} relative z-10`}>
+          {/* Image left */}
+          <div className="md:flex-[1.5] flex justify-center md:justify-start relative">
+            <img src={bookHandsImage} alt="Книга в руках" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{ filter: 'sepia(0.1) saturate(1.15) hue-rotate(-5deg)' }} />
+          </div>
+          {/* Text right */}
+          <div className="md:flex-[0.8] text-center md:text-right mb-8 md:mb-0">
+            <h1 className="romantic-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 romantic-hero-title">
+              Книга про неё: лучший подарок на 8 марта
+            </h1>
+            <p className="romantic-subtitle text-xl md:text-2xl mb-12 leading-relaxed romantic-hero-subtitle">
+              романтическая история, где главная героиня — она
+            </p>
+            <button onClick={handleCreateClick} className="romantic-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 romantic-hero-cta">
+              Создать книгу
+            </button>
+          </div>
+        </div>
+        {/* Price banner */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-8 md:bottom-12 z-20">
+          <div className="romantic-price-banner">
+            <span className="romantic-price-label">итоговая цена</span>
+            <span className="romantic-price-value">2500₽</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,75 C150,150 300,0 450,75 C600,150 750,0 900,75 C1050,150 1200,0 1200,75 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* SCREEN 2: WHAT IS IT */}
+      <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
+            <div className="flex justify-center mb-8 md:mb-0 md:flex-shrink-0">
+              <img src={productFeaturesImage} alt="Особенности книги" className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-xl transition-transform duration-500 hover:scale-105 hover:rotate-1" />
+            </div>
+            <div className="flex-1">
+              <p className="romantic-text text-lg md:text-xl leading-relaxed mb-8">
+                FairyTeller — это персональная романтическая история, созданная специально для неё.
+              </p>
+              <div className="space-y-4 romantic-text text-lg">
+                <p className="romantic-stagger-1">• вы вводите имена, детали, фото</p>
+                <p className="romantic-stagger-2">• выбираете настроение и стиль иллюстраций</p>
+                <p className="romantic-stagger-3">• получаете бумажную книгу — идеальный подарок к 8 марта</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,50 C200,130 350,10 550,80 C750,150 950,20 1200,60 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* SCREEN 3: PAIN → SOLUTION */}
+      <AnimatedSection className="romantic-section-light py-12 md:py-16 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
+            <div className="flex-1 mb-8 md:mb-0">
+              <h2 className="romantic-h2 text-2xl md:text-3xl mb-4">8 марта — день, когда хочется сказать ей что-то особенное</h2>
+              <p className="romantic-text text-lg md:text-xl leading-relaxed">Не просто цветы или конфеты, а настоящий жест — книга, написанная про неё.</p>
+            </div>
+            <div className="flex justify-center md:flex-shrink-0">
+              <img src={envelopeLetterImage} alt="Персональная книга — это жест" className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[420px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{ filter: 'sepia(0.15) saturate(1.1) hue-rotate(-5deg)' }} />
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,100 C200,30 400,130 600,70 C800,10 1000,110 1200,60 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* SCREEN 4: HOW THE BOOK LOOKS */}
+      <AnimatedSection id="romantic-examples" className="romantic-section-warm py-16 md:py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 lg:gap-16">
+            <div className="flex justify-center">
+              <img src={bookCoverRedImage} alt="Обложка книги" className="h-[280px] md:h-[320px] lg:h-[380px] w-auto drop-shadow-2xl" />
+            </div>
+            <div className="flex justify-center">
+              <img src={bookAnimationGif} alt="Анимация книги" className="h-[280px] md:h-[320px] lg:h-[380px] w-auto mix-blend-multiply drop-shadow-2xl" />
+            </div>
+          </div>
+          <p className="romantic-caption text-center mt-8 text-sm">
+            настоящая книга с иллюстрациями и историей — <a href="https://docs.google.com/presentation/d/10TTLUJgKm70Ndnf7b4Si3aq0_orI62v0uMYoxGFGerk/edit?usp=drive_web&ouid=101498495434628636351" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">смотреть пример в PDF</a>
+          </p>
+          <p className="romantic-caption text-center mt-2 text-sm">
+            больше готовых историй можно прочитать в нашем <a href="https://dzen.ru/fairyteller?share_to=link" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">Дзене</a>
+          </p>
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,70 C150,140 350,20 550,90 C750,160 950,30 1200,80 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* SCREEN 5: HOW IT WORKS */}
+      <AnimatedSection id="romantic-how-it-works" className="romantic-section-light py-16 md:py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
+            {[
+              { num: "1", text: "Вы заполняете форму и отвечаете на несколько вопросов" },
+              { num: "2", text: "Искусственный интеллект создает историю и иллюстрации" },
+              { num: "3", text: "Вы получаете книгу на почту, оплачиваете заказ и утверждаете ее" },
+              { num: "4", text: "В течение дня опытный редактор работает с материалом и отправляет в печать" },
+              { num: "5", text: "Готовая книга будет доставлена в течение нескольких дней с момента оплаты" },
+            ].map((step, index) => (
+              <div
+                key={index}
+                className={`text-center romantic-step-card ${index === 4 ? 'col-span-2 md:col-span-1' : ''}`}
+                style={{ transitionDelay: `${index * 150}ms` }}
+                onMouseEnter={() => setHoveredStep(index)}
+                onMouseLeave={() => setHoveredStep(null)}
+              >
+                <div className={`romantic-step-number text-3xl md:text-4xl font-serif mb-3 transition-all duration-300 ${hoveredStep === index ? "scale-110" : ""}`}>
+                  {step.num}
+                </div>
+                <p className="romantic-text text-sm md:text-base leading-relaxed">{step.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,60 C200,130 400,10 600,80 C800,150 1000,20 1200,90 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* SCREEN 6: FOR WHOM */}
+      <AnimatedSection className="romantic-section-warm py-16 md:py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <p className="romantic-text text-lg md:text-xl leading-relaxed mb-6">
+            Для тех, кто хочет на 8 марта:
+          </p>
+          <div className="space-y-3 romantic-text text-lg md:text-xl">
+            <p className="romantic-stagger-1">— удивить её по-настоящему</p>
+            <p className="romantic-stagger-2">— подарить что-то личное и незабываемое</p>
+            <p className="romantic-stagger-3">— показать, как она важна</p>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-light">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,50 C150,120 350,0 550,70 C750,140 950,20 1200,80 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* STORY FORM SECTION */}
+      <AnimatedSection id="romantic-form" className="romantic-section-light py-16 md:py-20 px-6 relative overflow-hidden">
+        <div className="romantic-glow-pulse" />
+        <div className="max-w-4xl mx-auto relative z-20">
+          <div className="text-center mb-12">
+            <h2 className="romantic-h2 text-2xl md:text-3xl lg:text-4xl mb-4">
+              Создайте её историю
+            </h2>
+            <p className="romantic-text text-lg md:text-xl">
+              Заполните форму — и получите книгу на почту
+            </p>
+          </div>
+          <RomanticStoryForm />
+        </div>
+      </AnimatedSection>
+
+      {/* Wave divider */}
+      <div className="romantic-wave-divider romantic-wave-to-warm">
+        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,90 C200,20 400,130 600,60 C800,0 1000,110 1200,50 L1200,150 L0,150 Z" />
+        </svg>
+      </div>
+
+      {/* FAQ */}
+      <AnimatedSection id="romantic-faq" className="romantic-section-light py-16 md:py-20 px-6">
+        <div className="max-w-2xl mx-auto">
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            <AccordionItem value="faq-1" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Это не будет кринжом?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Нет. Мы дообучили AI-модель и она создает прекрасные love story про уже сложившиеся пары. Сюжет — зависит от введенных вами параметров, но он будет легким, романтичным и искренним. Там не будет шаблонных фраз, а глупые ошибки, которые иногда делает искусственный интеллект, исправит во время редактуры живой редактор.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-2" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Как быть с ошибками в текстах и иллюстрациях, которые делает ИИ?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Мы постарались минимизировать их с помощью специальных фреймворков. И если ошибки в текстах легко устраняются редактурой, с картинками все бывает немного сложнее. Мы предлагаем не обращать внимания на небольшие неточности — все же это нейросетевой контент, а огрехи придают ему особый шарм.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-3" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Нужно ли загружать фото? Что вы с ними делаете?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Не обязательно, но очень желательно. Если вы добавите фото, тогда модель будет генерировать изображения по этим изображениям и герои будут очень похожи на вас. Мы не сохраняем присланные вами фотографии — они отправляются прямиком в модель, поэтому не можем никак их использовать.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-4" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                А что именно я получу на выходе?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Готовую историю в PDF — бесплатно. После оплаты — печатную книгу, которую доставят в удобное для вас место по всей России.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-5" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Успеет ли книга к 8 марта?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Срок изготовления книги — 1 день, наша типография располагается в Москве. Доставка занимает от 2 до 5 рабочих дней в зависимости от региона. Рекомендуем оформить заказ заранее, чтобы книга точно приехала вовремя. Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-6" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Мне пришла история с кривой версткой, можно ли это исправить?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                После оплаты печатной версии, редактор обязательно приведет в порядок текст — проверит на ошибки, исправит верстку и поработает над стилистикой там, где это необходимо.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-7" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Как быстро книга будет готова?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                PDF будет готов через несколько минут. Печатная версия — за несколько дней. Точные сроки доставки зависят от вашего города. Мы используем инфраструктуру 5Post и Почты России.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-8" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Доставка: куда и сколько стоит?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Стоимость готовой книги — 2 500₽, с учетом доставки. Срок изготовления книги — 1 день, наша типография располагается в Москве. В течение 2-5 рабочих дней, в зависимости от региона, книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»). Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="faq-9" className="romantic-faq-item border-none">
+              <AccordionTrigger className="romantic-faq-trigger text-left text-lg hover:no-underline py-4">
+                Вы создаете только истории в жанре love story?
+              </AccordionTrigger>
+              <AccordionContent className="romantic-faq-content text-base pb-4">
+                Нет! FairyTeller — это очень универсальный сервис. Вы можете создавать сказки для детей, захватывающие приключения про друзей и коллег, эпическое фэнтези и истории в жанре киберпанк. Конструктор сказок находится <a href="https://fairyteller.ru/create" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">по ссылке</a> — пробуйте и создавайте вместе с FairyTeller!
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </AnimatedSection>
+
+      {/* Footer spacer */}
+      <div className="romantic-section-light h-16"></div>
+    </div>
+  );
+};
+
+export default March8;
