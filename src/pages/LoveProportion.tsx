@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import angelCupidImg from "@/assets/angel-cupid.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -250,7 +251,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
   return (
     <div className={`lp-bubble-row lp-bubble-row--${msg.role}`}>
       {msg.role === "cupid" && (
-        <div className="lp-avatar">💘</div>
+        <div className="lp-avatar"><img src={angelCupidImg} alt="Купидон" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       )}
       <div className={`lp-bubble lp-bubble--${msg.role}`}>
         {msg.text}
