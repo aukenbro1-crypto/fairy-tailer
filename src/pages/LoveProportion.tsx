@@ -941,7 +941,7 @@ const LP_STYLES = `
   letter-spacing: -0.5px;
   margin: 0 0 10px;
   line-height: 1.2;
-  color: #C04528;
+  color: #D95B3F;
 }
 
 @keyframes lp-siri-flow {
@@ -1088,7 +1088,7 @@ const LP_STYLES = `
   padding: 0 18px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #C04528 0%, #D4614A 100%);
+  background: linear-gradient(135deg, #D95B3F 0%, #E07A60 100%);
   color: #FFF5F3;
   font-size: 14px;
   cursor: pointer;
@@ -1237,7 +1237,7 @@ const LP_STYLES = `
   height: 52px;
   border-radius: 18px;
   border: none;
-  background: linear-gradient(135deg, #C04528 0%, #D4614A 60%, #E07A60 100%);
+  background: linear-gradient(135deg, #D95B3F 0%, #E07A60 60%, #E89478 100%);
   color: #FFF5F3;
   font-size: 16px;
   font-weight: 600;
@@ -1286,7 +1286,7 @@ const LP_STYLES = `
 .lp-result-title {
   font-size: 20px;
   font-weight: 600;
-  color: #C04528;
+  color: #D95B3F;
   margin: 0 0 16px;
   letter-spacing: -0.3px;
 }
@@ -1337,7 +1337,7 @@ const LP_STYLES = `
   height: 44px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #C04528 0%, #D4614A 100%);
+  background: linear-gradient(135deg, #D95B3F 0%, #E07A60 100%);
   color: #FFF5F3;
   font-size: 14px;
   cursor: pointer;
@@ -1372,7 +1372,7 @@ const LP_STYLES = `
   font-family: 'Myra', serif;
   font-size: 96px;
   font-weight: 200;
-  color: #C04528;
+  color: #D95B3F;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: -2px;
@@ -1397,7 +1397,7 @@ const LP_STYLES = `
   font-family: 'Myra', serif;
   font-size: 34px;
   font-weight: 500;
-  color: #C04528;
+  color: #D95B3F;
   margin: 0 0 36px;
   line-height: 1.25;
   letter-spacing: -0.5px;
@@ -1415,7 +1415,7 @@ const LP_STYLES = `
   font-family: 'Myra', serif;
   font-size: 18px;
   font-weight: 600;
-  color: #C04528;
+  color: #D95B3F;
   margin: 32px 0 6px;
   padding-bottom: 8px;
   letter-spacing: 0.3px;
