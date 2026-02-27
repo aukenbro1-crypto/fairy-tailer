@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown, Newspaper } from "lucide-react";
+import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown, Newspaper, Flower2, HeartHandshake } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import StoryConstructor from "@/components/StoryConstructor";
 
@@ -12,7 +12,7 @@ import logoImage from "@/assets/logo.png";
 import createButtonImage from "@/assets/create-button-new.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
 import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
-import romanticPromoImage from "@/assets/romantic-promo.jpg";
+import march8PromoImage from "@/assets/8march-promo.png";
 
 // Below-the-fold images - will be lazy loaded via native loading="lazy"
 import heroSelectionImage from "@/assets/hero-selection.png";
@@ -186,9 +186,9 @@ const Landing = () => {
             <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
           </div>
           
-          {/* Romantic Valentine Promo - Center */}
-          <Link to="/romantic" className="absolute left-1/2 -translate-x-1/2 hover:scale-105 transition-transform duration-300">
-            <img src={romanticPromoImage} alt="Романтические сказки" className="h-28 md:h-32 object-contain drop-shadow-lg hover:drop-shadow-2xl" />
+          {/* 8 March Promo - Center */}
+          <Link to="/8march" className="absolute left-1/2 -translate-x-1/2 hover:scale-105 transition-transform duration-300">
+            <img src={march8PromoImage} alt="Подарок на 8 марта" className="h-28 md:h-32 object-contain drop-shadow-lg hover:drop-shadow-2xl" />
           </Link>
           
           <div className="flex items-center relative" ref={menuRef}>
@@ -221,6 +221,16 @@ const Landing = () => {
                   <Link to="/blog" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
                     <Newspaper size={20} />
                     <span>Журнал</span>
+                  </Link>
+
+                  <Link to="/romantic" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
+                    <HeartHandshake size={20} />
+                    <span>Романтические истории</span>
+                  </Link>
+
+                  <Link to="/8march" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
+                    <Flower2 size={20} />
+                    <span>8 Марта</span>
                   </Link>
 
                   <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
