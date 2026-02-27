@@ -60,11 +60,11 @@ export const WORLDS = [{
   tagline: '— Лови момент!'
 }, {
   value: 'new_year',
-  emoji: '🎅🏻',
+  emoji: '🧙‍♂️',
   image: santaNewyearImage,
-  title: 'Новогодняя сказка',
-  description: 'Увлекательное приключение, где героям предстоит спасти праздник.',
-  tagline: '— Счастливого Нового года!'
+  title: 'Мир Хогварства',
+  description: 'Увлекательное приключение во всеми любимой вселенной, где есть магия и магглы.',
+  tagline: '— Алахамор-ра!'
 }, {
   value: 'fantasy_epic',
   emoji: '🧙🏻‍♂️',
