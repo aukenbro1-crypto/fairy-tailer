@@ -494,12 +494,31 @@ export default function LoveProportion() {
           storyText = parsed.story_text || parsed.text || "";
           images = Array.isArray(parsed.images) ? parsed.images : [];
         } else {
-          // parsed is a plain string
           storyText = String(parsed);
         }
       } catch {
-        console.warn("LoveProportion: not JSON, using raw as story_text");
-        storyText = raw;
+        // JSON.parse failed — likely unescaped newlines in story_text
+        // Try to extract story_text with regex
+        const titleMatch = raw.match(/"story_title"\s*:\s*"([^"]*?)"/);
+        const textMatch = raw.match(/"story_text"\s*:\s*"([\s\S]*?)"\s*,\s*"images"/);
+        if (textMatch) {
+          storyText = textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+          if (titleMatch) storyTitle = titleMatch[1];
+        } else {
+          // Last resort: strip JSON wrapper manually
+          const stripped = raw
+            .replace(/^\s*\{[^}]*?"story_text"\s*:\s*"/i, '')
+            .replace(/"\s*,\s*"images"\s*:\s*\[.*\]\s*\}\s*$/i, '')
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"');
+          if (stripped !== raw) {
+            storyText = stripped;
+            if (titleMatch) storyTitle = titleMatch[1];
+          } else {
+            console.warn("LoveProportion: not JSON, using raw as story_text");
+            storyText = raw;
+          }
+        }
       }
 
       // Guard: if storyText itself looks like JSON, try to extract story_text from it
@@ -512,6 +531,12 @@ export default function LoveProportion() {
           }
         } catch { /* not JSON, keep as-is */ }
       }
+
+      // Final cleanup: remove any remaining JSON artifacts at start/end
+      storyText = storyText
+        .replace(/^\s*\{\s*"ok"\s*:\s*true\s*,.*?"story_text"\s*:\s*"/i, '')
+        .replace(/"\s*,\s*"images"\s*:\s*\[.*?\]\s*\}\s*$/i, '')
+        .trim();
 
       console.log("LoveProportion: storyTitle:", storyTitle, "storyText length:", storyText.length);
       stopCountdown();
