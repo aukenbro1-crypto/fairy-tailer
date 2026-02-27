@@ -287,7 +287,7 @@ const March8 = () => {
             </div>
           </div>
           <p className="romantic-caption text-center mt-8 text-sm">
-            настоящая книга с иллюстрациями и историей — <a href="https://docs.google.com/presentation/d/10TTLUJgKm70Ndnf7b4Si3aq0_orI62v0uMYoxGFGerk/edit?usp=drive_web&ouid=101498495434628636351" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">смотреть пример в PDF</a>
+            настоящая книга с иллюстрациями и историей — <Link to="/book-preview" className="underline hover:opacity-80 transition-opacity">смотреть пример</Link>
           </p>
           <p className="romantic-caption text-center mt-2 text-sm">
             больше готовых историй можно прочитать в нашем <a href="https://dzen.ru/fairyteller?share_to=link" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">Дзене</a>
