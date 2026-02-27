@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import angelCupidImg from "@/assets/angel-cupid.png";
 import angelCutout2Img from "@/assets/angel-cutout-2.png";
+import heartsArrowImg from "@/assets/hearts-arrow.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -658,11 +659,17 @@ export default function LoveProportion() {
                   return sections.map((sec, i) => (
                     <div key={i} className="lp-chapter">
                       {sec.heading && (
-                        <div className={`lp-chapter-heading-wrap ${sec.heading.match(/Глава\s+2\b/i) ? 'lp-chapter-heading-wrap--angels' : ''}`}>
+                        <div className={`lp-chapter-heading-wrap ${sec.heading.match(/Глава\s+(1|2)\b/i) ? 'lp-chapter-heading-wrap--angels' : ''}`}>
+                          {sec.heading.match(/Глава\s+1\b/i) && (
+                            <img src={heartsArrowImg} alt="" className="lp-chapter-deco lp-chapter-deco--left" />
+                          )}
                           {sec.heading.match(/Глава\s+2\b/i) && (
                             <img src={angelCutout2Img} alt="" className="lp-chapter-angel lp-chapter-angel--left" />
                           )}
                           <h2 className="lp-chapter-heading">{sec.heading}</h2>
+                          {sec.heading.match(/Глава\s+1\b/i) && (
+                            <img src={heartsArrowImg} alt="" className="lp-chapter-deco lp-chapter-deco--right" />
+                          )}
                           {sec.heading.match(/Глава\s+2\b/i) && (
                             <img src={angelCutout2Img} alt="" className="lp-chapter-angel lp-chapter-angel--right" />
                           )}
@@ -1458,6 +1465,15 @@ const LP_STYLES = `
   flex-shrink: 0;
 }
 .lp-chapter-angel--right {
+  transform: scaleX(-1);
+}
+.lp-chapter-deco {
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+.lp-chapter-deco--right {
   transform: scaleX(-1);
 }
 
