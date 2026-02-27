@@ -539,13 +539,14 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     </svg>
                   </button>
 
-                  <div className="world-carousel-track">
-                    {WORLDS.map(world => (
+                  <div className="world-carousel-track" style={{ justifyContent: 'center' }}>
+                    {WORLDS.filter(world => world.value === formData.world).map(world => (
                       <button
                         key={world.value}
                         type="button"
-                        className={`world-card ${formData.world === world.value ? 'world-card-active' : ''}`}
-                        onClick={() => setFormData(prev => ({ ...prev, world: world.value }))}
+                        className="world-card world-card-active"
+                        onClick={() => {}}
+                        style={{ flex: 'none' }}
                       >
                         <div className="world-card-content">
                           <div className="world-card-header">
