@@ -12,7 +12,7 @@ import yarncraftStyleImage from '@/assets/yarncraft-style.jpg';
 import dragonAdventureImage from '@/assets/dragon-adventure.png';
 import hogwartsMagicImage from '@/assets/hogwarts-magic.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
-import cyberpunkCharacterImage from '@/assets/cyberpunk-character.png';
+import russianCyberpunkImage from '@/assets/russian-cyberpunk.png';
 import romanticStoryImage from '@/assets/romantic-story.png';
 
 const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
@@ -74,11 +74,11 @@ export const WORLDS = [{
   tagline: '— От судьбы не уйдешь.'
 }, {
   value: 'cyberpunk_dream',
-  emoji: '👩‍🎤',
-  image: cyberpunkCharacterImage,
-  title: 'Киберпанк',
-  description: 'Неоновые вывески и одиночество в Сети.',
-  tagline: '— Следуй за белым кроликом.'
+  emoji: '🤖',
+  image: russianCyberpunkImage,
+  title: 'Русский киберпанк',
+  description: 'Неоновые вывески, матрешки и одиночество в панельке.',
+  tagline: '— Следуй за белым роботом.'
 }, {
   value: 'disney_light',
   emoji: '💖',
