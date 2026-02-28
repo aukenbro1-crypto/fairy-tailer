@@ -4641,7 +4641,7 @@ html, body {
 .wizard-hero-bg {
   background-size: cover;
   background-position: 75% 30%;
-  background-attachment: fixed;
+  
 }
 
 @media (min-width: 768px) {
