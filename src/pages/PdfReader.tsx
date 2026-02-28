@@ -1,16 +1,44 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Home, ExternalLink, Upload, Link2, FileWarning } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Home, ExternalLink, Upload, Link2, FileWarning, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 type Mode = "url" | "file";
 
+async function extractTextFromPdf(source: string | ArrayBuffer): Promise<string[]> {
+  const loadingTask = pdfjsLib.getDocument(
+    typeof source === "string" ? { url: source } : { data: source }
+  );
+  const pdf = await loadingTask.promise;
+  const pages: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items
+      .map((item: any) => item.str)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    pages.push(text);
+  }
+  return pages;
+}
+
 const PdfReader = () => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("url");
   const [urlInput, setUrlInput] = useState("");
   const [urlError, setUrlError] = useState("");
   const [fileError, setFileError] = useState("");
   const [pdfSrc, setPdfSrc] = useState<string | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState("");
   const objectUrlRef = useRef<string | null>(null);
+  const fileRef = useRef<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const revokeObjectUrl = useCallback(() => {
@@ -27,21 +55,11 @@ const PdfReader = () => {
   const handleOpenUrl = () => {
     setUrlError("");
     const trimmed = urlInput.trim();
-    if (!trimmed) {
-      setUrlError("Похоже, это невалидная ссылка.");
-      return;
-    }
-    if (!trimmed.startsWith("https://")) {
-      setUrlError("Нужна ссылка формата https://");
-      return;
-    }
-    try {
-      new URL(trimmed);
-    } catch {
-      setUrlError("Похоже, это невалидная ссылка.");
-      return;
-    }
+    if (!trimmed) { setUrlError("Похоже, это невалидная ссылка."); return; }
+    if (!trimmed.startsWith("https://")) { setUrlError("Нужна ссылка формата https://"); return; }
+    try { new URL(trimmed); } catch { setUrlError("Похоже, это невалидная ссылка."); return; }
     revokeObjectUrl();
+    fileRef.current = null;
     setPdfSrc(trimmed);
   };
 
@@ -62,6 +80,7 @@ const PdfReader = () => {
     revokeObjectUrl();
     const url = URL.createObjectURL(file);
     objectUrlRef.current = url;
+    fileRef.current = file;
     setPdfSrc(url);
   };
 
@@ -70,10 +89,58 @@ const PdfReader = () => {
     setMode(newMode);
     setUrlError("");
     setFileError("");
+    setExtractError("");
     revokeObjectUrl();
     setPdfSrc(null);
     setUrlInput("");
+    fileRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleExtractAndView = async () => {
+    if (!pdfSrc) return;
+    setExtracting(true);
+    setExtractError("");
+    try {
+      let pages: string[];
+      if (fileRef.current) {
+        const buffer = await fileRef.current.arrayBuffer();
+        pages = await extractTextFromPdf(buffer);
+      } else {
+        pages = await extractTextFromPdf(pdfSrc);
+      }
+
+      if (pages.every((p) => !p.trim())) {
+        setExtractError("Не удалось извлечь текст. Возможно, PDF содержит только изображения.");
+        setExtracting(false);
+        return;
+      }
+
+      // Filter out empty pages and create title from first non-empty page
+      const nonEmptyPages = pages.filter((p) => p.trim());
+      const title = nonEmptyPages[0]?.substring(0, 80) || "Без названия";
+
+      // First page = title, rest = content pages
+      const allPages = [title, ...nonEmptyPages];
+
+      const { data, error } = await supabase
+        .from("pdf_documents")
+        .insert({ title, pages: allPages })
+        .select("id")
+        .single();
+
+      if (error) {
+        setExtractError("Ошибка сохранения: " + error.message);
+        setExtracting(false);
+        return;
+      }
+
+      navigate(`/pdf-reader/view/${data.id}`);
+    } catch (err: any) {
+      setExtractError("Ошибка извлечения текста: " + (err?.message || "неизвестная ошибка"));
+    } finally {
+      setExtracting(false);
+    }
   };
 
   return (
@@ -148,10 +215,7 @@ const PdfReader = () => {
               <input
                 type="url"
                 value={urlInput}
-                onChange={(e) => {
-                  setUrlInput(e.target.value);
-                  setUrlError("");
-                }}
+                onChange={(e) => { setUrlInput(e.target.value); setUrlError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleOpenUrl()}
                 placeholder="Вставь ссылку на PDF (https://…)"
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all"
@@ -165,10 +229,7 @@ const PdfReader = () => {
               <button
                 onClick={handleOpenUrl}
                 className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
-                style={{
-                  background: "#3a2e1e",
-                  color: "#f5f0e8",
-                }}
+                style={{ background: "#3a2e1e", color: "#f5f0e8" }}
               >
                 Открыть
               </button>
@@ -211,9 +272,18 @@ const PdfReader = () => {
           </div>
         )}
 
-        {/* Fallback link */}
+        {/* Actions when PDF is loaded */}
         {pdfSrc && (
-          <div className="flex justify-end mt-3">
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={handleExtractAndView}
+              disabled={extracting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-50"
+              style={{ background: "#8b3a0f", color: "#f5f0e8" }}
+            >
+              {extracting ? <Loader2 size={15} className="animate-spin" /> : null}
+              {extracting ? "Извлекаю текст…" : "📖 Читать как книгу"}
+            </button>
             <a
               href={pdfSrc}
               target="_blank"
@@ -224,6 +294,12 @@ const PdfReader = () => {
               Открыть в новой вкладке <ExternalLink size={12} />
             </a>
           </div>
+        )}
+
+        {extractError && (
+          <p className="text-xs flex items-center gap-1.5 mt-3" style={{ color: "#c0392b" }}>
+            <FileWarning size={13} /> {extractError}
+          </p>
         )}
 
         {/* Viewer */}
