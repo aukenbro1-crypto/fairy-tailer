@@ -7,7 +7,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import StoryConstructor from "@/components/StoryConstructor";
 
 // Critical above-the-fold images - load immediately
-import mascotImage from "@/assets/mascot-new.png";
+import mascotImage from "@/assets/mascot-2.png";
 import logoImage from "@/assets/logo.png";
 import createButtonImage from "@/assets/create-button-new.png";
 import dragonHeaderImage from "@/assets/dragon-header.png";
