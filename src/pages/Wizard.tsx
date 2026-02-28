@@ -171,7 +171,7 @@ const Wizard = () => {
       </header>
 
       {/* SCREEN 1: HERO */}
-      <section className="wizard-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]" style={{ backgroundImage: `url(${hogwartsHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center 30%' }}>
+      <section className="wizard-hero-gradient wizard-hero-bg min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]" style={{ backgroundImage: `url(${hogwartsHeroBg})` }}>
         {/* Magic overlay */}
         <div className="wizard-magic-overlay" />
 
