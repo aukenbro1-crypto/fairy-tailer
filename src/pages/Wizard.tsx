@@ -215,9 +215,6 @@ const Wizard = () => {
 
         <div className="max-w-7xl mx-auto w-full flex flex-col items-end text-right wizard-hero-content wizard-hero-visible relative z-10">
           <div className="max-w-lg">
-            <div className="wizard-wand-icon mb-4 flex justify-end">
-              <Wand2 size={36} className="text-[#FFD700] animate-pulse" />
-            </div>
             <h1 className="wizard-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 wizard-hero-title">
               Персональная книга<br/>в мире магии и волшебства
             </h1>
