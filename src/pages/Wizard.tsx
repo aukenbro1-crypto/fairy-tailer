@@ -229,33 +229,6 @@ const Wizard = () => {
         </div>
       </section>
 
-      {/* Wave divider */}
-      <div className="wizard-wave-divider wizard-wave-to-dark">
-        <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
-          <path d="M0,75 C150,150 300,0 450,75 C600,150 750,0 900,75 C1050,150 1200,0 1200,75 L1200,150 L0,150 Z" />
-        </svg>
-      </div>
-
-      {/* SCREEN 2: WHAT IS IT */}
-      <AnimatedSection className="wizard-section-dark py-16 md:py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
-            <div className="flex justify-center mb-8 md:mb-0 md:flex-shrink-0">
-              <img src={wizardTrainImage} alt="Магический поезд" className="w-full max-w-[200px] sm:max-w-[240px] md:max-w-[280px] lg:max-w-[320px] h-auto drop-shadow-xl" />
-            </div>
-            <div className="flex-1">
-              <p className="wizard-text text-lg md:text-xl leading-relaxed mb-8">
-                FairyTeller создаст персональную историю в мире магии — с заклинаниями, волшебными существами и захватывающими приключениями.
-              </p>
-              <div className="space-y-4 wizard-text text-lg">
-                <p className="wizard-stagger-1">🪄 вы вводите имя героя, детали и фото</p>
-                <p className="wizard-stagger-2">🍵 выбираете стиль иллюстраций</p>
-                <p className="wizard-stagger-3">📖 получаете настоящую бумажную книгу</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </AnimatedSection>
 
       {/* Wave divider */}
       <div className="wizard-wave-divider wizard-wave-to-stone">
