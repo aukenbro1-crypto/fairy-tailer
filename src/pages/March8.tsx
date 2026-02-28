@@ -106,7 +106,18 @@ const March8 = () => {
   };
 
   return (
-    <div className="romantic-page min-h-screen">
+    <div className="romantic-page min-h-screen relative">
+      {/* Floating petals */}
+      <div className="march8-petals-container">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className={`march8-petal march8-petal-${i + 1}`}>
+            <svg width={16 + (i % 3) * 6} height={16 + (i % 3) * 6} viewBox="0 0 24 24" fill="none">
+              <ellipse cx="12" cy="8" rx="5" ry="8" fill={i % 3 === 0 ? '#F4A5B8' : i % 3 === 1 ? '#FFB6C1' : '#E8A0BF'} opacity="0.85" transform={`rotate(${i * 36} 12 12)`} />
+            </svg>
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <header className="romantic-header sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -153,6 +164,28 @@ const March8 = () => {
 
       {/* SCREEN 1: HERO */}
       <section className="romantic-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]">
+        {/* Spring overlay */}
+        <div className="march8-spring-overlay" />
+
+        {/* Flower decorations */}
+        <div className="march8-flower-decoration march8-flower-tl march8-tulip" style={{ opacity: 0 }}>
+          <svg width="48" height="64" viewBox="0 0 48 64"><path d="M24 64 C24 64 24 30 24 30" stroke="#4a8c3f" strokeWidth="2.5" fill="none"/><ellipse cx="24" cy="18" rx="10" ry="14" fill="#e84393"/><ellipse cx="16" cy="20" rx="7" ry="12" fill="#fd79a8" transform="rotate(-20 16 20)"/><ellipse cx="32" cy="20" rx="7" ry="12" fill="#fd79a8" transform="rotate(20 32 20)"/><ellipse cx="24" cy="14" rx="5" ry="8" fill="#f8a5c2"/><path d="M18 50 Q12 42 8 48" stroke="#4a8c3f" strokeWidth="1.5" fill="none"/><ellipse cx="6" cy="46" rx="5" ry="3" fill="#6ab04c" transform="rotate(-30 6 46)"/></svg>
+        </div>
+        <div className="march8-flower-decoration march8-flower-tr" style={{ opacity: 0 }}>
+          <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="6" fill="#f9ca24"/><ellipse cx="26" cy="12" rx="6" ry="10" fill="#e17055"/><ellipse cx="26" cy="40" rx="6" ry="10" fill="#e17055"/><ellipse cx="12" cy="26" rx="10" ry="6" fill="#e17055"/><ellipse cx="40" cy="26" rx="10" ry="6" fill="#e17055"/><ellipse cx="16" cy="16" rx="6" ry="9" fill="#fab1a0" transform="rotate(-45 16 16)"/><ellipse cx="36" cy="16" rx="6" ry="9" fill="#fab1a0" transform="rotate(45 36 16)"/><ellipse cx="16" cy="36" rx="6" ry="9" fill="#fab1a0" transform="rotate(45 16 36)"/><ellipse cx="36" cy="36" rx="6" ry="9" fill="#fab1a0" transform="rotate(-45 36 36)"/></svg>
+        </div>
+        <div className="march8-flower-decoration march8-flower-bl march8-tulip" style={{ opacity: 0 }}>
+          <svg width="40" height="56" viewBox="0 0 40 56"><path d="M20 56 C20 56 20 26 20 26" stroke="#4a8c3f" strokeWidth="2" fill="none"/><ellipse cx="20" cy="16" rx="9" ry="13" fill="#a29bfe"/><ellipse cx="13" cy="18" rx="6" ry="11" fill="#6c5ce7" transform="rotate(-15 13 18)"/><ellipse cx="27" cy="18" rx="6" ry="11" fill="#6c5ce7" transform="rotate(15 27 18)"/></svg>
+        </div>
+        <div className="march8-flower-decoration march8-flower-br" style={{ opacity: 0 }}>
+          <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="5" fill="#fdcb6e"/><ellipse cx="22" cy="10" rx="5" ry="9" fill="#ff6b81"/><ellipse cx="22" cy="34" rx="5" ry="9" fill="#ff6b81"/><ellipse cx="10" cy="22" rx="9" ry="5" fill="#ff6b81"/><ellipse cx="34" cy="22" rx="9" ry="5" fill="#ff6b81"/></svg>
+        </div>
+
+        {/* Butterfly */}
+        <div className="march8-butterfly" style={{ top: '15%', right: '12%' }}>
+          <svg width="32" height="28" viewBox="0 0 32 28"><ellipse cx="10" cy="10" rx="9" ry="8" fill="#fab1a0" opacity="0.7" transform="rotate(-15 10 10)"/><ellipse cx="22" cy="10" rx="9" ry="8" fill="#fd79a8" opacity="0.7" transform="rotate(15 22 10)"/><ellipse cx="12" cy="20" rx="6" ry="6" fill="#e17055" opacity="0.6" transform="rotate(-10 12 20)"/><ellipse cx="20" cy="20" rx="6" ry="6" fill="#e84393" opacity="0.6" transform="rotate(10 20 20)"/><line x1="16" y1="4" x2="16" y2="26" stroke="#5A3A33" strokeWidth="1.5"/><line x1="16" y1="4" x2="12" y2="0" stroke="#5A3A33" strokeWidth="0.8"/><line x1="16" y1="4" x2="20" y2="0" stroke="#5A3A33" strokeWidth="0.8"/></svg>
+        </div>
+
         {/* Lava lamp bubbles */}
         <div className="romantic-lava-container">
           <div className="romantic-bubble romantic-bubble-1" />
