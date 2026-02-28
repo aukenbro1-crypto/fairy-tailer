@@ -302,8 +302,8 @@ const Landing = () => {
           </div>
           <div className="flex justify-center md:justify-center md:order-2 order-1">
             <Link to="/" className="cursor-pointer">
-              <img src={mascotImage} alt="FairyTeller - живая книжка с крыльями" className="h-64 w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 object-contain transition-transform duration-300 ease-out hover:scale-105" style={{
-              transform: `translate(1.5rem, 1.5rem) translateY(${Math.sin(scrollY * 0.005) * 40}px)`
+              <img src={mascotImage} alt="FairyTeller - сказочный маскот" className="h-80 w-80 md:h-96 md:w-96 lg:h-[28rem] lg:w-[28rem] object-contain drop-shadow-2xl" style={{
+              animation: 'mascot-levitate 4s ease-in-out infinite',
             }} />
             </Link>
           </div>
