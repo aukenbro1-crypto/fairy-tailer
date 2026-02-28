@@ -4364,7 +4364,7 @@ html, body {
 
 /* Text page */
 .naruto-text-page {
-  padding: 1.2rem 1rem;
+  padding: 1rem 0.9rem;
   position: relative;
 }
 
@@ -4372,13 +4372,15 @@ html, body {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
 }
 
 .naruto-paragraph {
-  font-size: 0.82rem;
-  line-height: 1.8;
+  font-size: 0.75rem;
+  line-height: 1.7;
   color: #3a2e1e;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
   text-align: justify;
   text-indent: 1.5em;
 }
@@ -4388,11 +4390,11 @@ html, body {
 }
 
 .naruto-paragraph:first-child::first-letter {
-  font-size: 2.2em;
+  font-size: 2em;
   float: left;
   line-height: 0.8;
-  margin-right: 0.08em;
-  margin-top: 0.04em;
+  margin-right: 0.06em;
+  margin-top: 0.03em;
   color: #8b3a0f;
 }
 
