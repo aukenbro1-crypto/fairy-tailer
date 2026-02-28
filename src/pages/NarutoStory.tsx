@@ -438,6 +438,9 @@ const NarutoStory = () => {
         <div
           className={`naruto-page ${isFlipping ? `naruto-flip-${flipDirection}` : ""}`}
         >
+          {/* Click zones: left 25% = prev, right 25% = next */}
+          <div className="absolute left-0 top-0 w-1/4 h-full z-20 cursor-pointer" onClick={prevPage} />
+          <div className="absolute right-0 top-0 w-1/4 h-full z-20 cursor-pointer" onClick={nextPage} />
           {renderPage()}
         </div>
       </div>
