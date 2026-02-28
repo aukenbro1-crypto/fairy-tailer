@@ -2603,7 +2603,6 @@ html, body {
   color: var(--romantic-dark-terracotta);
 }
 
-
 /* Typography */
 .romantic-h1 {
   color: var(--romantic-dark-terracotta);
@@ -4637,6 +4636,17 @@ html, body {
     radial-gradient(ellipse at 30% 20%, rgba(45, 27, 78, 0.6) 0%, transparent 60%),
     radial-gradient(ellipse at 70% 80%, rgba(196, 163, 90, 0.08) 0%, transparent 50%),
     linear-gradient(180deg, var(--wizard-midnight) 0%, var(--wizard-dark-blue) 40%, var(--wizard-purple) 100%);
+}
+
+.wizard-hero-bg {
+  background-size: cover;
+  background-position: 75% 30%;
+}
+
+@media (min-width: 768px) {
+  .wizard-hero-bg {
+    background-position: center 30%;
+  }
 }
 
 /* Header */
