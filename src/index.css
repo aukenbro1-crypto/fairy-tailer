@@ -4713,7 +4713,7 @@ html, body {
 
 .wizard-subtitle {
   color: var(--wizard-cream);
-  font-family: 'HarryPotter', 'Georgia', serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-weight: 400;
   font-style: italic;
   opacity: 0.85;
@@ -4746,7 +4746,7 @@ html, body {
   color: var(--wizard-midnight);
   border: 2px solid var(--wizard-gold);
   border-radius: 0.5rem;
-  font-family: 'HarryPotter', 'Georgia', serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.06em;
