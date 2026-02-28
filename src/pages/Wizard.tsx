@@ -16,6 +16,20 @@ import bookCoverRedImage from "@/assets/book-cover-red.png";
 import hogwartsImage from "@/assets/hogwarts-magic.png";
 import hogwartsHeroBg from "@/assets/hogwarts-hero-bg.jpg";
 
+const useImagePreload = (src: string) => {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const img = new Image();
+    img.src = src;
+    if (img.complete) {
+      setLoaded(true);
+    } else {
+      img.onload = () => setLoaded(true);
+    }
+  }, [src]);
+  return loaded;
+};
+
 const AnimatedSection = ({
   children,
   className = "",
@@ -46,12 +60,15 @@ const Wizard = () => {
   const [dragonHovered, setDragonHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const heroBgLoaded = useImagePreload(hogwartsHeroBg);
 
   const [heroVisible, setHeroVisible] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setHeroVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+    if (heroBgLoaded) {
+      const timer = setTimeout(() => setHeroVisible(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [heroBgLoaded]);
 
   useEffect(() => {
     const waves = document.querySelectorAll('.wizard-wave-divider');
@@ -171,7 +188,7 @@ const Wizard = () => {
       </header>
 
       {/* SCREEN 1: HERO */}
-      <section className="wizard-hero-gradient wizard-hero-bg min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]" style={{ backgroundImage: `url(${hogwartsHeroBg})` }}>
+      <section className="wizard-hero-gradient wizard-hero-bg min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px] transition-opacity duration-700" style={{ backgroundImage: heroBgLoaded ? `url(${hogwartsHeroBg})` : 'none', opacity: heroBgLoaded ? 1 : 0 }}>
         {/* Magic overlay */}
         <div className="wizard-magic-overlay" />
 
