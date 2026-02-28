@@ -4075,6 +4075,7 @@ html, body {
   width: 100%;
   max-width: 95vw;
   aspect-ratio: 3/4.2;
+  max-height: 82dvh;
   perspective: 1000px;
   z-index: 10;
 }
@@ -4457,14 +4458,11 @@ html, body {
   letter-spacing: 0.1em;
 }
 
-/* ===== Desktop enhancements ===== */
+/* ===== Tablet ===== */
 @media (min-width: 640px) {
-  .naruto-story-root {
-    padding: 1rem;
-  }
-
   .naruto-book-container {
-    max-width: 540px;
+    max-width: 420px;
+    max-height: 78dvh;
     aspect-ratio: 3/4;
   }
 
@@ -4482,93 +4480,112 @@ html, body {
   }
 
   .naruto-page-inner {
-    padding: 2.5rem 2rem;
+    padding: 2rem 1.8rem;
   }
 
   .naruto-cover {
-    gap: 1.2rem;
+    gap: 1rem;
   }
 
   .naruto-cover-title {
-    font-size: 2.2rem;
-    letter-spacing: 0.15em;
+    font-size: 1.8rem;
+    letter-spacing: 0.12em;
   }
 
   .naruto-cover-subtitle {
-    font-size: 0.92rem;
-    max-width: 80%;
-    line-height: 1.6;
+    font-size: 0.85rem;
+    max-width: 85%;
+    line-height: 1.5;
   }
 
   .naruto-cover-image {
-    width: 85%;
-    max-height: 45%;
+    width: 80%;
+    max-height: 40%;
   }
 
   .naruto-chapter-image {
-    max-height: 220px;
+    max-height: 180px;
   }
 
   .naruto-annotation-text {
-    font-size: 1rem;
-    line-height: 1.8;
+    font-size: 0.95rem;
+    line-height: 1.7;
     max-width: 85%;
   }
 
   .naruto-toc {
-    padding-top: 3rem;
-    gap: 1.5rem;
+    padding-top: 2.5rem;
+    gap: 1.2rem;
   }
 
   .naruto-toc-title {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
   }
 
   .naruto-toc-name {
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
   .naruto-chapter-label {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .naruto-chapter-name {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 
   .naruto-chapter-ornament-top,
   .naruto-chapter-ornament-bottom {
-    width: 120px;
-    height: 2px;
+    width: 100px;
+    height: 1.5px;
   }
 
   .naruto-text-page {
-    padding: 2rem 2.5rem;
+    padding: 1.8rem 2rem;
   }
 
   .naruto-paragraph {
-    font-size: 0.9rem;
-    line-height: 1.85;
-    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
   }
 
   .naruto-paragraph:first-child::first-letter {
-    font-size: 2.5em;
+    font-size: 2.3em;
   }
 
   .naruto-nav-btn {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
   }
 
   .naruto-nav {
     gap: 1.5rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
   }
 }
 
+/* ===== Desktop ===== */
 @media (min-width: 1024px) {
   .naruto-book-container {
-    max-width: 640px;
+    max-width: 480px;
+    max-height: 80dvh;
+  }
+
+  .naruto-page-inner {
+    padding: 2.5rem 2rem;
+  }
+
+  .naruto-cover-title {
+    font-size: 2rem;
+  }
+
+  .naruto-text-page {
+    padding: 2rem 2.2rem;
+  }
+
+  .naruto-paragraph {
+    font-size: 0.88rem;
+    line-height: 1.85;
   }
 }
