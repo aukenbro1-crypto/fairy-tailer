@@ -1,6 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import narutoCover from "@/assets/naruto-cover.jpg";
+import narutoCh1 from "@/assets/naruto-ch1.jpg";
+import narutoCh2 from "@/assets/naruto-ch2.jpg";
+import narutoCh3 from "@/assets/naruto-ch3.jpg";
+import narutoCh4 from "@/assets/naruto-ch4.jpg";
+import narutoCh5 from "@/assets/naruto-ch5.jpg";
 
+const chapterImages: Record<string, string> = {
+  "I": narutoCh1,
+  "II": narutoCh2,
+  "III": narutoCh3,
+  "IV": narutoCh4,
+  "V": narutoCh5,
+};
 // Story data structured by pages (cover + annotation + TOC + chapters split into pages)
 const pages = [
   // Page 0: Cover
@@ -352,6 +365,7 @@ const NarutoStory = () => {
             <div className="naruto-cover-spiral" />
             <KonohaLeaf className="w-20 h-20 naruto-leaf-emblem" />
             <h1 className="naruto-cover-title">{page.title}</h1>
+            <img src={narutoCover} alt="Обложка" className="naruto-cover-image" />
             <p className="naruto-cover-subtitle">{page.subtitle}</p>
             <span className="naruto-cover-year">{page.year}</span>
             <span className="naruto-cover-author">by FairyTeller</span>
@@ -386,6 +400,9 @@ const NarutoStory = () => {
             <div className="naruto-chapter-ornament-top" />
             <span className="naruto-chapter-label">Глава {page.chapter}</span>
             <h2 className="naruto-chapter-name">{page.title}</h2>
+            {chapterImages[page.chapter] && (
+              <img src={chapterImages[page.chapter]} alt={page.title} className="naruto-chapter-image" style={{ marginTop: '1rem', width: '80%', maxHeight: '50%', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }} />
+            )}
             <div className="naruto-chapter-ornament-bottom" />
           </div>
         );
