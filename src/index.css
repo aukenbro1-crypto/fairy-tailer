@@ -2214,6 +2214,10 @@ html, body {
   transform: scale(0.9);
 }
 
+@keyframes mascot-levitate {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-18px); }
+}
 
 /* Card - only one visible at a time */
 .world-card {
