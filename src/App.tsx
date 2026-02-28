@@ -20,8 +20,6 @@ const LoveProportion = lazy(() => import("./pages/LoveProportion"));
 const March8 = lazy(() => import("./pages/March8"));
 const BookPreview = lazy(() => import("./pages/BookPreview"));
 const NarutoStory = lazy(() => import("./pages/NarutoStory"));
-const PdfReader = lazy(() => import("./pages/PdfReader"));
-const PdfViewer = lazy(() => import("./pages/PdfViewer"));
 
 const queryClient = new QueryClient();
 
@@ -53,8 +51,6 @@ const App = () => (
             <Route path="/8march" element={<March8 />} />
             <Route path="/book-preview" element={<BookPreview />} />
             <Route path="/naruto-story" element={<NarutoStory />} />
-            <Route path="/pdf-reader" element={<PdfReader />} />
-            <Route path="/pdf-reader/view/:id" element={<PdfViewer />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
