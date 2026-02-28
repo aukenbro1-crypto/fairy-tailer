@@ -174,36 +174,45 @@ const Wizard = () => {
         {/* Magic overlay */}
         <div className="wizard-magic-overlay" />
 
-        {/* Floating candles */}
-        <div className="wizard-candle wizard-candle-1">
-          <svg width="12" height="40" viewBox="0 0 12 40">
-            <rect x="3" y="12" width="6" height="28" rx="2" fill="#C4A35A" opacity="0.6" />
-            <ellipse cx="6" cy="10" rx="4" ry="6" fill="#FFD700" opacity="0.8">
-              <animate attributeName="ry" values="6;7;5;6" dur="2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.8;1;0.7;0.8" dur="1.5s" repeatCount="indefinite" />
-            </ellipse>
-            <ellipse cx="6" cy="8" rx="2" ry="3" fill="#FFF8DC" opacity="0.9">
-              <animate attributeName="ry" values="3;4;2.5;3" dur="2s" repeatCount="indefinite" />
-            </ellipse>
+        {/* Flying broomstick riders */}
+        <div className="wizard-broom wizard-broom-1">
+          <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+            <g opacity="0.6">
+              {/* Person silhouette */}
+              <circle cx="25" cy="10" r="5" fill="#1a1a2e"/>
+              <path d="M20 15 Q25 13 30 15 L28 28 Q25 30 22 28 Z" fill="#1a1a2e"/>
+              <path d="M20 18 L14 22" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M30 18 L36 14" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              {/* Broom */}
+              <line x1="10" y1="30" x2="50" y2="26" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M46 24 Q55 22 58 26 Q55 30 46 28 Z" fill="#8B6914" opacity="0.8"/>
+              {/* Cape flutter */}
+              <path d="M22 15 Q16 20 18 28" stroke="#1a1a2e" strokeWidth="1.5" fill="none"/>
+            </g>
           </svg>
         </div>
-        <div className="wizard-candle wizard-candle-2">
-          <svg width="10" height="35" viewBox="0 0 10 35">
-            <rect x="2.5" y="10" width="5" height="25" rx="2" fill="#C4A35A" opacity="0.5" />
-            <ellipse cx="5" cy="8" rx="3.5" ry="5" fill="#FFD700" opacity="0.7">
-              <animate attributeName="ry" values="5;6;4;5" dur="2.5s" repeatCount="indefinite" />
-            </ellipse>
-            <ellipse cx="5" cy="7" rx="1.5" ry="2.5" fill="#FFF8DC" opacity="0.85">
-              <animate attributeName="ry" values="2.5;3;2;2.5" dur="2.5s" repeatCount="indefinite" />
-            </ellipse>
+        <div className="wizard-broom wizard-broom-2">
+          <svg width="50" height="35" viewBox="0 0 60 40" fill="none">
+            <g opacity="0.45" transform="scale(-1,1) translate(-60,0)">
+              <circle cx="25" cy="10" r="5" fill="#1a1a2e"/>
+              <path d="M20 15 Q25 13 30 15 L28 28 Q25 30 22 28 Z" fill="#1a1a2e"/>
+              <path d="M20 18 L14 22" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M30 18 L36 14" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="10" y1="30" x2="50" y2="26" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M46 24 Q55 22 58 26 Q55 30 46 28 Z" fill="#8B6914" opacity="0.8"/>
+            </g>
           </svg>
         </div>
-        <div className="wizard-candle wizard-candle-3">
-          <svg width="10" height="35" viewBox="0 0 10 35">
-            <rect x="2.5" y="10" width="5" height="25" rx="2" fill="#C4A35A" opacity="0.5" />
-            <ellipse cx="5" cy="8" rx="3.5" ry="5" fill="#FFD700" opacity="0.75">
-              <animate attributeName="ry" values="5;4;6;5" dur="3s" repeatCount="indefinite" />
-            </ellipse>
+        <div className="wizard-broom wizard-broom-3">
+          <svg width="45" height="30" viewBox="0 0 60 40" fill="none">
+            <g opacity="0.35">
+              <circle cx="25" cy="10" r="5" fill="#1a1a2e"/>
+              <path d="M20 15 Q25 13 30 15 L28 28 Q25 30 22 28 Z" fill="#1a1a2e"/>
+              <path d="M20 18 L14 22" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M30 18 L36 14" stroke="#1a1a2e" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="10" y1="30" x2="50" y2="26" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M46 24 Q55 22 58 26 Q55 30 46 28 Z" fill="#8B6914" opacity="0.8"/>
+            </g>
           </svg>
         </div>
 
