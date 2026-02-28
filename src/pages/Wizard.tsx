@@ -225,7 +225,7 @@ const Wizard = () => {
               история, где герой — вы, а Хогвартс ждёт нового волшебника
             </p>
             <button onClick={handleCreateClick} className="wizard-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 wizard-hero-cta">
-              ⚡ Создать книгу
+              ⚡ Акцио книга!
             </button>
           </div>
         </div>
