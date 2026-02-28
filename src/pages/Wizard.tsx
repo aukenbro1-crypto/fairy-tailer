@@ -14,6 +14,7 @@ import envelopeLetterImage from "@/assets/envelope-letter.png";
 import bookAnimationGif from "@/assets/book-animation.gif";
 import bookCoverRedImage from "@/assets/book-cover-red.png";
 import hogwartsImage from "@/assets/hogwarts-magic.png";
+import hogwartsHeroBg from "@/assets/hogwarts-hero-bg.jpg";
 
 const AnimatedSection = ({
   children,
@@ -170,7 +171,7 @@ const Wizard = () => {
       </header>
 
       {/* SCREEN 1: HERO */}
-      <section className="wizard-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]">
+      <section className="wizard-hero-gradient min-h-[90vh] flex flex-col items-center justify-center px-6 relative overflow-hidden py-[60px]" style={{ backgroundImage: `url(${hogwartsHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center 30%' }}>
         {/* Magic overlay */}
         <div className="wizard-magic-overlay" />
 
@@ -216,26 +217,19 @@ const Wizard = () => {
           </svg>
         </div>
 
-        <div className={`max-w-7xl mx-auto w-full flex flex-col-reverse md:flex-row md:items-center md:gap-8 lg:gap-12 wizard-hero-content ${heroVisible ? 'wizard-hero-visible' : ''} relative z-10`}>
-          {/* Image left */}
-          <div className="md:flex-[1.5] flex justify-center md:justify-start relative">
-            <img src={bookHandsImage} alt="Магическая книга" className="w-full max-w-[800px] sm:max-w-[950px] md:max-w-[1100px] lg:max-w-[1400px] h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105" style={{ filter: 'sepia(0.2) saturate(1.3) hue-rotate(10deg)' }} />
+        <div className={`max-w-4xl mx-auto w-full flex flex-col items-center justify-center text-center wizard-hero-content ${heroVisible ? 'wizard-hero-visible' : ''} relative z-10`}>
+          <div className="wizard-wand-icon mb-4">
+            <Wand2 size={36} className="text-[#FFD700] animate-pulse" />
           </div>
-          {/* Text right */}
-          <div className="md:flex-[0.8] text-center md:text-right mb-8 md:mb-0">
-            <div className="wizard-wand-icon mb-4 flex justify-center md:justify-end">
-              <Wand2 size={36} className="text-[#FFD700] animate-pulse" />
-            </div>
-            <h1 className="wizard-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 wizard-hero-title">
-              Персональная книга<br/>в мире магии и волшебства
-            </h1>
-            <p className="wizard-subtitle text-xl md:text-2xl mb-12 leading-relaxed wizard-hero-subtitle">
-              история, где герой — вы, а Хогвартс ждёт нового волшебника
-            </p>
-            <button onClick={handleCreateClick} className="wizard-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 wizard-hero-cta">
-              ⚡ Создать книгу
-            </button>
-          </div>
+          <h1 className="wizard-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 wizard-hero-title">
+            Персональная книга<br/>в мире магии и волшебства
+          </h1>
+          <p className="wizard-subtitle text-xl md:text-2xl mb-12 leading-relaxed wizard-hero-subtitle">
+            история, где герой — вы, а Хогвартс ждёт нового волшебника
+          </p>
+          <button onClick={handleCreateClick} className="wizard-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 wizard-hero-cta">
+            ⚡ Создать книгу
+          </button>
         </div>
       </section>
 
