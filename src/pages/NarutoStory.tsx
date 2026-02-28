@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 import narutoCover from "@/assets/naruto-cover.jpg";
 import narutoCh1 from "@/assets/naruto-ch1.jpg";
 import narutoCh2 from "@/assets/naruto-ch2.jpg";
@@ -302,6 +303,21 @@ const NarutoStory = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState<"next" | "prev">("next");
+  const [showHeader, setShowHeader] = useState(false);
+
+  // Show header when mouse near top
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      setShowHeader(e.clientY < 60);
+    };
+    const handleLeave = () => setShowHeader(false);
+    window.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseleave", handleLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseleave", handleLeave);
+    };
+  }, []);
 
   const totalPages = pages.length;
 
@@ -431,6 +447,24 @@ const NarutoStory = () => {
 
   return (
     <div className="naruto-story-root">
+      {/* Auto-hide header */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-500 ease-in-out"
+        style={{
+          transform: showHeader ? 'translateY(0)' : 'translateY(-100%)',
+          opacity: showHeader ? 1 : 0,
+          background: 'linear-gradient(180deg, rgba(245,240,232,0.95) 0%, rgba(245,240,232,0) 100%)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Link to="/" className="flex items-center gap-2 text-[#8b3a0f] hover:opacity-70 transition-opacity">
+          <Home className="w-5 h-5" />
+          <span className="text-sm font-serif">Главная</span>
+        </Link>
+        <span className="text-sm text-[#6b5a3e] font-serif tracking-wide">Танец Воли</span>
+        <span className="text-xs text-[#8a7a5e]">{currentPage + 1} / {totalPages}</span>
+      </header>
+
       <FloatingLeaves />
 
       {/* Book container */}
