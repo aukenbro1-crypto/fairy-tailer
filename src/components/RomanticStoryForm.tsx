@@ -148,7 +148,11 @@ const initialHero = (): HeroData => ({
   photoUrl: '',
 });
 
-const RomanticStoryForm: React.FC = () => {
+interface RomanticStoryFormProps {
+  worldOverride?: string;
+}
+
+const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -238,7 +242,7 @@ const RomanticStoryForm: React.FC = () => {
     const multipartData = new FormData();
     
     // Hardcoded fields
-    multipartData.append('world', 'disney_light');
+    multipartData.append('world', worldOverride || 'disney_light');
     multipartData.append('newyear_mode', 'false');
     multipartData.append('length_target', '15000');
     multipartData.append('chapters', '5');
