@@ -217,19 +217,21 @@ const Wizard = () => {
           </svg>
         </div>
 
-        <div className={`max-w-4xl mx-auto w-full flex flex-col items-center justify-center text-center wizard-hero-content ${heroVisible ? 'wizard-hero-visible' : ''} relative z-10`}>
-          <div className="wizard-wand-icon mb-4">
-            <Wand2 size={36} className="text-[#FFD700] animate-pulse" />
+        <div className={`max-w-7xl mx-auto w-full flex flex-col items-end text-right wizard-hero-content ${heroVisible ? 'wizard-hero-visible' : ''} relative z-10`}>
+          <div className="max-w-lg">
+            <div className="wizard-wand-icon mb-4 flex justify-end">
+              <Wand2 size={36} className="text-[#FFD700] animate-pulse" />
+            </div>
+            <h1 className="wizard-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 wizard-hero-title">
+              Персональная книга<br/>в мире магии и волшебства
+            </h1>
+            <p className="wizard-subtitle text-xl md:text-2xl mb-12 leading-relaxed wizard-hero-subtitle">
+              история, где герой — вы, а Хогвартс ждёт нового волшебника
+            </p>
+            <button onClick={handleCreateClick} className="wizard-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 wizard-hero-cta">
+              ⚡ Создать книгу
+            </button>
           </div>
-          <h1 className="wizard-h1 text-3xl md:text-4xl lg:text-5xl leading-tight mb-6 wizard-hero-title">
-            Персональная книга<br/>в мире магии и волшебства
-          </h1>
-          <p className="wizard-subtitle text-xl md:text-2xl mb-12 leading-relaxed wizard-hero-subtitle">
-            история, где герой — вы, а Хогвартс ждёт нового волшебника
-          </p>
-          <button onClick={handleCreateClick} className="wizard-cta-primary text-lg md:text-xl px-10 py-5 transition-all duration-300 wizard-hero-cta">
-            ⚡ Создать книгу
-          </button>
         </div>
       </section>
 
