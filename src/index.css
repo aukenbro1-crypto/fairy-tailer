@@ -4034,7 +4034,7 @@ html, body {
 
 .naruto-story-root {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a0a00 30%, #0d0d0d 60%, #1a0800 100%);
+  background: linear-gradient(135deg, #f5f0e8 0%, #ebe4d6 30%, #f8f4ed 60%, #eee8da 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4057,7 +4057,7 @@ html, body {
 .naruto-leaf {
   position: absolute;
   top: -30px;
-  color: #ff6a00;
+  color: #c45a20;
   animation: naruto-leaf-fall linear infinite;
 }
 
@@ -4081,13 +4081,12 @@ html, body {
   position: absolute;
   inset: 0;
   border-radius: 4px 12px 12px 4px;
-  background:
-    linear-gradient(135deg, #1c1106 0%, #120b04 40%, #1a0e05 100%);
+  background: linear-gradient(135deg, #faf7f0 0%, #f5f0e5 40%, #faf8f2 100%);
   box-shadow:
-    0 0 40px rgba(255, 106, 0, 0.08),
-    inset 0 0 60px rgba(0, 0, 0, 0.5),
-    4px 0 8px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 106, 0, 0.15);
+    0 4px 30px rgba(0, 0, 0, 0.12),
+    inset 0 0 60px rgba(200, 180, 140, 0.15),
+    4px 0 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(180, 160, 120, 0.3);
   overflow: hidden;
   transform-origin: left center;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
@@ -4102,8 +4101,8 @@ html, body {
       0deg,
       transparent,
       transparent 28px,
-      rgba(255, 106, 0, 0.02) 28px,
-      rgba(255, 106, 0, 0.02) 29px
+      rgba(180, 160, 120, 0.06) 28px,
+      rgba(180, 160, 120, 0.06) 29px
     );
   pointer-events: none;
 }
@@ -4116,7 +4115,7 @@ html, body {
   top: 0;
   bottom: 0;
   width: 30px;
-  background: linear-gradient(90deg, rgba(0,0,0,0.4), transparent);
+  background: linear-gradient(90deg, rgba(0,0,0,0.06), transparent);
   pointer-events: none;
 }
 
@@ -4150,7 +4149,7 @@ html, body {
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
-  color: #c4a46a;
+  color: #3a2e1e;
   overflow-y: auto;
 }
 
@@ -4161,8 +4160,8 @@ html, body {
   text-align: center;
   gap: 1.5rem;
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(255, 106, 0, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 80%, rgba(139, 0, 0, 0.1) 0%, transparent 50%);
+    radial-gradient(ellipse at 50% 30%, rgba(200, 140, 60, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, rgba(180, 100, 40, 0.06) 0%, transparent 50%);
 }
 
 .naruto-cover-spiral {
@@ -4170,11 +4169,11 @@ html, body {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 106, 0, 0.08);
+  border: 3px solid rgba(180, 130, 60, 0.12);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 60px rgba(255, 106, 0, 0.05);
+  box-shadow: 0 0 60px rgba(180, 130, 60, 0.06);
 }
 
 .naruto-cover-spiral::after {
@@ -4182,26 +4181,26 @@ html, body {
   position: absolute;
   inset: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 106, 0, 0.06);
+  border: 2px solid rgba(180, 130, 60, 0.08);
 }
 
 .naruto-leaf-emblem {
-  color: #ff6a00;
-  filter: drop-shadow(0 0 12px rgba(255, 106, 0, 0.4));
+  color: #c45a20;
+  filter: drop-shadow(0 0 8px rgba(196, 90, 32, 0.3));
   animation: naruto-emblem-pulse 3s ease-in-out infinite;
   z-index: 1;
 }
 
 @keyframes naruto-emblem-pulse {
-  0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 106, 0, 0.4)); }
-  50% { filter: drop-shadow(0 0 24px rgba(255, 106, 0, 0.7)); }
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(196, 90, 32, 0.3)); }
+  50% { filter: drop-shadow(0 0 18px rgba(196, 90, 32, 0.5)); }
 }
 
 .naruto-cover-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #ff6a00;
-  text-shadow: 0 0 30px rgba(255, 106, 0, 0.4), 0 2px 4px rgba(0,0,0,0.8);
+  color: #8b3a0f;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   z-index: 1;
@@ -4210,7 +4209,7 @@ html, body {
 
 .naruto-cover-subtitle {
   font-size: 0.95rem;
-  color: #8a7550;
+  color: #6b5a3e;
   max-width: 80%;
   line-height: 1.6;
   z-index: 1;
@@ -4218,7 +4217,7 @@ html, body {
 
 .naruto-cover-year {
   font-size: 0.85rem;
-  color: #ff6a00;
+  color: #8b3a0f;
   opacity: 0.6;
   letter-spacing: 0.3em;
   z-index: 1;
@@ -4226,9 +4225,29 @@ html, body {
 
 .naruto-cover-author {
   font-size: 0.8rem;
-  color: #5a4a30;
+  color: #8a7a5e;
   font-style: italic;
   z-index: 1;
+}
+
+/* Cover image */
+.naruto-cover-image {
+  width: 85%;
+  max-height: 45%;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 1;
+}
+
+/* Chapter image */
+.naruto-chapter-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
 /* Annotation */
@@ -4240,14 +4259,14 @@ html, body {
 }
 
 .naruto-leaf-small {
-  color: #ff6a00;
+  color: #c45a20;
   opacity: 0.3;
 }
 
 .naruto-annotation-text {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #9a8560;
+  color: #5a4a32;
   max-width: 85%;
   font-style: italic;
 }
@@ -4261,7 +4280,7 @@ html, body {
 
 .naruto-toc-title {
   font-size: 1.3rem;
-  color: #ff6a00;
+  color: #8b3a0f;
   letter-spacing: 0.3em;
   text-transform: uppercase;
 }
@@ -4282,11 +4301,11 @@ html, body {
   gap: 0.5rem;
   cursor: pointer;
   transition: color 0.2s;
-  color: #c4a46a;
+  color: #3a2e1e;
 }
 
 .naruto-toc-item:hover {
-  color: #ff6a00;
+  color: #8b3a0f;
 }
 
 .naruto-toc-name {
@@ -4296,14 +4315,14 @@ html, body {
 
 .naruto-toc-dots {
   flex: 1;
-  border-bottom: 1px dotted rgba(255, 106, 0, 0.2);
+  border-bottom: 1px dotted rgba(139, 58, 15, 0.25);
   min-width: 20px;
   margin-bottom: 4px;
 }
 
 .naruto-toc-page {
   font-size: 0.85rem;
-  color: #ff6a00;
+  color: #8b3a0f;
   opacity: 0.7;
 }
 
@@ -4317,7 +4336,7 @@ html, body {
 
 .naruto-chapter-label {
   font-size: 0.9rem;
-  color: #ff6a00;
+  color: #8b3a0f;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   opacity: 0.7;
@@ -4325,8 +4344,8 @@ html, body {
 
 .naruto-chapter-name {
   font-size: 1.8rem;
-  color: #ff6a00;
-  text-shadow: 0 0 20px rgba(255, 106, 0, 0.3);
+  color: #8b3a0f;
+  text-shadow: none;
   font-weight: 600;
 }
 
@@ -4334,8 +4353,8 @@ html, body {
 .naruto-chapter-ornament-bottom {
   width: 120px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #ff6a00, transparent);
-  opacity: 0.4;
+  background: linear-gradient(90deg, transparent, #8b3a0f, transparent);
+  opacity: 0.3;
 }
 
 /* Text page */
@@ -4352,7 +4371,7 @@ html, body {
 .naruto-paragraph {
   font-size: 0.9rem;
   line-height: 1.85;
-  color: #b89a60;
+  color: #3a2e1e;
   margin-bottom: 1.2rem;
   text-align: justify;
   text-indent: 1.5em;
@@ -4368,8 +4387,8 @@ html, body {
   line-height: 0.8;
   margin-right: 0.1em;
   margin-top: 0.05em;
-  color: #ff6a00;
-  text-shadow: 0 0 10px rgba(255, 106, 0, 0.3);
+  color: #8b3a0f;
+  text-shadow: none;
 }
 
 .naruto-page-number {
@@ -4377,7 +4396,7 @@ html, body {
   bottom: 1rem;
   right: 1.5rem;
   font-size: 0.75rem;
-  color: #5a4a30;
+  color: #8a7a5e;
 }
 
 /* Final page */
@@ -4389,7 +4408,7 @@ html, body {
 }
 
 .naruto-final-text {
-  color: #8a7550;
+  color: #6b5a3e;
   font-style: italic;
   font-size: 0.95rem;
 }
@@ -4407,9 +4426,9 @@ html, body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 106, 0, 0.3);
-  background: rgba(255, 106, 0, 0.05);
-  color: #ff6a00;
+  border: 1px solid rgba(139, 58, 15, 0.25);
+  background: rgba(139, 58, 15, 0.05);
+  color: #8b3a0f;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4418,8 +4437,8 @@ html, body {
 }
 
 .naruto-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 106, 0, 0.15);
-  box-shadow: 0 0 15px rgba(255, 106, 0, 0.2);
+  background: rgba(139, 58, 15, 0.12);
+  box-shadow: 0 0 15px rgba(139, 58, 15, 0.15);
 }
 
 .naruto-nav-btn:disabled {
@@ -4429,7 +4448,7 @@ html, body {
 
 .naruto-nav-counter {
   font-size: 0.85rem;
-  color: #8a7550;
+  color: #6b5a3e;
   letter-spacing: 0.1em;
 }
 
