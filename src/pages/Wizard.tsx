@@ -14,6 +14,7 @@ import envelopeLetterImage from "@/assets/envelope-letter.png";
 import bookAnimationGif from "@/assets/book-animation.gif";
 import bookCoverRedImage from "@/assets/book-cover-red.png";
 import hogwartsImage from "@/assets/hogwarts-magic.png";
+import wizardTrainImage from "@/assets/wizard-train.png";
 import hogwartsHeroBg from "@/assets/hogwarts-hero-bg.jpg";
 
 const AnimatedSection = ({
@@ -240,7 +241,7 @@ const Wizard = () => {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:gap-12 lg:gap-16">
             <div className="flex justify-center mb-8 md:mb-0 md:flex-shrink-0">
-              <img src={hogwartsImage} alt="Мир магии" className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-xl transition-transform duration-500 hover:scale-105 hover:rotate-1" />
+              <img src={wizardTrainImage} alt="Магический поезд" className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] h-auto drop-shadow-xl transition-transform duration-500 hover:scale-105 hover:rotate-1" />
             </div>
             <div className="flex-1">
               <p className="wizard-text text-lg md:text-xl leading-relaxed mb-8">
@@ -248,7 +249,7 @@ const Wizard = () => {
               </p>
               <div className="space-y-4 wizard-text text-lg">
                 <p className="wizard-stagger-1">🪄 вы вводите имя героя, детали и фото</p>
-                <p className="wizard-stagger-2">⚗️ выбираете факультет и стиль иллюстраций</p>
+                <p className="wizard-stagger-2">🫕 выбираете стиль иллюстраций</p>
                 <p className="wizard-stagger-3">📖 получаете настоящую бумажную книгу</p>
               </div>
             </div>
