@@ -228,13 +228,6 @@ const Wizard = () => {
             </button>
           </div>
         </div>
-        {/* Price banner */}
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-8 md:bottom-12 z-20">
-          <div className="wizard-price-banner">
-            <span className="wizard-price-label">стоимость книги</span>
-            <span className="wizard-price-value">2500₽</span>
-          </div>
-        </div>
       </section>
 
       {/* Wave divider */}

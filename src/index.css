@@ -4685,21 +4685,29 @@ html, body {
   color: var(--wizard-gold-bright);
 }
 
+@font-face {
+  font-family: 'HarryPotter';
+  src: url('/fonts/HarryPotter.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Typography */
 .wizard-h1 {
   color: var(--wizard-gold);
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-family: 'HarryPotter', 'Georgia', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   line-height: 1.15;
   text-shadow: 0 0 30px rgba(255, 215, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .wizard-h2 {
   color: var(--wizard-gold);
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-family: 'HarryPotter', 'Georgia', serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
 }
 
