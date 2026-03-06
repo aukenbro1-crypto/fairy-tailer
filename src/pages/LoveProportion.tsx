@@ -458,9 +458,8 @@ export default function LoveProportion() {
     const payload = {
       source: "loveproportion_exhibition",
       name: form.name,
-      photo_url: form.photoUrl,
       isInLove: form.isInLove ?? false,
-      wantsLove: form.wantsLove ?? false,
+      wantsLove: form.wantsLove === null ? "" : form.wantsLove,
       activity: form.activity,
       proportions: form.proportions,
     };
