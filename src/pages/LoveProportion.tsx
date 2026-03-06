@@ -559,46 +559,59 @@ export default function LoveProportion() {
     setResponseStatus(null);
   }
 
+  // ── Text normalization ──
+  function normalizeStoryText(text: string): string {
+    let t = text.trim();
+    // Windows line breaks
+    t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Strip markdown # and * from headings
+    t = t.replace(/^#{1,6}\s*/gm, '');
+    t = t.replace(/\*{1,3}/g, '');
+    // Collapse 3+ newlines into 2
+    t = t.replace(/\n{3,}/g, '\n\n');
+    // Ensure exactly one blank line after "Глава N" headings
+    t = t.replace(/(Глава\s+\d+[^\n]*)\n*/g, '$1\n\n');
+    return t.trim();
+  }
+
   // ── Chapter parsing ──
-  function parseChapters(text: string) {
-    // Clean markdown symbols
-    const clean = text.replace(/\*{1,3}/g, '');
-    // Split by chapter headings: "Глава N" with optional markdown prefix
-    const chapterRegex = /^(?:#{1,4}\s*)?((Глава\s+\d+[^:\n]*)(?::?\s*(.*))?)/im;
-    const lines = clean.split('\n');
+  function parseChapters(text: string): { heading: string; body: string }[] {
+    const normalized = normalizeStoryText(text);
+    const lines = normalized.split('\n');
     const sections: { heading: string; body: string }[] = [];
     let currentHeading = '';
     let currentBody: string[] = [];
 
     for (const line of lines) {
-      const match = line.match(/^(?:#{1,4}\s*)?(Глава\s+\d+[^]*?)$/i);
+      const match = line.match(/^\s*(Глава\s+\d+[^]*?)$/i);
       if (match) {
-        // Save previous section
         if (currentHeading || currentBody.length > 0) {
           sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
         }
-        currentHeading = match[1].replace(/^#+\s*/, '').trim();
+        currentHeading = match[1].trim();
         currentBody = [];
       } else {
         currentBody.push(line);
       }
     }
-    // Push last section
     if (currentHeading || currentBody.length > 0) {
       sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
     }
     return sections;
   }
 
-  function renderParagraphs(text: string) {
+  // ── Render chapter body as verse (line-by-line) ──
+  function renderVerseBody(text: string) {
     if (!text) return null;
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
-    if (paragraphs.length <= 1) {
-      // Single block — split by single newlines
-      const lines = text.split('\n').filter(l => l.trim());
-      return lines.map((line, i) => <p key={i} className="lp-story-p">{line.trim()}</p>);
-    }
-    return paragraphs.map((p, i) => <p key={i} className="lp-story-p">{p.trim()}</p>);
+    // Split into stanzas by double newlines, then lines within
+    const stanzas = text.split(/\n\s*\n/).filter(s => s.trim());
+    return stanzas.map((stanza, si) => (
+      <div key={si} className="lp-stanza">
+        {stanza.split('\n').filter(l => l.trim()).map((line, li) => (
+          <div key={li} className="lp-verse-line">{line.trim()}</div>
+        ))}
+      </div>
+    ));
   }
 
   // ── Render ──
@@ -637,10 +650,10 @@ export default function LoveProportion() {
                 const sections = parseChapters(result.story_text!);
                 const hasChapters = sections.some(s => s.heading);
                 if (hasChapters) {
-                  return sections.map((sec, i) => (
+                  return sections.filter(s => s.heading || s.body).map((sec, i) => (
                     <div key={i} className="lp-chapter">
                       {sec.heading && (
-                        <div className={`lp-chapter-heading-wrap ${sec.heading.match(/Глава\s+(1|2)\b/i) ? 'lp-chapter-heading-wrap--angels' : ''}`}>
+                        <div className="lp-chapter-heading-wrap">
                           {sec.heading.match(/Глава\s+1\b/i) && (
                             <img src={heartsArrowImg} alt="" className="lp-chapter-deco lp-chapter-deco--left" />
                           )}
@@ -656,20 +669,12 @@ export default function LoveProportion() {
                           )}
                         </div>
                       )}
-                      <div className="lp-chapter-body">{renderParagraphs(sec.body)}</div>
+                      <div className="lp-chapter-body">{renderVerseBody(sec.body)}</div>
                     </div>
                   ));
                 }
-                return <div className="lp-chapter-body">{renderParagraphs(result.story_text!)}</div>;
+                return <div className="lp-chapter-body">{renderVerseBody(result.story_text!)}</div>;
               })()}
-
-              {result.images && result.images.length > 0 && (
-                <div className="lp-story-images">
-                  {result.images.map((url, i) => (
-                    <img key={i} src={url} alt={`Иллюстрация ${i + 1}`} className="lp-story-img" />
-                  ))}
-                </div>
-              )}
 
               <div className="lp-story-actions">
                 <button className="lp-copy-btn" onClick={handleCopy}>
@@ -681,7 +686,6 @@ export default function LoveProportion() {
               </div>
             </div>
           ) : (showResult || error) && debugInfo ? (
-            /* Debug block: only shown when story_text is missing or error */
             <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
               <p style={{ fontWeight: 600, color: "#c00", marginBottom: 12 }}>Не удалось получить историю</p>
               <details style={{ fontFamily: "monospace", fontSize: 13, color: "#666", wordBreak: "break-all", marginBottom: 16 }}>
@@ -1453,22 +1457,23 @@ html, body {
   transform: scaleX(-1);
 }
 
-/* Body paragraphs */
+/* Verse body */
 .lp-chapter-body {
   margin-bottom: 4px;
 }
-.lp-story-p {
+.lp-stanza {
+  margin-bottom: 20px;
+}
+.lp-verse-line {
   font-size: 18px;
-  line-height: 1.75;
+  line-height: 1.85;
   color: #4A2A20;
-  text-align: justify;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  text-justify: inter-word;
-  margin: 0 0 16px;
+  text-align: left;
+  max-width: 600px;
 }
 @media (max-width: 480px) {
-  .lp-story-p { font-size: 17px; line-height: 1.7; margin-bottom: 14px; }
+  .lp-verse-line { font-size: 17px; line-height: 1.75; }
+  .lp-stanza { margin-bottom: 16px; }
 }
 
 .lp-story-images {
