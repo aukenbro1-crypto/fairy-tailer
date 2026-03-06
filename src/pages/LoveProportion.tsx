@@ -681,8 +681,8 @@ export default function LoveProportion() {
 
               <div className="lp-story-footer">
                 <span>by </span>
-                <a href="https://fairytailer.ru" target="_blank" rel="noopener noreferrer" className="lp-footer-link">
-                  FairyTailer.ru
+                <a href="https://fairyteller.ru" target="_blank" rel="noopener noreferrer" className="lp-footer-link">
+                  FairyTeller.ru
                 </a>
               </div>
             </div>
