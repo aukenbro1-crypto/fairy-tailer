@@ -836,6 +836,11 @@ const LP_STYLES = `
   font-display: swap;
 }
 
+/* Force pink background on entire viewport */
+html, body {
+  background: #EDCDD3 !important;
+}
+
 /* Reset scope */
 .lp-root {
   min-height: 100vh;
