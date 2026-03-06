@@ -352,30 +352,8 @@ export default function LoveProportion() {
     goStep(3, "Ты влюблён(а)?");
   }
 
-  function handlePhotoChoice(choice: "add" | "skip") {
-    if (choice === "skip") {
-      addMsg({ role: "user", text: "Пропустить" });
-      goStep(3, "Ты влюблён(а)?");
-    } else {
-      addMsg({ role: "user", text: "Добавить фото" });
-      fileInputRef.current?.click();
-    }
-  }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPhotoPreview(ev.target?.result as string);
-      // photo_url = null since no storage backend; preview only
-      setForm((f) => ({ ...f, photoUrl: null }));
-      addMsg({ role: "user", text: "📷 Фото добавлено" });
-      goStep(3, "Ты влюблён(а)?");
-    };
-    reader.readAsDataURL(file);
-  }
+
 
   function handleInLove(choice: boolean) {
     addMsg({ role: "user", text: choice ? "Да" : "Нет" });
