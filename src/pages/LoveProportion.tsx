@@ -559,46 +559,59 @@ export default function LoveProportion() {
     setResponseStatus(null);
   }
 
+  // ── Text normalization ──
+  function normalizeStoryText(text: string): string {
+    let t = text.trim();
+    // Windows line breaks
+    t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Strip markdown # and * from headings
+    t = t.replace(/^#{1,6}\s*/gm, '');
+    t = t.replace(/\*{1,3}/g, '');
+    // Collapse 3+ newlines into 2
+    t = t.replace(/\n{3,}/g, '\n\n');
+    // Ensure exactly one blank line after "Глава N" headings
+    t = t.replace(/(Глава\s+\d+[^\n]*)\n*/g, '$1\n\n');
+    return t.trim();
+  }
+
   // ── Chapter parsing ──
-  function parseChapters(text: string) {
-    // Clean markdown symbols
-    const clean = text.replace(/\*{1,3}/g, '');
-    // Split by chapter headings: "Глава N" with optional markdown prefix
-    const chapterRegex = /^(?:#{1,4}\s*)?((Глава\s+\d+[^:\n]*)(?::?\s*(.*))?)/im;
-    const lines = clean.split('\n');
+  function parseChapters(text: string): { heading: string; body: string }[] {
+    const normalized = normalizeStoryText(text);
+    const lines = normalized.split('\n');
     const sections: { heading: string; body: string }[] = [];
     let currentHeading = '';
     let currentBody: string[] = [];
 
     for (const line of lines) {
-      const match = line.match(/^(?:#{1,4}\s*)?(Глава\s+\d+[^]*?)$/i);
+      const match = line.match(/^\s*(Глава\s+\d+[^]*?)$/i);
       if (match) {
-        // Save previous section
         if (currentHeading || currentBody.length > 0) {
           sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
         }
-        currentHeading = match[1].replace(/^#+\s*/, '').trim();
+        currentHeading = match[1].trim();
         currentBody = [];
       } else {
         currentBody.push(line);
       }
     }
-    // Push last section
     if (currentHeading || currentBody.length > 0) {
       sections.push({ heading: currentHeading, body: currentBody.join('\n').trim() });
     }
     return sections;
   }
 
-  function renderParagraphs(text: string) {
+  // ── Render chapter body as verse (line-by-line) ──
+  function renderVerseBody(text: string) {
     if (!text) return null;
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
-    if (paragraphs.length <= 1) {
-      // Single block — split by single newlines
-      const lines = text.split('\n').filter(l => l.trim());
-      return lines.map((line, i) => <p key={i} className="lp-story-p">{line.trim()}</p>);
-    }
-    return paragraphs.map((p, i) => <p key={i} className="lp-story-p">{p.trim()}</p>);
+    // Split into stanzas by double newlines, then lines within
+    const stanzas = text.split(/\n\s*\n/).filter(s => s.trim());
+    return stanzas.map((stanza, si) => (
+      <div key={si} className="lp-stanza">
+        {stanza.split('\n').filter(l => l.trim()).map((line, li) => (
+          <div key={li} className="lp-verse-line">{line.trim()}</div>
+        ))}
+      </div>
+    ));
   }
 
   // ── Render ──
