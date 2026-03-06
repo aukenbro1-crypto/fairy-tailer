@@ -312,8 +312,6 @@ export default function LoveProportion() {
     branch: null,
   });
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(50);
   const [result, setResult] = useState<WebhookResult | null>(null);
