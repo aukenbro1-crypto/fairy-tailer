@@ -312,8 +312,6 @@ export default function LoveProportion() {
     branch: null,
   });
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(50);
   const [result, setResult] = useState<WebhookResult | null>(null);
@@ -326,7 +324,7 @@ export default function LoveProportion() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -351,38 +349,16 @@ export default function LoveProportion() {
   function handleName(name: string) {
     setForm((f) => ({ ...f, name }));
     addMsg({ role: "user", text: name });
-    goStep(2, "Хочешь добавить фото? (необязательно)");
+    goStep(3, "Ты влюблён(а)?");
   }
 
-  function handlePhotoChoice(choice: "add" | "skip") {
-    if (choice === "skip") {
-      addMsg({ role: "user", text: "Пропустить" });
-      goStep(3, "Ты влюблён(а)?");
-    } else {
-      addMsg({ role: "user", text: "Добавить фото" });
-      fileInputRef.current?.click();
-    }
-  }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPhotoPreview(ev.target?.result as string);
-      // photo_url = null since no storage backend; preview only
-      setForm((f) => ({ ...f, photoUrl: null }));
-      addMsg({ role: "user", text: "📷 Фото добавлено" });
-      goStep(3, "Ты влюблён(а)?");
-    };
-    reader.readAsDataURL(file);
-  }
+
 
   function handleInLove(choice: boolean) {
     addMsg({ role: "user", text: choice ? "Да" : "Нет" });
     if (choice) {
-      setForm((f) => ({ ...f, isInLove: true, wantsLove: true, branch: "love" }));
+      setForm((f) => ({ ...f, isInLove: true, wantsLove: null, branch: "love" }));
       goStep(5, "Смешай пропорции. Всего 100%.");
     } else {
       setForm((f) => ({ ...f, isInLove: false }));
@@ -458,9 +434,8 @@ export default function LoveProportion() {
     const payload = {
       source: "loveproportion_exhibition",
       name: form.name,
-      photo_url: form.photoUrl,
       isInLove: form.isInLove ?? false,
-      wantsLove: form.wantsLove ?? false,
+      wantsLove: form.wantsLove === null ? "" : form.wantsLove,
       activity: form.activity,
       proportions: form.proportions,
     };
@@ -738,25 +713,6 @@ export default function LoveProportion() {
                     <TextInputStep placeholder="Имя" onSubmit={handleName} />
                   )}
 
-                  {step === 2 && (
-                    <div className="lp-pills-row">
-                      <Pill label="Добавить фото" onClick={() => handlePhotoChoice("add")} />
-                      <Pill label="Пропустить" onClick={() => handlePhotoChoice("skip")} />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="lp-hidden-file"
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                  )}
-
-                  {photoPreview && step > 2 && (
-                    <div className="lp-photo-preview">
-                      <img src={photoPreview} alt="Твоё фото" />
-                    </div>
-                  )}
 
                   {step === 3 && (
                     <div className="lp-pills-row">
@@ -800,7 +756,6 @@ export default function LoveProportion() {
                   {step === 8 && (
                     <p className="lp-step8-hint">
                       {form.name} · {form.branch === "love" ? `Влюблён(а)` : "Свободен(а)"} · {form.activity}
-                      {form.photoUrl || photoFile ? " · 📷" : ""}
                     </p>
                   )}
 
