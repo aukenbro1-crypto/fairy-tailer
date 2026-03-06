@@ -382,7 +382,7 @@ export default function LoveProportion() {
   function handleInLove(choice: boolean) {
     addMsg({ role: "user", text: choice ? "Да" : "Нет" });
     if (choice) {
-      setForm((f) => ({ ...f, isInLove: true, wantsLove: true, branch: "love" }));
+      setForm((f) => ({ ...f, isInLove: true, wantsLove: null, branch: "love" }));
       goStep(5, "Смешай пропорции. Всего 100%.");
     } else {
       setForm((f) => ({ ...f, isInLove: false }));
