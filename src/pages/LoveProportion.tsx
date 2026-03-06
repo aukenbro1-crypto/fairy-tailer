@@ -1488,11 +1488,27 @@ html, body {
   border-radius: 16px;
   object-fit: cover;
 }
-.lp-story-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-  margin-top: 36px;
+.lp-volcano-img {
+  display: block;
+  width: 180px;
+  margin: 40px auto 0;
+}
+@media (max-width: 480px) {
+  .lp-volcano-img { width: 140px; margin-top: 32px; }
+}
+.lp-story-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: rgba(74,42,32,0.45);
+  padding-bottom: 40px;
+}
+.lp-footer-link {
+  color: #D95B3F;
+  text-decoration: none;
+  font-weight: 500;
+}
+.lp-footer-link:hover {
+  text-decoration: underline;
 }
 `;
