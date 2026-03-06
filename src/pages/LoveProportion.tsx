@@ -351,7 +351,7 @@ export default function LoveProportion() {
   function handleName(name: string) {
     setForm((f) => ({ ...f, name }));
     addMsg({ role: "user", text: name });
-    goStep(2, "Хочешь добавить фото? (необязательно)");
+    goStep(3, "Ты влюблён(а)?");
   }
 
   function handlePhotoChoice(choice: "add" | "skip") {
