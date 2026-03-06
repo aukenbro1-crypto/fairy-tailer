@@ -737,25 +737,6 @@ export default function LoveProportion() {
                     <TextInputStep placeholder="Имя" onSubmit={handleName} />
                   )}
 
-                  {step === 2 && (
-                    <div className="lp-pills-row">
-                      <Pill label="Добавить фото" onClick={() => handlePhotoChoice("add")} />
-                      <Pill label="Пропустить" onClick={() => handlePhotoChoice("skip")} />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="lp-hidden-file"
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                  )}
-
-                  {photoPreview && step > 2 && (
-                    <div className="lp-photo-preview">
-                      <img src={photoPreview} alt="Твоё фото" />
-                    </div>
-                  )}
 
                   {step === 3 && (
                     <div className="lp-pills-row">
