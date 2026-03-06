@@ -324,7 +324,7 @@ export default function LoveProportion() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
