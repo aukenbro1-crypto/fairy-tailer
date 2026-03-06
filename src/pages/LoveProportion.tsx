@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import angelCupidImg from "@/assets/angel-cupid.png";
 import angelCutout2Img from "@/assets/angel-cutout-2.png";
 import heartsArrowImg from "@/assets/hearts-arrow.png";
+import sunSpinnerImg from "@/assets/sun-spinner.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -606,12 +607,17 @@ export default function LoveProportion() {
     <>
       <style>{LP_STYLES}</style>
       {/* Countdown overlay */}
-      {loading && (
-        <div className="lp-countdown-overlay">
-          <div className="lp-countdown-number">{countdown}</div>
-          <p className="lp-countdown-subtitle">Купидон смешивает ингредиенты…</p>
-        </div>
-      )}
+       {loading && (
+         <div className="lp-countdown-overlay">
+           <img 
+             src={sunSpinnerImg} 
+             alt="Солнце" 
+             className="lp-countdown-sun"
+           />
+           <div className="lp-countdown-number">{countdown}</div>
+           <p className="lp-countdown-subtitle">Купидон смешивает ингредиенты…</p>
+         </div>
+       )}
 
       <div className="lp-root">
         {/* Background glow blobs */}
@@ -1348,6 +1354,16 @@ const LP_STYLES = `
   font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: -2px;
+}
+.lp-countdown-sun {
+  width: 120px;
+  height: 120px;
+  animation: lp-spin 4s linear infinite;
+  margin-bottom: 20px;
+}
+@keyframes lp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 .lp-countdown-subtitle {
   font-size: 15px;
