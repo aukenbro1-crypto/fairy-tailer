@@ -3,6 +3,7 @@ import angelCupidImg from "@/assets/angel-cupid.png";
 import angelCutout2Img from "@/assets/angel-cutout-2.png";
 import heartsArrowImg from "@/assets/hearts-arrow.png";
 import sunSpinnerImg from "@/assets/sun-spinner.png";
+import volcanoHeartImg from "@/assets/volcano-heart.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -676,13 +677,13 @@ export default function LoveProportion() {
                 return <div className="lp-chapter-body">{renderVerseBody(result.story_text!)}</div>;
               })()}
 
-              <div className="lp-story-actions">
-                <button className="lp-copy-btn" onClick={handleCopy}>
-                  {copied ? "Скопировано ✓" : "Скопировать текст"}
-                </button>
-                <button className="lp-again-link" onClick={handleReset}>
-                  Сгенерировать ещё
-                </button>
+              <img src={volcanoHeartImg} alt="" className="lp-volcano-img" />
+
+              <div className="lp-story-footer">
+                <span>by </span>
+                <a href="https://fairytailer.ru" target="_blank" rel="noopener noreferrer" className="lp-footer-link">
+                  FairyTailer.ru
+                </a>
               </div>
             </div>
           ) : (showResult || error) && debugInfo ? (
@@ -1487,11 +1488,27 @@ html, body {
   border-radius: 16px;
   object-fit: cover;
 }
-.lp-story-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-  margin-top: 36px;
+.lp-volcano-img {
+  display: block;
+  width: 180px;
+  margin: 40px auto 0;
+}
+@media (max-width: 480px) {
+  .lp-volcano-img { width: 140px; margin-top: 32px; }
+}
+.lp-story-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: rgba(74,42,32,0.45);
+  padding-bottom: 40px;
+}
+.lp-footer-link {
+  color: #D95B3F;
+  text-decoration: none;
+  font-weight: 500;
+}
+.lp-footer-link:hover {
+  text-decoration: underline;
 }
 `;
