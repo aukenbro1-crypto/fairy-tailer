@@ -677,13 +677,13 @@ export default function LoveProportion() {
                 return <div className="lp-chapter-body">{renderVerseBody(result.story_text!)}</div>;
               })()}
 
-              <div className="lp-story-actions">
-                <button className="lp-copy-btn" onClick={handleCopy}>
-                  {copied ? "Скопировано ✓" : "Скопировать текст"}
-                </button>
-                <button className="lp-again-link" onClick={handleReset}>
-                  Сгенерировать ещё
-                </button>
+              <img src={volcanoHeartImg} alt="" className="lp-volcano-img" />
+
+              <div className="lp-story-footer">
+                <span>by </span>
+                <a href="https://fairytailer.ru" target="_blank" rel="noopener noreferrer" className="lp-footer-link">
+                  FairyTailer.ru
+                </a>
               </div>
             </div>
           ) : (showResult || error) && debugInfo ? (
