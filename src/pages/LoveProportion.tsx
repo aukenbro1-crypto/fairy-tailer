@@ -756,7 +756,6 @@ export default function LoveProportion() {
                   {step === 8 && (
                     <p className="lp-step8-hint">
                       {form.name} · {form.branch === "love" ? `Влюблён(а)` : "Свободен(а)"} · {form.activity}
-                      {form.photoUrl || photoFile ? " · 📷" : ""}
                     </p>
                   )}
 
