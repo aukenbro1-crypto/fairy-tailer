@@ -1355,6 +1355,16 @@ const LP_STYLES = `
   line-height: 1;
   letter-spacing: -2px;
 }
+.lp-countdown-sun {
+  width: 120px;
+  height: 120px;
+  animation: lp-spin 4s linear infinite;
+  margin-bottom: 20px;
+}
+@keyframes lp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 .lp-countdown-subtitle {
   font-size: 15px;
   color: rgba(74,42,32,0.5);
