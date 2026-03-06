@@ -1457,22 +1457,23 @@ html, body {
   transform: scaleX(-1);
 }
 
-/* Body paragraphs */
+/* Verse body */
 .lp-chapter-body {
   margin-bottom: 4px;
 }
-.lp-story-p {
+.lp-stanza {
+  margin-bottom: 20px;
+}
+.lp-verse-line {
   font-size: 18px;
-  line-height: 1.75;
+  line-height: 1.85;
   color: #4A2A20;
-  text-align: justify;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  text-justify: inter-word;
-  margin: 0 0 16px;
+  text-align: left;
+  max-width: 600px;
 }
 @media (max-width: 480px) {
-  .lp-story-p { font-size: 17px; line-height: 1.7; margin-bottom: 14px; }
+  .lp-verse-line { font-size: 17px; line-height: 1.75; }
+  .lp-stanza { margin-bottom: 16px; }
 }
 
 .lp-story-images {
