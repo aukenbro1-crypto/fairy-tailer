@@ -3,6 +3,7 @@ import angelCupidImg from "@/assets/angel-cupid.png";
 import angelCutout2Img from "@/assets/angel-cutout-2.png";
 import heartsArrowImg from "@/assets/hearts-arrow.png";
 import sunSpinnerImg from "@/assets/sun-spinner.png";
+import volcanoHeartImg from "@/assets/volcano-heart.png";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
