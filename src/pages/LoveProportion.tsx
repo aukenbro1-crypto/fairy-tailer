@@ -650,10 +650,10 @@ export default function LoveProportion() {
                 const sections = parseChapters(result.story_text!);
                 const hasChapters = sections.some(s => s.heading);
                 if (hasChapters) {
-                  return sections.map((sec, i) => (
+                  return sections.filter(s => s.heading || s.body).map((sec, i) => (
                     <div key={i} className="lp-chapter">
                       {sec.heading && (
-                        <div className={`lp-chapter-heading-wrap ${sec.heading.match(/Глава\s+(1|2)\b/i) ? 'lp-chapter-heading-wrap--angels' : ''}`}>
+                        <div className="lp-chapter-heading-wrap">
                           {sec.heading.match(/Глава\s+1\b/i) && (
                             <img src={heartsArrowImg} alt="" className="lp-chapter-deco lp-chapter-deco--left" />
                           )}
@@ -669,20 +669,12 @@ export default function LoveProportion() {
                           )}
                         </div>
                       )}
-                      <div className="lp-chapter-body">{renderParagraphs(sec.body)}</div>
+                      <div className="lp-chapter-body">{renderVerseBody(sec.body)}</div>
                     </div>
                   ));
                 }
-                return <div className="lp-chapter-body">{renderParagraphs(result.story_text!)}</div>;
+                return <div className="lp-chapter-body">{renderVerseBody(result.story_text!)}</div>;
               })()}
-
-              {result.images && result.images.length > 0 && (
-                <div className="lp-story-images">
-                  {result.images.map((url, i) => (
-                    <img key={i} src={url} alt={`Иллюстрация ${i + 1}`} className="lp-story-img" />
-                  ))}
-                </div>
-              )}
 
               <div className="lp-story-actions">
                 <button className="lp-copy-btn" onClick={handleCopy}>
@@ -694,7 +686,6 @@ export default function LoveProportion() {
               </div>
             </div>
           ) : (showResult || error) && debugInfo ? (
-            /* Debug block: only shown when story_text is missing or error */
             <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
               <p style={{ fontWeight: 600, color: "#c00", marginBottom: 12 }}>Не удалось получить историю</p>
               <details style={{ fontFamily: "monospace", fontSize: 13, color: "#666", wordBreak: "break-all", marginBottom: 16 }}>
