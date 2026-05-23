@@ -1,7 +1,7 @@
 [
   {
     "createdAt": "2026-05-23T13:51:28.350Z",
-    "updatedAt": "2026-05-23T13:51:28.356Z",
+    "updatedAt": "2026-05-23T14:21:29.891Z",
     "id": "FVFullVisuals20260523",
     "name": "fairyteller_full_visuals",
     "description": "Generates chapter 2-5 illustrations after full-text.json using the existing visual bible and portrait sheet.",
@@ -116,6 +116,42 @@
             "timeout": 30000
           }
         }
+      },
+      {
+        "id": "a7222a31-9754-4939-b6c0-e18f7c2feae1",
+        "name": "Restore Cover Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1500,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const payload = $('Generate Full Visuals').first().json;\nreturn [{ json: payload }];"
+        }
+      },
+      {
+        "id": "90dcc13e-3fc6-485d-9458-facec73a11de",
+        "name": "Start Cover Pipeline",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.3,
+        "position": [
+          1780,
+          300
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "FVCover20260523",
+            "mode": "list",
+            "cachedResultName": "fairyteller_cover"
+          },
+          "mode": "once",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        }
       }
     ],
     "connections": {
@@ -151,6 +187,28 @@
             }
           ]
         ]
+      },
+      "Mark Full Visuals Ready": {
+        "main": [
+          [
+            {
+              "node": "Restore Cover Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Restore Cover Payload": {
+        "main": [
+          [
+            {
+              "node": "Start Cover Pipeline",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -158,7 +216,7 @@
     },
     "staticData": null,
     "pinData": {},
-    "versionId": "3219b1bc-bc3a-43cd-aa12-79a883cc3282",
+    "versionId": "9934c1ba-1d64-4774-8e02-9ea556dd57c0",
     "triggerCount": 0,
     "tags": []
   }

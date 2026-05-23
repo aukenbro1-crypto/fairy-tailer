@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 14:10 UTC
+Last updated: 2026-05-23 14:28 UTC
 
 ## Project Context
 
@@ -53,6 +53,7 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_continue` | `Y7Bt3zq9XTContinue` | User-triggered webhook that starts full story generation after the first chapter preview. |
 | `fairyteller_full_text` | `C2Pcin7lctSY5nc2` | Background continuation generator for chapters 2-5 and `full-text.json`. |
 | `fairyteller_full_visuals` | `FVFullVisuals20260523` | Background generator for chapter 2-5 illustrations using the existing visual bible and portrait sheet. |
+| `fairyteller_cover` | `FVCover20260523` | Background cover-art generator using full text, visual bible, and portrait sheet. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
 Current state as of 2026-05-23: the internal text, continue/full-text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the website then exposes a "full story" continuation action, which calls `fairyteller_continue` and starts `fairyteller_full_text` for chapters 2-5; the visuals workflow generates a hero reference sheet, then the first chapter illustration, and writes `hero-reference-sheet.png`, `chapter-1.png`, and `visuals.json`; render/publish still uses placeholder contracts.
@@ -65,6 +66,7 @@ Activation state:
 - `fairyteller_continue`: active public continuation webhook.
 - `fairyteller_full_text`: active internal sub-workflow.
 - `fairyteller_full_visuals`: active internal sub-workflow.
+- `fairyteller_cover`: active internal sub-workflow.
 - `fairyteller_render_publish`: active internal sub-workflow.
 
 Current placeholder status flow:
@@ -270,3 +272,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added authenticated Job API base64 reads for generated files so n8n can reuse `hero-reference-sheet.png` as a stable inline reference without depending on n8n binary download behavior.
 - Updated the frontend full-story reader to show chapter illustrations when `artifacts.fullVisuals.images` becomes ready. Deployed frontend release `/var/www/fairyteller/releases/20260523-220014-codex-full-visuals-code`.
 - Verified full-visual smoke on `ft_1779542137791_hnqw7t`: `artifacts.fullVisuals.status=ready`, four generated files exist (`chapter-2.png` through `chapter-5.png`, each about 2.6-2.7 MB), and `visuals.json` now has ready image jobs for chapters 1-5 with cover still queued.
+- Added `fairyteller_cover` (`FVCover20260523`) and wired `fairyteller_full_visuals` to start it asynchronously after chapter 2-5 images are ready. It uses `full-text.json`, `visuals.json`, `visualBible`, and `hero-reference-sheet.png` to generate a no-text cover-art background and stores it as `cover-spread.png`.
+- Verified cover smoke on `ft_1779542137791_hnqw7t`: `artifacts.cover.status=ready`, `cover-spread.png` exists, `visuals.json` has ready image jobs for chapters 1-5 plus cover. Gemini returned the cover source as `1024 x 1024`; the print-accurate page-1 spread (`268.5 x 136 mm`) must be composed in the HTML/CSS PDF render layer rather than treating this raw image as the final cover spread.
