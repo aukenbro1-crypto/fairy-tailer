@@ -172,3 +172,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Verified end-to-end n8n placeholder smoke test through manual intake execution. Smoke execution: `326`; smoke job: `ft_1779513917368_j7xu2m`; final public status: `done`.
 - Added `/create` frontend compatibility for the new async n8n response contract: `jobId`, `statusUrl`, and public status polling in the success overlay while preserving the Make webhook as the default endpoint.
 - Added `.env.example` with frontend migration variables.
+- Deployed frontend release `/var/www/fairyteller/releases/20260523-053332-codex-async-status` and repointed `/var/www/fairyteller/current` to it. Production `/create` still uses the legacy Make endpoint by default.
