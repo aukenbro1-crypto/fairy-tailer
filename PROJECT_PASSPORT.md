@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 05:25 UTC
+Last updated: 2026-05-23 06:20 UTC
 
 ## Project Context
 
@@ -34,6 +34,7 @@ The `/create` form is now compatible with both response shapes:
 
 - legacy Make response: any successful HTTP response marks the request as accepted and keeps the email-based UX
 - n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the success overlay
+- n8n status preview: when `preview.title`, `preview.text`, and first-chapter image URLs are present, the success overlay can show the first chapter and illustration before the full book is complete
 
 Frontend migration environment variables:
 
@@ -121,6 +122,8 @@ Core endpoints:
 - `GET /api/fairyteller/jobs/:jobId/full`
 - `PATCH /api/fairyteller/jobs/:jobId`
 - `PUT /api/fairyteller/jobs/:jobId/artifacts/:fileName.json`
+- `PUT /api/fairyteller/jobs/:jobId/files/:fileName`
+- `GET /api/fairyteller/jobs/:jobId/files/:fileName`
 
 Mutating/internal endpoints require:
 
@@ -204,3 +207,6 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added Job API file artifacts: authenticated `PUT /api/fairyteller/jobs/:jobId/files/:fileName` and public `GET /api/fairyteller/jobs/:jobId/files/:fileName`.
 - Switched `fairyteller_visuals` from placeholder-only to real first-chapter image generation with Gemini and published active version `07a5ffc0-2d15-41f7-b33d-25b493413860`.
 - Verified manual intake smoke with first-chapter text and image. Smoke execution: `334`; smoke job: `ft_1779516199604_fpktms`; final status: `done`; generated image: `chapter-1.png`, `1024 x 1024`, RGB, about `1.3 MB`.
+- Observed smoke timing for `ft_1779516199604_fpktms`: first chapter ready in about `29s`, first image ready about `7s` later, total time from job creation to `done` about `36.4s`.
+- Added `/create` success overlay rendering for the first-chapter preview and illustration when the n8n status API returns preview artifacts.
+- Deployed frontend release `/var/www/fairyteller/releases/20260523-061016-codex-first-chapter-preview` and repointed `/var/www/fairyteller/current` to it. Production `/create` still uses the legacy Make endpoint by default.

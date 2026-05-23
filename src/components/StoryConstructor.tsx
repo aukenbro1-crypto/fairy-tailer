@@ -35,10 +35,28 @@ interface JobStatus {
   preview?: {
     chapter?: number;
     title?: string;
+    summary?: string;
     text?: string;
+    imageStatus?: 'pending' | 'ready' | 'failed';
+    imageUrl?: string;
+    imageAbsoluteUrl?: string;
   } | null;
   error?: string | null;
 }
+
+const getPreviewImageUrl = (preview: JobStatus['preview']) => {
+  if (!preview?.imageUrl && !preview?.imageAbsoluteUrl) {
+    return '';
+  }
+  return preview.imageAbsoluteUrl || preview.imageUrl || '';
+};
+
+const formatPreviewText = (text = '') => {
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+};
 
 interface FormData {
   world: string;
@@ -298,6 +316,9 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
 
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   const validateEmail = (email: string) => EMAIL_RX.test(email);
+  const previewImageUrl = getPreviewImageUrl(jobStatus?.preview);
+  const previewParagraphs = formatPreviewText(jobStatus?.preview?.text);
+  const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -1053,16 +1074,16 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
 
       {/* Success Overlay */}
       {showSuccessOverlay && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div
-            className="w-full max-w-lg mx-4 bg-[#031B28] text-[#DBA858] border-2 border-[#E89C31] rounded-2xl shadow-2xl p-8 text-center"
+            className="w-full max-w-5xl max-h-[92vh] overflow-y-auto bg-[#031B28] text-[#DBA858] border-2 border-[#E89C31] rounded-2xl shadow-2xl p-5 md:p-8 text-center"
             role="dialog"
             aria-modal="true"
           >
-            <div className="text-6xl mb-4">✨📚</div>
-            <h3 className="text-2xl md:text-3xl font-semibold mb-4 mixer-nameplate">Запрос принят!</h3>
-            <p className="text-lg md:text-xl mixer-subtitle mb-6">
-              Книга придёт на почту в течение 15 минут.
+            <div className="text-5xl mb-4">✨📚</div>
+            <h3 className="text-2xl md:text-3xl font-semibold mb-3 mixer-nameplate">Запрос принят!</h3>
+            <p className="text-base md:text-lg mixer-subtitle mb-5">
+              Книга придет на почту в течение 15 минут.
             </p>
             {submittedJobId && (
               <div className="mb-6 text-left bg-[#06283A] border border-[#E89C31]/40 rounded-lg p-4">
@@ -1079,11 +1100,42 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                 <p className="text-sm text-[#DBA858]">
                   {jobStatus?.message || 'Задача поставлена в очередь'}
                 </p>
-                {jobStatus?.preview?.title && (
-                  <p className="text-sm text-[#DBA858]/70 mt-2">
-                    Первая глава: {jobStatus.preview.title}
-                  </p>
-                )}
+              </div>
+            )}
+            {submittedJobId && hasFirstChapterPreview && (
+              <div className="mb-6 grid gap-4 md:grid-cols-[minmax(220px,360px)_1fr] text-left">
+                <div className="rounded-lg overflow-hidden border border-[#E89C31]/40 bg-black/20 aspect-square flex items-center justify-center">
+                  {previewImageUrl ? (
+                    <img
+                      src={previewImageUrl}
+                      alt={jobStatus?.preview?.title || 'Иллюстрация первой главы'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="px-6 text-center text-sm text-[#DBA858]/70">
+                      Иллюстрация первой главы готовится
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-lg border border-[#E89C31]/40 bg-[#06283A] p-4 min-h-[260px] max-h-[420px] overflow-y-auto">
+                  <div className="text-xs uppercase tracking-wide text-[#DBA858]/60 mb-2">
+                    Первая глава
+                  </div>
+                  <h4 className="text-xl md:text-2xl font-semibold text-[#E89C31] mb-3">
+                    {jobStatus?.preview?.title || 'Глава готовится'}
+                  </h4>
+                  {previewParagraphs.length > 0 ? (
+                    <div className="space-y-3 text-sm md:text-base leading-relaxed text-[#F3D9A4]">
+                      {previewParagraphs.map((paragraph, index) => (
+                        <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#DBA858]/70">
+                      Текст первой главы появится здесь, как только будет готов.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             <p className="text-sm text-[#DBA858]/70">
