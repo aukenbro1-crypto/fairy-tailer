@@ -72,10 +72,10 @@ Current placeholder status flow:
 
 Text generation note:
 
-- `fairyteller_text` calls `https://api.openai.com/v1/responses` through an HTTP Request node.
-- The request uses `$env.OPENAI_API_KEY`; do not store the key in the workflow JSON.
-- Model configured for first-chapter generation: `gpt-5.1` with structured JSON output.
-- Current VPS n8n environment has an `OPENAI_API_KEY`, but a smoke request on 2026-05-23 returned `401 invalid_api_key`. Replace the container environment key before testing real text generation end to end.
+- `fairyteller_text` calls Gemini through `https://generativelanguage.googleapis.com/v1beta/models/:generateContent`.
+- The request uses `$env.GEMINI_API_KEY`; do not store the key in the workflow JSON.
+- Model configured for first-chapter generation: `gemini-2.5-flash` with JSON response mode.
+- The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
 
 Gemini integration note:
@@ -191,3 +191,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Replaced the `fairyteller_text` placeholder builder with an OpenAI Responses API first-chapter generator and JSON normalizer; published active version `b83a24c7-1745-4404-b07f-e34032a27c3b`.
 - Verified that the current n8n `OPENAI_API_KEY` is present but invalid; real text smoke is blocked until the key is replaced.
 - Added Gemini API environment variables to the Docker n8n container, recreated n8n with the existing data volume, and verified Gemini API access without printing the key.
+- Switched `fairyteller_text` from OpenAI to Gemini as the primary first-chapter generator and published active version `6db34909-8976-42df-9bea-84f6d1a1ed85`.
+- Verified manual intake smoke with Gemini first-chapter generation. Smoke execution: `330`; smoke job: `ft_1779515670105_344zxe`; final status: `done`; generated title: `Серебряный компас над Невой`; `text.json` contains 5 first-chapter blocks from `gemini-2.5-flash`.
