@@ -61,6 +61,15 @@ interface JobStatus {
         absoluteUrl?: string;
       }>;
     };
+    render?: {
+      status?: 'generating' | 'ready' | 'failed';
+      files?: {
+        cover?: { url?: string; pageCount?: number };
+        interior?: { url?: string; pageCount?: number };
+      };
+    };
+    coverPdf?: { url?: string; pageCount?: number };
+    interiorPdf?: { url?: string; pageCount?: number };
   };
   error?: string | null;
 }
@@ -393,6 +402,9 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
   const fullVisualsStatus = fullVisuals?.status || null;
+  const renderStatus = jobStatus?.artifacts?.render?.status || null;
+  const coverPdfUrl = jobStatus?.artifacts?.coverPdf?.url || jobStatus?.artifacts?.render?.files?.cover?.url || '';
+  const interiorPdfUrl = jobStatus?.artifacts?.interiorPdf?.url || jobStatus?.artifacts?.render?.files?.interior?.url || '';
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
   const fullChapters = (fullTextArtifact?.text?.chapters || []).filter((chapter) => chapter.n > 1);
   const selectedChapter = fullChapters.find((chapter) => chapter.n === selectedFullChapter) || fullChapters[0] || null;
@@ -1279,7 +1291,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     <p className="mt-1 text-sm text-[#DBA858]/75">
                       {fullTextStatus === 'ready'
                         ? fullVisualsStatus === 'ready'
-                          ? 'Главы и иллюстрации уже собраны. Переключайтесь между главами ниже.'
+                          ? renderStatus === 'ready'
+                            ? 'Главы, иллюстрации и PDF уже собраны.'
+                            : renderStatus === 'generating'
+                              ? 'Главы и иллюстрации готовы. Собираем PDF-макеты.'
+                              : 'Главы и иллюстрации уже собраны. Переключайтесь между главами ниже.'
                           : fullVisualsStatus === 'generating'
                             ? `Главы готовы. Иллюстрации дорисовываются${fullVisuals?.total ? `: ${fullVisuals.completed || 0}/${fullVisuals.total}` : ''}.`
                             : 'Главы 2-5 уже собраны. Иллюстрации появятся здесь, когда будут готовы.'
@@ -1303,6 +1319,27 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                 </div>
                 {fullTextStatus === 'ready' && (
                   <div className="mt-5 border-t border-[#E89C31]/25 pt-4">
+                    {(renderStatus === 'ready' || renderStatus === 'generating') && (
+                      <div className="mb-5 rounded-lg border border-[#E89C31]/30 bg-[#031B28] p-4">
+                        <div className="text-sm font-semibold text-[#E89C31]">
+                          {renderStatus === 'ready' ? 'PDF-макеты готовы' : 'PDF-макеты собираются'}
+                        </div>
+                        {renderStatus === 'ready' && (
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            {coverPdfUrl && (
+                              <a href={coverPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
+                                Обложка PDF
+                              </a>
+                            )}
+                            {interiorPdfUrl && (
+                              <a href={interiorPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
+                                Книга PDF
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {fullChapters.length > 0 ? (
                       <>
                         <div className="flex flex-wrap gap-2 mb-4">

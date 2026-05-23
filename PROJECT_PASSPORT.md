@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 14:28 UTC
+Last updated: 2026-05-23 15:15 UTC
 
 ## Project Context
 
@@ -56,7 +56,7 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_cover` | `FVCover20260523` | Background cover-art generator using full text, visual bible, and portrait sheet. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-23: the internal text, continue/full-text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the website then exposes a "full story" continuation action, which calls `fairyteller_continue` and starts `fairyteller_full_text` for chapters 2-5; the visuals workflow generates a hero reference sheet, then the first chapter illustration, and writes `hero-reference-sheet.png`, `chapter-1.png`, and `visuals.json`; render/publish still uses placeholder contracts.
+Current state as of 2026-05-23: the internal text, continue/full-text, visuals, cover, and PDF render paths are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the website then exposes a "full story" continuation action, which calls `fairyteller_continue` and starts `fairyteller_full_text` for chapters 2-5; the visuals workflows generate a hero reference sheet, chapter illustrations, cover art, and `visuals.json`; the PDF render step creates `cover.pdf`, `interior.pdf`, and `render.json`.
 
 Activation state:
 
@@ -67,7 +67,8 @@ Activation state:
 - `fairyteller_full_text`: active internal sub-workflow.
 - `fairyteller_full_visuals`: active internal sub-workflow.
 - `fairyteller_cover`: active internal sub-workflow.
-- `fairyteller_render_publish`: active internal sub-workflow.
+- PDF render: active host-side renderer invoked by the Job API after cover generation.
+- `fairyteller_render_publish`: legacy placeholder workflow, superseded for current PDF smoke by the Job API renderer.
 
 Current placeholder status flow:
 
@@ -127,6 +128,7 @@ Planned production service:
 - public proxy: `https://fairyteller.ru/api/fairyteller/`
 - environment file: `/etc/fairyteller/api.env`
 - service source file: `/opt/fairyteller-api/fairyteller-api.mjs`
+- PDF renderer source file: `/opt/fairyteller-render/fairyteller-render-pdf.mjs`
 - nginx backup before API proxy change: `/root/nginx-codex-backups/fairyteller.bak_codex_20260523050814`
 - nginx also proxies `/webhook/` to Docker n8n on `127.0.0.1:5680`; backup before webhook proxy change: `/root/nginx-codex-backups/fairyteller.bak_codex_20260523061350_webhook`
 
@@ -141,6 +143,7 @@ Core endpoints:
 - `PUT /api/fairyteller/jobs/:jobId/files/:fileName`
 - `GET /api/fairyteller/jobs/:jobId/files/:fileName`
 - `GET /api/fairyteller/jobs/:jobId/files/:fileName?base64=1` returns authenticated JSON/base64 for internal workflow reuse of generated files.
+- `POST /api/fairyteller/jobs/:jobId/render-pdf` starts the authenticated PDF render step and writes `cover.pdf`, `interior.pdf`, and `render.json`.
 
 Mutating/internal endpoints require:
 
@@ -173,10 +176,8 @@ Reference production PDF:
 
 Preferred render architecture:
 
-- HTML/CSS template
-- Playwright/Chromium PDF export
-- pinned browser/runtime version
-- preflight checks for page count, page size, image resolution, text overflow
+- Current first working renderer: Node.js `pdf-lib` generator with embedded DejaVu fonts, exact page sizes, and Job API file outputs.
+- Target renderer after layout polish: HTML/CSS template with Playwright/Chromium PDF export, pinned browser/runtime version, and preflight checks for page count, page size, image resolution, text overflow.
 
 Google Slides/Drive should be phased out because OAuth reauthorization has been unstable every 2-3 weeks.
 
@@ -274,3 +275,6 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Verified full-visual smoke on `ft_1779542137791_hnqw7t`: `artifacts.fullVisuals.status=ready`, four generated files exist (`chapter-2.png` through `chapter-5.png`, each about 2.6-2.7 MB), and `visuals.json` now has ready image jobs for chapters 1-5 with cover still queued.
 - Added `fairyteller_cover` (`FVCover20260523`) and wired `fairyteller_full_visuals` to start it asynchronously after chapter 2-5 images are ready. It uses `full-text.json`, `visuals.json`, `visualBible`, and `hero-reference-sheet.png` to generate a no-text cover-art background and stores it as `cover-spread.png`.
 - Verified cover smoke on `ft_1779542137791_hnqw7t`: `artifacts.cover.status=ready`, `cover-spread.png` exists, `visuals.json` has ready image jobs for chapters 1-5 plus cover. Gemini returned the cover source as `1024 x 1024`; the print-accurate page-1 spread (`268.5 x 136 mm`) must be composed in the HTML/CSS PDF render layer rather than treating this raw image as the final cover spread.
+- Added the first working PDF renderer at `server/fairyteller-render-pdf.mjs`, deployed it to `/opt/fairyteller-render/fairyteller-render-pdf.mjs`, and exposed authenticated `POST /api/fairyteller/jobs/:jobId/render-pdf`.
+- Wired `fairyteller_cover` to invoke the PDF render endpoint after `cover-spread.png` is ready. The render step writes `cover.pdf`, `interior.pdf`, and `artifacts/render.json`, then exposes `artifacts.render`, `artifacts.coverPdf`, and `artifacts.interiorPdf` in public job status.
+- Verified PDF smoke on `ft_1779542137791_hnqw7t`: `cover.pdf` is PDF 1.7 with 1 page at `268.5 x 136.0 mm`; `interior.pdf` is PDF 1.7 with 40 pages at `136.0 x 136.0 mm`; both download publicly through Job API file URLs. Deployed frontend release `/var/www/fairyteller/releases/20260523-231419-codex-pdf-links` to show PDF links when `artifacts.render.status=ready`.

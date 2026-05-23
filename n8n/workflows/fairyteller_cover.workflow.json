@@ -1,7 +1,7 @@
 [
   {
     "createdAt": "2026-05-23T14:21:29.881Z",
-    "updatedAt": "2026-05-23T14:21:29.887Z",
+    "updatedAt": "2026-05-23T15:09:58.554Z",
     "id": "FVCover20260523",
     "name": "fairyteller_cover",
     "description": "Generates the wraparound cover background using full text, visual bible, and portrait sheet.",
@@ -116,6 +116,42 @@
             "timeout": 30000
           }
         }
+      },
+      {
+        "id": "968858f3-9c12-4725-9969-c6947959b227",
+        "name": "Start PDF Render",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          1500,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Generate Cover\").item.json.jobId + \"/render-pdf\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 240000
+          }
+        }
       }
     ],
     "connections": {
@@ -151,6 +187,17 @@
             }
           ]
         ]
+      },
+      "Mark Cover Ready": {
+        "main": [
+          [
+            {
+              "node": "Start PDF Render",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -158,7 +205,7 @@
     },
     "staticData": null,
     "pinData": {},
-    "versionId": "60d9741a-0625-47ba-b59d-a06a660402dc",
+    "versionId": "41b43caf-7f58-429a-a8e6-8f6a731115c6",
     "triggerCount": 0,
     "tags": []
   }

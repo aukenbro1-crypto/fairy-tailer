@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { spawn } from 'node:child_process';
 import { appendFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
@@ -7,6 +8,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 const PORT = Number(process.env.FAIRYTELLER_API_PORT || process.env.PORT || 3099);
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '.data/fairyteller');
 const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
+const RENDER_SCRIPT = process.env.FAIRYTELLER_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-render-pdf.mjs';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
@@ -331,6 +333,61 @@ async function sendJobFile(req, res, jobId, fileName) {
   res.end(content);
 }
 
+async function renderJobPdf(jobId) {
+  const dir = jobDir(jobId);
+  if (!existsSync(dir)) {
+    throw httpError(404, 'Job not found');
+  }
+
+  await updateJobStatus(jobId, {
+    artifacts: {
+      render: {
+        status: 'generating',
+        requestedAt: nowIso(),
+      },
+    },
+  });
+
+  await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, [RENDER_SCRIPT, jobId], {
+      env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, 'PDF render timed out'));
+    }, 240000);
+
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolvePromise(stdout);
+        return;
+      }
+      rejectPromise(httpError(500, `PDF render failed: ${stderr || stdout || `exit ${code}`}`));
+    });
+  });
+
+  const renderArtifact = await getJobJsonArtifact(jobId, 'render.json');
+  const render = renderArtifact.render || renderArtifact;
+  await updateJobStatus(jobId, {
+    artifacts: {
+      render,
+      coverPdf: render.files?.cover || null,
+      interiorPdf: render.files?.interior || null,
+    },
+  });
+  return renderArtifact;
+}
+
 function requireJsonArtifactName(fileName) {
   const safeName = basename(fileName);
   if (safeName !== fileName || !/^[a-zA-Z0-9_.-]+\.json$/.test(fileName)) {
@@ -423,6 +480,13 @@ async function route(req, res) {
     requireAuth(req);
     const status = await updateJobStatus(statusMatch[1], await readJsonBody(req));
     sendJson(req, res, 200, sanitizePublicStatus(status));
+    return;
+  }
+
+  const renderMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/render-pdf$/);
+  if (method === 'POST' && renderMatch) {
+    requireAuth(req);
+    sendJson(req, res, 200, await renderJobPdf(renderMatch[1]));
     return;
   }
 
