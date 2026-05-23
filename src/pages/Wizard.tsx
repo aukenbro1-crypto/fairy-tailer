@@ -354,7 +354,7 @@ const Wizard = () => {
               Заполните форму — и получите книгу на почту
             </p>
           </div>
-          <RomanticStoryForm worldOverride="new_year" />
+          <RomanticStoryForm worldOverride="hogwarts_world" />
         </div>
       </AnimatedSection>
 

@@ -229,3 +229,9 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Verified minibrick smoke through public intake. Smoke job: `ft_1779518387625_1duomz`; final status: `done`; files generated: `hero-reference-sheet.png` and `chapter-1.png`, both `1024 x 1024`; visual check confirmed brick/minifigure style.
 - Verified photo-upload smoke through public intake with `hero1_photo`. Smoke job: `ft_1779518617754_ftw6ah`; final status: `done`; this confirmed the portraitizer can read webhook binary data before generating the hero reference sheet.
 - Added sanitized workflow exports for `fairyteller_intake` and `fairyteller_visuals`.
+- Replaced short n8n world labels with Make-derived world profiles for `disney_light`, `adventure_classic`, `fantasy_epic`, `cyberpunk_dream`, and a cleaned `hogwarts_world` profile. The old `new_year` key remains an alias to `hogwarts_world` inside `fairyteller_text`.
+- Updated the frontend world value from `new_year` to `hogwarts_world` in the main constructor and the wizard page.
+- Deployed frontend release `/var/www/fairyteller/releases/20260523-151440-codex-hogwarts-world-key` and repointed `/var/www/fairyteller/current` to it.
+- Hardened `fairyteller_text` `Normalize First Chapter` against Gemini malformed JSON: it now retries parse with comma/control-character repairs and falls back to extracting five first-chapter blocks from the raw response instead of failing the whole job.
+- Synced production workflow exports for `fairyteller_intake`, `fairyteller_text`, and `fairyteller_visuals`.
+- Verified public smoke with `hogwarts_world`, `chapters=4`, minibrick style, location `закрытая библиотека...`, and artifact `латунный жетон...`. Smoke job: `ft_1779520304316_ov65b1`; final status: `done`; `text.json` contains `chapterPlan` length `4`; first chapter title: `Шепот Старой Библиотеки`.

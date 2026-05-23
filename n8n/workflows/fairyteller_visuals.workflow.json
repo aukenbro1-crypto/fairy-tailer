@@ -1,641 +1,671 @@
-{
-  "id": "RXzoJ7Bdlr2y3l60",
-  "name": "fairyteller_visuals",
-  "description": "Generates the first chapter illustration with Gemini, stores it as a job file, writes visuals.json, and starts render/publish asynchronously.",
-  "active": true,
-  "nodes": [
-    {
-      "id": "cc9d99de-b6de-4e7c-9536-62ea0d633019",
-      "name": "Visuals Pipeline Input",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        240,
-        300
-      ],
-      "parameters": {
-        "inputSource": "jsonExample",
-        "jsonExample": "{\"jobId\":\"ft_example\",\"order\":{\"illustrationStyle\":\"disney\",\"heroes\":[]},\"text\":{\"preview\":{\"chapter\":1,\"summary\":\"Two heroes by the river with a compass\",\"title\":\"Example\"},\"chapters\":[]}}"
-      }
-    },
-    {
-      "id": "e01b3a56-6d8f-4555-8a72-d6d11df70134",
-      "name": "Mark Visuals Generating",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        840,
-        300
-      ],
-      "parameters": {
-        "method": "PATCH",
-        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+[
+  {
+    "updatedAt": "2026-05-23T06:39:37.000Z",
+    "createdAt": "2026-05-23T04:37:02.464Z",
+    "id": "RXzoJ7Bdlr2y3l60",
+    "name": "fairyteller_visuals",
+    "description": "Generates the first chapter illustration with Gemini, stores it as a job file, writes visuals.json, and starts render/publish asynchronously.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "cc9d99de-b6de-4e7c-9536-62ea0d633019",
+        "name": "Visuals Pipeline Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          300
+        ],
+        "parameters": {
+          "inputSource": "jsonExample",
+          "jsonExample": "{\"jobId\":\"ft_example\",\"order\":{\"illustrationStyle\":\"disney\",\"heroes\":[]},\"text\":{\"preview\":{\"chapter\":1,\"summary\":\"Two heroes by the river with a compass\",\"title\":\"Example\"},\"chapters\":[]}}"
+        }
+      },
+      {
+        "id": "e01b3a56-6d8f-4555-8a72-d6d11df70134",
+        "name": "Mark Visuals Generating",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          840,
+          300
+        ],
+        "parameters": {
+          "method": "PATCH",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": {
+            "status": "visuals_generating",
+            "stage": "visuals",
+            "progress": 55,
+            "message": "Готовим иллюстрацию первой главы"
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
             },
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "e76f8055-2311-4c4d-92d1-4c5634cfcdc5",
+        "name": "Build Chapter 1 Image Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2640,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const source = $('Normalize Hero Reference Sheet').first().json;\nconst jobId = source.jobId || `ft_${Date.now()}`;\nconst style = source.order?.illustrationStyle || 'storybook';\nconst stylePrompts = {\n  disney: 'hand-drawn warm storybook animation aesthetic, expressive faces, clean outlines, vivid balanced colors, cinematic lighting, painterly background',\n  watercolor: 'soft watercolor storybook illustration, translucent washes, paper texture, gentle light',\n  naive: 'naive folk storybook painting, simple bold shapes, warm handmade charm',\n  toonflat: 'vintage flat cartoon storybook look, bold black outlines, flat warm colors, playful expressions',\n  minibrick: 'brick-miniature toy diorama style: characters must be brick-built minifigures with cylindrical heads, C-shaped hands, blocky bodies, visible plastic studs and seams, glossy toy material, modular brick-built scenery; no photoreal humans',\n  claymotion: 'handmade clay stop-motion storybook diorama, tactile sculpted clay textures, warm light',\n  yarncraft: 'hand-knitted textile storybook diorama, visible yarn stitches and soft felt details',\n  celcinema: 'cinematic cel-animation storybook look, clean color blocks, soft painterly background',\n};\nconst heroes = (source.order?.heroes || []).map((hero) => `${hero.name || `Hero ${hero.n}`}: ${hero.description || ''}`).join('; ');\nconst summary = source.text?.preview?.summary || source.text?.chapters?.[0]?.summary || 'Main characters in the opening scene with the important object.';\nconst location = source.order?.location || source.text?.bible?.location || '';\nconst artifact = source.order?.artifact || source.text?.bible?.artifact || '';\nconst referenceInstruction = source.portraitSheet?.contentBase64\n  ? 'Use the attached character reference sheet as the primary identity reference for the heroes: preserve the same character designs, hair, glasses/accessories, outfit cues, relative ages, and visual roles. Do not copy photoreal faces; use the stylized designs from the reference sheet.'\n  : 'No image reference sheet is attached; use the written hero descriptions consistently.';\nconst prompt = `Square 1:1 children's personalized book illustration. ${referenceInstruction} Scene brief: ${summary}. Location: ${location}. Important object visible and active: ${artifact}. Characters: ${heroes || 'the named main characters from the story'}. Visual style MUST be: ${stylePrompts[style] || stylePrompts.disney}. Hard style constraint: the whole image must follow this style, especially if the style is brick-miniature/minibrick. Requirements: no text, no captions, no logos, no watermarks, no extra fingers, no distorted faces, coherent anatomy, clear composition, warm emotional tone, print-ready, full-bleed square image.`;\nconst parts = [{ text: prompt }];\nif (source.portraitSheet?.contentBase64) {\n  parts.push({ inlineData: { mimeType: source.portraitSheet.mimeType || 'image/png', data: source.portraitSheet.contentBase64 } });\n}\nconst geminiImageRequest = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], temperature: 0.55 } };\nreturn [{ json: { ...source, jobId, status: 'visuals_generating', imagePrompt: prompt, geminiImageModel: 'gemini-2.5-flash-image', geminiImageRequest }, binary: $('Normalize Hero Reference Sheet').first().binary }];"
+        }
+      },
+      {
+        "id": "f8af5299-289b-492f-bb2c-041bc2720c9c",
+        "name": "Generate Chapter 1 Image with Gemini",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          2940,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiImageModel + \":generateContent\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-goog-api-key",
+                "value": "={{ $env.GEMINI_API_KEY }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.geminiImageRequest }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 180000
+          }
+        }
+      },
+      {
+        "id": "0b75164a-b820-4b71-9a47-e88e6ced1c66",
+        "name": "Normalize Chapter 1 Image",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3240,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const source = $('Build Chapter 1 Image Prompt').first().json;\nconst response = $input.first().json;\nconst part = (response.candidates?.[0]?.content?.parts || []).find((candidatePart) => candidatePart.inlineData?.data);\nif (!part) throw new Error('Gemini did not return an inline image for chapter 1');\nconst mimeType = part.inlineData.mimeType || 'image/png';\nconst ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';\nconst fileName = `chapter-1.${ext}`;\nconst imageUrl = `/api/fairyteller/jobs/${source.jobId}/files/${fileName}`;\nconst absoluteImageUrl = `https://fairyteller.ru${imageUrl}`;\nconst image = { slot: 'chapter_1', status: 'ready', fileName, url: imageUrl, absoluteUrl: absoluteImageUrl, mimeType, bytes: Buffer.from(part.inlineData.data, 'base64').length, prompt: source.imagePrompt, provider: 'gemini', model: source.geminiImageModel || 'gemini-2.5-flash-image', referenceSheetUrl: source.portraitSheet?.url || null };\nconst preview = { ...(source.text?.preview || {}), imageStatus: 'ready', imageUrl, imageAbsoluteUrl: absoluteImageUrl };\nconst visuals = {\n  style: source.order?.illustrationStyle || 'disney',\n  portraitSheet: source.portraitSheet ? { ...source.portraitSheet, contentBase64: undefined } : null,\n  portraits: (source.order?.heroes || []).map((hero) => ({\n    hero: hero.n,\n    name: hero.name || '',\n    status: source.portraitSheet?.status === 'ready' ? 'reference_sheet_ready' : (hero.photoField ? 'photo_detected_no_sheet' : 'no_photo'),\n    sourcePhotoField: hero.photoField || null,\n    outputPath: source.portraitSheet?.url || null,\n  })),\n  imageJobs: [image, ...['cover', 'chapter_2', 'chapter_3', 'chapter_4', 'chapter_5'].map((slot) => ({ slot, status: 'queued_stub', outputPath: null }))],\n};\nreturn [{ json: { ...source, status: 'visuals_ready', text: { ...(source.text || {}), preview }, visuals, chapterOneFile: { fileName, contentType: mimeType, contentBase64: part.inlineData.data }, pipeline: { next: 'fairyteller_render_publish' } }, binary: $('Build Chapter 1 Image Prompt').first().binary }];"
+        }
+      },
+      {
+        "id": "47cb3c9e-c9cb-4a74-98ff-5a1a612b51d7",
+        "name": "Write Chapter 1 Image File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          3540,
+          300
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/files/\" + $json.chapterOneFile.fileName }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { contentType: $json.chapterOneFile.contentType, contentBase64: $json.chapterOneFile.contentBase64 } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 60000
+          }
+        }
+      },
+      {
+        "id": "192d2d91-89a3-499e-983a-a334801a3f42",
+        "name": "Restore Visuals After File Write",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3840,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const payload = $('Normalize Chapter 1 Image').first().json;\ndelete payload.chapterOneFile.contentBase64;\nreturn [{ json: payload, binary: $('Normalize Chapter 1 Image').first().binary }];"
+        }
+      },
+      {
+        "id": "dac65acc-2aa1-4b8c-a23f-defd5ba765c7",
+        "name": "Write Visuals Artifact",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          4140,
+          300
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/artifacts/visuals.json\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { jobId: $json.jobId, status: $json.status, visuals: $json.visuals } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "485cc7b2-c967-4377-aa87-697bef7b1ee5",
+        "name": "Mark Visuals Ready",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          4440,
+          300
+        ],
+        "parameters": {
+          "method": "PATCH",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Restore Visuals After File Write\").item.json.jobId }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { status: \"visuals_ready\", stage: \"visuals\", progress: 75, message: \"Иллюстрация первой главы готова\", preview: $(\"Restore Visuals After File Write\").item.json.text.preview, visuals: $(\"Restore Visuals After File Write\").item.json.visuals } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "2036f57d-c1ab-40ed-b83b-47ee15196c26",
+        "name": "Restore Visuals Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4740,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const payload = $('Restore Visuals After File Write').first().json;\nreturn [{ json: payload, binary: $('Restore Visuals After File Write').first().binary }];"
+        }
+      },
+      {
+        "id": "7c0d9200-fc64-4b55-b6d1-5af204dbe763",
+        "name": "Start Render Publish Pipeline",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.3,
+        "position": [
+          5040,
+          300
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "XAaFdi6hJjnQFiAQ",
+            "mode": "list",
+            "cachedResultName": "fairyteller_render_publish"
+          },
+          "mode": "once",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait001",
+        "name": "Build Hero Reference Sheet",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          540,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const item = $('Visuals Pipeline Input').first().json;\nconst input = $input.first();\nconst binary = input.binary || {};\nconst jobId = item.jobId || `ft_${Date.now()}`;\nconst style = item.order?.illustrationStyle || 'disney';\nconst stylePrompts = {\n  disney: 'warm hand-drawn storybook animation character designs',\n  watercolor: 'soft watercolor storybook character designs with paper texture',\n  naive: 'naive folk storybook character designs with simple bold shapes',\n  toonflat: 'vintage flat cartoon character designs with bold outlines',\n  minibrick: 'brick-miniature toy character designs: brick-built minifigures, cylindrical heads, C-shaped hands, blocky bodies, plastic studs, modular toy details',\n  claymotion: 'handmade clay stop-motion character designs with tactile sculpted clay',\n  yarncraft: 'hand-knitted textile character designs with visible yarn stitches and felt details',\n  celcinema: 'cinematic cel-animation character designs with clean color blocks',\n};\nconst heroes = item.order?.heroes || [];\nconst parts = [];\nconst photoRefs = [];\nfor (const hero of heroes) {\n  const key = hero.photoField;\n  if (!key || !binary[key]) continue;\n  const buffer = await this.helpers.getBinaryDataBuffer(0, key);\n  photoRefs.push({ hero, key, mimeType: binary[key].mimeType || hero.photoMime || 'image/jpeg', data: buffer.toString('base64') });\n}\nconst heroDescriptions = heroes.map((hero) => `Hero ${hero.n}: ${hero.name || 'unnamed'}; ${hero.description || 'no description'}; role/relation: ${hero.relation || 'not set'}; photo reference: ${hero.photoField ? 'yes' : 'no'}`).join('\\n');\nconst prompt = `Create one square character reference sheet for a personalized children's book. Style MUST be: ${stylePrompts[style] || stylePrompts.disney}. Include every listed hero as a separate full-body stylized character, clearly arranged left to right and matching their hero numbers. Use uploaded photos only as non-photoreal identity references: preserve broad visual cues such as hair, glasses, face shape, complexion, age impression, and outfit/accessory cues, but transform them into fictional safe storybook/toy characters. Do not create a photorealistic person. No text, no labels, no logos, no watermarks. Heroes:\\n${heroDescriptions || 'No heroes provided; create neutral main characters from the story descriptions.'}`;\nparts.push({ text: prompt });\nfor (const ref of photoRefs) {\n  parts.push({ inlineData: { mimeType: ref.mimeType, data: ref.data } });\n}\nconst geminiPortraitRequest = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], temperature: 0.45 } };\nreturn [{ json: { ...item, jobId, status: 'visuals_generating', portraitizer: { status: 'generating', style, photoRefCount: photoRefs.length, heroCount: heroes.length }, geminiPortraitModel: 'gemini-2.5-flash-image', geminiPortraitRequest }, binary: input.binary }];"
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait002",
+        "name": "Generate Hero Reference Sheet with Gemini",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          1440,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiPortraitModel + \":generateContent\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-goog-api-key",
+                "value": "={{ $env.GEMINI_API_KEY }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.geminiPortraitRequest }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 180000
+          }
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait003",
+        "name": "Normalize Hero Reference Sheet",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1740,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const source = $('Build Hero Reference Sheet').first().json;\nconst response = $input.first().json;\nconst part = (response.candidates?.[0]?.content?.parts || []).find((candidatePart) => candidatePart.inlineData?.data);\nif (!part) throw new Error('Gemini did not return an inline image for the hero reference sheet');\nconst mimeType = part.inlineData.mimeType || 'image/png';\nconst ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';\nconst fileName = `hero-reference-sheet.${ext}`;\nconst url = `/api/fairyteller/jobs/${source.jobId}/files/${fileName}`;\nconst absoluteUrl = `https://fairyteller.ru${url}`;\nconst portraitSheet = {\n  status: 'ready',\n  fileName,\n  url,\n  absoluteUrl,\n  mimeType,\n  bytes: Buffer.from(part.inlineData.data, 'base64').length,\n  provider: 'gemini',\n  model: source.geminiPortraitModel || 'gemini-2.5-flash-image',\n  style: source.order?.illustrationStyle || 'disney',\n  photoRefCount: source.portraitizer?.photoRefCount || 0,\n  heroCount: source.portraitizer?.heroCount || 0,\n  contentBase64: part.inlineData.data,\n};\nreturn [{ json: { ...source, portraitizer: { ...(source.portraitizer || {}), status: 'ready' }, portraitSheet }, binary: $('Build Hero Reference Sheet').first().binary }];"
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait004",
+        "name": "Write Hero Reference Sheet File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          2040,
+          300
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/files/\" + $json.portraitSheet.fileName }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { contentType: $json.portraitSheet.mimeType, contentBase64: $json.portraitSheet.contentBase64 } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 60000
+          }
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait005",
+        "name": "Restore Portrait Sheet Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2340,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const payload = $('Normalize Hero Reference Sheet').first().json;\nreturn [{ json: payload, binary: $('Normalize Hero Reference Sheet').first().binary }];"
+        }
+      },
+      {
+        "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait006",
+        "name": "Restore Hero Reference Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1140,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const payload = $('Build Hero Reference Sheet').first().json;\nreturn [{ json: payload, binary: $('Build Hero Reference Sheet').first().binary }];"
+        }
+      }
+    ],
+    "connections": {
+      "Visuals Pipeline Input": {
+        "main": [
+          [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Build Hero Reference Sheet",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": {
-          "status": "visuals_generating",
-          "stage": "visuals",
-          "progress": 55,
-          "message": "Готовим иллюстрацию первой главы"
-        },
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 30000
-        }
-      }
-    },
-    {
-      "id": "e76f8055-2311-4c4d-92d1-4c5634cfcdc5",
-      "name": "Build Chapter 1 Image Prompt",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2640,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const source = $('Normalize Hero Reference Sheet').first().json;\nconst jobId = source.jobId || `ft_${Date.now()}`;\nconst style = source.order?.illustrationStyle || 'storybook';\nconst stylePrompts = {\n  disney: 'hand-drawn warm storybook animation aesthetic, expressive faces, clean outlines, vivid balanced colors, cinematic lighting, painterly background',\n  watercolor: 'soft watercolor storybook illustration, translucent washes, paper texture, gentle light',\n  naive: 'naive folk storybook painting, simple bold shapes, warm handmade charm',\n  toonflat: 'vintage flat cartoon storybook look, bold black outlines, flat warm colors, playful expressions',\n  minibrick: 'brick-miniature toy diorama style: characters must be brick-built minifigures with cylindrical heads, C-shaped hands, blocky bodies, visible plastic studs and seams, glossy toy material, modular brick-built scenery; no photoreal humans',\n  claymotion: 'handmade clay stop-motion storybook diorama, tactile sculpted clay textures, warm light',\n  yarncraft: 'hand-knitted textile storybook diorama, visible yarn stitches and soft felt details',\n  celcinema: 'cinematic cel-animation storybook look, clean color blocks, soft painterly background',\n};\nconst heroes = (source.order?.heroes || []).map((hero) => `${hero.name || `Hero ${hero.n}`}: ${hero.description || ''}`).join('; ');\nconst summary = source.text?.preview?.summary || source.text?.chapters?.[0]?.summary || 'Main characters in the opening scene with the important object.';\nconst location = source.order?.location || source.text?.bible?.location || '';\nconst artifact = source.order?.artifact || source.text?.bible?.artifact || '';\nconst referenceInstruction = source.portraitSheet?.contentBase64\n  ? 'Use the attached character reference sheet as the primary identity reference for the heroes: preserve the same character designs, hair, glasses/accessories, outfit cues, relative ages, and visual roles. Do not copy photoreal faces; use the stylized designs from the reference sheet.'\n  : 'No image reference sheet is attached; use the written hero descriptions consistently.';\nconst prompt = `Square 1:1 children's personalized book illustration. ${referenceInstruction} Scene brief: ${summary}. Location: ${location}. Important object visible and active: ${artifact}. Characters: ${heroes || 'the named main characters from the story'}. Visual style MUST be: ${stylePrompts[style] || stylePrompts.disney}. Hard style constraint: the whole image must follow this style, especially if the style is brick-miniature/minibrick. Requirements: no text, no captions, no logos, no watermarks, no extra fingers, no distorted faces, coherent anatomy, clear composition, warm emotional tone, print-ready, full-bleed square image.`;\nconst parts = [{ text: prompt }];\nif (source.portraitSheet?.contentBase64) {\n  parts.push({ inlineData: { mimeType: source.portraitSheet.mimeType || 'image/png', data: source.portraitSheet.contentBase64 } });\n}\nconst geminiImageRequest = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], temperature: 0.55 } };\nreturn [{ json: { ...source, jobId, status: 'visuals_generating', imagePrompt: prompt, geminiImageModel: 'gemini-2.5-flash-image', geminiImageRequest }, binary: $('Normalize Hero Reference Sheet').first().binary }];"
-      }
-    },
-    {
-      "id": "f8af5299-289b-492f-bb2c-041bc2720c9c",
-      "name": "Generate Chapter 1 Image with Gemini",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        2940,
-        300
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiImageModel + \":generateContent\" }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Build Hero Reference Sheet": {
+        "main": [
+          [
             {
-              "name": "x-goog-api-key",
-              "value": "={{ $env.GEMINI_API_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Mark Visuals Generating",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.geminiImageRequest }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 180000
-        }
-      }
-    },
-    {
-      "id": "0b75164a-b820-4b71-9a47-e88e6ced1c66",
-      "name": "Normalize Chapter 1 Image",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3240,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const source = $('Build Chapter 1 Image Prompt').first().json;\nconst response = $input.first().json;\nconst part = (response.candidates?.[0]?.content?.parts || []).find((candidatePart) => candidatePart.inlineData?.data);\nif (!part) throw new Error('Gemini did not return an inline image for chapter 1');\nconst mimeType = part.inlineData.mimeType || 'image/png';\nconst ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';\nconst fileName = `chapter-1.${ext}`;\nconst imageUrl = `/api/fairyteller/jobs/${source.jobId}/files/${fileName}`;\nconst absoluteImageUrl = `https://fairyteller.ru${imageUrl}`;\nconst image = { slot: 'chapter_1', status: 'ready', fileName, url: imageUrl, absoluteUrl: absoluteImageUrl, mimeType, bytes: Buffer.from(part.inlineData.data, 'base64').length, prompt: source.imagePrompt, provider: 'gemini', model: source.geminiImageModel || 'gemini-2.5-flash-image', referenceSheetUrl: source.portraitSheet?.url || null };\nconst preview = { ...(source.text?.preview || {}), imageStatus: 'ready', imageUrl, imageAbsoluteUrl: absoluteImageUrl };\nconst visuals = {\n  style: source.order?.illustrationStyle || 'disney',\n  portraitSheet: source.portraitSheet ? { ...source.portraitSheet, contentBase64: undefined } : null,\n  portraits: (source.order?.heroes || []).map((hero) => ({\n    hero: hero.n,\n    name: hero.name || '',\n    status: source.portraitSheet?.status === 'ready' ? 'reference_sheet_ready' : (hero.photoField ? 'photo_detected_no_sheet' : 'no_photo'),\n    sourcePhotoField: hero.photoField || null,\n    outputPath: source.portraitSheet?.url || null,\n  })),\n  imageJobs: [image, ...['cover', 'chapter_2', 'chapter_3', 'chapter_4', 'chapter_5'].map((slot) => ({ slot, status: 'queued_stub', outputPath: null }))],\n};\nreturn [{ json: { ...source, status: 'visuals_ready', text: { ...(source.text || {}), preview }, visuals, chapterOneFile: { fileName, contentType: mimeType, contentBase64: part.inlineData.data }, pipeline: { next: 'fairyteller_render_publish' } }, binary: $('Build Chapter 1 Image Prompt').first().binary }];"
-      }
-    },
-    {
-      "id": "47cb3c9e-c9cb-4a74-98ff-5a1a612b51d7",
-      "name": "Write Chapter 1 Image File",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        3540,
-        300
-      ],
-      "parameters": {
-        "method": "PUT",
-        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/files/\" + $json.chapterOneFile.fileName }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Mark Visuals Generating": {
+        "main": [
+          [
             {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Restore Hero Reference Payload",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ { contentType: $json.chapterOneFile.contentType, contentBase64: $json.chapterOneFile.contentBase64 } }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 60000
-        }
-      }
-    },
-    {
-      "id": "192d2d91-89a3-499e-983a-a334801a3f42",
-      "name": "Restore Visuals After File Write",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3840,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const payload = $('Normalize Chapter 1 Image').first().json;\ndelete payload.chapterOneFile.contentBase64;\nreturn [{ json: payload, binary: $('Normalize Chapter 1 Image').first().binary }];"
-      }
-    },
-    {
-      "id": "dac65acc-2aa1-4b8c-a23f-defd5ba765c7",
-      "name": "Write Visuals Artifact",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        4140,
-        300
-      ],
-      "parameters": {
-        "method": "PUT",
-        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/artifacts/visuals.json\" }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Restore Hero Reference Payload": {
+        "main": [
+          [
             {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Generate Hero Reference Sheet with Gemini",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ { jobId: $json.jobId, status: $json.status, visuals: $json.visuals } }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 30000
-        }
-      }
-    },
-    {
-      "id": "485cc7b2-c967-4377-aa87-697bef7b1ee5",
-      "name": "Mark Visuals Ready",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        4440,
-        300
-      ],
-      "parameters": {
-        "method": "PATCH",
-        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Restore Visuals After File Write\").item.json.jobId }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Generate Hero Reference Sheet with Gemini": {
+        "main": [
+          [
             {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Normalize Hero Reference Sheet",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ { status: \"visuals_ready\", stage: \"visuals\", progress: 75, message: \"Иллюстрация первой главы готова\", preview: $(\"Restore Visuals After File Write\").item.json.text.preview, visuals: $(\"Restore Visuals After File Write\").item.json.visuals } }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 30000
-        }
-      }
-    },
-    {
-      "id": "2036f57d-c1ab-40ed-b83b-47ee15196c26",
-      "name": "Restore Visuals Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4740,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const payload = $('Restore Visuals After File Write').first().json;\nreturn [{ json: payload, binary: $('Restore Visuals After File Write').first().binary }];"
-      }
-    },
-    {
-      "id": "7c0d9200-fc64-4b55-b6d1-5af204dbe763",
-      "name": "Start Render Publish Pipeline",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        5040,
-        300
-      ],
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "XAaFdi6hJjnQFiAQ",
-          "mode": "list",
-          "cachedResultName": "fairyteller_render_publish"
-        },
-        "mode": "once",
-        "options": {
-          "waitForSubWorkflow": false
-        }
-      }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait001",
-      "name": "Build Hero Reference Sheet",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        540,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const item = $('Visuals Pipeline Input').first().json;\nconst input = $input.first();\nconst binary = input.binary || {};\nconst jobId = item.jobId || `ft_${Date.now()}`;\nconst style = item.order?.illustrationStyle || 'disney';\nconst stylePrompts = {\n  disney: 'warm hand-drawn storybook animation character designs',\n  watercolor: 'soft watercolor storybook character designs with paper texture',\n  naive: 'naive folk storybook character designs with simple bold shapes',\n  toonflat: 'vintage flat cartoon character designs with bold outlines',\n  minibrick: 'brick-miniature toy character designs: brick-built minifigures, cylindrical heads, C-shaped hands, blocky bodies, plastic studs, modular toy details',\n  claymotion: 'handmade clay stop-motion character designs with tactile sculpted clay',\n  yarncraft: 'hand-knitted textile character designs with visible yarn stitches and felt details',\n  celcinema: 'cinematic cel-animation character designs with clean color blocks',\n};\nconst heroes = item.order?.heroes || [];\nconst parts = [];\nconst photoRefs = [];\nfor (const hero of heroes) {\n  const key = hero.photoField;\n  if (!key || !binary[key]) continue;\n  const buffer = await this.helpers.getBinaryDataBuffer(0, key);\n  photoRefs.push({ hero, key, mimeType: binary[key].mimeType || hero.photoMime || 'image/jpeg', data: buffer.toString('base64') });\n}\nconst heroDescriptions = heroes.map((hero) => `Hero ${hero.n}: ${hero.name || 'unnamed'}; ${hero.description || 'no description'}; role/relation: ${hero.relation || 'not set'}; photo reference: ${hero.photoField ? 'yes' : 'no'}`).join('\\n');\nconst prompt = `Create one square character reference sheet for a personalized children's book. Style MUST be: ${stylePrompts[style] || stylePrompts.disney}. Include every listed hero as a separate full-body stylized character, clearly arranged left to right and matching their hero numbers. Use uploaded photos only as non-photoreal identity references: preserve broad visual cues such as hair, glasses, face shape, complexion, age impression, and outfit/accessory cues, but transform them into fictional safe storybook/toy characters. Do not create a photorealistic person. No text, no labels, no logos, no watermarks. Heroes:\\n${heroDescriptions || 'No heroes provided; create neutral main characters from the story descriptions.'}`;\nparts.push({ text: prompt });\nfor (const ref of photoRefs) {\n  parts.push({ inlineData: { mimeType: ref.mimeType, data: ref.data } });\n}\nconst geminiPortraitRequest = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], temperature: 0.45 } };\nreturn [{ json: { ...item, jobId, status: 'visuals_generating', portraitizer: { status: 'generating', style, photoRefCount: photoRefs.length, heroCount: heroes.length }, geminiPortraitModel: 'gemini-2.5-flash-image', geminiPortraitRequest }, binary: input.binary }];"
-      }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait002",
-      "name": "Generate Hero Reference Sheet with Gemini",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1440,
-        300
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiPortraitModel + \":generateContent\" }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Normalize Hero Reference Sheet": {
+        "main": [
+          [
             {
-              "name": "x-goog-api-key",
-              "value": "={{ $env.GEMINI_API_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Write Hero Reference Sheet File",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.geminiPortraitRequest }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 180000
-        }
-      }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait003",
-      "name": "Normalize Hero Reference Sheet",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1740,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const source = $('Build Hero Reference Sheet').first().json;\nconst response = $input.first().json;\nconst part = (response.candidates?.[0]?.content?.parts || []).find((candidatePart) => candidatePart.inlineData?.data);\nif (!part) throw new Error('Gemini did not return an inline image for the hero reference sheet');\nconst mimeType = part.inlineData.mimeType || 'image/png';\nconst ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';\nconst fileName = `hero-reference-sheet.${ext}`;\nconst url = `/api/fairyteller/jobs/${source.jobId}/files/${fileName}`;\nconst absoluteUrl = `https://fairyteller.ru${url}`;\nconst portraitSheet = {\n  status: 'ready',\n  fileName,\n  url,\n  absoluteUrl,\n  mimeType,\n  bytes: Buffer.from(part.inlineData.data, 'base64').length,\n  provider: 'gemini',\n  model: source.geminiPortraitModel || 'gemini-2.5-flash-image',\n  style: source.order?.illustrationStyle || 'disney',\n  photoRefCount: source.portraitizer?.photoRefCount || 0,\n  heroCount: source.portraitizer?.heroCount || 0,\n  contentBase64: part.inlineData.data,\n};\nreturn [{ json: { ...source, portraitizer: { ...(source.portraitizer || {}), status: 'ready' }, portraitSheet }, binary: $('Build Hero Reference Sheet').first().binary }];"
-      }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait004",
-      "name": "Write Hero Reference Sheet File",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        2040,
-        300
-      ],
-      "parameters": {
-        "method": "PUT",
-        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/files/\" + $json.portraitSheet.fileName }}",
-        "sendHeaders": true,
-        "specifyHeaders": "keypair",
-        "headerParameters": {
-          "parameters": [
+        ]
+      },
+      "Write Hero Reference Sheet File": {
+        "main": [
+          [
             {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "node": "Restore Portrait Sheet Payload",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ { contentType: $json.portraitSheet.mimeType, contentBase64: $json.portraitSheet.contentBase64 } }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
+        ]
+      },
+      "Restore Portrait Sheet Payload": {
+        "main": [
+          [
+            {
+              "node": "Build Chapter 1 Image Prompt",
+              "type": "main",
+              "index": 0
             }
-          },
-          "timeout": 60000
+          ]
+        ]
+      },
+      "Build Chapter 1 Image Prompt": {
+        "main": [
+          [
+            {
+              "node": "Generate Chapter 1 Image with Gemini",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate Chapter 1 Image with Gemini": {
+        "main": [
+          [
+            {
+              "node": "Normalize Chapter 1 Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalize Chapter 1 Image": {
+        "main": [
+          [
+            {
+              "node": "Write Chapter 1 Image File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Chapter 1 Image File": {
+        "main": [
+          [
+            {
+              "node": "Restore Visuals After File Write",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Restore Visuals After File Write": {
+        "main": [
+          [
+            {
+              "node": "Write Visuals Artifact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Visuals Artifact": {
+        "main": [
+          [
+            {
+              "node": "Mark Visuals Ready",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mark Visuals Ready": {
+        "main": [
+          [
+            {
+              "node": "Restore Visuals Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Restore Visuals Payload": {
+        "main": [
+          [
+            {
+              "node": "Start Render Publish Pipeline",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": true
+    },
+    "staticData": null,
+    "meta": {
+      "aiBuilderAssisted": true
+    },
+    "pinData": {},
+    "versionId": "321456b9-4c12-48d3-a922-5af94be484b5",
+    "activeVersionId": "321456b9-4c12-48d3-a922-5af94be484b5",
+    "versionCounter": 17,
+    "triggerCount": 0,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-05-23T04:37:02.473Z",
+        "createdAt": "2026-05-23T04:37:02.473Z",
+        "role": "workflow:owner",
+        "workflowId": "RXzoJ7Bdlr2y3l60",
+        "projectId": "yjU1WlmpOKrWZ5oA",
+        "project": {
+          "updatedAt": "2026-04-01T13:13:29.434Z",
+          "createdAt": "2026-04-01T12:58:08.424Z",
+          "id": "yjU1WlmpOKrWZ5oA",
+          "name": "Nikita Such <aukenbro1@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
         }
       }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait005",
-      "name": "Restore Portrait Sheet Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2340,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const payload = $('Normalize Hero Reference Sheet').first().json;\nreturn [{ json: payload, binary: $('Normalize Hero Reference Sheet').first().binary }];"
-      }
-    },
-    {
-      "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait006",
-      "name": "Restore Hero Reference Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1140,
-        300
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const payload = $('Build Hero Reference Sheet').first().json;\nreturn [{ json: payload, binary: $('Build Hero Reference Sheet').first().binary }];"
-      }
+    ],
+    "versionMetadata": {
+      "name": null,
+      "description": null
     }
-  ],
-  "connections": {
-    "Visuals Pipeline Input": {
-      "main": [
-        [
-          {
-            "node": "Build Hero Reference Sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Hero Reference Sheet": {
-      "main": [
-        [
-          {
-            "node": "Mark Visuals Generating",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mark Visuals Generating": {
-      "main": [
-        [
-          {
-            "node": "Restore Hero Reference Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore Hero Reference Payload": {
-      "main": [
-        [
-          {
-            "node": "Generate Hero Reference Sheet with Gemini",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Hero Reference Sheet with Gemini": {
-      "main": [
-        [
-          {
-            "node": "Normalize Hero Reference Sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalize Hero Reference Sheet": {
-      "main": [
-        [
-          {
-            "node": "Write Hero Reference Sheet File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Write Hero Reference Sheet File": {
-      "main": [
-        [
-          {
-            "node": "Restore Portrait Sheet Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore Portrait Sheet Payload": {
-      "main": [
-        [
-          {
-            "node": "Build Chapter 1 Image Prompt",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Chapter 1 Image Prompt": {
-      "main": [
-        [
-          {
-            "node": "Generate Chapter 1 Image with Gemini",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Chapter 1 Image with Gemini": {
-      "main": [
-        [
-          {
-            "node": "Normalize Chapter 1 Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalize Chapter 1 Image": {
-      "main": [
-        [
-          {
-            "node": "Write Chapter 1 Image File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Write Chapter 1 Image File": {
-      "main": [
-        [
-          {
-            "node": "Restore Visuals After File Write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore Visuals After File Write": {
-      "main": [
-        [
-          {
-            "node": "Write Visuals Artifact",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Write Visuals Artifact": {
-      "main": [
-        [
-          {
-            "node": "Mark Visuals Ready",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mark Visuals Ready": {
-      "main": [
-        [
-          {
-            "node": "Restore Visuals Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore Visuals Payload": {
-      "main": [
-        [
-          {
-            "node": "Start Render Publish Pipeline",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": true
-  },
-  "staticData": null,
-  "meta": {
-    "aiBuilderAssisted": true
-  },
-  "versionId": "321456b9-4c12-48d3-a922-5af94be484b5",
-  "activeVersionId": "321456b9-4c12-48d3-a922-5af94be484b5",
-  "exportedAt": "2026-05-23T06:45:00.000Z",
-  "note": "Sanitized export for version control. Secrets are referenced through n8n environment variables only."
-}
+  }
+]

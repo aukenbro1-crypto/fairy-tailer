@@ -100,7 +100,7 @@ export const WORLDS = [{
   description: 'Мир открытий, где герои идут навстречу новым возможностям.',
   tagline: '— Лови момент!'
 }, {
-  value: 'new_year',
+  value: 'hogwarts_world',
   emoji: '🧙‍♂️',
   image: hogwartsMagicImage,
   title: 'Мир Хогварства',
