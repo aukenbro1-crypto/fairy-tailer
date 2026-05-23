@@ -130,6 +130,7 @@ export const WORLDS = [{
 }];
 
 export const ILLUSTRATION_STYLES: Record<string, string> = {
+  'photorealistic': 'photorealistic cinematic book illustration: realistic people, natural skin texture, true-to-life faces, accurate facial proportions, natural hair and fabric, believable hands and anatomy, 50mm lens depth, warm editorial lighting, print-ready composition; use uploaded photos as strong identity references when available; no cartoon, no painterly stylization, no plastic/toy look, no distorted anatomy.',
   'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'toonflat': 'vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.',
   'minibrick': 'brick-miniature diorama style: visible studs and seams, glossy plastic material, simplified blocky anatomy (cylindrical head, curved hands), modular brick-built scenery; strictly figurative, readable poses; original characters; no printed logos or text; no photoreal humans.',
@@ -141,6 +142,7 @@ export const ILLUSTRATION_STYLES: Record<string, string> = {
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
+  'photorealistic': 'Фотореализм',
   'disney': 'Дисней',
   'toonflat': 'Мультяшный',
   'minibrick': 'Лего',
@@ -152,6 +154,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 };
 
 const STYLE_SPRITES: Record<string, string> = {
+  'photorealistic': romanticStoryImage,
   'disney': disneyStyleImage,
   'toonflat': toonflatStyleImage,
   'minibrick': minibrickStyleImage,
@@ -246,8 +249,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     title_need: false,
     language: 'ru',
     email: '',
-    illustration_style: 'disney',
-    illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
+    illustration_style: 'photorealistic',
+    illustration_style_prompt: ILLUSTRATION_STYLES['photorealistic'],
     hero1_name: '',
     hero1_desc: '',
     hero1_rel: '',
@@ -450,8 +453,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       title_need: false,
       language: 'ru',
       email: '',
-      illustration_style: 'disney',
-      illustration_style_prompt: ILLUSTRATION_STYLES['disney'],
+      illustration_style: 'photorealistic',
+      illustration_style_prompt: ILLUSTRATION_STYLES['photorealistic'],
       hero1_name: '',
       hero1_desc: '',
       hero1_rel: '',
