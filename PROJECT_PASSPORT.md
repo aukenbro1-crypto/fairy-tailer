@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 06:45 UTC
+Last updated: 2026-05-23 13:30 UTC
 
 ## Project Context
 
@@ -50,6 +50,8 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_intake` | `Vty7vSn4vd5Nduht` | Receive order, create `jobId`, start text pipeline, return fast `202`. |
 | `fairyteller_text` | `kCtpw2d7pEOI3QRF` | Story bible, first chapter preview, chapters 2-5, validation/repair. |
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
+| `fairyteller_continue` | `Y7Bt3zq9XTContinue` | User-triggered webhook that starts full story generation after the first chapter preview. |
+| `fairyteller_full_text` | `C2Pcin7lctSY5nc2` | Background continuation generator for chapters 2-5 and `full-text.json`. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
 Current state as of 2026-05-23: the internal text, continue/full-text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the website then exposes a "full story" continuation action, which calls `fairyteller_continue` and starts `fairyteller_full_text` for chapters 2-5; the visuals workflow generates a hero reference sheet, then the first chapter illustration, and writes `hero-reference-sheet.png`, `chapter-1.png`, and `visuals.json`; render/publish still uses placeholder contracts.
@@ -59,6 +61,8 @@ Activation state:
 - `fairyteller_intake`: active public production intake.
 - `fairyteller_text`: active internal sub-workflow.
 - `fairyteller_visuals`: active internal sub-workflow.
+- `fairyteller_continue`: active public continuation webhook.
+- `fairyteller_full_text`: active internal sub-workflow.
 - `fairyteller_render_publish`: active internal sub-workflow.
 
 Current placeholder status flow:
@@ -257,3 +261,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Hardened chapter-1 image normalization in `fairyteller_visuals`: if Gemini returns a successful response without inline image data, `Normalize Chapter 1 Image` now retries once with a simpler image-only prompt and the same generated reference sheet before failing the job with a clear `imageStatus=failed` message. Verified smoke job: `ft_1779540991824_gjmvrd`; final status `done`, `preview.imageStatus=ready`, `chapter-1.png` written.
 - Hardened `fairyteller_full_text` malformed JSON parsing for continuation runs. A user-triggered continue request on `ft_1779540714365_uihv8x` had reached `artifacts.fullText.status=generating` but failed when Gemini omitted separators inside the structured chapter JSON; `Normalize Full Text` now falls back to loose chapter/block extraction. Re-ran `/webhook/fairyteller/continue` for that job and verified `artifacts.fullText.status=ready`; `full-text.json` contains 5 chapters with 5 blocks each.
 - Shifted the continuation UX from email delivery to in-browser reading for the current preview stage. `full-text.json` is now publicly readable by unguessable `jobId`, and the success overlay fetches it when `artifacts.fullText.status=ready`, then shows chapters 2-5 one at a time with chapter switch buttons. Deployed frontend release `/var/www/fairyteller/releases/20260523-211058-codex-full-story-tabs`; verified public `full-text.json` read for `ft_1779540714365_uihv8x` returns 5 chapters.
+- Unarchived and activated `fairyteller_full_text` (`C2Pcin7lctSY5nc2`) so it is visible in the n8n UI and available at `/workflow/C2Pcin7lctSY5nc2`.
+- Hardened `fairyteller_full_text` `Normalize Full Text` against Gemini returning more than five text blocks for a chapter: the normalizer now coerces continuation text to exactly five layout blocks before validation. Re-ran `/webhook/fairyteller/continue` for `ft_1779542137791_hnqw7t`; verified `artifacts.fullText.status=ready`, `full-text.json` contains chapters `[1,2,3,4,5]`, and every chapter has 5 text blocks.
