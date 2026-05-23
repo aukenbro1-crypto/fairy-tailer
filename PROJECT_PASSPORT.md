@@ -85,6 +85,14 @@ Final output target:
 - Cover PDF: spread containing back cover and front cover, with spine/bleed to be finalized from print spec
 - Customer may receive separate cover and interior PDFs initially; future UX can also provide a combined preview PDF
 
+Reference production PDF:
+
+- Local reference file: `/Users/nikita0shch/Downloads/Изнанка старого Дуба-2 (1).pdf`
+- Observed page objects: 41
+- Page 1 MediaBox: `761 x 385 pt` (cover/back-cover spread)
+- Pages 2-41 MediaBox: `385 x 385 pt` (square pages)
+- No explicit `TrimBox`, `BleedBox`, or `CropBox` entries were found in the PDF byte structure during the quick metadata pass.
+
 Preferred render architecture:
 
 - HTML/CSS template
