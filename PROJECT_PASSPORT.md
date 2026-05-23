@@ -1,12 +1,12 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 06:20 UTC
+Last updated: 2026-05-23 06:25 UTC
 
 ## Project Context
 
 Fairyteller is a public personalized storybook generator at `fairyteller.ru`.
 
-The current public app is a Vite/React static site. The legacy generation path sends `/create` form data directly to a Make webhook. The migration target is a more reliable pipeline with n8n orchestration, a persistent job state API, and a future HTML/CSS-to-PDF render service.
+The current public app is a Vite/React static site. The active generation path sends `/create` form data to n8n through a same-origin nginx webhook proxy, then tracks progress through the persistent Fairyteller Job API. The migration target is to complete the remaining text, visual, and HTML/CSS-to-PDF render pieces inside this n8n-backed pipeline.
 
 ## Current Production
 
@@ -28,7 +28,7 @@ The current public app is a Vite/React static site. The legacy generation path s
 
 ## Website Submit Flow
 
-Current production default remains the legacy Make webhook until the migration is explicitly switched over.
+Current production default is the n8n intake webhook through `https://fairyteller.ru/webhook/fairyteller/create`.
 
 The `/create` form is now compatible with both response shapes:
 
@@ -38,7 +38,7 @@ The `/create` form is now compatible with both response shapes:
 
 Frontend migration environment variables:
 
-- `VITE_FAIRYTELLER_CREATE_URL`: target create endpoint; leave unset to keep Make during migration
+- `VITE_FAIRYTELLER_CREATE_URL`: target create endpoint; production build uses `/webhook/fairyteller/create`
 - `VITE_FAIRYTELLER_STATUS_BASE_URL`: public status API base; defaults to `/api/fairyteller/jobs`
 
 ## n8n Migration Workflows
@@ -56,7 +56,7 @@ Current state as of 2026-05-23: the internal text, visuals, and render/publish w
 
 Activation state:
 
-- `fairyteller_intake`: inactive; keep inactive until the website is switched from Make to n8n.
+- `fairyteller_intake`: active public production intake.
 - `fairyteller_text`: active internal sub-workflow.
 - `fairyteller_visuals`: active internal sub-workflow.
 - `fairyteller_render_publish`: active internal sub-workflow.
@@ -113,6 +113,7 @@ Planned production service:
 - environment file: `/etc/fairyteller/api.env`
 - service source file: `/opt/fairyteller-api/fairyteller-api.mjs`
 - nginx backup before API proxy change: `/root/nginx-codex-backups/fairyteller.bak_codex_20260523050814`
+- nginx also proxies `/webhook/` to Docker n8n on `127.0.0.1:5680`; backup before webhook proxy change: `/root/nginx-codex-backups/fairyteller.bak_codex_20260523061350_webhook`
 
 Core endpoints:
 
@@ -166,7 +167,7 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Operational Rules
 
 - Treat production as the current source of truth before changing live behavior.
-- Keep Make webhook path untouched until n8n + job API are smoke-tested.
+- Keep Make fallback code available until the n8n render/publish path is feature-complete and stable.
 - Do not commit secrets, generated books, customer photos, or runtime job data.
 - Prefer small deployable pieces:
   1. job API
@@ -210,3 +211,7 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Observed smoke timing for `ft_1779516199604_fpktms`: first chapter ready in about `29s`, first image ready about `7s` later, total time from job creation to `done` about `36.4s`.
 - Added `/create` success overlay rendering for the first-chapter preview and illustration when the n8n status API returns preview artifacts.
 - Deployed frontend release `/var/www/fairyteller/releases/20260523-061016-codex-first-chapter-preview` and repointed `/var/www/fairyteller/current` to it. Production `/create` still uses the legacy Make endpoint by default.
+- Published `fairyteller_intake` as an active production webhook.
+- Added nginx same-origin proxy from `https://fairyteller.ru/webhook/` to Docker n8n on `127.0.0.1:5680`.
+- Verified HTTPS intake smoke through `POST /webhook/fairyteller/create`. Smoke job: `ft_1779516843392_7ybt48`; final status: `done`; first chapter title: `Компас и утренний Петербург`; first image status: `ready`.
+- Rebuilt and deployed production frontend with `VITE_FAIRYTELLER_CREATE_URL=/webhook/fairyteller/create`. Release: `/var/www/fairyteller/releases/20260523-061507-codex-n8n-create-switch`.
