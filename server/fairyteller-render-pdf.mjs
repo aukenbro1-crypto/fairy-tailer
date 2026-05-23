@@ -6,11 +6,14 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '/data/fairyteller');
+const TEMPLATE_DIR = resolve(process.env.FAIRYTELLER_TEMPLATE_DIR || '/opt/fairyteller-render/templates');
 const JOB_ID = process.argv[2] || process.env.FAIRYTELLER_JOB_ID;
 
 const COVER_SIZE_MM = [268.5, 136];
 const INTERIOR_SIZE_MM = [136, 136];
 const TARGET_INTERIOR_PAGES = 40;
+const BOOK_TEMPLATE_PATH = resolve(TEMPLATE_DIR, 'MasterTemplate_book.pdf');
+const COVER_TEMPLATE_PATH = resolve(TEMPLATE_DIR, 'MasterTemplate_cover_romantic.pdf');
 
 if (!JOB_ID || !/^ft_[a-zA-Z0-9_-]{8,80}$/.test(JOB_ID)) {
   throw new Error('Usage: fairyteller-render-pdf.mjs <jobId>');
@@ -85,6 +88,45 @@ function drawWrappedText(page, text, options) {
   return y - lines.length * lineHeight;
 }
 
+function fitTextLayout(text, font, options) {
+  const {
+    maxWidth,
+    maxHeight,
+    startSize = 14.5,
+    minSize = 8.2,
+    lineHeightRatio = 1.32,
+  } = options;
+  let size = startSize;
+  while (size >= minSize) {
+    const lines = wrapText(text, font, size, maxWidth);
+    const lineHeight = size * lineHeightRatio;
+    if (lines.length * lineHeight <= maxHeight) {
+      return { lines, size, lineHeight, truncated: false };
+    }
+    size -= 0.25;
+  }
+  const finalSize = minSize;
+  const finalLineHeight = finalSize * lineHeightRatio;
+  const finalLines = wrapText(text, font, finalSize, maxWidth);
+  return { lines: finalLines, size: finalSize, lineHeight: finalLineHeight, truncated: finalLines.length * finalLineHeight > maxHeight };
+}
+
+function drawFittedText(page, text, options) {
+  const {
+    font,
+    x,
+    y,
+    maxWidth,
+    maxHeight,
+    color = rgb(0.16, 0.12, 0.09),
+  } = options;
+  const layout = fitTextLayout(text, font, { maxWidth, maxHeight });
+  layout.lines.forEach((line, index) => {
+    page.drawText(line, { x, y: y - index * layout.lineHeight, size: layout.size, font, color });
+  });
+  return layout;
+}
+
 function drawCenteredText(page, text, options) {
   const { font, size, y, maxWidth, color = rgb(0.12, 0.1, 0.08), lineHeight = size * 1.25 } = options;
   const { width } = page.getSize();
@@ -92,6 +134,16 @@ function drawCenteredText(page, text, options) {
   lines.forEach((line, index) => {
     const lineWidth = font.widthOfTextAtSize(line, size);
     page.drawText(line, { x: (width - lineWidth) / 2, y: y - index * lineHeight, size, font, color });
+  });
+  return y - lines.length * lineHeight;
+}
+
+function drawCenteredTextInBox(page, text, options) {
+  const { font, size, x, y, maxWidth, color = rgb(0.12, 0.1, 0.08), lineHeight = size * 1.25 } = options;
+  const lines = wrapText(text, font, size, maxWidth);
+  lines.forEach((line, index) => {
+    const lineWidth = font.widthOfTextAtSize(line, size);
+    page.drawText(line, { x: x + (maxWidth - lineWidth) / 2, y: y - index * lineHeight, size, font, color });
   });
   return y - lines.length * lineHeight;
 }
@@ -141,22 +193,33 @@ async function createPdfWithFonts() {
   return { pdf, fontRegular, fontBold, fontSans };
 }
 
-function addSoftBackground(page) {
+async function loadTemplatePage(pdf, path) {
+  if (!existsSync(path)) return null;
+  const [templatePage] = await pdf.embedPdf(await readFile(path), [0]);
+  return templatePage;
+}
+
+function drawTemplateCover(page, templatePage) {
   const { width, height } = page.getSize();
+  if (!templatePage) {
+    page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.56, 0.08, 0.06) });
+    return;
+  }
+  page.drawPage(templatePage, imageCoverBox(templatePage, { x: 0, y: 0, width, height }));
+}
+
+function addSoftBackground(page, templatePage = null) {
+  const { width, height } = page.getSize();
+  if (templatePage) {
+    page.drawPage(templatePage, imageCoverBox(templatePage, { x: 0, y: 0, width, height }));
+    return;
+  }
   page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.985, 0.955, 0.9) });
-  page.drawRectangle({
-    x: 16,
-    y: 16,
-    width: width - 32,
-    height: height - 32,
-    borderWidth: 0.7,
-    borderColor: rgb(0.82, 0.64, 0.38),
-    opacity: 0.85,
-  });
 }
 
 async function renderCoverPdf({ dir, fullText, visuals }) {
   const { pdf, fontRegular, fontBold, fontSans } = await createPdfWithFonts();
+  const coverTemplate = await loadTemplatePage(pdf, COVER_TEMPLATE_PATH);
   const [width, height] = COVER_SIZE_MM.map(mmToPt);
   const page = pdf.addPage([width, height]);
   const coverImage = await embedImage(pdf, dir, findImage(visuals, 'cover'));
@@ -165,61 +228,66 @@ async function renderCoverPdf({ dir, fullText, visuals }) {
   const subtitle = bible.subtitle || '';
   const summary = bible.coverSummary || fullText.text?.preview?.summary || '';
 
-  page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.14, 0.12, 0.1) });
+  drawTemplateCover(page, coverTemplate);
+
   if (coverImage) {
-    page.drawImage(coverImage, imageCoverBox(coverImage, { x: 0, y: 0, width, height }));
-    page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0, 0, 0), opacity: 0.14 });
+    const coverBox = {
+      x: width * (735 / 1440),
+      y: height * ((682 - 638) / 682),
+      width: width * (595 / 1440),
+      height: height * (408 / 682),
+    };
+    page.drawImage(coverImage, imageCoverBox(coverImage, coverBox));
   }
 
-  const frontX = width / 2;
-  page.drawRectangle({ x: frontX, y: 0, width: width / 2, height, color: rgb(0, 0, 0), opacity: 0.12 });
-  drawCenteredText(page, title, {
+  const titleBox = { x: width * 0.56, y: height - 82, width: width * 0.39, height: 58 };
+  page.drawRectangle({ ...titleBox, color: rgb(0.55, 0.06, 0.045), opacity: 0.94 });
+  drawCenteredTextInBox(page, title, {
     font: fontBold,
-    size: 27,
-    y: height - 76,
-    maxWidth: width / 2 - 56,
-    color: rgb(1, 0.93, 0.75),
-    lineHeight: 32,
+    size: 22,
+    x: titleBox.x,
+    y: height - 48,
+    maxWidth: titleBox.width,
+    color: rgb(1, 1, 1),
+    lineHeight: 25,
   });
   if (subtitle) {
-    drawCenteredText(page, subtitle, {
+    page.drawRectangle({ x: width * 0.275, y: height - 64, width: 170, height: 26, color: rgb(0.55, 0.06, 0.045), opacity: 0.94 });
+    page.drawText(subtitle, {
       font: fontRegular,
-      size: 10,
-      y: height - 158,
-      maxWidth: width / 2 - 70,
-      color: rgb(1, 0.9, 0.68),
-      lineHeight: 14,
+      size: 8,
+      x: width * 0.285,
+      y: height - 55,
+      color: rgb(1, 1, 1),
     });
   }
   const brand = 'Fairyteller';
   page.drawText(brand, {
-    x: frontX + (width / 2 - fontSans.widthOfTextAtSize(brand, 9)) / 2,
-    y: 30,
+    x: width * 0.36,
+    y: height * 0.18,
     font: fontSans,
-    size: 9,
-    color: rgb(1, 0.9, 0.68),
+    size: 7,
+    color: rgb(0.95, 0.74, 0.32),
   });
 
-  page.drawRectangle({ x: 34, y: 42, width: width / 2 - 68, height: 120, color: rgb(0.98, 0.92, 0.8), opacity: 0.82 });
-  drawWrappedText(page, summary, {
-    font: fontRegular,
-    size: 9.4,
-    x: 48,
-    y: 140,
-    maxWidth: width / 2 - 96,
-    lineHeight: 13,
-    color: rgb(0.17, 0.12, 0.09),
-    maxLines: 8,
-  });
-
-  const spineX = width / 2 - 6;
-  page.drawRectangle({ x: spineX, y: 0, width: 12, height, color: rgb(0.09, 0.07, 0.06), opacity: 0.25 });
+  if (summary) {
+    drawWrappedText(page, summary, {
+      font: fontRegular,
+      size: 6.6,
+      x: width * 0.08,
+      y: height * 0.33,
+      maxWidth: width * 0.34,
+      lineHeight: 9.2,
+      color: rgb(0.98, 0.86, 0.66),
+      maxLines: 7,
+    });
+  }
   return pdf.save({ useObjectStreams: false });
 }
 
 function addInteriorTitlePage(pdf, fonts, fullText) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
-  addSoftBackground(page);
+  addSoftBackground(page, fonts.bookTemplate);
   const bible = fullText.text?.bible || {};
   drawCenteredText(page, bible.bookTitle || fullText.text?.preview?.title || 'Сказка', {
     font: fonts.fontBold,
@@ -250,7 +318,7 @@ function addInteriorTitlePage(pdf, fonts, fullText) {
 
 function addDedicationPage(pdf, fonts, fullText) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
-  addSoftBackground(page);
+  addSoftBackground(page, fonts.bookTemplate);
   const summary = fullText.text?.bible?.coverSummary || 'Эта история создана специально для своих героев.';
   drawWrappedText(page, summary, {
     font: fonts.fontRegular,
@@ -278,7 +346,7 @@ async function addImagePage(pdf, fonts, dir, imageJob, title, pageNumber) {
 
 function addChapterTitlePage(pdf, fonts, chapter, pageNumber) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
-  addSoftBackground(page);
+  addSoftBackground(page, fonts.bookTemplate);
   drawCenteredText(page, `Глава ${chapter.n}`, {
     font: fonts.fontSans,
     size: 11,
@@ -311,23 +379,22 @@ function addChapterTitlePage(pdf, fonts, chapter, pageNumber) {
 
 function addTextPage(pdf, fonts, text, pageNumber) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
-  addSoftBackground(page);
-  drawWrappedText(page, text, {
+  addSoftBackground(page, fonts.bookTemplate);
+  const layout = drawFittedText(page, text, {
     font: fonts.fontRegular,
-    size: 14.5,
     x: 42,
     y: 316,
     maxWidth: 302,
-    lineHeight: 20.5,
+    maxHeight: 270,
     color: rgb(0.16, 0.12, 0.09),
-    maxLines: 14,
   });
   drawPageNumber(page, pageNumber, fonts.fontSans);
+  return layout;
 }
 
 function addOutroPage(pdf, fonts, text, pageNumber) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
-  addSoftBackground(page);
+  addSoftBackground(page, fonts.bookTemplate);
   drawCenteredText(page, text, {
     font: fonts.fontRegular,
     size: 16,
@@ -342,6 +409,7 @@ function addOutroPage(pdf, fonts, text, pageNumber) {
 async function renderInteriorPdf({ dir, fullText, visuals }) {
   const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
+  fonts.bookTemplate = await loadTemplatePage(pdf, BOOK_TEMPLATE_PATH);
   const chapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
 
   addInteriorTitlePage(pdf, fonts, fullText);
@@ -351,7 +419,10 @@ async function renderInteriorPdf({ dir, fullText, visuals }) {
     addChapterTitlePage(pdf, fonts, chapter, pdf.getPageCount() + 1);
     await addImagePage(pdf, fonts, dir, findImage(visuals, `chapter_${chapter.n}`), chapter.title || `Глава ${chapter.n}`, pdf.getPageCount() + 1);
     for (const block of getChapterTextBlocks(chapter).slice(0, 5)) {
-      addTextPage(pdf, fonts, block, pdf.getPageCount() + 1);
+      const layout = addTextPage(pdf, fonts, block, pdf.getPageCount() + 1);
+      if (layout.truncated) {
+        throw new Error(`Text block does not fit on page without truncation: chapter ${chapter.n}`);
+      }
     }
   }
 
@@ -413,6 +484,13 @@ async function main() {
         pageSizeMm: INTERIOR_SIZE_MM,
         bytes: interiorPdf.length,
       },
+    },
+    preflight: {
+      noTextTruncation: true,
+      coverPageCount: 1,
+      interiorPageCount: TARGET_INTERIOR_PAGES,
+      coverPageSizeMm: COVER_SIZE_MM,
+      interiorPageSizeMm: INTERIOR_SIZE_MM,
     },
   };
   await writeFile(join(artifactsDir, 'render.json'), `${JSON.stringify({ jobId: JOB_ID, render }, null, 2)}\n`, { mode: 0o600 });

@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 15:15 UTC
+Last updated: 2026-05-23 15:45 UTC
 
 ## Project Context
 
@@ -176,7 +176,7 @@ Reference production PDF:
 
 Preferred render architecture:
 
-- Current first working renderer: Node.js `pdf-lib` generator with embedded DejaVu fonts, exact page sizes, and Job API file outputs.
+- Current first working renderer: Node.js `pdf-lib` generator with embedded DejaVu fonts, exact page sizes, Job API file outputs, and master PDF backgrounds from `server/templates/MasterTemplate_book.pdf` and `server/templates/MasterTemplate_cover_romantic.pdf`.
 - Target renderer after layout polish: HTML/CSS template with Playwright/Chromium PDF export, pinned browser/runtime version, and preflight checks for page count, page size, image resolution, text overflow.
 
 Google Slides/Drive should be phased out because OAuth reauthorization has been unstable every 2-3 weeks.
@@ -278,3 +278,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added the first working PDF renderer at `server/fairyteller-render-pdf.mjs`, deployed it to `/opt/fairyteller-render/fairyteller-render-pdf.mjs`, and exposed authenticated `POST /api/fairyteller/jobs/:jobId/render-pdf`.
 - Wired `fairyteller_cover` to invoke the PDF render endpoint after `cover-spread.png` is ready. The render step writes `cover.pdf`, `interior.pdf`, and `artifacts/render.json`, then exposes `artifacts.render`, `artifacts.coverPdf`, and `artifacts.interiorPdf` in public job status.
 - Verified PDF smoke on `ft_1779542137791_hnqw7t`: `cover.pdf` is PDF 1.7 with 1 page at `268.5 x 136.0 mm`; `interior.pdf` is PDF 1.7 with 40 pages at `136.0 x 136.0 mm`; both download publicly through Job API file URLs. Deployed frontend release `/var/www/fairyteller/releases/20260523-231419-codex-pdf-links` to show PDF links when `artifacts.render.status=ready`.
+- Fixed PDF text truncation in the renderer: story text pages now fit each full text block by reducing font size within bounds and fail render preflight instead of silently cutting lines. Added `render.preflight.noTextTruncation=true`.
+- Added the provided Google Slides PDF exports as renderer master backgrounds and deployed them to `/opt/fairyteller-render/templates`. Interior pages now use the book paper texture master, and cover render uses the romantic cover master with generated cover art placed into the `COVER_IMG` area. Re-rendered `ft_1779550092673_8ltt9c`; `cover.pdf` and `interior.pdf` keep the required page sizes/page counts and no longer silently drop overflowing story text.
