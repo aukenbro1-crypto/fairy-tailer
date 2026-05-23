@@ -148,6 +148,15 @@ Content-Type: application/json
 
 Use this for `text.json`, `visuals.json`, `render.json`, and validation reports.
 
+### Read JSON Artifact
+
+```http
+GET /api/fairyteller/jobs/:jobId/artifacts/text.json
+Authorization: Bearer <token>
+```
+
+Internal use only. The continue workflow uses this to fetch the first-chapter `text.json` before generating chapters 2-5.
+
 ### Write File Artifact
 
 ```http

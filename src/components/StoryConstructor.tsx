@@ -17,6 +17,7 @@ import romanticStoryImage from '@/assets/romantic-story.png';
 
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
+const CONTINUE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CONTINUE_URL || "/webhook/fairyteller/continue";
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 
 interface CreateResponse {
@@ -41,6 +42,13 @@ interface JobStatus {
     imageUrl?: string;
     imageAbsoluteUrl?: string;
   } | null;
+  artifacts?: {
+    fullText?: {
+      status?: 'generating' | 'ready' | 'failed';
+      url?: string;
+      chapterCount?: number;
+    };
+  };
   error?: string | null;
 }
 
@@ -237,6 +245,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [continueSubmitting, setContinueSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -322,9 +331,48 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const previewImageUrl = getPreviewImageUrl(jobStatus?.preview);
   const previewParagraphs = formatPreviewText(jobStatus?.preview?.text);
   const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
+  const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
+  const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
+  };
+
+  const handleContinueStory = async () => {
+    if (!submittedJobId || !canContinueStory) {
+      return;
+    }
+
+    setContinueSubmitting(true);
+    try {
+      const response = await fetch(CONTINUE_ENDPOINT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: submittedJobId })
+      });
+      const ok = response.ok;
+      toast({
+        title: ok ? "Продолжаем историю" : "Не удалось продолжить",
+        description: ok ? "Полная книга начала готовиться" : "Попробуйте ещё раз через минуту."
+      });
+      if (ok) {
+        setJobStatus((current) => current ? {
+          ...current,
+          artifacts: {
+            ...(current.artifacts || {}),
+            fullText: { ...(current.artifacts?.fullText || {}), status: 'generating' }
+          }
+        } : current);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Не удалось продолжить",
+        description: "Проверьте соединение и попробуйте ещё раз."
+      });
+    } finally {
+      setContinueSubmitting(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -1137,6 +1185,40 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     <p className="text-sm text-[#DBA858]/70">
                       Текст первой главы появится здесь, как только будет готов.
                     </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {submittedJobId && hasFirstChapterPreview && (
+              <div className="mb-6 rounded-lg border border-[#E89C31]/40 bg-[#06283A] p-4 text-left">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-semibold text-[#E89C31]">
+                      {fullTextStatus === 'ready'
+                        ? 'Полная история готова'
+                        : fullTextStatus === 'generating'
+                          ? 'Полная история готовится'
+                          : 'Первая глава готова'}
+                    </div>
+                    <p className="mt-1 text-sm text-[#DBA858]/75">
+                      {fullTextStatus === 'ready'
+                        ? 'Главы 2-5 уже собраны и скоро попадут в финальную книгу.'
+                        : fullTextStatus === 'generating'
+                          ? 'Пишем продолжение и собираем полный текст книги.'
+                          : 'Запустите продолжение, чтобы подготовить главы 2-5 и финальную книгу.'}
+                    </p>
+                  </div>
+                  {fullTextStatus !== 'ready' && (
+                    <button
+                      type="button"
+                      onClick={handleContinueStory}
+                      disabled={!canContinueStory || continueSubmitting}
+                      className="mixer-main-button px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {continueSubmitting || fullTextStatus === 'generating'
+                        ? 'Продолжаем...'
+                        : 'Хочу всю историю'}
+                    </button>
                   )}
                 </div>
               </div>

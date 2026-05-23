@@ -4,7 +4,7 @@
     "createdAt": "2026-05-23T04:36:18.781Z",
     "id": "kCtpw2d7pEOI3QRF",
     "name": "fairyteller_text",
-    "description": "Generates the first chapter with Gemini, writes text.json, exposes the first-chapter preview, and starts visuals asynchronously.",
+    "description": "Generates the first chapter with Gemini, writes text.json, exposes the first-chapter preview, and starts visuals asynchronously. Full text starts only from the continue webhook.",
     "active": true,
     "isArchived": false,
     "nodes": [
@@ -257,29 +257,6 @@
             "waitForSubWorkflow": false
           }
         }
-      },
-      {
-        "id": "5bb9f448-c7d1-490f-94af-83db54b76fe7",
-        "name": "Start Full Text Pipeline",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "typeVersion": 1.3,
-        "position": [
-          2640,
-          520
-        ],
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "C2Pcin7lctSY5nc2",
-            "mode": "list",
-            "cachedResultName": "fairyteller_full_text"
-          },
-          "mode": "once",
-          "options": {
-            "waitForSubWorkflow": false
-          }
-        }
       }
     ],
     "connections": {
@@ -367,11 +344,6 @@
               "node": "Start Visuals Pipeline",
               "type": "main",
               "index": 0
-            },
-            {
-              "node": "Start Full Text Pipeline",
-              "type": "main",
-              "index": 0
             }
           ]
         ]
@@ -389,7 +361,7 @@
     "pinData": {},
     "versionId": "a5ae6e4a-d682-4209-86bb-9c3d212a03ca",
     "activeVersionId": "a5ae6e4a-d682-4209-86bb-9c3d212a03ca",
-    "versionCounter": 28,
+    "versionCounter": 29,
     "triggerCount": 0,
     "tags": [],
     "shared": [

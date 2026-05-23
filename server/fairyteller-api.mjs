@@ -264,6 +264,16 @@ async function putJobJsonArtifact(jobId, fileName, body) {
   return { jobId, fileName };
 }
 
+async function getJobJsonArtifact(jobId, fileName) {
+  requireJsonArtifactName(fileName);
+  const dir = jobDir(jobId);
+  const artifact = await readJsonFile(join(dir, 'artifacts', fileName));
+  if (!artifact) {
+    throw httpError(404, 'Artifact not found');
+  }
+  return artifact;
+}
+
 async function putJobFile(jobId, fileName, body) {
   requireFileName(fileName);
   const dir = jobDir(jobId);
@@ -417,6 +427,12 @@ async function route(req, res) {
   }
 
   const artifactMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/artifacts\/([^/]+)$/);
+  if (method === 'GET' && artifactMatch) {
+    requireAuth(req);
+    sendJson(req, res, 200, await getJobJsonArtifact(artifactMatch[1], artifactMatch[2]));
+    return;
+  }
+
   if (method === 'PUT' && artifactMatch) {
     requireAuth(req);
     sendJson(req, res, 200, await putJobJsonArtifact(artifactMatch[1], artifactMatch[2], await readJsonBody(req)));
