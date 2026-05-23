@@ -48,6 +48,19 @@ interface JobStatus {
       url?: string;
       chapterCount?: number;
     };
+    fullVisuals?: {
+      status?: 'generating' | 'ready' | 'failed';
+      completed?: number;
+      total?: number;
+      chapterCount?: number;
+      images?: Array<{
+        slot?: string;
+        chapter?: number;
+        status?: 'ready' | 'failed' | 'generating';
+        url?: string;
+        absoluteUrl?: string;
+      }>;
+    };
   };
   error?: string | null;
 }
@@ -378,9 +391,15 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const previewParagraphs = formatPreviewText(jobStatus?.preview?.text);
   const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
+  const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
+  const fullVisualsStatus = fullVisuals?.status || null;
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
   const fullChapters = (fullTextArtifact?.text?.chapters || []).filter((chapter) => chapter.n > 1);
   const selectedChapter = fullChapters.find((chapter) => chapter.n === selectedFullChapter) || fullChapters[0] || null;
+  const selectedChapterImage = selectedChapter
+    ? (fullVisuals?.images || []).find((image) => Number(image.chapter) === selectedChapter.n || image.slot === `chapter_${selectedChapter.n}`)
+    : null;
+  const selectedChapterImageUrl = selectedChapterImage?.absoluteUrl || selectedChapterImage?.url || '';
   const selectedChapterParagraphs = selectedChapter
     ? formatPreviewText(selectedChapter.text || (selectedChapter.textBlocks || []).join('\n\n'))
     : [];
@@ -1259,7 +1278,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     </div>
                     <p className="mt-1 text-sm text-[#DBA858]/75">
                       {fullTextStatus === 'ready'
-                        ? 'Главы 2-5 уже собраны. Переключайтесь между главами ниже.'
+                        ? fullVisualsStatus === 'ready'
+                          ? 'Главы и иллюстрации уже собраны. Переключайтесь между главами ниже.'
+                          : fullVisualsStatus === 'generating'
+                            ? `Главы готовы. Иллюстрации дорисовываются${fullVisuals?.total ? `: ${fullVisuals.completed || 0}/${fullVisuals.total}` : ''}.`
+                            : 'Главы 2-5 уже собраны. Иллюстрации появятся здесь, когда будут готовы.'
                         : fullTextStatus === 'generating'
                           ? 'Пишем продолжение и собираем полный текст книги.'
                           : 'Запустите продолжение, чтобы подготовить главы 2-5 и финальную книгу.'}
@@ -1305,6 +1328,15 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                           <h4 className="text-xl md:text-2xl font-semibold text-[#E89C31] mb-3">
                             {selectedChapter?.title || `Глава ${selectedChapter?.n || ''}`}
                           </h4>
+                          {selectedChapterImageUrl && selectedChapterImage?.status === 'ready' && (
+                            <div className="mb-4 overflow-hidden rounded-lg border border-[#E89C31]/30 bg-[#031B28]">
+                              <img
+                                src={selectedChapterImageUrl}
+                                alt={`Иллюстрация к главе ${selectedChapter?.n || ''}`}
+                                className="w-full max-h-[460px] object-contain"
+                              />
+                            </div>
+                          )}
                           <div className="space-y-3 text-sm md:text-base leading-relaxed text-[#F3D9A4]">
                             {selectedChapterParagraphs.map((paragraph, index) => (
                               <p key={`${selectedChapter?.n}-${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>

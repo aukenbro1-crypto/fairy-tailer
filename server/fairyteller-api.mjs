@@ -449,6 +449,29 @@ async function route(req, res) {
   }
 
   if (method === 'GET' && fileMatch) {
+    if (url.searchParams.get('base64') === '1') {
+      requireAuth(req);
+      const fileName = fileMatch[2];
+      requireFileName(fileName);
+      const path = join(jobDir(fileMatch[1]), 'files', fileName);
+      let content;
+      try {
+        content = await readFile(path);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          throw httpError(404, 'File not found');
+        }
+        throw error;
+      }
+      sendJson(req, res, 200, {
+        jobId: fileMatch[1],
+        fileName,
+        contentType: contentTypeFromFileName(fileName),
+        bytes: content.length,
+        contentBase64: content.toString('base64'),
+      });
+      return;
+    }
     await sendJobFile(req, res, fileMatch[1], fileMatch[2]);
     return;
   }
