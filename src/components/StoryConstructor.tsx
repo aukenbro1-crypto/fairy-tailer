@@ -52,6 +52,19 @@ interface JobStatus {
   error?: string | null;
 }
 
+interface FullTextChapter {
+  n: number;
+  title: string;
+  text?: string;
+  textBlocks?: string[];
+}
+
+interface FullTextArtifact {
+  text?: {
+    chapters?: FullTextChapter[];
+  };
+}
+
 const getPreviewImageUrl = (preview: JobStatus['preview']) => {
   if (!preview?.imageUrl && !preview?.imageAbsoluteUrl) {
     return '';
@@ -245,6 +258,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [fullTextArtifact, setFullTextArtifact] = useState<FullTextArtifact | null>(null);
+  const [selectedFullChapter, setSelectedFullChapter] = useState(2);
   const [continueSubmitting, setContinueSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   
@@ -314,6 +329,37 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       window.clearInterval(intervalId);
     };
   }, [submittedJobId, submittedStatusUrl]);
+
+  useEffect(() => {
+    if (!submittedJobId || jobStatus?.artifacts?.fullText?.status !== 'ready' || fullTextArtifact) {
+      return;
+    }
+
+    let cancelled = false;
+    const artifactUrl = jobStatus.artifacts.fullText.url || `${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}/artifacts/full-text.json`;
+
+    const loadFullText = async () => {
+      try {
+        const response = await fetch(artifactUrl, { cache: 'no-store' });
+        if (!response.ok) {
+          return;
+        }
+        const artifact = await response.json() as FullTextArtifact;
+        if (!cancelled) {
+          setFullTextArtifact(artifact);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setFullTextArtifact((current) => current);
+        }
+      }
+    };
+
+    void loadFullText();
+    return () => {
+      cancelled = true;
+    };
+  }, [submittedJobId, jobStatus?.artifacts?.fullText?.status, jobStatus?.artifacts?.fullText?.url, fullTextArtifact]);
   
   const [heroSections, setHeroSections] = useState({
     hero2: true,
@@ -333,6 +379,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
+  const fullChapters = (fullTextArtifact?.text?.chapters || []).filter((chapter) => chapter.n > 1);
+  const selectedChapter = fullChapters.find((chapter) => chapter.n === selectedFullChapter) || fullChapters[0] || null;
+  const selectedChapterParagraphs = selectedChapter
+    ? formatPreviewText(selectedChapter.text || (selectedChapter.textBlocks || []).join('\n\n'))
+    : [];
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -356,6 +407,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
         description: ok ? "Полная книга начала готовиться" : "Попробуйте ещё раз через минуту."
       });
       if (ok) {
+        setFullTextArtifact(null);
+        setSelectedFullChapter(2);
         setJobStatus((current) => current ? {
           ...current,
           artifacts: {
@@ -486,6 +539,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       setSubmittedJobId(createResult?.jobId || null);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setJobStatus(null);
+      setFullTextArtifact(null);
+      setSelectedFullChapter(2);
       showSuccessScreen();
     }
   };
@@ -531,6 +586,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
+    setFullTextArtifact(null);
+    setSelectedFullChapter(2);
   };
 
   return (
@@ -1202,7 +1259,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     </div>
                     <p className="mt-1 text-sm text-[#DBA858]/75">
                       {fullTextStatus === 'ready'
-                        ? 'Главы 2-5 уже собраны и скоро попадут в финальную книгу.'
+                        ? 'Главы 2-5 уже собраны. Переключайтесь между главами ниже.'
                         : fullTextStatus === 'generating'
                           ? 'Пишем продолжение и собираем полный текст книги.'
                           : 'Запустите продолжение, чтобы подготовить главы 2-5 и финальную книгу.'}
@@ -1221,6 +1278,47 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     </button>
                   )}
                 </div>
+                {fullTextStatus === 'ready' && (
+                  <div className="mt-5 border-t border-[#E89C31]/25 pt-4">
+                    {fullChapters.length > 0 ? (
+                      <>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {fullChapters.map((chapter) => (
+                            <button
+                              key={chapter.n}
+                              type="button"
+                              onClick={() => setSelectedFullChapter(chapter.n)}
+                              className={`px-4 py-2 rounded-md border text-sm transition-colors ${
+                                selectedChapter?.n === chapter.n
+                                  ? 'bg-[#E89C31] text-[#031B28] border-[#E89C31]'
+                                  : 'bg-black/20 text-[#DBA858] border-[#E89C31]/35 hover:border-[#E89C31]'
+                              }`}
+                            >
+                              Глава {chapter.n}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="rounded-lg border border-[#E89C31]/35 bg-black/20 p-4 max-h-[420px] overflow-y-auto">
+                          <div className="text-xs uppercase tracking-wide text-[#DBA858]/60 mb-2">
+                            Продолжение
+                          </div>
+                          <h4 className="text-xl md:text-2xl font-semibold text-[#E89C31] mb-3">
+                            {selectedChapter?.title || `Глава ${selectedChapter?.n || ''}`}
+                          </h4>
+                          <div className="space-y-3 text-sm md:text-base leading-relaxed text-[#F3D9A4]">
+                            {selectedChapterParagraphs.map((paragraph, index) => (
+                              <p key={`${selectedChapter?.n}-${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-[#DBA858]/70">
+                        Загружаем полный текст истории.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <p className="text-sm text-[#DBA858]/70">

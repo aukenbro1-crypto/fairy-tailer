@@ -428,7 +428,9 @@ async function route(req, res) {
 
   const artifactMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/artifacts\/([^/]+)$/);
   if (method === 'GET' && artifactMatch) {
-    requireAuth(req);
+    if (artifactMatch[2] !== 'full-text.json') {
+      requireAuth(req);
+    }
     sendJson(req, res, 200, await getJobJsonArtifact(artifactMatch[1], artifactMatch[2]));
     return;
   }
