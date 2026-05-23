@@ -8,7 +8,7 @@ const PORT = Number(process.env.FAIRYTELLER_API_PORT || process.env.PORT || 3099
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '.data/fairyteller');
 const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 1024 * 1024);
+const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -264,11 +264,91 @@ async function putJobJsonArtifact(jobId, fileName, body) {
   return { jobId, fileName };
 }
 
+async function putJobFile(jobId, fileName, body) {
+  requireFileName(fileName);
+  const dir = jobDir(jobId);
+  if (!existsSync(dir)) {
+    throw httpError(404, 'Job not found');
+  }
+  if (!body || typeof body.contentBase64 !== 'string') {
+    throw httpError(400, 'Missing contentBase64');
+  }
+  const content = Buffer.from(body.contentBase64, 'base64');
+  if (content.length === 0) {
+    throw httpError(400, 'Empty file content');
+  }
+  if (content.length > 12 * 1024 * 1024) {
+    throw httpError(413, 'File too large');
+  }
+
+  const filesDir = join(dir, 'files');
+  await mkdir(filesDir, { recursive: true, mode: 0o700 });
+  const path = join(filesDir, fileName);
+  await writeFile(path, content, { mode: 0o600 });
+  await appendEvent(dir, {
+    type: 'job.file.written',
+    fileName,
+    contentType: normalizeContentType(body.contentType),
+    bytes: content.length,
+  });
+  return {
+    jobId,
+    fileName,
+    contentType: normalizeContentType(body.contentType),
+    bytes: content.length,
+    url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+  };
+}
+
+async function sendJobFile(req, res, jobId, fileName) {
+  requireFileName(fileName);
+  const dir = jobDir(jobId);
+  const path = join(dir, 'files', fileName);
+  let content;
+  try {
+    content = await readFile(path);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      throw httpError(404, 'File not found');
+    }
+    throw error;
+  }
+  res.writeHead(200, {
+    ...corsHeaders(req),
+    'content-type': contentTypeFromFileName(fileName),
+    'cache-control': 'public, max-age=31536000, immutable',
+  });
+  res.end(content);
+}
+
 function requireJsonArtifactName(fileName) {
   const safeName = basename(fileName);
   if (safeName !== fileName || !/^[a-zA-Z0-9_.-]+\.json$/.test(fileName)) {
     throw httpError(400, 'Invalid artifact file name');
   }
+}
+
+function requireFileName(fileName) {
+  const safeName = basename(fileName);
+  if (safeName !== fileName || !/^[a-zA-Z0-9_.-]+\.(png|jpg|jpeg|webp|pdf)$/i.test(fileName)) {
+    throw httpError(400, 'Invalid file name');
+  }
+}
+
+function normalizeContentType(contentType) {
+  if (typeof contentType !== 'string') {
+    return 'application/octet-stream';
+  }
+  return contentType.slice(0, 100);
+}
+
+function contentTypeFromFileName(fileName) {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/octet-stream';
 }
 
 function corsHeaders(req) {
@@ -340,6 +420,18 @@ async function route(req, res) {
   if (method === 'PUT' && artifactMatch) {
     requireAuth(req);
     sendJson(req, res, 200, await putJobJsonArtifact(artifactMatch[1], artifactMatch[2], await readJsonBody(req)));
+    return;
+  }
+
+  const fileMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/files\/([^/]+)$/);
+  if (method === 'PUT' && fileMatch) {
+    requireAuth(req);
+    sendJson(req, res, 200, await putJobFile(fileMatch[1], fileMatch[2], await readJsonBody(req)));
+    return;
+  }
+
+  if (method === 'GET' && fileMatch) {
+    await sendJobFile(req, res, fileMatch[1], fileMatch[2]);
     return;
   }
 

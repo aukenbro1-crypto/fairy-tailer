@@ -51,7 +51,7 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow now builds a real first-chapter request through the OpenAI Responses API and writes `text.json`; visuals and render/publish still use placeholder contracts. The pipeline preserves the intended stage boundaries, but image generation and PDF render are not yet real.
+Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the visuals workflow generates the first chapter illustration with Gemini and writes `chapter-1.png` plus `visuals.json`; render/publish still uses placeholder contracts.
 
 Activation state:
 
@@ -84,6 +84,14 @@ Gemini integration note:
 - Do not store Gemini keys in workflow JSON or git.
 - Gemini API smoke on 2026-05-23 returned `200` from `GET /v1beta/models` and listed available models.
 - Previous n8n container backup before Gemini env injection: `baku-n8n-docker-bak-20260523054556`.
+
+Visual generation note:
+
+- `fairyteller_visuals` prioritizes `chapter_1` before cover and later chapter images.
+- First chapter image generation uses `gemini-2.5-flash-image` through `generateContent`.
+- The generated file is stored through the Job API under `/api/fairyteller/jobs/:jobId/files/chapter-1.png`.
+- The public status preview is updated with `imageStatus: "ready"`, `imageUrl`, and `imageAbsoluteUrl`.
+- Cover and chapter 2-5 images are still queued placeholders.
 
 ## Job API
 
@@ -193,3 +201,6 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added Gemini API environment variables to the Docker n8n container, recreated n8n with the existing data volume, and verified Gemini API access without printing the key.
 - Switched `fairyteller_text` from OpenAI to Gemini as the primary first-chapter generator and published active version `6db34909-8976-42df-9bea-84f6d1a1ed85`.
 - Verified manual intake smoke with Gemini first-chapter generation. Smoke execution: `330`; smoke job: `ft_1779515670105_344zxe`; final status: `done`; generated title: `Серебряный компас над Невой`; `text.json` contains 5 first-chapter blocks from `gemini-2.5-flash`.
+- Added Job API file artifacts: authenticated `PUT /api/fairyteller/jobs/:jobId/files/:fileName` and public `GET /api/fairyteller/jobs/:jobId/files/:fileName`.
+- Switched `fairyteller_visuals` from placeholder-only to real first-chapter image generation with Gemini and published active version `07a5ffc0-2d15-41f7-b33d-25b493413860`.
+- Verified manual intake smoke with first-chapter text and image. Smoke execution: `334`; smoke job: `ft_1779516199604_fpktms`; final status: `done`; generated image: `chapter-1.png`, `1024 x 1024`, RGB, about `1.3 MB`.

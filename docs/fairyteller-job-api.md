@@ -42,15 +42,10 @@ Authorization: Bearer <token>
     text.json
     visuals.json
     render.json
-```
-
-Future binary outputs can live beside these JSON artifacts:
-
-```txt
   files/
+    chapter-1.png
     cover.pdf
     interior.pdf
-    customer-preview.pdf
 ```
 
 ## Endpoints
@@ -153,6 +148,31 @@ Content-Type: application/json
 
 Use this for `text.json`, `visuals.json`, `render.json`, and validation reports.
 
+### Write File Artifact
+
+```http
+PUT /api/fairyteller/jobs/:jobId/files/chapter-1.png
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "contentType": "image/png",
+  "contentBase64": "iVBORw0KGgo..."
+}
+```
+
+Allowed file extensions: `.png`, `.jpg`, `.jpeg`, `.webp`, `.pdf`.
+
+### Public File
+
+```http
+GET /api/fairyteller/jobs/:jobId/files/chapter-1.png
+```
+
+Use returned file URLs in `preview.imageUrl`, `visuals.json`, and later render inputs.
+
 ## n8n Integration Shape
 
 The intended first production wiring:
@@ -162,4 +182,3 @@ The intended first production wiring:
 3. It returns `jobId` to the website.
 4. Each downstream workflow writes status updates before and after long-running work.
 5. The website polls `GET /api/fairyteller/jobs/:jobId`.
-
