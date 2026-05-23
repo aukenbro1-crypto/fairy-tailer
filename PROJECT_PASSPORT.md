@@ -51,7 +51,7 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API with placeholder contracts. They update status, write JSON artifacts, and preserve the intended stage boundaries, but they do not yet call Gemini/OpenAI/image/render services.
+Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow now builds a real first-chapter request through the OpenAI Responses API and writes `text.json`; visuals and render/publish still use placeholder contracts. The pipeline preserves the intended stage boundaries, but image generation and PDF render are not yet real.
 
 Activation state:
 
@@ -69,6 +69,21 @@ Current placeholder status flow:
 5. `visuals_ready`
 6. `rendering`
 7. `done`
+
+Text generation note:
+
+- `fairyteller_text` calls `https://api.openai.com/v1/responses` through an HTTP Request node.
+- The request uses `$env.OPENAI_API_KEY`; do not store the key in the workflow JSON.
+- Model configured for first-chapter generation: `gpt-5.1` with structured JSON output.
+- Current VPS n8n environment has an `OPENAI_API_KEY`, but a smoke request on 2026-05-23 returned `401 invalid_api_key`. Replace the container environment key before testing real text generation end to end.
+- The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
+
+Gemini integration note:
+
+- n8n Docker env includes `GEMINI_API_KEY` and `GOOGLE_API_KEY`.
+- Do not store Gemini keys in workflow JSON or git.
+- Gemini API smoke on 2026-05-23 returned `200` from `GET /v1beta/models` and listed available models.
+- Previous n8n container backup before Gemini env injection: `baku-n8n-docker-bak-20260523054556`.
 
 ## Job API
 
@@ -173,3 +188,6 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added `/create` frontend compatibility for the new async n8n response contract: `jobId`, `statusUrl`, and public status polling in the success overlay while preserving the Make webhook as the default endpoint.
 - Added `.env.example` with frontend migration variables.
 - Deployed frontend release `/var/www/fairyteller/releases/20260523-053332-codex-async-status` and repointed `/var/www/fairyteller/current` to it. Production `/create` still uses the legacy Make endpoint by default.
+- Replaced the `fairyteller_text` placeholder builder with an OpenAI Responses API first-chapter generator and JSON normalizer; published active version `b83a24c7-1745-4404-b07f-e34032a27c3b`.
+- Verified that the current n8n `OPENAI_API_KEY` is present but invalid; real text smoke is blocked until the key is replaced.
+- Added Gemini API environment variables to the Docker n8n container, recreated n8n with the existing data volume, and verified Gemini API access without printing the key.
