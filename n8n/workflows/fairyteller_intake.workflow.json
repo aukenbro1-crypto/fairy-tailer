@@ -1,0 +1,208 @@
+{
+  "id": "Vty7vSn4vd5Nduht",
+  "name": "fairyteller_intake",
+  "description": "Accepts fairyteller.ru/create orders, persists them in the Fairyteller Job API, starts the text pipeline asynchronously, and returns a fast 202 response.",
+  "active": true,
+  "nodes": [
+    {
+      "id": "4e075118-0311-4afc-a04e-ac7f9f007393",
+      "name": "Create Book Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fairyteller/create",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryData": true,
+          "binaryPropertyName": "data"
+        }
+      },
+      "webhookId": "c281dfbd-4819-49fb-a3c1-286bc91f5ce2"
+    },
+    {
+      "id": "3f590b22-ec12-40d0-b81d-e3e13e2e947c",
+      "name": "Normalize Order and Create Job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const first = $input.first();\nconst body = first.json.body || first.json || {};\nconst binary = first.binary || {};\nconst now = new Date().toISOString();\nconst jobId = `ft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;\n\nfunction findPhotoField(n) {\n  const exact = `hero${n}_photo`;\n  if (binary[exact]) return exact;\n  return Object.keys(binary).find((key) => key === exact || key.startsWith(`${exact}_`) || key.includes(exact)) || null;\n}\n\nconst heroes = [1, 2, 3, 4].map((n) => {\n  const photoField = findPhotoField(n);\n  const photo = photoField ? binary[photoField] : null;\n  return {\n    n,\n    name: body[`hero${n}_name`] || '',\n    description: body[`hero${n}_desc`] || '',\n    relation: body[`hero${n}_rel`] || '',\n    photoField,\n    photoMime: photo?.mimeType || body[`hero${n}_photo_mime`] || null,\n    photoFileName: photo?.fileName || body[`hero${n}_photo_name`] || null,\n    hasPhoto: Boolean(photoField),\n  };\n}).filter((hero) => hero.name || hero.description || hero.photoField);\n\nreturn [{\n  json: {\n    jobId,\n    status: 'received',\n    createdAt: now,\n    source: 'fairyteller_create',\n    order: {\n      world: body.world || 'disney_light',\n      location: body.location || '',\n      artifact: body.artifact || '',\n      email: String(body.email || '').toLowerCase(),\n      illustrationStyle: body.illustration_style || 'disney',\n      illustrationStylePrompt: body.illustration_style_prompt || '',\n      lengthTarget: Number(body.length_target || 15000),\n      chapters: Number(body.chapters || 5),\n      language: body.language || 'ru',\n      heroes,\n    },\n    pipeline: { next: 'fairyteller_text', previewEnabled: true, portraitizerEnabled: true },\n  },\n  binary: first.binary,\n}];"
+      }
+    },
+    {
+      "id": "66156980-4a79-440f-9ccb-5c53fa1c166a",
+      "name": "Create Job in Fairyteller API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://fairyteller.ru/api/fairyteller/jobs",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { jobId: $json.jobId, source: $json.source, order: $json.order } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "f7a73f9d-d0cb-4034-bd52-13cda84d04fb",
+      "name": "Attach Job API Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const normalized = $('Normalize Order and Create Job').first().json;\nconst apiJob = $input.first().json;\nreturn [{\n  json: {\n    ...normalized,\n    jobId: apiJob.jobId || normalized.jobId,\n    jobApi: apiJob,\n  },\n  binary: $('Normalize Order and Create Job').first().binary,\n}];"
+      }
+    },
+    {
+      "id": "3b3386c2-af72-4885-8c11-37de434fe0c9",
+      "name": "Start Text Pipeline",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "kCtpw2d7pEOI3QRF",
+          "mode": "list",
+          "cachedResultName": "fairyteller_text"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "977224ee-0fcc-484d-bede-3e5f38ddcebc",
+      "name": "Respond 202 Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1740,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, status: \"received\", jobId: $(\"Attach Job API Result\").item.json.jobId, statusUrl: \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Attach Job API Result\").item.json.jobId, message: \"Book job accepted\" } }}",
+        "options": {
+          "responseCode": 202
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Create Book Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Order and Create Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Order and Create Job": {
+      "main": [
+        [
+          {
+            "node": "Create Job in Fairyteller API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Job in Fairyteller API": {
+      "main": [
+        [
+          {
+            "node": "Attach Job API Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Job API Result": {
+      "main": [
+        [
+          {
+            "node": "Start Text Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Text Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Respond 202 Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "aiBuilderAssisted": true
+  },
+  "versionId": "b3e41497-f707-48d2-8935-4dd68ec55f09",
+  "activeVersionId": "b3e41497-f707-48d2-8935-4dd68ec55f09",
+  "exportedAt": "2026-05-23T06:45:00.000Z",
+  "note": "Sanitized export for version control. Secrets are referenced through n8n environment variables only."
+}

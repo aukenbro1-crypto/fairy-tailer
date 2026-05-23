@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 06:35 UTC
+Last updated: 2026-05-23 06:45 UTC
 
 ## Project Context
 
@@ -52,7 +52,7 @@ The new n8n pipeline is intentionally split into four workflows:
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the visuals workflow generates the first chapter illustration with Gemini and writes `chapter-1.png` plus `visuals.json`; render/publish still uses placeholder contracts.
+Current state as of 2026-05-23: the internal text, visuals, and render/publish workflows are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the visuals workflow generates a hero reference sheet, then the first chapter illustration, and writes `hero-reference-sheet.png`, `chapter-1.png`, and `visuals.json`; render/publish still uses placeholder contracts.
 
 Activation state:
 
@@ -90,7 +90,11 @@ Gemini integration note:
 Visual generation note:
 
 - `fairyteller_visuals` prioritizes `chapter_1` before cover and later chapter images.
+- `fairyteller_intake` detects uploaded hero photo binary fields and stores per-hero metadata: `photoField`, `photoMime`, `photoFileName`, and `hasPhoto`.
+- `fairyteller_visuals` first generates `hero-reference-sheet.png` as a stylized character sheet from hero descriptions and uploaded photo references when present.
+- Chapter image generation uses the generated hero reference sheet as an inline image reference, so chapter 1 can preserve the same character designs.
 - First chapter image generation uses `gemini-2.5-flash-image` through `generateContent`.
+- The `minibrick` style is explicitly mapped to brick-built minifigure/toy diorama prompts; do not rely on fallback style mapping for it.
 - The generated file is stored through the Job API under `/api/fairyteller/jobs/:jobId/files/chapter-1.png`.
 - The public status preview is updated with `imageStatus: "ready"`, `imageUrl`, and `imageAbsoluteUrl`.
 - Cover and chapter 2-5 images are still queued placeholders.
@@ -219,3 +223,9 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Fixed `fairyteller_text` JSON parse failures in `Normalize First Chapter` by adding Gemini `responseSchema`, stricter JSON-string prompt rules, and normalizer repair for control characters inside strings. Published active version `730aebcf-54a5-45c2-b8e1-35b63d7aeb84`.
 - Verified repair smoke through public intake. Smoke job: `ft_1779517701337_9crdia`; final status: `done`; first chapter title: `Шепот Прибоя и Древние Знаки`; first image status: `ready`.
 - Added sanitized workflow export for `fairyteller_text` at `n8n/workflows/fairyteller_text.workflow.json`.
+- Updated `fairyteller_intake` to preserve hero photo metadata from webhook binary uploads. Published active version `b3e41497-f707-48d2-8935-4dd68ec55f09`.
+- Added a portraitizer stage to `fairyteller_visuals`: build hero reference sheet request, generate `hero-reference-sheet.png`, store it as a Job API file, and feed it into first chapter image generation. Published active version `321456b9-4c12-48d3-a922-5af94be484b5`.
+- Fixed the `minibrick` visual style mapping so the Lego-like option produces brick-built minifigure/toy diorama prompts instead of falling back to the Disney-style prompt.
+- Verified minibrick smoke through public intake. Smoke job: `ft_1779518387625_1duomz`; final status: `done`; files generated: `hero-reference-sheet.png` and `chapter-1.png`, both `1024 x 1024`; visual check confirmed brick/minifigure style.
+- Verified photo-upload smoke through public intake with `hero1_photo`. Smoke job: `ft_1779518617754_ftw6ah`; final status: `done`; this confirmed the portraitizer can read webhook binary data before generating the hero reference sheet.
+- Added sanitized workflow exports for `fairyteller_intake` and `fairyteller_visuals`.
