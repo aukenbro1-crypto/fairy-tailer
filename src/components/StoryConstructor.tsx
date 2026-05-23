@@ -15,8 +15,8 @@ import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import russianCyberpunkImage from '@/assets/russian-cyberpunk.png';
 import romanticStoryImage from '@/assets/romantic-story.png';
 
-const LEGACY_WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
-const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || LEGACY_WEBHOOK_URL;
+const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
+const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 
 interface CreateResponse {

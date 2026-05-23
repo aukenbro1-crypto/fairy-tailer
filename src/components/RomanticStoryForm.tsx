@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-// Webhook URL
-const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
+const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || "/webhook/fairyteller/create";
 
 // Illustration styles (same as Index.tsx)
 const ILLUSTRATION_STYLES: Record<string, string> = {
@@ -290,7 +289,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
 
     let ok = false;
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(CREATE_ENDPOINT_URL, {
         method: 'POST',
         body: multipartData,
       });
