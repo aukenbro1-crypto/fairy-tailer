@@ -1,0 +1,358 @@
+{
+  "id": "kCtpw2d7pEOI3QRF",
+  "name": "fairyteller_text",
+  "description": "Generates the first chapter with Gemini, writes text.json, exposes the first-chapter preview, and starts visuals asynchronously.",
+  "active": true,
+  "nodes": [
+    {
+      "id": "79a697f2-1af5-477f-bf6f-69ac8805adce",
+      "name": "Text Pipeline Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"jobId\":\"ft_example\",\"status\":\"received\",\"order\":{\"world\":\"disney_light\",\"location\":\"Istanbul\",\"artifact\":\"silver compass\",\"email\":\"reader@example.com\",\"heroes\":[{\"n\":1,\"name\":\"Alice\",\"description\":\"Curious traveler\",\"relation\":\"main hero\"}]}}"
+      }
+    },
+    {
+      "id": "fbc2f36f-c326-4aa2-bc5b-0814baf6044c",
+      "name": "Mark Text Generating",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        540,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": {
+          "status": "text_generating",
+          "stage": "text",
+          "progress": 15,
+          "message": "Пишем первую главу"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "87bee038-da47-49e5-a01a-654865c3282e",
+      "name": "Build First Chapter Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $('Text Pipeline Input').first().json;\nconst order = item.order || {};\nconst jobId = item.jobId || `ft_${Date.now()}`;\nconst worldLabels = { disney_light: 'теплая романтическая история без магии, с мягким юмором и совместным приключением', adventure_classic: 'классическое приключение с открытиями, смелостью и дружеской динамикой', new_year: 'уютная магическая школа и зимнее приключение без прямого копирования известных франшиз', fantasy_epic: 'эпическое фэнтези с ответственностью, древними местами и ясной ценой выбора', cyberpunk_dream: 'ироничный русский киберпанк 2026 года, городские сервисы, контроль и человеческое тепло' };\nconst heroes = (order.heroes || []).filter((hero) => hero.name || hero.description || hero.relation).map((hero) => `Герой ${hero.n}: ${hero.name || 'без имени'} - ${hero.description || 'описание не задано'} - ${hero.relation || 'роль не задана'}`).join('\\n');\nconst systemText = 'Ты - автор персональных книг Fairyteller. Пиши на русском языке, без буквы ё. Тон: современная ясная проза, живые сцены, теплые детали, без канцелярита и мета-комментариев. Герои уже заданы пользователем; не меняй имена, факты и отношения. Не добавляй известных copyrighted персонажей и не копируй чужие вселенные. Для романтики держи скромный уровень: близость через поступки, взгляд, заботу и диалог, без эротики. Верни только валидный JSON. Внутри JSON-строк не используй кавычки-елочки, markdown, списки и переносы строк; диалоги оформляй через тире.';\nconst userText = `Создай story bible и ПЕРВУЮ главу персональной книги. Остальные главы пока не писать полностью: нужен только краткий план 2-5 глав, чтобы первая глава была началом цельной истории.\\n\\nМир: ${order.world || 'disney_light'} - ${worldLabels[order.world] || 'уютная приключенческая сказка'}\\nЛокация: ${order.location || 'не задана'}\\nВажный предмет: ${order.artifact || 'не задан'}\\nЯзык: ${order.language || 'ru'}\\nСтиль иллюстраций: ${order.illustrationStyle || 'storybook'}\\n\\nПерсонажи:\\n${heroes || 'Герои не заданы; создай нейтральную пару/команду без новых анкетных подробностей.'}\\n\\nТребования к первой главе:\\n- Это глава 1 из 5. Она должна работать как быстрый UX-preview, но быть настоящей литературной главой.\\n- 5 текстовых блоков для верстки, каждый 520-760 знаков, каждый блок 2-3 абзаца.\\n- В главе должны быть: ритуал/контекст героев, толчок к приключению, локация в осязаемых деталях, предмет в действии, мягкий крючок на главу 2.\\n- Диалоги короткие, не больше 4-6 реплик на главу.\\n- Не используй заголовки внутри textBlocks, markdown, маркеры списков и служебные пометки.\\n- Не вставляй переносы строк внутри значений JSON; каждый textBlocks[i] должен быть одной JSON-строкой.\\n- chapter1.summary должен быть визуальным ТЗ для иллюстрации: кто в кадре, где, что делает, предмет, свет, ракурс, настроение; 260-380 знаков, без будущих спойлеров и без слов про стиль.\\n\\nВерни JSON строго по schema.`;\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    bookTitle: { type: 'STRING' },\n    subtitle: { type: 'STRING' },\n    coverSummary: { type: 'STRING' },\n    storyBible: {\n      type: 'OBJECT',\n      properties: {\n        world: { type: 'STRING' },\n        location: { type: 'STRING' },\n        artifact: { type: 'STRING' },\n        tone: { type: 'STRING' },\n        throughline: { type: 'STRING' },\n      },\n      required: ['world', 'location', 'artifact', 'tone', 'throughline'],\n    },\n    chapterPlan: {\n      type: 'ARRAY',\n      items: {\n        type: 'OBJECT',\n        properties: {\n          n: { type: 'NUMBER' },\n          title: { type: 'STRING' },\n          beat: { type: 'STRING' },\n        },\n        required: ['n', 'title', 'beat'],\n      },\n    },\n    chapter1: {\n      type: 'OBJECT',\n      properties: {\n        title: { type: 'STRING' },\n        summary: { type: 'STRING' },\n        textBlocks: { type: 'ARRAY', items: { type: 'STRING' } },\n      },\n      required: ['title', 'summary', 'textBlocks'],\n    },\n  },\n  required: ['bookTitle', 'subtitle', 'coverSummary', 'storyBible', 'chapterPlan', 'chapter1'],\n};\nconst geminiRequest = {\n  systemInstruction: { parts: [{ text: systemText }] },\n  contents: [{ role: 'user', parts: [{ text: userText }] }],\n  generationConfig: {\n    temperature: 0.65,\n    topP: 0.9,\n    maxOutputTokens: 6000,\n    responseMimeType: 'application/json',\n    responseSchema,\n  },\n};\nreturn [{ json: { ...item, jobId, geminiModel: 'gemini-2.5-flash', geminiRequest }, binary: $('Text Pipeline Input').first().binary }];"
+      }
+    },
+    {
+      "id": "e30cc884-26a6-4a5c-a13e-bf486b5df813",
+      "name": "Generate First Chapter with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1140,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiModel + \":generateContent\" }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiRequest }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 180000
+        }
+      }
+    },
+    {
+      "id": "fd17be52-d929-4bd1-99e3-4df446c50227",
+      "name": "Normalize First Chapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const source = $('Build First Chapter Prompt').first().json;\nconst response = $input.first().json;\n\nfunction collectText(value) {\n  return String(value?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '').trim();\n}\n\nfunction extractJsonCandidate(text) {\n  let candidate = String(text || '').trim().replace(/^\\uFEFF/, '');\n  const fence = candidate.match(/^\\`\\`\\`(?:json)?\\s*([\\s\\S]*?)\\s*\\`\\`\\`$/i);\n  if (fence) candidate = fence[1].trim();\n  const firstBrace = candidate.indexOf('{');\n  const lastBrace = candidate.lastIndexOf('}');\n  if (firstBrace >= 0 && lastBrace > firstBrace) {\n    candidate = candidate.slice(firstBrace, lastBrace + 1);\n  }\n  return candidate;\n}\n\nfunction escapeControlCharsInsideStrings(text) {\n  let result = '';\n  let inString = false;\n  let escaped = false;\n  for (const char of text) {\n    if (escaped) {\n      result += char;\n      escaped = false;\n      continue;\n    }\n    if (char === '\\\\') {\n      result += char;\n      escaped = true;\n      continue;\n    }\n    if (char === '\"') {\n      inString = !inString;\n      result += char;\n      continue;\n    }\n    if (inString && char === '\\n') {\n      result += '\\\\n';\n      continue;\n    }\n    if (inString && char === '\\r') {\n      result += '\\\\r';\n      continue;\n    }\n    if (inString && char === '\\t') {\n      result += '\\\\t';\n      continue;\n    }\n    result += char;\n  }\n  return result;\n}\n\nfunction parseGeminiJson(raw) {\n  const candidate = extractJsonCandidate(raw);\n  const attempts = [\n    candidate,\n    escapeControlCharsInsideStrings(candidate),\n  ];\n  let lastError;\n  for (const attempt of attempts) {\n    try {\n      return JSON.parse(attempt);\n    } catch (error) {\n      lastError = error;\n    }\n  }\n  throw new Error(`Gemini first chapter response was not valid JSON after repair: ${lastError?.message || 'unknown parse error'}`);\n}\n\nconst rawText = collectText(response);\nif (!rawText) throw new Error('Gemini first chapter response was empty');\nconst generated = parseGeminiJson(rawText);\nconst chapter1 = generated.chapter1 || {};\nconst textBlocks = Array.isArray(chapter1.textBlocks)\n  ? chapter1.textBlocks.map((block) => String(block || '').replace(/\\s+/g, ' ').trim()).filter(Boolean)\n  : [];\nif (textBlocks.length !== 5) throw new Error(`Expected 5 chapter 1 text blocks, got ${textBlocks.length}`);\nconst fullChapterText = textBlocks.join('\\n\\n');\nconst preview = {\n  chapter: 1,\n  title: chapter1.title || generated.bookTitle || 'Первая глава',\n  summary: chapter1.summary || '',\n  text: fullChapterText,\n  imageStatus: 'pending',\n};\nconst text = {\n  bible: {\n    ...(generated.storyBible || {}),\n    world: generated.storyBible?.world || source.order?.world || '',\n    location: generated.storyBible?.location || source.order?.location || '',\n    artifact: generated.storyBible?.artifact || source.order?.artifact || '',\n    bookTitle: generated.bookTitle || '',\n    subtitle: generated.subtitle || '',\n    coverSummary: generated.coverSummary || '',\n    chapterPlan: generated.chapterPlan || [],\n  },\n  preview,\n  chapters: [{ n: 1, title: preview.title, summary: preview.summary, textBlocks, text: fullChapterText, status: 'ready' }],\n  generation: { provider: 'gemini', model: source.geminiModel || 'gemini-2.5-flash', responseId: response.responseId || null },\n};\nreturn [{ json: { ...source, status: 'chapter_1_ready', text, pipeline: { next: 'fairyteller_visuals', previewEnabled: true, firstChapterImagePriority: true } }, binary: $('Build First Chapter Prompt').first().binary }];"
+      }
+    },
+    {
+      "id": "c0f20131-cebb-4d36-846d-13b092fa2e17",
+      "name": "Write Text Artifact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1740,
+        300
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/artifacts/text.json\" }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { jobId: $json.jobId, status: $json.status, text: $json.text } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "9eb28c12-f683-40a6-88d0-9365dc4d9d5d",
+      "name": "Mark First Chapter Ready",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2040,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Normalize First Chapter\").item.json.jobId }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: \"chapter_1_ready\", stage: \"text\", progress: 35, message: \"Первая глава готова, готовим иллюстрацию\", preview: $(\"Normalize First Chapter\").item.json.text.preview } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "cc97da8b-d80d-4e6e-a7d9-a58d0cd10831",
+      "name": "Restore Text Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const payload = $('Normalize First Chapter').first().json;\nreturn [{ json: payload, binary: $('Normalize First Chapter').first().binary }];"
+      }
+    },
+    {
+      "id": "7bcb26d2-c232-4fbe-819e-6dc7fdd78e3b",
+      "name": "Start Visuals Pipeline",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "RXzoJ7Bdlr2y3l60",
+          "mode": "list",
+          "cachedResultName": "fairyteller_visuals"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Text Pipeline Input": {
+      "main": [
+        [
+          {
+            "node": "Mark Text Generating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Text Generating": {
+      "main": [
+        [
+          {
+            "node": "Build First Chapter Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build First Chapter Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate First Chapter with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate First Chapter with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Normalize First Chapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize First Chapter": {
+      "main": [
+        [
+          {
+            "node": "Write Text Artifact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Text Artifact": {
+      "main": [
+        [
+          {
+            "node": "Mark First Chapter Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark First Chapter Ready": {
+      "main": [
+        [
+          {
+            "node": "Restore Text Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Text Payload": {
+      "main": [
+        [
+          {
+            "node": "Start Visuals Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "aiBuilderAssisted": true
+  },
+  "versionId": "730aebcf-54a5-45c2-b8e1-35b63d7aeb84",
+  "activeVersionId": "730aebcf-54a5-45c2-b8e1-35b63d7aeb84",
+  "exportedAt": "2026-05-23T06:35:00.000Z",
+  "note": "Sanitized export for version control. Secrets are referenced through n8n environment variables only."
+}

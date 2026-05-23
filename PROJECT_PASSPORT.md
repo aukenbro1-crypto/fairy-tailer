@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-23 06:25 UTC
+Last updated: 2026-05-23 06:35 UTC
 
 ## Project Context
 
@@ -74,15 +74,16 @@ Current placeholder status flow:
 Text generation note:
 
 - `fairyteller_text` calls Gemini through `https://generativelanguage.googleapis.com/v1beta/models/:generateContent`.
-- The request uses `$env.GEMINI_API_KEY`; do not store the key in the workflow JSON.
-- Model configured for first-chapter generation: `gemini-2.5-flash` with JSON response mode.
+- The request uses `$env.GEMINI_API_KEY`; do not store the literal key value in the workflow JSON.
+- Model configured for first-chapter generation: `gemini-2.5-flash` with JSON response mode and `responseSchema`.
+- The first-chapter normalizer extracts fenced/embedded JSON and repairs raw control characters inside strings before `JSON.parse`.
 - The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
 
 Gemini integration note:
 
 - n8n Docker env includes `GEMINI_API_KEY` and `GOOGLE_API_KEY`.
-- Do not store Gemini keys in workflow JSON or git.
+- Do not store literal Gemini keys in workflow JSON or git.
 - Gemini API smoke on 2026-05-23 returned `200` from `GET /v1beta/models` and listed available models.
 - Previous n8n container backup before Gemini env injection: `baku-n8n-docker-bak-20260523054556`.
 
@@ -215,3 +216,6 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added nginx same-origin proxy from `https://fairyteller.ru/webhook/` to Docker n8n on `127.0.0.1:5680`.
 - Verified HTTPS intake smoke through `POST /webhook/fairyteller/create`. Smoke job: `ft_1779516843392_7ybt48`; final status: `done`; first chapter title: `Компас и утренний Петербург`; first image status: `ready`.
 - Rebuilt and deployed production frontend with `VITE_FAIRYTELLER_CREATE_URL=/webhook/fairyteller/create`. Release: `/var/www/fairyteller/releases/20260523-061507-codex-n8n-create-switch`.
+- Fixed `fairyteller_text` JSON parse failures in `Normalize First Chapter` by adding Gemini `responseSchema`, stricter JSON-string prompt rules, and normalizer repair for control characters inside strings. Published active version `730aebcf-54a5-45c2-b8e1-35b63d7aeb84`.
+- Verified repair smoke through public intake. Smoke job: `ft_1779517701337_9crdia`; final status: `done`; first chapter title: `Шепот Прибоя и Древние Знаки`; first image status: `ready`.
+- Added sanitized workflow export for `fairyteller_text` at `n8n/workflows/fairyteller_text.workflow.json`.
