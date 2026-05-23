@@ -26,6 +26,20 @@ The current public app is a Vite/React static site. The legacy generation path s
 - GitHub remote: `https://github.com/aukenbro1-crypto/fairy-tailer.git`
 - Branch: `main`
 
+## Website Submit Flow
+
+Current production default remains the legacy Make webhook until the migration is explicitly switched over.
+
+The `/create` form is now compatible with both response shapes:
+
+- legacy Make response: any successful HTTP response marks the request as accepted and keeps the email-based UX
+- n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the success overlay
+
+Frontend migration environment variables:
+
+- `VITE_FAIRYTELLER_CREATE_URL`: target create endpoint; leave unset to keep Make during migration
+- `VITE_FAIRYTELLER_STATUS_BASE_URL`: public status API base; defaults to `/api/fairyteller/jobs`
+
 ## n8n Migration Workflows
 
 The new n8n pipeline is intentionally split into four workflows:
@@ -156,3 +170,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Connected `fairyteller_render_publish` to Job API status updates and `render.json` artifact writing with the print-shop page contract.
 - Published internal sub-workflows `fairyteller_text`, `fairyteller_visuals`, and `fairyteller_render_publish`.
 - Verified end-to-end n8n placeholder smoke test through manual intake execution. Smoke execution: `326`; smoke job: `ft_1779513917368_j7xu2m`; final public status: `done`.
+- Added `/create` frontend compatibility for the new async n8n response contract: `jobId`, `statusUrl`, and public status polling in the success overlay while preserving the Make webhook as the default endpoint.
+- Added `.env.example` with frontend migration variables.

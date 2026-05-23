@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
@@ -15,7 +15,30 @@ import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import russianCyberpunkImage from '@/assets/russian-cyberpunk.png';
 import romanticStoryImage from '@/assets/romantic-story.png';
 
-const WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
+const LEGACY_WEBHOOK_URL = "https://hook.eu2.make.com/c9pm5jrx6t7ki3ir3qq1e7822cai2bz9";
+const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || LEGACY_WEBHOOK_URL;
+const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
+
+interface CreateResponse {
+  ok?: boolean;
+  jobId?: string;
+  statusUrl?: string;
+  message?: string;
+}
+
+interface JobStatus {
+  jobId: string;
+  status: string;
+  stage: string;
+  progress: number;
+  message?: string;
+  preview?: {
+    chapter?: number;
+    title?: string;
+    text?: string;
+  } | null;
+  error?: string | null;
+}
 
 interface FormData {
   world: string;
@@ -190,6 +213,9 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [currentStep, setCurrentStep] = useState(1);
   const [showLoader, setShowLoader] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
+  const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -225,6 +251,39 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     hero4_photo: null,
     hero4_photo_url: ''
   });
+
+  useEffect(() => {
+    if (!submittedJobId) {
+      return;
+    }
+
+    let cancelled = false;
+    const statusUrl = submittedStatusUrl || `${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}`;
+
+    const loadStatus = async () => {
+      try {
+        const response = await fetch(statusUrl, { cache: 'no-store' });
+        if (!response.ok) {
+          return;
+        }
+        const status = await response.json() as JobStatus;
+        if (!cancelled) {
+          setJobStatus(status);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setJobStatus((current) => current);
+        }
+      }
+    };
+
+    void loadStatus();
+    const intervalId = window.setInterval(loadStatus, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [submittedJobId, submittedStatusUrl]);
   
   const [heroSections, setHeroSections] = useState({
     hero2: true,
@@ -330,23 +389,31 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     }
 
     let ok = false;
+    let createResult: CreateResponse | null = null;
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(CREATE_ENDPOINT_URL, {
         method: 'POST',
         body: multipartData
       });
       ok = response.ok;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        createResult = await response.json() as CreateResponse;
+      }
     } catch (error) {
       ok = false;
     }
 
     toast({
-      title: ok ? "Файлы загружены" : "Ошибка отправки",
+      title: ok ? "Задача принята" : "Ошибка отправки",
       description: ok ? "История генерируется" : "Не удалось отправить данные. Попробуйте ещё раз."
     });
     
     setShowLoader(false);
     if (ok) {
+      setSubmittedJobId(createResult?.jobId || null);
+      setSubmittedStatusUrl(createResult?.statusUrl || null);
+      setJobStatus(null);
       showSuccessScreen();
     }
   };
@@ -389,6 +456,9 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     setHeroExpanded({ hero3: false, hero4: false });
     setCurrentStep(1);
     setConsentChecked(false);
+    setSubmittedJobId(null);
+    setSubmittedStatusUrl(null);
+    setJobStatus(null);
   };
 
   return (
@@ -994,6 +1064,28 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
             <p className="text-lg md:text-xl mixer-subtitle mb-6">
               Книга придёт на почту в течение 15 минут.
             </p>
+            {submittedJobId && (
+              <div className="mb-6 text-left bg-[#06283A] border border-[#E89C31]/40 rounded-lg p-4">
+                <div className="flex items-center justify-between gap-4 text-sm text-[#DBA858]/80 mb-2">
+                  <span>Статус генерации</span>
+                  <span>{Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-black/30 overflow-hidden mb-3">
+                  <div
+                    className="h-full bg-[#E89C31] transition-all duration-500"
+                    style={{ width: `${Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%` }}
+                  />
+                </div>
+                <p className="text-sm text-[#DBA858]">
+                  {jobStatus?.message || 'Задача поставлена в очередь'}
+                </p>
+                {jobStatus?.preview?.title && (
+                  <p className="text-sm text-[#DBA858]/70 mt-2">
+                    Первая глава: {jobStatus.preview.title}
+                  </p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-[#DBA858]/70">
               Проверьте папку «Спам», если письмо не появится во входящих.
             </p>
