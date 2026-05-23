@@ -1,0 +1,268 @@
+[
+  {
+    "updatedAt": "2026-05-23T04:35:26.000Z",
+    "createdAt": "2026-04-02T01:57:53.242Z",
+    "id": "C2Pcin7lctSY5nc2",
+    "name": "fairyteller_full_text",
+    "description": "Generates chapters 2-5 after the first chapter preview and writes full-text.json for later visuals/rendering.",
+    "active": false,
+    "isArchived": true,
+    "nodes": [
+      {
+        "id": "c7b0eaf5-6fd6-439f-8c58-4f57af9a0f01",
+        "name": "Full Text Pipeline Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          300
+        ],
+        "parameters": {
+          "inputSource": "jsonExample",
+          "jsonExample": "{\"jobId\":\"ft_example\",\"order\":{\"world\":\"disney_light\",\"chapters\":5,\"heroes\":[]},\"text\":{\"preview\":{\"chapter\":1,\"title\":\"Example\",\"text\":\"...\"},\"bible\":{\"chapterPlan\":[]},\"chapters\":[{\"n\":1,\"title\":\"Example\",\"textBlocks\":[\"a\",\"b\",\"c\",\"d\",\"e\"]}]}}"
+        }
+      },
+      {
+        "id": "a12fbf7f-f805-4a89-b5e3-66a0246adf6a",
+        "name": "Build Full Text Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          520,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nconst order = item.order || {};\nconst text = item.text || {};\nconst bible = text.bible || {};\nconst firstChapter = text.chapters?.[0] || {};\nconst chaptersTarget = Math.max(1, Math.min(8, Number(order.chapters || bible.chapterPlan?.length || 5)));\nconst laterNumbers = Array.from({ length: Math.max(0, chaptersTarget - 1) }, (_, index) => index + 2);\nconst chapterPlan = Array.isArray(bible.chapterPlan) ? bible.chapterPlan : [];\nconst laterPlan = laterNumbers.map((n) => {\n  const planned = chapterPlan.find((chapter) => Number(chapter.n) === n) || { n, title: 'Глава ' + n, beat: '' };\n  return { n, title: planned.title || ('Глава ' + n), beat: planned.beat || planned.summary || '' };\n});\nconst heroes = (order.heroes || [])\n  .filter((hero) => hero.name || hero.description || hero.relation)\n  .map((hero) => 'Герой ' + hero.n + ': ' + (hero.name || 'без имени') + ' - ' + (hero.description || 'описание не задано') + ' - ' + (hero.relation || 'роль не задана'))\n  .join('\\n');\nconst style = order.illustrationStyle || 'storybook';\nconst worldBrief = [\n  bible.worldTitle ? 'Название мира: ' + bible.worldTitle : '',\n  bible.worldEnv ? 'Среда и законы: ' + bible.worldEnv : '',\n  bible.worldMotifs ? 'Мотивы: ' + bible.worldMotifs : '',\n  bible.worldConflict ? 'Конфликт: ' + bible.worldConflict : '',\n  bible.worldVisual ? 'Визуальный язык: ' + bible.worldVisual : '',\n].filter(Boolean).join('\\n');\nconst firstChapterText = firstChapter.text || (Array.isArray(firstChapter.textBlocks) ? firstChapter.textBlocks.join('\\n\\n') : text.preview?.text || '');\nconst planText = laterPlan.map((chapter) => 'Глава ' + chapter.n + ': ' + chapter.title + '. Бит: ' + chapter.beat).join('\\n');\nconst requestedShape = laterPlan.map((chapter) => '{ \"n\": ' + chapter.n + ', \"title\": \"...\", \"summary\": \"...\", \"textBlocks\": [\"...\", \"...\", \"...\", \"...\", \"...\"] }').join(', ');\nconst systemText = 'Ты - автор персональных книг Fairyteller. Пиши на русском языке, без буквы е с точками. Продолжай уже начатую историю строго по именам, отношениям, миру и фактам пользователя. Не добавляй известных copyrighted персонажей и не копируй чужие вселенные. Верни только валидный JSON, без markdown. Внутри JSON-строк не используй кавычки-елочки, списки и переносы строк; диалоги оформляй через тире.';\nconst userText = 'Нужно дописать персональную книгу после первой главы. Первая глава уже готова и будет показана пользователю сразу; сейчас напиши только главы 2-' + chaptersTarget + ', чтобы получилась цельная книга.\\n\\n' +\n  'Название книги: ' + (bible.bookTitle || text.preview?.title || '') + '\\n' +\n  'Подзаголовок: ' + (bible.subtitle || '') + '\\n' +\n  'Обложечное резюме: ' + (bible.coverSummary || text.preview?.summary || '') + '\\n' +\n  'Мир:\\n' + (worldBrief || order.world || '') + '\\n\\n' +\n  'Место действия: ' + (order.location || bible.location || '') + '\\n' +\n  'Важный предмет/артефакт: ' + (order.artifact || bible.artifact || '') + '\\n' +\n  'Стиль иллюстраций для визуальной логики: ' + style + '\\n\\n' +\n  'Персонажи:\\n' + (heroes || 'Персонажи не заданы; продолжай по первой главе.') + '\\n\\n' +\n  'Первая глава, которую нельзя переписывать:\\n' + firstChapterText + '\\n\\n' +\n  'План следующих глав:\\n' + planText + '\\n\\n' +\n  'Требования к главам 2-' + chaptersTarget + ': каждая глава должна иметь 5 текстовых блоков, каждый блок 450-750 знаков, без markdown, без нумерованных списков, с живыми сценами, диалогами и действием. Не пересказывай первую главу; продолжай сюжет. Финальная глава должна закрыть арку и дать теплое послевкусие.\\n\\n' +\n  'Верни JSON строго такой формы: { \"bookTitle\": \"...\", \"subtitle\": \"...\", \"coverSummary\": \"...\", \"chapters\": [' + requestedShape + '] }';\nconst geminiRequest = {\n  contents: [{ role: 'user', parts: [{ text: systemText + '\\n\\n' + userText }] }],\n  generationConfig: {\n    responseMimeType: 'application/json',\n    temperature: 0.65,\n    maxOutputTokens: 18000,\n  },\n};\nreturn [{ json: { ...item, status: 'full_text_generating', laterPlan, fullTextPrompt: userText, geminiModel: 'gemini-2.5-flash', geminiRequest } }];"
+        }
+      },
+      {
+        "id": "efc79891-364d-4c83-8adc-12d57cdcc2e1",
+        "name": "Generate Full Text with Gemini",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          800,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/\" + $json.geminiModel + \":generateContent\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-goog-api-key",
+                "value": "={{ $env.GEMINI_API_KEY }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.geminiRequest }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 240000
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 10000
+      },
+      {
+        "id": "fd95a873-3030-4182-95e3-43f248f1f56e",
+        "name": "Normalize Full Text",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1080,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const source = $('Build Full Text Prompt').first().json;\nconst response = $input.first().json;\nfunction collectText(value) {\n  return String(value?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '').trim();\n}\nfunction extractJsonCandidate(text) {\n  let candidate = String(text || '').trim().replace(/^\\uFEFF/, '');\n  const fence = candidate.match(/^\\`\\`\\`(?:json)?\\s*([\\s\\S]*?)\\s*\\`\\`\\`$/i);\n  if (fence) candidate = fence[1].trim();\n  const firstBrace = candidate.indexOf('{');\n  const lastBrace = candidate.lastIndexOf('}');\n  if (firstBrace >= 0 && lastBrace > firstBrace) candidate = candidate.slice(firstBrace, lastBrace + 1);\n  return candidate;\n}\nfunction escapeControlCharsInsideStrings(text) {\n  let result = '';\n  let inString = false;\n  let escaped = false;\n  for (const char of text) {\n    if (escaped) { result += char; escaped = false; continue; }\n    if (char === '\\\\') { result += char; escaped = true; continue; }\n    if (char === '\"') { inString = !inString; result += char; continue; }\n    if (inString && char === '\\n') { result += '\\\\n'; continue; }\n    if (inString && char === '\\r') { result += '\\\\r'; continue; }\n    if (inString && char === '\\t') { result += '\\\\t'; continue; }\n    result += char;\n  }\n  return result;\n}\nfunction repairLikelyJson(text) {\n  return String(text || '')\n    .replace(/,\\s*([}\\]])/g, '$1')\n    .replace(/\"\\s*\\n\\s*\"/g, '\"\\n,\"')\n    .replace(/}\\s*\\n\\s*\"/g, '}\\n,\"')\n    .replace(/]\\s*\\n\\s*\"/g, ']\\n,\"');\n}\nfunction parseGeminiJson(raw) {\n  const candidate = extractJsonCandidate(raw);\n  const escaped = escapeControlCharsInsideStrings(candidate);\n  const attempts = [candidate, escaped, repairLikelyJson(escaped)];\n  let lastError;\n  for (const attempt of attempts) {\n    try { return JSON.parse(attempt); } catch (error) { lastError = error; }\n  }\n  throw new Error('Gemini full-text response was not valid JSON after repair: ' + (lastError?.message || 'unknown parse error'));\n}\nconst rawText = collectText(response);\nif (!rawText) throw new Error('Gemini full-text response was empty');\nconst generated = parseGeminiJson(rawText);\nconst expectedNumbers = (source.laterPlan || []).map((chapter) => Number(chapter.n));\nconst laterChapters = Array.isArray(generated.chapters) ? generated.chapters : [];\nconst normalizedLater = laterChapters.map((chapter, index) => {\n  const n = Number(chapter.n || expectedNumbers[index] || index + 2);\n  const textBlocks = Array.isArray(chapter.textBlocks)\n    ? chapter.textBlocks.map((block) => String(block || '').replace(/\\s+/g, ' ').trim()).filter(Boolean)\n    : ['text1','text2','text3','text4','text5'].map((key) => String(chapter[key] || '').replace(/\\s+/g, ' ').trim()).filter(Boolean);\n  if (textBlocks.length !== 5) throw new Error('Expected 5 text blocks for chapter ' + n + ', got ' + textBlocks.length);\n  return {\n    n,\n    title: String(chapter.title || 'Глава ' + n).replace(/\\s+/g, ' ').trim(),\n    summary: String(chapter.summary || '').replace(/\\s+/g, ' ').trim(),\n    textBlocks,\n    text: textBlocks.join('\\n\\n'),\n    status: 'ready',\n  };\n}).filter((chapter) => expectedNumbers.includes(chapter.n));\nif (normalizedLater.length !== expectedNumbers.length) {\n  throw new Error('Expected later chapters ' + expectedNumbers.join(', ') + ', got ' + normalizedLater.map((chapter) => chapter.n).join(', '));\n}\nconst firstChapter = source.text?.chapters?.[0];\nif (!firstChapter) throw new Error('Missing first chapter from upstream text payload');\nconst chapters = [firstChapter, ...normalizedLater].sort((a, b) => Number(a.n) - Number(b.n));\nconst fullText = {\n  bible: {\n    ...(source.text?.bible || {}),\n    bookTitle: generated.bookTitle || source.text?.bible?.bookTitle || '',\n    subtitle: generated.subtitle || source.text?.bible?.subtitle || '',\n    coverSummary: generated.coverSummary || source.text?.bible?.coverSummary || '',\n  },\n  preview: source.text?.preview || null,\n  chapters,\n  generation: {\n    provider: 'gemini',\n    model: source.geminiModel || 'gemini-2.5-flash',\n    stage: 'full_text',\n    responseId: response.responseId || null,\n  },\n};\nreturn [{ json: { ...source, status: 'full_text_ready', text: fullText, fullText: { status: 'ready', chapterCount: chapters.length, laterChapterCount: normalizedLater.length } } }];"
+        }
+      },
+      {
+        "id": "f8ac4a2c-c1e8-46ac-bd93-f1125c99f1cb",
+        "name": "Write Full Text Artifact",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1360,
+          300
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/artifacts/full-text.json\" }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { jobId: $json.jobId, status: $json.status, text: $json.text, fullText: $json.fullText } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "d56ce141-2871-4f25-ac47-2d7c956ac5ec",
+        "name": "Mark Full Text Artifact Ready",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1640,
+          300
+        ],
+        "parameters": {
+          "method": "PATCH",
+          "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Normalize Full Text\").item.json.jobId }}",
+          "sendHeaders": true,
+          "specifyHeaders": "keypair",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ { artifacts: { fullText: { status: \"ready\", url: \"/api/fairyteller/jobs/\" + $(\"Normalize Full Text\").item.json.jobId + \"/artifacts/full-text.json\", chapterCount: $(\"Normalize Full Text\").item.json.fullText.chapterCount } } } }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            },
+            "timeout": 30000
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Full Text Pipeline Input": {
+        "main": [
+          [
+            {
+              "node": "Build Full Text Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Full Text Prompt": {
+        "main": [
+          [
+            {
+              "node": "Generate Full Text with Gemini",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate Full Text with Gemini": {
+        "main": [
+          [
+            {
+              "node": "Normalize Full Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalize Full Text": {
+        "main": [
+          [
+            {
+              "node": "Write Full Text Artifact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Full Text Artifact": {
+        "main": [
+          [
+            {
+              "node": "Mark Full Text Artifact Ready",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate"
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "d2c5fdc8-93e9-493e-8b11-458675a34749",
+    "activeVersionId": null,
+    "versionCounter": 8,
+    "triggerCount": 0,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-04-02T01:57:53.248Z",
+        "createdAt": "2026-04-02T01:57:53.248Z",
+        "role": "workflow:owner",
+        "workflowId": "C2Pcin7lctSY5nc2",
+        "projectId": "yjU1WlmpOKrWZ5oA",
+        "project": {
+          "updatedAt": "2026-04-01T13:13:29.434Z",
+          "createdAt": "2026-04-01T12:58:08.424Z",
+          "id": "yjU1WlmpOKrWZ5oA",
+          "name": "Nikita Such <aukenbro1@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]

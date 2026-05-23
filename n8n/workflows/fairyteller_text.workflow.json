@@ -120,7 +120,10 @@
             },
             "timeout": 180000
           }
-        }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 10000
       },
       {
         "id": "fd17be52-d929-4bd1-99e3-4df446c50227",
@@ -254,6 +257,29 @@
             "waitForSubWorkflow": false
           }
         }
+      },
+      {
+        "id": "5bb9f448-c7d1-490f-94af-83db54b76fe7",
+        "name": "Start Full Text Pipeline",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.3,
+        "position": [
+          2640,
+          520
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "C2Pcin7lctSY5nc2",
+            "mode": "list",
+            "cachedResultName": "fairyteller_full_text"
+          },
+          "mode": "once",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        }
       }
     ],
     "connections": {
@@ -341,6 +367,11 @@
               "node": "Start Visuals Pipeline",
               "type": "main",
               "index": 0
+            },
+            {
+              "node": "Start Full Text Pipeline",
+              "type": "main",
+              "index": 0
             }
           ]
         ]
@@ -358,7 +389,7 @@
     "pinData": {},
     "versionId": "a5ae6e4a-d682-4209-86bb-9c3d212a03ca",
     "activeVersionId": "a5ae6e4a-d682-4209-86bb-9c3d212a03ca",
-    "versionCounter": 26,
+    "versionCounter": 28,
     "triggerCount": 0,
     "tags": [],
     "shared": [

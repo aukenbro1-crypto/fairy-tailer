@@ -120,7 +120,10 @@
             },
             "timeout": 180000
           }
-        }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 10000
       },
       {
         "id": "0b75164a-b820-4b71-9a47-e88e6ced1c66",
@@ -363,7 +366,10 @@
             },
             "timeout": 180000
           }
-        }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 10000
       },
       {
         "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait003",
@@ -641,7 +647,7 @@
     "pinData": {},
     "versionId": "5cd66b97-25e0-4e5f-ab41-bd871c244c49",
     "activeVersionId": "5cd66b97-25e0-4e5f-ab41-bd871c244c49",
-    "versionCounter": 20,
+    "versionCounter": 21,
     "triggerCount": 0,
     "tags": [],
     "shared": [
