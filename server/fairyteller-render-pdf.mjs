@@ -96,11 +96,21 @@ function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeParagraphText(value) {
+  return String(value || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').replace(/[ \t]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 function getChapterTextBlocks(chapter) {
   if (Array.isArray(chapter.textBlocks) && chapter.textBlocks.length) {
-    return chapter.textBlocks.map(cleanText).filter(Boolean);
+    return chapter.textBlocks.map(normalizeParagraphText).filter(Boolean);
   }
-  return cleanText(chapter.text).split(/\n{2,}/).map(cleanText).filter(Boolean);
+  return normalizeParagraphText(chapter.text).split(/\n{2,}/).map(cleanText).filter(Boolean);
 }
 
 function findImage(visuals, slot) {
@@ -129,6 +139,195 @@ function wrapText(text, font, size, maxWidth) {
   }
   if (line) lines.push(line);
   return lines;
+}
+
+function splitSentences(text) {
+  const input = cleanText(text);
+  if (!input) return [];
+  const sentences = [];
+  let start = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    if (!'.!?…'.includes(char)) continue;
+    let end = index + 1;
+    while (end < input.length && '»”"'.includes(input[end])) end += 1;
+    if (end < input.length && input[end] !== ' ') continue;
+    sentences.push(input.slice(start, end).trim());
+    start = end;
+  }
+  const tail = input.slice(start).trim();
+  if (tail) sentences.push(tail);
+  return sentences.filter(Boolean);
+}
+
+function inferDisplayParagraphs(text) {
+  const sentences = splitSentences(text);
+  if (sentences.length <= 2) return [cleanText(text)].filter(Boolean);
+  const paragraphs = [];
+  let current = '';
+  const targetLength = 260;
+  const maxLength = 390;
+  for (const sentence of sentences) {
+    const candidate = current ? `${current} ${sentence}` : sentence;
+    if (current && (current.length >= targetLength || candidate.length > maxLength)) {
+      paragraphs.push(current);
+      current = sentence;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) paragraphs.push(current);
+  return paragraphs;
+}
+
+function textParagraphs(text, inferParagraphs = false) {
+  const normalized = normalizeParagraphText(text);
+  if (!normalized) return [];
+  const explicitParagraphs = normalized.split(/\n{2,}/).map(cleanText).filter(Boolean);
+  if (explicitParagraphs.length > 1 || !inferParagraphs) return explicitParagraphs;
+  return inferDisplayParagraphs(explicitParagraphs[0]);
+}
+
+function wrapParagraph(text, font, size, maxWidth, firstLineIndent) {
+  const words = cleanText(text).split(' ').filter(Boolean);
+  const lines = [];
+  let line = '';
+  let lineIndex = 0;
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    const indent = lineIndex === 0 ? firstLineIndent : 0;
+    if (font.widthOfTextAtSize(candidate, size) + indent <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+    if (line) {
+      lines.push({ text: line, indent });
+      lineIndex += 1;
+    }
+    line = word;
+  }
+  if (line) {
+    lines.push({ text: line, indent: lineIndex === 0 ? firstLineIndent : 0 });
+  }
+  return lines;
+}
+
+function buildParagraphLayout(paragraphs, font, options) {
+  const {
+    size,
+    maxWidth,
+    lineHeightRatio,
+    paragraphGap,
+    firstLineIndent,
+  } = options;
+  const lineHeight = size * lineHeightRatio;
+  const sections = paragraphs
+    .map((paragraph) => wrapParagraph(paragraph, font, size, maxWidth, firstLineIndent))
+    .filter((lines) => lines.length);
+  const lineCount = sections.reduce((sum, lines) => sum + lines.length, 0);
+  const gapCount = Math.max(0, sections.length - 1);
+  const totalHeight = lineCount * lineHeight + gapCount * paragraphGap;
+  const widestLine = sections.reduce((max, lines) => Math.max(max, ...lines.map((line) => font.widthOfTextAtSize(line.text, size) + line.indent)), 0);
+  return { sections, lineCount, gapCount, lineHeight, totalHeight, widestLine };
+}
+
+function fitParagraphTextLayout(text, font, options) {
+  const {
+    maxWidth,
+    maxHeight,
+    startSize = 11,
+    minSize = 7,
+    lineHeightRatio = 1.25,
+    firstLineIndent = 14,
+    paragraphGapRatio = 0.58,
+    maxParagraphGapRatio = 1.65,
+    inferParagraphs = true,
+  } = options;
+  const paragraphs = textParagraphs(text, inferParagraphs);
+  let size = startSize;
+  while (size >= minSize) {
+    const baseParagraphGap = size * paragraphGapRatio;
+    const maxParagraphGap = size * maxParagraphGapRatio;
+    const layout = buildParagraphLayout(paragraphs, font, {
+      size,
+      maxWidth,
+      lineHeightRatio,
+      paragraphGap: baseParagraphGap,
+      firstLineIndent,
+    });
+    if (layout.totalHeight <= maxHeight && layout.widestLine <= maxWidth) {
+      const spareHeight = maxHeight - layout.totalHeight;
+      const extraGap = layout.gapCount > 0
+        ? Math.min(spareHeight / layout.gapCount, Math.max(0, maxParagraphGap - baseParagraphGap))
+        : 0;
+      return {
+        ...layout,
+        paragraphs,
+        size,
+        paragraphGap: baseParagraphGap + extraGap,
+        totalHeight: layout.totalHeight + extraGap * layout.gapCount,
+        truncated: false,
+      };
+    }
+    size -= 0.25;
+  }
+  const finalSize = minSize;
+  const paragraphGap = finalSize * paragraphGapRatio;
+  const finalLayout = buildParagraphLayout(paragraphs, font, {
+    size: finalSize,
+    maxWidth,
+    lineHeightRatio,
+    paragraphGap,
+    firstLineIndent,
+  });
+  return {
+    ...finalLayout,
+    paragraphs,
+    size: finalSize,
+    paragraphGap,
+    truncated: finalLayout.totalHeight > maxHeight || finalLayout.widestLine > maxWidth,
+  };
+}
+
+function drawParagraphTextBox(page, text, box, options) {
+  const {
+    font,
+    color = rgb(0.16, 0.12, 0.09),
+  } = options;
+  const paddingX = box.paddingX || 0;
+  const paddingY = box.paddingY || 0;
+  const content = {
+    x: box.x + paddingX,
+    y: box.y + paddingY,
+    width: box.width - paddingX * 2,
+    height: box.height - paddingY * 2,
+  };
+  const layout = fitParagraphTextLayout(text, font, {
+    maxWidth: content.width,
+    maxHeight: content.height,
+    startSize: box.startSize,
+    minSize: box.minSize,
+    lineHeightRatio: box.lineHeightRatio,
+    firstLineIndent: box.firstLineIndent,
+    paragraphGapRatio: box.paragraphGapRatio,
+    maxParagraphGapRatio: box.maxParagraphGapRatio,
+    inferParagraphs: box.inferParagraphs,
+  });
+  let y = content.y + content.height - layout.size;
+  layout.sections.forEach((lines, sectionIndex) => {
+    lines.forEach((line) => {
+      page.drawText(line.text, {
+        x: content.x + line.indent,
+        y,
+        size: layout.size,
+        font,
+        color,
+      });
+      y -= layout.lineHeight;
+    });
+    if (sectionIndex < layout.sections.length - 1) y -= layout.paragraphGap;
+  });
+  return layout;
 }
 
 function drawWrappedText(page, text, options) {
@@ -606,6 +805,24 @@ function drawPptText(page, text, box, options) {
   });
 }
 
+function drawPptParagraphText(page, text, box, options) {
+  return drawParagraphTextBox(page, text, {
+    ...topLeftBox(page, box),
+    paddingX: options.paddingX ?? 0,
+    paddingY: options.paddingY ?? 0,
+    startSize: options.size,
+    minSize: options.minSize ?? Math.max(6, options.size - 4),
+    lineHeightRatio: options.lineHeightRatio ?? 1.25,
+    firstLineIndent: options.firstLineIndent ?? 14,
+    paragraphGapRatio: options.paragraphGapRatio ?? 0.58,
+    maxParagraphGapRatio: options.maxParagraphGapRatio ?? 1.65,
+    inferParagraphs: options.inferParagraphs ?? true,
+  }, {
+    font: options.font,
+    color: options.color || hexColor('#292929'),
+  });
+}
+
 function drawPptPageNumber(page, pageNumber, fonts, box = pptBox(178.58, 328.7, 28.35, 28.46)) {
   drawPptText(page, String(pageNumber), box, {
     font: fonts.fontInterBody,
@@ -713,13 +930,15 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
   const textBox = [13, 19, 25, 37].includes(pageNumber)
     ? pptBox(29.69, 28.35, 327.52, pageNumber === 13 ? 284.5 : pageNumber === 19 ? 292.7 : pageNumber === 25 ? 294.5 : 300.35)
     : TEXT_PAGE_BOX;
-  const textLayout = drawPptText(page, text, textBox, {
+  const textLayout = drawPptParagraphText(page, text, textBox, {
     font: fonts.fontInterBody,
     size: 11,
     minSize: 7,
     lineHeightRatio: 1.25,
-    align: 'left',
-    valign: 'top',
+    firstLineIndent: 15,
+    paragraphGapRatio: 0.54,
+    maxParagraphGapRatio: 1.45,
+    inferParagraphs: true,
     color: hexColor('#292929'),
   });
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
