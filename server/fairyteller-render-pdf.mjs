@@ -188,28 +188,41 @@ function textParagraphs(text, inferParagraphs = false) {
   return inferDisplayParagraphs(explicitParagraphs[0]);
 }
 
-function wrapParagraph(text, font, size, maxWidth, firstLineIndent) {
+function wrapParagraph(text, font, size, maxWidth, firstLineIndent, lineShapes = []) {
   const words = cleanText(text).split(' ').filter(Boolean);
   const lines = [];
   let line = '';
   let lineIndex = 0;
   for (const word of words) {
     const candidate = line ? `${line} ${word}` : word;
+    const shape = lineShapes[lineIndex] || {};
     const indent = lineIndex === 0 ? firstLineIndent : 0;
-    if (font.widthOfTextAtSize(candidate, size) + indent <= maxWidth) {
+    const availableWidth = maxWidth - (shape.widthReduction || 0);
+    if (font.widthOfTextAtSize(candidate, size) + indent <= availableWidth) {
       line = candidate;
       continue;
     }
     if (line) {
-      lines.push({ text: line, indent });
+      lines.push({ text: line, indent, xOffset: shape.xOffset || 0 });
       lineIndex += 1;
     }
     line = word;
   }
   if (line) {
-    lines.push({ text: line, indent: lineIndex === 0 ? firstLineIndent : 0 });
+    const shape = lineShapes[lineIndex] || {};
+    lines.push({ text: line, indent: lineIndex === 0 ? firstLineIndent : 0, xOffset: shape.xOffset || 0 });
   }
   return lines;
+}
+
+function splitDropCapParagraph(paragraph) {
+  const match = String(paragraph || '').match(/^([^A-Za-zА-Яа-яЁё0-9]*)([A-Za-zА-Яа-яЁё0-9])([\s\S]*)$/u);
+  if (!match) return null;
+  const [, prefix, char, rest] = match;
+  return {
+    char,
+    rest: cleanText(`${prefix}${rest}`),
+  };
 }
 
 function buildParagraphLayout(paragraphs, font, options) {
@@ -219,16 +232,49 @@ function buildParagraphLayout(paragraphs, font, options) {
     lineHeightRatio,
     paragraphGap,
     firstLineIndent,
+    dropCap = null,
   } = options;
   const lineHeight = size * lineHeightRatio;
-  const sections = paragraphs
-    .map((paragraph) => wrapParagraph(paragraph, font, size, maxWidth, firstLineIndent))
-    .filter((lines) => lines.length);
-  const lineCount = sections.reduce((sum, lines) => sum + lines.length, 0);
+  const shapedParagraphs = [...paragraphs];
+  let dropCapLayout = null;
+  if (dropCap?.enabled && shapedParagraphs.length) {
+    const split = splitDropCapParagraph(shapedParagraphs[0]);
+    if (split?.char && split.rest) {
+      const dropCapFont = dropCap.font || font;
+      const dropCapSize = dropCap.size || size * (dropCap.sizeRatio || 3.15);
+      const dropCapGap = dropCap.gap ?? size * 0.55;
+      const dropCapWidth = dropCapFont.widthOfTextAtSize(split.char, dropCapSize);
+      const lineSpan = dropCap.lineSpan || 3;
+      dropCapLayout = {
+        char: split.char,
+        font: dropCapFont,
+        size: dropCapSize,
+        color: dropCap.color || hexColor('#8F1616'),
+        width: dropCapWidth,
+        gap: dropCapGap,
+        lineSpan,
+        baselineRatio: dropCap.baselineRatio ?? 0.82,
+        lineShapes: Array.from({ length: lineSpan }, () => ({
+          xOffset: dropCapWidth + dropCapGap,
+          widthReduction: dropCapWidth + dropCapGap,
+        })),
+      };
+      shapedParagraphs[0] = split.rest;
+    }
+  }
+  const sections = shapedParagraphs.map((paragraph, index) => {
+    const lineShapes = index === 0 && dropCapLayout ? dropCapLayout.lineShapes : [];
+    const paragraphIndent = index === 0 && dropCapLayout ? 0 : firstLineIndent;
+    return wrapParagraph(paragraph, font, size, maxWidth, paragraphIndent, lineShapes);
+  }).filter((lines) => lines.length);
+  const sectionHeights = sections.map((lines, index) => (
+    index === 0 && dropCapLayout ? Math.max(lines.length, dropCapLayout.lineSpan) : lines.length
+  ));
+  const lineCount = sectionHeights.reduce((sum, height) => sum + height, 0);
   const gapCount = Math.max(0, sections.length - 1);
   const totalHeight = lineCount * lineHeight + gapCount * paragraphGap;
-  const widestLine = sections.reduce((max, lines) => Math.max(max, ...lines.map((line) => font.widthOfTextAtSize(line.text, size) + line.indent)), 0);
-  return { sections, lineCount, gapCount, lineHeight, totalHeight, widestLine };
+  const widestLine = sections.reduce((max, lines) => Math.max(max, ...lines.map((line) => font.widthOfTextAtSize(line.text, size) + line.indent + line.xOffset)), 0);
+  return { sections, sectionHeights, lineCount, gapCount, lineHeight, totalHeight, widestLine, dropCap: dropCapLayout };
 }
 
 function fitParagraphTextLayout(text, font, options) {
@@ -242,6 +288,7 @@ function fitParagraphTextLayout(text, font, options) {
     paragraphGapRatio = 0.58,
     maxParagraphGapRatio = 1.65,
     inferParagraphs = true,
+    dropCap = null,
   } = options;
   const paragraphs = textParagraphs(text, inferParagraphs);
   let size = startSize;
@@ -254,6 +301,7 @@ function fitParagraphTextLayout(text, font, options) {
       lineHeightRatio,
       paragraphGap: baseParagraphGap,
       firstLineIndent,
+      dropCap,
     });
     if (layout.totalHeight <= maxHeight && layout.widestLine <= maxWidth) {
       const spareHeight = maxHeight - layout.totalHeight;
@@ -279,6 +327,7 @@ function fitParagraphTextLayout(text, font, options) {
     lineHeightRatio,
     paragraphGap,
     firstLineIndent,
+    dropCap,
   });
   return {
     ...finalLayout,
@@ -312,12 +361,22 @@ function drawParagraphTextBox(page, text, box, options) {
     paragraphGapRatio: box.paragraphGapRatio,
     maxParagraphGapRatio: box.maxParagraphGapRatio,
     inferParagraphs: box.inferParagraphs,
+    dropCap: box.dropCap,
   });
+  if (layout.dropCap) {
+    page.drawText(layout.dropCap.char, {
+      x: content.x,
+      y: content.y + content.height - layout.dropCap.size * layout.dropCap.baselineRatio,
+      size: layout.dropCap.size,
+      font: layout.dropCap.font,
+      color: layout.dropCap.color,
+    });
+  }
   let y = content.y + content.height - layout.size;
   layout.sections.forEach((lines, sectionIndex) => {
     lines.forEach((line) => {
       page.drawText(line.text, {
-        x: content.x + line.indent,
+        x: content.x + line.xOffset + line.indent,
         y,
         size: layout.size,
         font,
@@ -325,6 +384,8 @@ function drawParagraphTextBox(page, text, box, options) {
       });
       y -= layout.lineHeight;
     });
+    const reservedLines = layout.sectionHeights[sectionIndex] || lines.length;
+    if (reservedLines > lines.length) y -= (reservedLines - lines.length) * layout.lineHeight;
     if (sectionIndex < layout.sections.length - 1) y -= layout.paragraphGap;
   });
   return layout;
@@ -566,6 +627,7 @@ async function createPdfWithFonts() {
     fontRubik,
     fontAmatic,
     fontSerif: fallbackRegular,
+    fontSerifBold: fallbackBold,
   };
 }
 
@@ -817,6 +879,7 @@ function drawPptParagraphText(page, text, box, options) {
     paragraphGapRatio: options.paragraphGapRatio ?? 0.58,
     maxParagraphGapRatio: options.maxParagraphGapRatio ?? 1.65,
     inferParagraphs: options.inferParagraphs ?? true,
+    dropCap: options.dropCap || null,
   }, {
     font: options.font,
     color: options.color || hexColor('#292929'),
@@ -930,6 +993,7 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
   const textBox = [13, 19, 25, 37].includes(pageNumber)
     ? pptBox(29.69, 28.35, 327.52, pageNumber === 13 ? 284.5 : pageNumber === 19 ? 292.7 : pageNumber === 25 ? 294.5 : 300.35)
     : TEXT_PAGE_BOX;
+  const hasDropCap = [9, 15, 21, 27, 33].includes(pageNumber);
   const textLayout = drawPptParagraphText(page, text, textBox, {
     font: fonts.fontInterBody,
     size: 11,
@@ -939,6 +1003,15 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
     paragraphGapRatio: 0.54,
     maxParagraphGapRatio: 1.45,
     inferParagraphs: true,
+    dropCap: hasDropCap ? {
+      enabled: true,
+      font: fonts.fontSerifBold,
+      color: hexColor('#9B1C1C'),
+      lineSpan: 3,
+      sizeRatio: 3.2,
+      gap: 6,
+      baselineRatio: 0.82,
+    } : null,
     color: hexColor('#292929'),
   });
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
