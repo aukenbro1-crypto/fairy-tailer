@@ -955,15 +955,28 @@ function chapterRoman(chapterIndex) {
   return ['I', 'II', 'III', 'IV', 'V'][chapterIndex - 1] || String(chapterIndex);
 }
 
+function clampChapterTeaser(text, maxLength = 190) {
+  const cleaned = cleanText(text);
+  if (!cleaned || cleaned.length <= maxLength) return cleaned;
+  const sentences = splitSentences(cleaned);
+  let result = '';
+  for (const sentence of sentences) {
+    const next = cleanText(`${result} ${sentence}`);
+    if (next.length > maxLength) break;
+    result = next;
+  }
+  if (result.length >= 80) return result;
+  return `${cleaned.slice(0, maxLength - 3).replace(/\s+\S*$/, '')}...`;
+}
+
 function chapterTeaser(chapter, blocks = []) {
   const explicit = cleanText(chapter.summary || chapter.teaser || '');
-  if (explicit) return explicit;
+  if (explicit) return clampChapterTeaser(explicit);
   const source = cleanText(blocks[0] || chapter.text || '');
   if (!source) return '';
   const sentences = splitSentences(source);
   const teaser = (sentences.length ? sentences.slice(0, 2).join(' ') : source).trim();
-  if (teaser.length <= 260) return teaser;
-  return `${teaser.slice(0, 245).replace(/\s+\S*$/, '')}...`;
+  return clampChapterTeaser(teaser);
 }
 
 const CHAPTER_TEXT_PAGE_COUNTS = [4, 4, 6, 6, 5];
@@ -1063,7 +1076,9 @@ function addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pageN
       valign: 'top',
       color: hexColor('#292929'),
     });
-    if (teaserLayout.truncated) throw new Error(`Chapter ${chapterIndex} teaser does not fit on title page`);
+    if (teaserLayout.truncated) {
+      console.warn(`Chapter ${chapterIndex} teaser was shortened by layout preflight`);
+    }
   }
   drawPptPageNumber(page, pageNumber, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
 }
