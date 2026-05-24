@@ -7,13 +7,13 @@ import fontkit from '@pdf-lib/fontkit';
 
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '/data/fairyteller');
 const TEMPLATE_DIR = resolve(process.env.FAIRYTELLER_TEMPLATE_DIR || '/opt/fairyteller-render/templates');
+const LAYOUT_DIR = resolve(process.env.FAIRYTELLER_LAYOUT_DIR || '/opt/fairyteller-render/render-layouts');
 const JOB_ID = process.argv[2] || process.env.FAIRYTELLER_JOB_ID;
 
 const COVER_SIZE_MM = [268.5, 136];
 const INTERIOR_SIZE_MM = [136, 136];
 const TARGET_INTERIOR_PAGES = 40;
-const BOOK_TEMPLATE_PATH = resolve(TEMPLATE_DIR, 'MasterTemplate_book.pdf');
-const COVER_TEMPLATE_PATH = resolve(TEMPLATE_DIR, 'MasterTemplate_cover_romantic.pdf');
+const LAYOUT_PATH = resolve(LAYOUT_DIR, 'fairyteller-template-v1.json');
 
 if (!JOB_ID || !/^ft_[a-zA-Z0-9_-]{8,80}$/.test(JOB_ID)) {
   throw new Error('Usage: fairyteller-render-pdf.mjs <jobId>');
@@ -23,12 +23,52 @@ function mmToPt(mm) {
   return (mm * 72) / 25.4;
 }
 
+function templatePath(fileName) {
+  const safe = basename(fileName);
+  if (safe !== fileName) throw new Error(`Unsafe template file name: ${fileName}`);
+  return resolve(TEMPLATE_DIR, safe);
+}
+
+function rgbColor(value) {
+  if (!Array.isArray(value) || value.length !== 3) throw new Error(`Invalid RGB color: ${JSON.stringify(value)}`);
+  return rgb(value[0], value[1], value[2]);
+}
+
 function jobDir(jobId) {
   return join(DATA_DIR, 'jobs', jobId);
 }
 
 async function readJson(path) {
   return JSON.parse(await readFile(path, 'utf8'));
+}
+
+function assertPair(name, value, expected) {
+  if (!Array.isArray(value) || value.length !== 2) {
+    throw new Error(`Layout ${name} must be a two-value array`);
+  }
+  const rounded = value.map((item) => Number(item).toFixed(3));
+  const expectedRounded = expected.map((item) => Number(item).toFixed(3));
+  if (rounded[0] !== expectedRounded[0] || rounded[1] !== expectedRounded[1]) {
+    throw new Error(`Layout ${name} mismatch: expected ${expected.join('x')}, got ${value.join('x')}`);
+  }
+}
+
+function validateLayout(layout) {
+  if (layout.version !== 'fairyteller-template-v1') {
+    throw new Error(`Unsupported render layout version: ${layout.version || 'missing'}`);
+  }
+  assertPair('pageSizesMm.cover', layout.pageSizesMm?.cover, COVER_SIZE_MM);
+  assertPair('pageSizesMm.interior', layout.pageSizesMm?.interior, INTERIOR_SIZE_MM);
+  if (layout.pagePlan?.interiorPages !== TARGET_INTERIOR_PAGES) {
+    throw new Error(`Layout interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${layout.pagePlan?.interiorPages}`);
+  }
+  if (layout.pagePlan?.chapters !== 5 || layout.pagePlan?.textPagesPerChapter !== 5) {
+    throw new Error('Layout must define 5 chapters with 5 text pages per chapter');
+  }
+  if (!layout.templates?.cover?.file || !layout.templates?.book?.file) {
+    throw new Error('Layout must define cover and book template files');
+  }
+  return layout;
 }
 
 function cleanText(value) {
@@ -118,11 +158,80 @@ function drawFittedText(page, text, options) {
     y,
     maxWidth,
     maxHeight,
+    startSize,
+    minSize,
+    lineHeightRatio,
     color = rgb(0.16, 0.12, 0.09),
   } = options;
-  const layout = fitTextLayout(text, font, { maxWidth, maxHeight });
+  const layout = fitTextLayout(text, font, { maxWidth, maxHeight, startSize, minSize, lineHeightRatio });
   layout.lines.forEach((line, index) => {
     page.drawText(line, { x, y: y - index * layout.lineHeight, size: layout.size, font, color });
+  });
+  return layout;
+}
+
+function boxFromLayout(page, box, sourcePagePt = null) {
+  const { width: pageWidth, height: pageHeight } = page.getSize();
+  if (box.source === 'template') {
+    if (!sourcePagePt) throw new Error('Template-sourced box requires source page size');
+    const [sourceWidth, sourceHeight] = sourcePagePt;
+    const x = box.x * (pageWidth / sourceWidth);
+    const width = box.width * (pageWidth / sourceWidth);
+    const height = box.height * (pageHeight / sourceHeight);
+    const y = box.origin === 'top-left'
+      ? (sourceHeight - box.y - box.height) * (pageHeight / sourceHeight)
+      : box.y * (pageHeight / sourceHeight);
+    return { ...box, x, y, width, height };
+  }
+  return { ...box, x: box.x, y: box.y, width: box.width, height: box.height };
+}
+
+function drawTextBox(page, text, box, options) {
+  const {
+    font,
+    color = rgb(0.16, 0.12, 0.09),
+    fillColor = null,
+    fillOpacity = 1,
+  } = options;
+  if (!cleanText(text)) return { lines: [], size: box.startSize || 1, lineHeight: box.startSize || 1, truncated: false };
+  if (fillColor) {
+    page.drawRectangle({ x: box.x, y: box.y, width: box.width, height: box.height, color: fillColor, opacity: fillOpacity });
+  }
+
+  const paddingX = box.paddingX || 0;
+  const paddingY = box.paddingY || 0;
+  const content = {
+    x: box.x + paddingX,
+    y: box.y + paddingY,
+    width: box.width - paddingX * 2,
+    height: box.height - paddingY * 2,
+  };
+  const layout = fitTextLayout(text, font, {
+    maxWidth: content.width,
+    maxHeight: content.height,
+    startSize: box.startSize,
+    minSize: box.minSize,
+    lineHeightRatio: box.lineHeightRatio,
+  });
+  const totalHeight = layout.lines.length * layout.lineHeight;
+  const valign = box.valign || 'top';
+  const align = box.align || 'left';
+  let firstBaseline = content.y + content.height - layout.size;
+  if (valign === 'center') {
+    firstBaseline = content.y + (content.height + totalHeight) / 2 - layout.size;
+  } else if (valign === 'bottom') {
+    firstBaseline = content.y + totalHeight - layout.size;
+  }
+
+  layout.lines.forEach((line, index) => {
+    const lineWidth = font.widthOfTextAtSize(line, layout.size);
+    let x = content.x;
+    if (align === 'center') {
+      x = content.x + (content.width - lineWidth) / 2;
+    } else if (align === 'right') {
+      x = content.x + content.width - lineWidth;
+    }
+    page.drawText(line, { x, y: firstBaseline - index * layout.lineHeight, size: layout.size, font, color });
   });
   return layout;
 }
@@ -171,16 +280,16 @@ async function embedImage(pdf, dir, imageJob) {
   return pdf.embedPng(bytes);
 }
 
-function drawPageNumber(page, pageNumber, font) {
+function drawPageNumber(page, pageNumber, font, layout) {
   const { width } = page.getSize();
   const text = String(pageNumber);
-  const size = 8;
+  const size = layout.interior.pageNumber.size;
   page.drawText(text, {
     x: (width - font.widthOfTextAtSize(text, size)) / 2,
-    y: 12,
+    y: layout.interior.pageNumber.y,
     size,
     font,
-    color: rgb(0.55, 0.48, 0.42),
+    color: rgbColor(layout.colors.pageNumber),
   });
 }
 
@@ -217,9 +326,9 @@ function addSoftBackground(page, templatePage = null) {
   page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.985, 0.955, 0.9) });
 }
 
-async function renderCoverPdf({ dir, fullText, visuals }) {
+async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   const { pdf, fontRegular, fontBold, fontSans } = await createPdfWithFonts();
-  const coverTemplate = await loadTemplatePage(pdf, COVER_TEMPLATE_PATH);
+  const coverTemplate = await loadTemplatePage(pdf, templatePath(layout.templates.cover.file));
   const [width, height] = COVER_SIZE_MM.map(mmToPt);
   const page = pdf.addPage([width, height]);
   const coverImage = await embedImage(pdf, dir, findImage(visuals, 'cover'));
@@ -231,196 +340,151 @@ async function renderCoverPdf({ dir, fullText, visuals }) {
   drawTemplateCover(page, coverTemplate);
 
   if (coverImage) {
-    const coverBox = {
-      x: width * (735 / 1440),
-      y: height * ((682 - 638) / 682),
-      width: width * (595 / 1440),
-      height: height * (408 / 682),
-    };
+    const coverBox = boxFromLayout(page, layout.cover.image, layout.templates.cover.sourcePagePt);
     page.drawImage(coverImage, imageCoverBox(coverImage, coverBox));
   }
 
-  const titleBox = { x: width * 0.56, y: height - 82, width: width * 0.39, height: 58 };
-  page.drawRectangle({ ...titleBox, color: rgb(0.55, 0.06, 0.045), opacity: 0.94 });
-  drawCenteredTextInBox(page, title, {
+  const titleBox = boxFromLayout(page, layout.cover.title);
+  drawTextBox(page, title, titleBox, {
     font: fontBold,
-    size: 22,
-    x: titleBox.x,
-    y: height - 48,
-    maxWidth: titleBox.width,
-    color: rgb(1, 1, 1),
-    lineHeight: 25,
+    color: rgbColor(layout.colors.coverText),
+    fillColor: rgbColor(layout.colors.coverRed),
+    fillOpacity: 0.94,
   });
   if (subtitle) {
-    page.drawRectangle({ x: width * 0.275, y: height - 64, width: 170, height: 26, color: rgb(0.55, 0.06, 0.045), opacity: 0.94 });
-    page.drawText(subtitle, {
+    drawTextBox(page, subtitle, boxFromLayout(page, layout.cover.subtitle), {
       font: fontRegular,
-      size: 8,
-      x: width * 0.285,
-      y: height - 55,
-      color: rgb(1, 1, 1),
+      color: rgbColor(layout.colors.coverText),
+      fillColor: rgbColor(layout.colors.coverRed),
+      fillOpacity: 0.94,
     });
   }
   const brand = 'Fairyteller';
+  const brandBox = boxFromLayout(page, layout.cover.brand);
   page.drawText(brand, {
-    x: width * 0.36,
-    y: height * 0.18,
+    x: brandBox.x,
+    y: brandBox.y,
     font: fontSans,
-    size: 7,
-    color: rgb(0.95, 0.74, 0.32),
+    size: layout.cover.brand.size,
+    color: rgbColor(layout.colors.gold),
   });
 
   if (summary) {
-    drawWrappedText(page, summary, {
+    drawTextBox(page, summary, boxFromLayout(page, layout.cover.summary), {
       font: fontRegular,
-      size: 6.6,
-      x: width * 0.08,
-      y: height * 0.33,
-      maxWidth: width * 0.34,
-      lineHeight: 9.2,
-      color: rgb(0.98, 0.86, 0.66),
-      maxLines: 7,
+      color: rgbColor(layout.colors.coverSummary),
     });
   }
   return pdf.save({ useObjectStreams: false });
 }
 
-function addInteriorTitlePage(pdf, fonts, fullText) {
+function addInteriorTitlePage(pdf, fonts, fullText, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
   const bible = fullText.text?.bible || {};
-  drawCenteredText(page, bible.bookTitle || fullText.text?.preview?.title || 'Сказка', {
+  drawTextBox(page, bible.bookTitle || fullText.text?.preview?.title || 'Сказка', layout.interior.titlePage.title, {
     font: fonts.fontBold,
-    size: 27,
-    y: 245,
-    maxWidth: 300,
-    color: rgb(0.28, 0.16, 0.09),
-    lineHeight: 32,
+    color: rgbColor(layout.colors.paperHeading),
   });
   if (bible.subtitle) {
-    drawCenteredText(page, bible.subtitle, {
+    drawTextBox(page, bible.subtitle, layout.interior.titlePage.subtitle, {
       font: fonts.fontRegular,
-      size: 12,
-      y: 132,
-      maxWidth: 280,
-      color: rgb(0.45, 0.3, 0.17),
-      lineHeight: 16,
+      color: rgbColor(layout.colors.paperMuted),
     });
   }
-  drawCenteredText(page, 'Fairyteller', {
+  drawTextBox(page, 'Fairyteller', layout.interior.titlePage.brand, {
     font: fonts.fontSans,
-    size: 10,
-    y: 48,
-    maxWidth: 180,
-    color: rgb(0.55, 0.38, 0.2),
+    color: rgbColor(layout.colors.paperMuted),
   });
 }
 
-function addDedicationPage(pdf, fonts, fullText) {
+function addDedicationPage(pdf, fonts, fullText, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
   const summary = fullText.text?.bible?.coverSummary || 'Эта история создана специально для своих героев.';
-  drawWrappedText(page, summary, {
+  const textLayout = drawTextBox(page, summary, layout.interior.dedicationPage.body, {
     font: fonts.fontRegular,
-    size: 14,
-    x: 50,
-    y: 245,
-    maxWidth: 285,
-    lineHeight: 22,
-    color: rgb(0.28, 0.18, 0.1),
-    maxLines: 8,
+    color: rgbColor(layout.colors.paperHeading),
   });
+  if (textLayout.truncated) throw new Error('Dedication text does not fit on page without truncation');
 }
 
-async function addImagePage(pdf, fonts, dir, imageJob, title, pageNumber) {
+async function addImagePage(pdf, fonts, dir, imageJob, title, pageNumber, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   page.drawRectangle({ x: 0, y: 0, width: mmToPt(136), height: mmToPt(136), color: rgb(0.07, 0.06, 0.05) });
   const image = await embedImage(pdf, dir, imageJob);
   if (image) {
-    page.drawImage(image, imageCoverBox(image, { x: 0, y: 0, width: mmToPt(136), height: mmToPt(136) }));
+    page.drawImage(image, imageCoverBox(image, layout.interior.imagePage.image));
   }
-  page.drawRectangle({ x: 0, y: 0, width: mmToPt(136), height: 44, color: rgb(0, 0, 0), opacity: 0.24 });
-  page.drawText(title, { x: 24, y: 18, font: fonts.fontBold, size: 12, color: rgb(1, 0.93, 0.78) });
-  drawPageNumber(page, pageNumber, fonts.fontSans);
+  page.drawRectangle({ ...layout.interior.imagePage.captionOverlay, color: rgb(0, 0, 0), opacity: layout.interior.imagePage.captionOverlay.opacity });
+  page.drawText(title, { ...layout.interior.imagePage.caption, font: fonts.fontBold, color: rgb(1, 0.93, 0.78) });
+  drawPageNumber(page, pageNumber, fonts.fontSans, layout);
 }
 
-function addChapterTitlePage(pdf, fonts, chapter, pageNumber) {
+function addChapterTitlePage(pdf, fonts, chapter, pageNumber, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
-  drawCenteredText(page, `Глава ${chapter.n}`, {
+  drawTextBox(page, `Глава ${chapter.n}`, layout.interior.chapterTitlePage.label, {
     font: fonts.fontSans,
-    size: 11,
-    y: 245,
-    maxWidth: 260,
     color: rgb(0.55, 0.34, 0.15),
   });
-  drawCenteredText(page, chapter.title || `Глава ${chapter.n}`, {
+  drawTextBox(page, chapter.title || `Глава ${chapter.n}`, layout.interior.chapterTitlePage.title, {
     font: fonts.fontBold,
-    size: 24,
-    y: 205,
-    maxWidth: 300,
-    color: rgb(0.28, 0.16, 0.09),
-    lineHeight: 30,
+    color: rgbColor(layout.colors.paperHeading),
   });
   if (chapter.summary) {
-    drawWrappedText(page, chapter.summary, {
+    const summaryLayout = drawTextBox(page, chapter.summary, layout.interior.chapterTitlePage.summary, {
       font: fonts.fontRegular,
-      size: 11,
-      x: 55,
-      y: 125,
-      maxWidth: 275,
-      lineHeight: 16,
       color: rgb(0.42, 0.28, 0.16),
-      maxLines: 5,
     });
+    if (summaryLayout.truncated) throw new Error(`Chapter ${chapter.n} summary does not fit on page without truncation`);
   }
-  drawPageNumber(page, pageNumber, fonts.fontSans);
+  drawPageNumber(page, pageNumber, fonts.fontSans, layout);
 }
 
-function addTextPage(pdf, fonts, text, pageNumber) {
+function addTextPage(pdf, fonts, text, pageNumber, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
-  const layout = drawFittedText(page, text, {
+  const textLayout = drawTextBox(page, text, layout.interior.textPage.body, {
     font: fonts.fontRegular,
-    x: 42,
-    y: 316,
-    maxWidth: 302,
-    maxHeight: 270,
-    color: rgb(0.16, 0.12, 0.09),
+    color: rgbColor(layout.colors.paperText),
   });
-  drawPageNumber(page, pageNumber, fonts.fontSans);
-  return layout;
+  drawPageNumber(page, pageNumber, fonts.fontSans, layout);
+  return textLayout;
 }
 
-function addOutroPage(pdf, fonts, text, pageNumber) {
+function addOutroPage(pdf, fonts, text, pageNumber, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
-  drawCenteredText(page, text, {
+  drawTextBox(page, text, layout.interior.outroPage.body, {
     font: fonts.fontRegular,
-    size: 16,
-    y: 220,
-    maxWidth: 280,
     color: rgb(0.32, 0.2, 0.1),
-    lineHeight: 23,
   });
-  drawPageNumber(page, pageNumber, fonts.fontSans);
+  drawPageNumber(page, pageNumber, fonts.fontSans, layout);
 }
 
-async function renderInteriorPdf({ dir, fullText, visuals }) {
+async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
-  fonts.bookTemplate = await loadTemplatePage(pdf, BOOK_TEMPLATE_PATH);
+  fonts.bookTemplate = await loadTemplatePage(pdf, templatePath(layout.templates.book.file));
   const chapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
+  if (chapters.length !== layout.pagePlan.chapters) {
+    throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${chapters.length}`);
+  }
 
-  addInteriorTitlePage(pdf, fonts, fullText);
-  addDedicationPage(pdf, fonts, fullText);
+  addInteriorTitlePage(pdf, fonts, fullText, layout);
+  addDedicationPage(pdf, fonts, fullText, layout);
 
   for (const chapter of chapters) {
-    addChapterTitlePage(pdf, fonts, chapter, pdf.getPageCount() + 1);
-    await addImagePage(pdf, fonts, dir, findImage(visuals, `chapter_${chapter.n}`), chapter.title || `Глава ${chapter.n}`, pdf.getPageCount() + 1);
-    for (const block of getChapterTextBlocks(chapter).slice(0, 5)) {
-      const layout = addTextPage(pdf, fonts, block, pdf.getPageCount() + 1);
-      if (layout.truncated) {
+    const blocks = getChapterTextBlocks(chapter);
+    if (blocks.length !== layout.pagePlan.textPagesPerChapter) {
+      throw new Error(`Expected ${layout.pagePlan.textPagesPerChapter} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
+    }
+    addChapterTitlePage(pdf, fonts, chapter, pdf.getPageCount() + 1, layout);
+    await addImagePage(pdf, fonts, dir, findImage(visuals, `chapter_${chapter.n}`), chapter.title || `Глава ${chapter.n}`, pdf.getPageCount() + 1, layout);
+    for (const block of blocks) {
+      const textLayout = addTextPage(pdf, fonts, block, pdf.getPageCount() + 1, layout);
+      if (textLayout.truncated) {
         throw new Error(`Text block does not fit on page without truncation: chapter ${chapter.n}`);
       }
     }
@@ -431,10 +495,10 @@ async function renderInteriorPdf({ dir, fullText, visuals }) {
     'Берегите чудеса, которые нашли по дороге.',
     'Создано специально для героев этой книги.',
   ];
-  for (const text of outros) addOutroPage(pdf, fonts, text, pdf.getPageCount() + 1);
+  for (const text of outros) addOutroPage(pdf, fonts, text, pdf.getPageCount() + 1, layout);
 
   while (pdf.getPageCount() < TARGET_INTERIOR_PAGES) {
-    addOutroPage(pdf, fonts, '', pdf.getPageCount() + 1);
+    addOutroPage(pdf, fonts, '', pdf.getPageCount() + 1, layout);
   }
   if (pdf.getPageCount() !== TARGET_INTERIOR_PAGES) {
     throw new Error(`Interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${pdf.getPageCount()}`);
@@ -452,9 +516,10 @@ async function main() {
   const fullText = await readJson(join(artifactsDir, 'full-text.json'));
   const visualsArtifact = await readJson(join(artifactsDir, 'visuals.json'));
   const visuals = visualsArtifact.visuals || {};
+  const layout = validateLayout(await readJson(LAYOUT_PATH));
 
-  const coverPdf = await renderCoverPdf({ dir, fullText, visuals });
-  const interiorPdf = await renderInteriorPdf({ dir, fullText, visuals });
+  const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
+  const interiorPdf = await renderInteriorPdf({ dir, fullText, visuals, layout });
 
   const coverPath = join(filesDir, 'cover.pdf');
   const interiorPath = join(filesDir, 'interior.pdf');
@@ -465,6 +530,7 @@ async function main() {
     status: 'ready',
     generatedAt: new Date().toISOString(),
     engine: 'pdf-lib',
+    layoutVersion: layout.version,
     pdfVersionTarget: '1.7',
     colorSpaceTarget: 'RGB',
     fontsEmbedded: true,
@@ -491,6 +557,7 @@ async function main() {
       interiorPageCount: TARGET_INTERIOR_PAGES,
       coverPageSizeMm: COVER_SIZE_MM,
       interiorPageSizeMm: INTERIOR_SIZE_MM,
+      expectedTextBlocksPerChapter: layout.pagePlan.textPagesPerChapter,
     },
   };
   await writeFile(join(artifactsDir, 'render.json'), `${JSON.stringify({ jobId: JOB_ID, render }, null, 2)}\n`, { mode: 0o600 });
