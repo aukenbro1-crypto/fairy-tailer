@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-24 14:25 UTC
+Last updated: 2026-05-24 14:55 UTC
 
 ## Project Context
 
@@ -104,6 +104,8 @@ Visual generation note:
 - `fairyteller_visuals` first generates `hero-reference-sheet.png` as a stylized character sheet from hero descriptions and uploaded photo references when present.
 - Chapter image generation uses the generated hero reference sheet as an inline image reference, so chapter 1 can preserve the same character designs.
 - `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same generated portrait sheet instead of regenerating character identity from scratch.
+- Chapter illustration prompts must target the actual interior image page: `136 x 136 mm`, square `1:1`, full-bleed, roughly `1606 x 1606 px` at 300 DPI. Key faces, hands, silhouettes, and the important object must stay away from the left 15% gutter/spine area and outer 3 mm trim edge.
+- Cover-art prompts target the front-cover image frame in the PPTX-derived cover template, not the whole wraparound spread: about `1.46:1` landscape artwork placed into the white front-cover frame. The final PDF page remains `268.5 x 136 mm`.
 - First chapter image generation uses `gemini-2.5-flash-image` through `generateContent`.
 - The `minibrick` style is explicitly mapped to brick-built minifigure/toy diorama prompts; do not rely on fallback style mapping for it.
 - The generated file is stored through the Job API under `/api/fairyteller/jobs/:jobId/files/chapter-1.png`.
@@ -299,3 +301,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Hardened the full-visuals/render tail after a production test job (`ft_1779609291175_25otqb`) exposed two failures: Gemini returned transient `503` during chapter 2-5 image generation, and an overlong chapter opener teaser blocked PDF render. `fairyteller_full_visuals` now retries Gemini image requests up to 4 times with backoff, and the renderer clamps chapter opener teasers instead of failing on non-story teaser overflow. Deployed the workflow and renderer to production, re-ran `/webhook/fairyteller/continue` for the job, and verified public status: `fullText=ready`, `fullVisuals=ready`, `cover=ready`, `render=ready`, `bookPdf=/api/fairyteller/jobs/ft_1779609291175_25otqb/files/book.pdf`, `render.preflight.expectedTextBlocksByChapter=[4,4,6,6,5]`, and `render.preflight.noTextTruncation=true`.
 - Polished the `/create` generated-book preview UX according to `docs/art-director-ux-designer.md`: removed the red cover placeholder and "open book" gate, replaced technical status/toast copy with book-facing language, made the reader appear directly as a responsive spread, constrained spread sizing to fit the viewport without internal scrollbars, and fixed the old `.mixer-chassis > *` CSS rule that was overriding the preview modal's fixed positioning.
 - Deployed frontend release `/var/www/fairyteller/releases/20260524-141100-codex-preview-polish` and repointed `/var/www/fairyteller/current` to it. Production smoke on `https://fairyteller.ru/create?codex=f6badde` loaded `assets/index-Bq0YTsKH.css` and `assets/index-AGMzZNvb.js` with no browser console errors.
+- Tightened n8n image-generation targets in `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`. Interior chapter prompts now explicitly generate for the `136 x 136 mm` square page and write `targetPageSizeMm=[136,136]`, `targetAspectRatio="1:1"`, and `role="interior_full_page_right_spread"` into image metadata. Cover prompts now generate front-cover framed art at about `1.46:1` instead of a full wraparound spread. Production backup before import: `/root/fairyteller-n8n-backups/20260524-image-page-size`; n8n was restarted and all three workflows are active.
