@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Printer, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -20,6 +20,7 @@ const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const CONTINUE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CONTINUE_URL || "/webhook/fairyteller/continue";
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
+const PRINT_PAYMENT_URL = "https://fairyteller.ru/print";
 
 interface CreateResponse {
   ok?: boolean;
@@ -302,7 +303,6 @@ interface GeneratedBookReaderProps {
   title: string;
   chapters: ReaderChapter[];
   fullTextStatus: string | null;
-  fullVisualsStatus: string | null;
   renderStatus: string | null;
   bookPdfUrl: string;
   canContinueStory: boolean;
@@ -474,7 +474,6 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
   title,
   chapters,
   fullTextStatus,
-  fullVisualsStatus,
   renderStatus,
   bookPdfUrl,
   canContinueStory,
@@ -500,12 +499,13 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
     : fullTextStatus === 'generating'
       ? 'Пишем продолжение'
       : 'Первая глава готова';
+  const isBusy = fullTextStatus === 'generating' || (fullTextStatus === 'ready' && renderStatus !== 'ready');
 
   return (
     <section className="generated-book-reader">
       <div className="generated-book-toolbar">
         <div className="generated-book-toolbar-main">
-          <div className="generated-book-status">{statusText}</div>
+          <div className={`generated-book-status ${isBusy ? 'generated-book-status-active' : ''}`}>{statusText}</div>
           <h4 className="generated-book-title">{title || 'Ваша сказка'}</h4>
           <div className="generated-book-counter">
             Разворот {spreadIndex + 1} из {spreadCount}
@@ -522,8 +522,14 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
               {continueSubmitting || fullTextStatus === 'generating' ? 'Продолжаем...' : 'Хочу всю историю'}
             </button>
           )}
+          {renderStatus === 'ready' && (
+            <a href={PRINT_PAYMENT_URL} className="generated-book-print-link">
+              <Printer size={16} aria-hidden="true" />
+              Заказать печать
+            </a>
+          )}
           {bookPdfUrl && renderStatus === 'ready' && (
-            <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-pdf-link">
+            <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link">
               <ExternalLink size={16} aria-hidden="true" />
               PDF
             </a>
@@ -538,13 +544,6 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
         <button type="button" onClick={() => setSpreadIndex((value) => Math.max(0, value - 1))} disabled={!canGoPrev} aria-label="Предыдущий разворот">
           <ChevronLeft size={18} aria-hidden="true" />
         </button>
-        <span>
-          {fullTextStatus === 'ready'
-            ? fullVisualsStatus === 'ready'
-              ? 'Книга обновляется здесь по мере готовности'
-              : 'Иллюстрации появляются по главам'
-            : 'Первая глава уже перед вами'}
-        </span>
         <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
           <ChevronRight size={18} aria-hidden="true" />
         </button>
@@ -685,11 +684,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
-  const fullVisualsStatus = fullVisuals?.status || null;
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
   const bookPdfUrl = jobStatus?.artifacts?.bookPdf?.url || jobStatus?.artifacts?.render?.files?.book?.url || '';
-  const coverPdfUrl = jobStatus?.artifacts?.coverPdf?.url || jobStatus?.artifacts?.render?.files?.cover?.url || '';
-  const interiorPdfUrl = jobStatus?.artifacts?.interiorPdf?.url || jobStatus?.artifacts?.render?.files?.interior?.url || '';
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
   const allFullChapters = fullTextArtifact?.text?.chapters || [];
   const readerChapters: ReaderChapter[] = allFullChapters.length > 0
@@ -716,6 +712,12 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     || fullTextArtifact?.text?.preview?.title
     || jobStatus?.preview?.title
     || 'Ваша сказка';
+  const waitingProgress = Math.max(0, Math.min(100, jobStatus?.progress ?? 8));
+  const waitingText = waitingProgress >= 55
+    ? 'Оживляем первый разворот и проверяем, чтобы герои держались одного образа.'
+    : waitingProgress >= 25
+      ? 'Пишем завязку, собираем характеры героев и настроение мира.'
+      : 'Принимаем детали сказки и готовим персональную историю.';
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -1517,16 +1519,28 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
             role="dialog"
             aria-modal="true"
           >
+            <button
+              type="button"
+              className="generated-preview-close"
+              onClick={() => setShowSuccessOverlay(false)}
+              aria-label="Закрыть предпросмотр"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
             {!hasFirstChapterPreview && (
               <div className="generated-preview-waiting">
-                <div className="generated-preview-mark" aria-hidden="true">✦</div>
-                <h3>Начали создавать книгу</h3>
-                <p>{jobStatus?.message || 'Пишем первую главу и готовим образ героев.'}</p>
+                <div className="generated-preview-loader" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <h3>Собираем первую главу</h3>
+                <p>{waitingText}</p>
                 {submittedJobId && (
                   <div className="generated-preview-progress" aria-label="Прогресс создания книги">
                     <div
                       className="generated-preview-progress-bar"
-                      style={{ width: `${Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%` }}
+                      style={{ width: `${waitingProgress}%` }}
                     />
                   </div>
                 )}
@@ -1538,45 +1552,14 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                   title={readerTitle}
                   chapters={readerChapters}
                   fullTextStatus={fullTextStatus}
-                  fullVisualsStatus={fullVisualsStatus}
                   renderStatus={renderStatus}
                   bookPdfUrl={bookPdfUrl}
                   canContinueStory={canContinueStory}
                   continueSubmitting={continueSubmitting}
                   onContinueStory={handleContinueStory}
                 />
-                {renderStatus === 'ready' && (coverPdfUrl || interiorPdfUrl) && (
-                  <div className="generated-preview-secondary-links">
-                    {coverPdfUrl && (
-                      <a href={coverPdfUrl} target="_blank" rel="noreferrer">
-                        Обложка PDF
-                      </a>
-                    )}
-                    {interiorPdfUrl && (
-                      <a href={interiorPdfUrl} target="_blank" rel="noreferrer">
-                        Внутренний блок PDF
-                      </a>
-                    )}
-                  </div>
-                )}
               </>
             )}
-            <div className="generated-preview-footer">
-              <p>
-                {hasFirstChapterPreview
-                  ? 'Предпросмотр обновляется прямо на этой странице.'
-                  : 'Первый разворот появится автоматически.'}
-              </p>
-              <button
-                onClick={() => {
-                  setShowSuccessOverlay(false);
-                  resetForm();
-                }}
-                className="generated-preview-new-button"
-              >
-                Создать другую сказку
-              </button>
-            </div>
           </div>
         </div>
       )}
