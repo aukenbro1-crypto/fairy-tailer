@@ -506,6 +506,20 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   return pdf.save({ useObjectStreams: false });
 }
 
+async function renderCombinedBookPdf({ coverPdf, interiorPdf }) {
+  const target = await PDFDocument.create();
+  const coverDoc = await PDFDocument.load(coverPdf);
+  const interiorDoc = await PDFDocument.load(interiorPdf);
+  const coverPages = await target.copyPages(coverDoc, coverDoc.getPageIndices());
+  const interiorPages = await target.copyPages(interiorDoc, interiorDoc.getPageIndices());
+  for (const page of coverPages) target.addPage(page);
+  for (const page of interiorPages) target.addPage(page);
+  if (target.getPageCount() !== TARGET_INTERIOR_PAGES + 1) {
+    throw new Error(`Combined book page count mismatch: expected ${TARGET_INTERIOR_PAGES + 1}, got ${target.getPageCount()}`);
+  }
+  return target.save({ useObjectStreams: false });
+}
+
 async function main() {
   const dir = jobDir(JOB_ID);
   const artifactsDir = join(dir, 'artifacts');
@@ -520,11 +534,14 @@ async function main() {
 
   const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
   const interiorPdf = await renderInteriorPdf({ dir, fullText, visuals, layout });
+  const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf });
 
   const coverPath = join(filesDir, 'cover.pdf');
   const interiorPath = join(filesDir, 'interior.pdf');
+  const bookPath = join(filesDir, 'book.pdf');
   await writeFile(coverPath, coverPdf, { mode: 0o600 });
   await writeFile(interiorPath, interiorPdf, { mode: 0o600 });
+  await writeFile(bookPath, bookPdf, { mode: 0o600 });
 
   const render = {
     status: 'ready',
@@ -536,6 +553,16 @@ async function main() {
     fontsEmbedded: true,
     protection: 'none',
     files: {
+      book: {
+        fileName: 'book.pdf',
+        url: `/api/fairyteller/jobs/${JOB_ID}/files/book.pdf`,
+        pageCount: TARGET_INTERIOR_PAGES + 1,
+        pageSizeMm: {
+          firstPage: COVER_SIZE_MM,
+          interiorPages: INTERIOR_SIZE_MM,
+        },
+        bytes: bookPdf.length,
+      },
       cover: {
         fileName: 'cover.pdf',
         url: `/api/fairyteller/jobs/${JOB_ID}/files/cover.pdf`,
@@ -553,6 +580,7 @@ async function main() {
     },
     preflight: {
       noTextTruncation: true,
+      combinedPageCount: TARGET_INTERIOR_PAGES + 1,
       coverPageCount: 1,
       interiorPageCount: TARGET_INTERIOR_PAGES,
       coverPageSizeMm: COVER_SIZE_MM,

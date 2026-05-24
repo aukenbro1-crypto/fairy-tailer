@@ -381,6 +381,7 @@ async function renderJobPdf(jobId) {
   await updateJobStatus(jobId, {
     artifacts: {
       render,
+      bookPdf: render.files?.book || null,
       coverPdf: render.files?.cover || null,
       interiorPdf: render.files?.interior || null,
     },

@@ -164,7 +164,7 @@ Final output target from print shop upload requirements:
 - Total page count, including cover: 41
 - Page 1 (cover/back-cover spread): `268.5 x 136.0 mm`
 - Pages 2-41: `136.0 x 136.0 mm`
-- Customer may receive separate cover and interior PDFs initially; future UX can also provide a combined preview PDF if it still satisfies the print shop upload check.
+- Current PDF UX exposes a combined print PDF (`book.pdf`) plus separate `cover.pdf` and `interior.pdf` debug/backup files. `book.pdf` is the preferred print-shop upload artifact and contains mixed page sizes: page 1 is the cover/back-cover spread, pages 2-41 are square interior pages.
 
 Reference production PDF:
 
@@ -283,3 +283,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Fixed PDF text truncation in the renderer: story text pages now fit each full text block by reducing font size within bounds and fail render preflight instead of silently cutting lines. Added `render.preflight.noTextTruncation=true`.
 - Added the provided Google Slides PDF exports as renderer master backgrounds and deployed them to `/opt/fairyteller-render/templates`. Interior pages now use the book paper texture master, and cover render uses the romantic cover master with generated cover art placed into the `COVER_IMG` area. Re-rendered `ft_1779550092673_8ltt9c`; `cover.pdf` and `interior.pdf` keep the required page sizes/page counts and no longer silently drop overflowing story text.
 - Added `server/render-layouts/fairyteller-template-v1.json` and deployed it to `/opt/fairyteller-render/render-layouts/fairyteller-template-v1.json`. The renderer now reads explicit boxes/colors/page-plan from this layout contract, writes `render.layoutVersion=fairyteller-template-v1`, and enforces the expected five text blocks per chapter before composing PDFs. Re-rendered `ft_1779550092673_8ltt9c`; render stayed ready with cover page count `1`, interior page count `40`, and `render.preflight.expectedTextBlocksPerChapter=5`.
+- Added combined print PDF output. The renderer now writes `book.pdf` by joining the generated cover and interior PDFs into a single 41-page mixed-size PDF, while keeping `cover.pdf` and `interior.pdf` for debugging. The Job API exposes `artifacts.bookPdf`, and the frontend shows a primary `Печатный PDF` link. Verified on `ft_1779550092673_8ltt9c`: `book.pdf` has 41 pages, first page `268.5 x 136.0 mm`, page 2 and last page `136.0 x 136.0 mm`.

@@ -44,6 +44,7 @@ Authorization: Bearer <token>
     render.json
   files/
     chapter-1.png
+    book.pdf
     cover.pdf
     interior.pdf
 ```

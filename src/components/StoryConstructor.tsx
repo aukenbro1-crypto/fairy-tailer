@@ -64,10 +64,12 @@ interface JobStatus {
     render?: {
       status?: 'generating' | 'ready' | 'failed';
       files?: {
+        book?: { url?: string; pageCount?: number };
         cover?: { url?: string; pageCount?: number };
         interior?: { url?: string; pageCount?: number };
       };
     };
+    bookPdf?: { url?: string; pageCount?: number };
     coverPdf?: { url?: string; pageCount?: number };
     interiorPdf?: { url?: string; pageCount?: number };
   };
@@ -403,6 +405,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
   const fullVisualsStatus = fullVisuals?.status || null;
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
+  const bookPdfUrl = jobStatus?.artifacts?.bookPdf?.url || jobStatus?.artifacts?.render?.files?.book?.url || '';
   const coverPdfUrl = jobStatus?.artifacts?.coverPdf?.url || jobStatus?.artifacts?.render?.files?.cover?.url || '';
   const interiorPdfUrl = jobStatus?.artifacts?.interiorPdf?.url || jobStatus?.artifacts?.render?.files?.interior?.url || '';
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
@@ -1326,6 +1329,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                         </div>
                         {renderStatus === 'ready' && (
                           <div className="mt-3 flex flex-wrap gap-3">
+                            {bookPdfUrl && (
+                              <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
+                                Печатный PDF
+                              </a>
+                            )}
                             {coverPdfUrl && (
                               <a href={coverPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
                                 Обложка PDF
@@ -1333,7 +1341,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                             )}
                             {interiorPdfUrl && (
                               <a href={interiorPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
-                                Книга PDF
+                                Внутренний блок PDF
                               </a>
                             )}
                           </div>
