@@ -83,8 +83,21 @@ function validateLayout(layout) {
   if (layout.pagePlan?.interiorPages !== TARGET_INTERIOR_PAGES) {
     throw new Error(`Layout interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${layout.pagePlan?.interiorPages}`);
   }
-  if (layout.pagePlan?.chapters !== 5 || layout.pagePlan?.textPagesPerChapter !== 5) {
-    throw new Error('Layout must define 5 chapters with 5 text pages per chapter');
+  const chapterTextPages = layout.pagePlan?.chapterTextPages;
+  if (
+    layout.pagePlan?.chapters !== 5
+    || !Array.isArray(chapterTextPages)
+    || chapterTextPages.length !== 5
+    || chapterTextPages.some((count) => !Number.isInteger(count) || count < 1)
+  ) {
+    throw new Error('Layout must define 5 chapters with explicit chapterTextPages');
+  }
+  const fixedPages = (layout.pagePlan.frontMatterPages || 0)
+    + chapterTextPages.reduce((sum, count) => sum + count, 0)
+    + layout.pagePlan.chapters * ((layout.pagePlan.chapterTitlePagesPerChapter || 0) + (layout.pagePlan.chapterImagePagesPerChapter || 0))
+    + (layout.pagePlan.outroPages || 0);
+  if (fixedPages !== TARGET_INTERIOR_PAGES) {
+    throw new Error(`Layout page plan must add up to ${TARGET_INTERIOR_PAGES}, got ${fixedPages}`);
   }
   if (!layout.templates?.cover?.file || !layout.templates?.book?.file) {
     throw new Error('Layout must define cover and book template files');
@@ -953,9 +966,10 @@ function chapterTeaser(chapter, blocks = []) {
   return `${teaser.slice(0, 245).replace(/\s+\S*$/, '')}...`;
 }
 
-const CHAPTER_START_PAGES = [5, 12, 19, 26, 33];
-const CHAPTER_FIRST_TEXT_PAGES = [7, 14, 21, 28, 35];
-const CHAPTER_FINAL_TEXT_PAGES = [11, 18, 25, 32, 39];
+const CHAPTER_TEXT_PAGE_COUNTS = [4, 4, 6, 6, 5];
+const CHAPTER_START_PAGES = [4, 10, 16, 24, 32];
+const CHAPTER_FIRST_TEXT_PAGES = [6, 12, 18, 26, 34];
+const CHAPTER_FINAL_TEXT_PAGES = [9, 15, 23, 31, 38];
 const TEXT_PAGE_BOX = pptBox(29.69, 28.35, 327.52, 300.35);
 const TEXT_PAGE_NUM_BOXES = {
   9: pptBox(178.9, 328.9, 27.6, 28.3),
@@ -988,6 +1002,33 @@ const TEXT_PAGE_NUM_BOXES = {
 function drawBookPaper(page, assets, variant = 'image8') {
   const image = assets.book[variant] || assets.book.image8;
   drawPptImage(page, image, pptBox(-6.43, -3.64, 395.16, 392.2));
+}
+
+function addPptTocPage(pdf, fonts, assets, chapters) {
+  const page = addPptInteriorPage(pdf);
+  drawBookPaper(page, assets, 'image8');
+  drawPptText(page, 'ОГЛАВЛЕНИЕ', pptBox(73.87, 75.21, 236.22, 28.46), {
+    font: fonts.fontInterStrong,
+    size: 14,
+    minSize: 10,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
+  drawPptLines(page, chapters.map((chapter) => chapter.title || `Глава ${chapter.n}`), pptBox(28.91, 127.68, 291.47, 229.49), {
+    font: fonts.fontInterBody,
+    size: 12,
+    lineHeight: 24,
+    color: hexColor('#292929'),
+  });
+  drawPptLines(page, CHAPTER_START_PAGES.map(String), pptBox(326.13, 127.68, 30.47, 117.5), {
+    font: fonts.fontInterBody,
+    size: 12.13,
+    lineHeight: 24,
+    align: 'right',
+    color: hexColor('#292929'),
+  });
+  drawPptPageNumber(page, 3, fonts);
 }
 
 function addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pageNumber, blocks) {
@@ -1027,7 +1068,7 @@ function addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pageN
   drawPptPageNumber(page, pageNumber, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
 }
 
-async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex) {
+async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pageNumber) {
   const page = addPptInteriorPage(pdf);
   const image = await embedImage(pdf, dir, findImage(visuals, `chapter_${chapterIndex}`));
   if (image) {
@@ -1056,11 +1097,11 @@ async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex) {
   });
 }
 
-function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
+function addPptTextPage(pdf, fonts, assets, text, pageNumber, isLastTextPage = false) {
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber) ? 'image9' : 'image8');
   const textBox = CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)
-    ? pptBox(29.69, 28.35, 327.52, pageNumber === 11 ? 284.5 : pageNumber === 18 ? 292.7 : pageNumber === 25 ? 294.5 : 300.35)
+    ? pptBox(29.69, 28.35, 327.52, pageNumber === 9 ? 284.5 : pageNumber === 15 ? 292.7 : pageNumber === 23 ? 294.5 : 300.35)
     : TEXT_PAGE_BOX;
   const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);
   const textLayout = drawPptParagraphText(page, text, textBox, {
@@ -1084,14 +1125,42 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
     color: hexColor('#292929'),
   });
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
-  if ([11, 18, 25, 32].includes(pageNumber)) {
+  if ([9, 15, 23, 31].includes(pageNumber)) {
     drawPptImage(page, assets.book.image15, pptBox(146.1, 324.7, 94.8, 8.0));
   }
-  if (pageNumber === 39) {
+  if (isLastTextPage) {
     drawPptImage(page, assets.book.image17, pptBox(80.27, 296.92, 245.15, 51.56));
     drawPptImage(page, assets.book.image15, pptBox(146.07, 325.08, 97.48, 7.95));
   }
   return textLayout;
+}
+
+function addPptDecorativeOutroPage(pdf, fonts, assets) {
+  const page = addPptInteriorPage(pdf);
+  drawPptImage(page, assets.book.image6, pptBox(0, 0.45, 385.51, 385.51));
+  drawPptImage(page, assets.book.image16, pptBox(12, 24, 361.51, 361.51));
+  drawPptText(page, 'Конец', pptBox(120, 165, 145.51, 42), {
+    font: fonts.fontRubik,
+    size: 24,
+    minSize: 16,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
+  drawPptPageNumber(page, 39, fonts, pptBox(177.52, 329.59, 30.47, 27.59));
+}
+
+function addPptQrPage(pdf, fonts, assets) {
+  const page = addPptInteriorPage(pdf);
+  drawPptImage(page, assets.book.image13, pptBox(127.93, 104.47, 129.64, 129.64));
+  drawPptText(page, 'Создано в соавторстве с fairyteller.ru', pptBox(59.53, 251.79, 266.43, 29.24), {
+    font: fonts.fontInterStrong,
+    size: 12.13,
+    minSize: 9,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
 }
 
 async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
@@ -1149,77 +1218,29 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   });
   drawPptPageNumber(page, 2, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
 
-  page = addPptInteriorPage(pdf);
-  drawPptImage(page, assets.book.image7, pptBox(-41.38, -2.24, 385.51, 390.0));
-  drawPptText(page, 'Посвящается...', pptBox(45, 73, 295.5, 32), {
-    font: fonts.fontSerif,
-    size: 15,
-    minSize: 12,
-    lineHeightRatio: 1.2,
-    align: 'left',
-    valign: 'center',
-    color: hexColor('#2F2F2F'),
-  });
-  drawPptWritingLines(page, pptBox(45, 132, 295.5, 138), {
-    count: 5,
-    gap: 25,
-    color: hexColor('#8E8E8E'),
-    opacity: 0.45,
-    thickness: 0.6,
-  });
-  drawPptPageNumber(page, 3, fonts);
-
-  page = addPptInteriorPage(pdf);
-  drawBookPaper(page, assets, 'image8');
-  drawPptText(page, 'ОГЛАВЛЕНИЕ', pptBox(73.87, 75.21, 236.22, 28.46), {
-    font: fonts.fontInterStrong,
-    size: 14,
-    minSize: 10,
-    align: 'center',
-    valign: 'center',
-    color: hexColor('#292929'),
-  });
-  drawPptLines(page, chapters.map((chapter) => chapter.title || `Глава ${chapter.n}`), pptBox(28.91, 127.68, 291.47, 229.49), {
-    font: fonts.fontInterBody,
-    size: 12,
-    lineHeight: 24,
-    color: hexColor('#292929'),
-  });
-  drawPptLines(page, CHAPTER_START_PAGES.map(String), pptBox(326.13, 127.68, 30.47, 117.5), {
-    font: fonts.fontInterBody,
-    size: 12.13,
-    lineHeight: 24,
-    align: 'right',
-    color: hexColor('#292929'),
-  });
-  drawPptPageNumber(page, 4, fonts);
+  addPptTocPage(pdf, fonts, assets, chapters);
 
   for (const chapter of chapters) {
     const blocks = getChapterTextBlocks(chapter);
-    if (blocks.length !== layout.pagePlan.textPagesPerChapter) {
-      throw new Error(`Expected ${layout.pagePlan.textPagesPerChapter} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
-    }
     const chapterIndex = Number(chapter.n);
+    const expectedTextPages = layout.pagePlan.chapterTextPages[chapterIndex - 1] || CHAPTER_TEXT_PAGE_COUNTS[chapterIndex - 1];
+    if (blocks.length !== expectedTextPages) {
+      throw new Error(`Expected ${expectedTextPages} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
+    }
     addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pdf.getPageCount() + 1, blocks);
-    await addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex);
-    for (const block of blocks) {
-      const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1);
+    await addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pdf.getPageCount() + 1);
+    for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+      const block = blocks[blockIndex];
+      const isLastTextPage = chapterIndex === chapters.length && blockIndex === blocks.length - 1;
+      const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1, isLastTextPage);
       if (textLayout.truncated) {
         throw new Error(`Text block does not fit on page without truncation: chapter ${chapter.n}`);
       }
     }
   }
 
-  page = addPptInteriorPage(pdf);
-  drawPptImage(page, assets.book.image13, pptBox(127.93, 104.47, 129.64, 129.64));
-  drawPptText(page, 'Создано в соавторстве с fairyteller.ru', pptBox(59.53, 251.79, 266.43, 29.24), {
-    font: fonts.fontInterStrong,
-    size: 12.13,
-    minSize: 9,
-    align: 'center',
-    valign: 'center',
-    color: hexColor('#292929'),
-  });
+  addPptDecorativeOutroPage(pdf, fonts, assets);
+  addPptQrPage(pdf, fonts, assets);
 
   if (pdf.getPageCount() !== TARGET_INTERIOR_PAGES) {
     throw new Error(`Interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${pdf.getPageCount()}`);
@@ -1306,7 +1327,8 @@ async function main() {
       interiorPageCount: TARGET_INTERIOR_PAGES,
       coverPageSizeMm: COVER_SIZE_MM,
       interiorPageSizeMm: INTERIOR_SIZE_MM,
-      expectedTextBlocksPerChapter: layout.pagePlan.textPagesPerChapter,
+      expectedTextBlocksByChapter: layout.pagePlan.chapterTextPages,
+      chapterStartPages: layout.pagePlan.chapterStartPages || CHAPTER_START_PAGES,
     },
   };
   await writeFile(join(artifactsDir, 'render.json'), `${JSON.stringify({ jobId: JOB_ID, render }, null, 2)}\n`, { mode: 0o600 });
