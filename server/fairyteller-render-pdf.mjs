@@ -919,6 +919,25 @@ function drawPptLines(page, lines, box, options) {
   });
 }
 
+function drawPptWritingLines(page, box, options = {}) {
+  const pageBox = topLeftBox(page, box);
+  const count = options.count || 5;
+  const gap = options.gap || 28;
+  const color = options.color || hexColor('#9A9A9A');
+  const opacity = options.opacity ?? 0.55;
+  const thickness = options.thickness || 0.7;
+  for (let index = 0; index < count; index += 1) {
+    const y = pageBox.y + pageBox.height - index * gap;
+    page.drawLine({
+      start: { x: pageBox.x, y },
+      end: { x: pageBox.x + pageBox.width, y },
+      thickness,
+      color,
+      opacity,
+    });
+  }
+}
+
 function drawChapterHeading(page, chapter, chapterIndex, fonts) {
   const roman = ['I', 'II', 'III', 'IV', 'V'][chapterIndex - 1] || String(chapterIndex);
   drawPptText(page, `Глава ${roman}`, pptBox(29.69, 34.15, 326.13, 24), {
@@ -1064,11 +1083,22 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
 
   page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, 'image8');
-  drawPptText(page, bible.subtitle || '', pptBox(28.85, 108.98, 328.32, 153.02), {
+  if (bible.subtitle) {
+    drawPptText(page, bible.subtitle, pptBox(28.85, 78, 328.32, 40), {
+      font: fonts.fontInterStrong,
+      size: 13,
+      minSize: 9,
+      lineHeightRatio: 1.25,
+      align: 'center',
+      valign: 'center',
+      color: hexColor('#292929'),
+    });
+  }
+  drawPptText(page, bible.coverSummary || fullText.text?.preview?.summary || '', pptBox(39.5, 134, 306.5, 128), {
     font: fonts.fontInterBody,
     size: 11,
     minSize: 7,
-    lineHeightRatio: 1.35,
+    lineHeightRatio: 1.38,
     align: 'left',
     valign: 'top',
     color: hexColor('#292929'),
@@ -1077,14 +1107,21 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
 
   page = addPptInteriorPage(pdf);
   drawPptImage(page, assets.book.image7, pptBox(-41.38, -2.24, 385.51, 390.0));
-  drawPptText(page, bible.dedication || bible.coverSummary || 'Посвящается...', pptBox(28.01, 28.35, 329.15, 152.22), {
-    font: fonts.fontInterBody,
-    size: 11,
-    minSize: 7,
-    lineHeightRatio: 1.35,
+  drawPptText(page, 'Посвящается...', pptBox(45, 73, 295.5, 32), {
+    font: fonts.fontSerif,
+    size: 15,
+    minSize: 12,
+    lineHeightRatio: 1.2,
     align: 'left',
-    valign: 'top',
-    color: hexColor('#292929'),
+    valign: 'center',
+    color: hexColor('#2F2F2F'),
+  });
+  drawPptWritingLines(page, pptBox(45, 132, 295.5, 138), {
+    count: 5,
+    gap: 25,
+    color: hexColor('#8E8E8E'),
+    opacity: 0.45,
+    thickness: 0.6,
   });
   drawPptPageNumber(page, 5, fonts);
 

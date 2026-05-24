@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -85,6 +86,15 @@ interface FullTextChapter {
 
 interface FullTextArtifact {
   text?: {
+    bible?: {
+      bookTitle?: string;
+      subtitle?: string;
+      coverSummary?: string;
+    };
+    preview?: {
+      title?: string;
+      summary?: string;
+    };
     chapters?: FullTextChapter[];
   };
 }
@@ -270,6 +280,223 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
   );
 };
 
+interface ReaderChapter {
+  n: number;
+  title: string;
+  textBlocks: string[];
+  imageUrl?: string;
+  imageStatus?: string;
+}
+
+type ReaderPage = {
+  key: string;
+  kind: 'chapter' | 'text';
+  chapter: number;
+  title: string;
+  imageUrl?: string;
+  paragraphs?: string[];
+};
+
+interface GeneratedBookReaderProps {
+  title: string;
+  subtitle?: string;
+  coverSummary?: string;
+  coverImageUrl?: string;
+  chapters: ReaderChapter[];
+  fullTextStatus: string | null;
+  fullVisualsStatus: string | null;
+  renderStatus: string | null;
+  bookPdfUrl: string;
+  canContinueStory: boolean;
+  continueSubmitting: boolean;
+  onContinueStory: () => void;
+}
+
+const chunkReaderParagraphs = (blocks: string[]) => {
+  const pages: string[][] = [];
+  const pushPage = (paragraphs: string[]) => {
+    if (paragraphs.length > 0) pages.push(paragraphs);
+  };
+
+  blocks.forEach((block) => {
+    const paragraphs = formatPreviewText(block);
+    let current: string[] = [];
+    let currentLength = 0;
+    paragraphs.forEach((paragraph) => {
+      const nextLength = currentLength + paragraph.length;
+      if (current.length > 0 && nextLength > 860) {
+        pushPage(current);
+        current = [];
+        currentLength = 0;
+      }
+      current.push(paragraph);
+      currentLength += paragraph.length;
+    });
+    pushPage(current);
+  });
+
+  return pages.length > 0 ? pages : [[]];
+};
+
+const buildReaderPages = (chapters: ReaderChapter[]): ReaderPage[] => {
+  return chapters.flatMap((chapter) => {
+    const pages: ReaderPage[] = [{
+      key: `chapter-${chapter.n}-opener`,
+      kind: 'chapter',
+      chapter: chapter.n,
+      title: chapter.title,
+      imageUrl: chapter.imageUrl,
+    }];
+
+    chunkReaderParagraphs(chapter.textBlocks).forEach((paragraphs, index) => {
+      pages.push({
+        key: `chapter-${chapter.n}-text-${index}`,
+        kind: 'text',
+        chapter: chapter.n,
+        title: chapter.title,
+        paragraphs,
+      });
+    });
+
+    return pages;
+  });
+};
+
+const BookReaderPage: React.FC<{ page?: ReaderPage }> = ({ page }) => {
+  if (!page) {
+    return <div className="generated-book-page generated-book-page-empty" aria-hidden="true" />;
+  }
+
+  if (page.kind === 'chapter') {
+    return (
+      <article className="generated-book-page generated-book-page-chapter">
+        <div className="generated-book-chapter-kicker">Глава {page.chapter}</div>
+        <h4>{page.title}</h4>
+        <div className="generated-book-rule" aria-hidden="true" />
+        <div className="generated-book-chapter-image">
+          {page.imageUrl ? (
+            <img src={page.imageUrl} alt={`Иллюстрация к главе ${page.chapter}`} />
+          ) : (
+            <span>Иллюстрация готовится</span>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article className="generated-book-page generated-book-page-text">
+      {page.paragraphs?.map((paragraph, index) => (
+        <p key={`${page.key}-${index}`}>{paragraph}</p>
+      ))}
+    </article>
+  );
+};
+
+const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
+  title,
+  subtitle,
+  coverSummary,
+  coverImageUrl,
+  chapters,
+  fullTextStatus,
+  fullVisualsStatus,
+  renderStatus,
+  bookPdfUrl,
+  canContinueStory,
+  continueSubmitting,
+  onContinueStory,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [spreadIndex, setSpreadIndex] = useState(0);
+  const pages = buildReaderPages(chapters);
+  const spreadCount = Math.max(1, Math.ceil(pages.length / 2));
+  const leftPage = pages[spreadIndex * 2];
+  const rightPage = pages[spreadIndex * 2 + 1];
+
+  useEffect(() => {
+    setSpreadIndex(0);
+  }, [chapters.length, fullTextStatus]);
+
+  const canGoPrev = spreadIndex > 0;
+  const canGoNext = spreadIndex < spreadCount - 1;
+  const statusText = fullTextStatus === 'ready'
+    ? renderStatus === 'ready'
+      ? 'Печатная книга собрана'
+      : 'История готова, собираем PDF'
+    : fullTextStatus === 'generating'
+      ? 'Продолжение пишется'
+      : 'Первая глава готова';
+
+  if (!isOpen) {
+    return (
+      <section className="generated-book-reader">
+        <button type="button" className="generated-book-cover" onClick={() => setIsOpen(true)}>
+          <div className="generated-book-cover-copy">
+            <span>{subtitle || 'Fairyteller'}</span>
+            <h4>{title || 'Ваша сказка'}</h4>
+            {coverSummary && <p>{coverSummary}</p>}
+          </div>
+          <div className="generated-book-cover-art">
+            {coverImageUrl ? <img src={coverImageUrl} alt="" /> : <BookOpen aria-hidden="true" />}
+          </div>
+          <div className="generated-book-cover-hint">Открыть книгу</div>
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="generated-book-reader">
+      <div className="generated-book-toolbar">
+        <div>
+          <div className="generated-book-status">{statusText}</div>
+          <div className="generated-book-counter">
+            Разворот {spreadIndex + 1} из {spreadCount}
+          </div>
+        </div>
+        <div className="generated-book-actions">
+          {fullTextStatus !== 'ready' && (
+            <button
+              type="button"
+              onClick={onContinueStory}
+              disabled={!canContinueStory || continueSubmitting}
+              className="mixer-main-button px-5 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {continueSubmitting || fullTextStatus === 'generating' ? 'Продолжаем...' : 'Хочу всю историю'}
+            </button>
+          )}
+          {bookPdfUrl && renderStatus === 'ready' && (
+            <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-pdf-link">
+              <ExternalLink size={16} aria-hidden="true" />
+              PDF
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="generated-book-spread" aria-live="polite">
+        <BookReaderPage page={leftPage} />
+        <BookReaderPage page={rightPage} />
+      </div>
+      <div className="generated-book-nav">
+        <button type="button" onClick={() => setSpreadIndex((value) => Math.max(0, value - 1))} disabled={!canGoPrev} aria-label="Предыдущий разворот">
+          <ChevronLeft size={18} aria-hidden="true" />
+        </button>
+        <span>
+          {fullTextStatus === 'ready'
+            ? fullVisualsStatus === 'ready'
+              ? 'Главы и иллюстрации готовы'
+              : 'Иллюстрации дорисовываются'
+            : 'Нажмите “Хочу всю историю”, чтобы открыть всю книгу'}
+        </span>
+        <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
+      </div>
+    </section>
+  );
+};
+
 interface StoryConstructorProps {
   showHeader?: boolean;
 }
@@ -283,7 +510,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [fullTextArtifact, setFullTextArtifact] = useState<FullTextArtifact | null>(null);
-  const [selectedFullChapter, setSelectedFullChapter] = useState(2);
   const [continueSubmitting, setContinueSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   
@@ -409,15 +635,36 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const coverPdfUrl = jobStatus?.artifacts?.coverPdf?.url || jobStatus?.artifacts?.render?.files?.cover?.url || '';
   const interiorPdfUrl = jobStatus?.artifacts?.interiorPdf?.url || jobStatus?.artifacts?.render?.files?.interior?.url || '';
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
-  const fullChapters = (fullTextArtifact?.text?.chapters || []).filter((chapter) => chapter.n > 1);
-  const selectedChapter = fullChapters.find((chapter) => chapter.n === selectedFullChapter) || fullChapters[0] || null;
-  const selectedChapterImage = selectedChapter
-    ? (fullVisuals?.images || []).find((image) => Number(image.chapter) === selectedChapter.n || image.slot === `chapter_${selectedChapter.n}`)
-    : null;
-  const selectedChapterImageUrl = selectedChapterImage?.absoluteUrl || selectedChapterImage?.url || '';
-  const selectedChapterParagraphs = selectedChapter
-    ? formatPreviewText(selectedChapter.text || (selectedChapter.textBlocks || []).join('\n\n'))
-    : [];
+  const allFullChapters = fullTextArtifact?.text?.chapters || [];
+  const readerChapters: ReaderChapter[] = allFullChapters.length > 0
+    ? allFullChapters.map((chapter) => {
+      const image = chapter.n === 1
+        ? null
+        : (fullVisuals?.images || []).find((item) => Number(item.chapter) === chapter.n || item.slot === `chapter_${chapter.n}`);
+      return {
+        n: chapter.n,
+        title: chapter.title || `Глава ${chapter.n}`,
+        textBlocks: chapter.textBlocks?.length ? chapter.textBlocks : [chapter.text || ''],
+        imageUrl: chapter.n === 1 ? previewImageUrl : (image?.absoluteUrl || image?.url || ''),
+        imageStatus: chapter.n === 1 ? jobStatus?.preview?.imageStatus : image?.status,
+      };
+    })
+    : [{
+      n: 1,
+      title: jobStatus?.preview?.title || 'Первая глава',
+      textBlocks: [jobStatus?.preview?.text || ''],
+      imageUrl: previewImageUrl,
+      imageStatus: jobStatus?.preview?.imageStatus,
+    }];
+  const readerTitle = fullTextArtifact?.text?.bible?.bookTitle
+    || fullTextArtifact?.text?.preview?.title
+    || jobStatus?.preview?.title
+    || 'Ваша сказка';
+  const readerSubtitle = fullTextArtifact?.text?.bible?.subtitle || undefined;
+  const readerCoverSummary = fullTextArtifact?.text?.bible?.coverSummary
+    || fullTextArtifact?.text?.preview?.summary
+    || jobStatus?.preview?.summary
+    || undefined;
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -442,7 +689,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       });
       if (ok) {
         setFullTextArtifact(null);
-        setSelectedFullChapter(2);
         setJobStatus((current) => current ? {
           ...current,
           artifacts: {
@@ -574,7 +820,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setJobStatus(null);
       setFullTextArtifact(null);
-      setSelectedFullChapter(2);
       showSuccessScreen();
     }
   };
@@ -621,7 +866,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     setSubmittedStatusUrl(null);
     setJobStatus(null);
     setFullTextArtifact(null);
-    setSelectedFullChapter(2);
   };
 
   return (
@@ -1245,154 +1489,32 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
               </div>
             )}
             {submittedJobId && hasFirstChapterPreview && (
-              <div className="mb-6 grid gap-4 md:grid-cols-[minmax(220px,360px)_1fr] text-left">
-                <div className="rounded-lg overflow-hidden border border-[#E89C31]/40 bg-black/20 aspect-square flex items-center justify-center">
-                  {previewImageUrl ? (
-                    <img
-                      src={previewImageUrl}
-                      alt={jobStatus?.preview?.title || 'Иллюстрация первой главы'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="px-6 text-center text-sm text-[#DBA858]/70">
-                      Иллюстрация первой главы готовится
-                    </div>
-                  )}
-                </div>
-                <div className="rounded-lg border border-[#E89C31]/40 bg-[#06283A] p-4 min-h-[260px] max-h-[420px] overflow-y-auto">
-                  <div className="text-xs uppercase tracking-wide text-[#DBA858]/60 mb-2">
-                    Первая глава
-                  </div>
-                  <h4 className="text-xl md:text-2xl font-semibold text-[#E89C31] mb-3">
-                    {jobStatus?.preview?.title || 'Глава готовится'}
-                  </h4>
-                  {previewParagraphs.length > 0 ? (
-                    <div className="space-y-3 text-sm md:text-base leading-relaxed text-[#F3D9A4]">
-                      {previewParagraphs.map((paragraph, index) => (
-                        <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[#DBA858]/70">
-                      Текст первой главы появится здесь, как только будет готов.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            {submittedJobId && hasFirstChapterPreview && (
-              <div className="mb-6 rounded-lg border border-[#E89C31]/40 bg-[#06283A] p-4 text-left">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-semibold text-[#E89C31]">
-                      {fullTextStatus === 'ready'
-                        ? 'Полная история готова'
-                        : fullTextStatus === 'generating'
-                          ? 'Полная история готовится'
-                          : 'Первая глава готова'}
-                    </div>
-                    <p className="mt-1 text-sm text-[#DBA858]/75">
-                      {fullTextStatus === 'ready'
-                        ? fullVisualsStatus === 'ready'
-                          ? renderStatus === 'ready'
-                            ? 'Главы, иллюстрации и PDF уже собраны.'
-                            : renderStatus === 'generating'
-                              ? 'Главы и иллюстрации готовы. Собираем PDF-макеты.'
-                              : 'Главы и иллюстрации уже собраны. Переключайтесь между главами ниже.'
-                          : fullVisualsStatus === 'generating'
-                            ? `Главы готовы. Иллюстрации дорисовываются${fullVisuals?.total ? `: ${fullVisuals.completed || 0}/${fullVisuals.total}` : ''}.`
-                            : 'Главы 2-5 уже собраны. Иллюстрации появятся здесь, когда будут готовы.'
-                        : fullTextStatus === 'generating'
-                          ? 'Пишем продолжение и собираем полный текст книги.'
-                          : 'Запустите продолжение, чтобы подготовить главы 2-5 и финальную книгу.'}
-                    </p>
-                  </div>
-                  {fullTextStatus !== 'ready' && (
-                    <button
-                      type="button"
-                      onClick={handleContinueStory}
-                      disabled={!canContinueStory || continueSubmitting}
-                      className="mixer-main-button px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {continueSubmitting || fullTextStatus === 'generating'
-                        ? 'Продолжаем...'
-                        : 'Хочу всю историю'}
-                    </button>
-                  )}
-                </div>
-                {fullTextStatus === 'ready' && (
-                  <div className="mt-5 border-t border-[#E89C31]/25 pt-4">
-                    {(renderStatus === 'ready' || renderStatus === 'generating') && (
-                      <div className="mb-5 rounded-lg border border-[#E89C31]/30 bg-[#031B28] p-4">
-                        <div className="text-sm font-semibold text-[#E89C31]">
-                          {renderStatus === 'ready' ? 'PDF-макеты готовы' : 'PDF-макеты собираются'}
-                        </div>
-                        {renderStatus === 'ready' && (
-                          <div className="mt-3 flex flex-wrap gap-3">
-                            {bookPdfUrl && (
-                              <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
-                                Печатный PDF
-                              </a>
-                            )}
-                            {coverPdfUrl && (
-                              <a href={coverPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
-                                Обложка PDF
-                              </a>
-                            )}
-                            {interiorPdfUrl && (
-                              <a href={interiorPdfUrl} target="_blank" rel="noreferrer" className="mixer-main-button px-5 py-2 text-sm">
-                                Внутренний блок PDF
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
+              <div className="mb-6">
+                <GeneratedBookReader
+                  title={readerTitle}
+                  subtitle={readerSubtitle}
+                  coverSummary={readerCoverSummary}
+                  coverImageUrl={previewImageUrl}
+                  chapters={readerChapters}
+                  fullTextStatus={fullTextStatus}
+                  fullVisualsStatus={fullVisualsStatus}
+                  renderStatus={renderStatus}
+                  bookPdfUrl={bookPdfUrl}
+                  canContinueStory={canContinueStory}
+                  continueSubmitting={continueSubmitting}
+                  onContinueStory={handleContinueStory}
+                />
+                {renderStatus === 'ready' && (coverPdfUrl || interiorPdfUrl) && (
+                  <div className="mt-3 flex flex-wrap justify-center gap-3 text-sm">
+                    {coverPdfUrl && (
+                      <a href={coverPdfUrl} target="_blank" rel="noreferrer" className="text-[#DBA858]/80 underline-offset-4 hover:underline">
+                        Обложка PDF
+                      </a>
                     )}
-                    {fullChapters.length > 0 ? (
-                      <>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {fullChapters.map((chapter) => (
-                            <button
-                              key={chapter.n}
-                              type="button"
-                              onClick={() => setSelectedFullChapter(chapter.n)}
-                              className={`px-4 py-2 rounded-md border text-sm transition-colors ${
-                                selectedChapter?.n === chapter.n
-                                  ? 'bg-[#E89C31] text-[#031B28] border-[#E89C31]'
-                                  : 'bg-black/20 text-[#DBA858] border-[#E89C31]/35 hover:border-[#E89C31]'
-                              }`}
-                            >
-                              Глава {chapter.n}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="rounded-lg border border-[#E89C31]/35 bg-black/20 p-4 max-h-[420px] overflow-y-auto">
-                          <div className="text-xs uppercase tracking-wide text-[#DBA858]/60 mb-2">
-                            Продолжение
-                          </div>
-                          <h4 className="text-xl md:text-2xl font-semibold text-[#E89C31] mb-3">
-                            {selectedChapter?.title || `Глава ${selectedChapter?.n || ''}`}
-                          </h4>
-                          {selectedChapterImageUrl && selectedChapterImage?.status === 'ready' && (
-                            <div className="mb-4 overflow-hidden rounded-lg border border-[#E89C31]/30 bg-[#031B28]">
-                              <img
-                                src={selectedChapterImageUrl}
-                                alt={`Иллюстрация к главе ${selectedChapter?.n || ''}`}
-                                className="w-full max-h-[460px] object-contain"
-                              />
-                            </div>
-                          )}
-                          <div className="space-y-3 text-sm md:text-base leading-relaxed text-[#F3D9A4]">
-                            {selectedChapterParagraphs.map((paragraph, index) => (
-                              <p key={`${selectedChapter?.n}-${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-sm text-[#DBA858]/70">
-                        Загружаем полный текст истории.
-                      </p>
+                    {interiorPdfUrl && (
+                      <a href={interiorPdfUrl} target="_blank" rel="noreferrer" className="text-[#DBA858]/80 underline-offset-4 hover:underline">
+                        Внутренний блок PDF
+                      </a>
                     )}
                   </div>
                 )}
