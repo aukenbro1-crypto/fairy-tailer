@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -300,9 +300,6 @@ type ReaderPage = {
 
 interface GeneratedBookReaderProps {
   title: string;
-  subtitle?: string;
-  coverSummary?: string;
-  coverImageUrl?: string;
   chapters: ReaderChapter[];
   fullTextStatus: string | null;
   fullVisualsStatus: string | null;
@@ -313,6 +310,45 @@ interface GeneratedBookReaderProps {
   onContinueStory: () => void;
 }
 
+const READER_PAGE_CHAR_LIMIT = 560;
+const READER_PARAGRAPH_CHAR_LIMIT = 360;
+
+const splitReaderSentences = (text: string) => {
+  const sentences = text.match(/[^.!?…]+[.!?…]+(?:["»”])?/g);
+  return sentences?.length ? sentences.map((sentence) => sentence.trim()).filter(Boolean) : [text.trim()].filter(Boolean);
+};
+
+const splitLongReaderParagraph = (paragraph: string) => {
+  if (paragraph.length <= READER_PARAGRAPH_CHAR_LIMIT) return [paragraph];
+
+  const chunks: string[] = [];
+  let current = '';
+  splitReaderSentences(paragraph).forEach((sentence) => {
+    const next = current ? `${current} ${sentence}` : sentence;
+    if (current && next.length > READER_PARAGRAPH_CHAR_LIMIT) {
+      chunks.push(current);
+      current = sentence;
+      return;
+    }
+    current = next;
+  });
+  if (current) chunks.push(current);
+
+  return chunks.flatMap((chunk) => {
+    if (chunk.length <= READER_PARAGRAPH_CHAR_LIMIT) return [chunk];
+    const pieces: string[] = [];
+    let rest = chunk;
+    while (rest.length > READER_PARAGRAPH_CHAR_LIMIT) {
+      let cut = rest.lastIndexOf(' ', READER_PARAGRAPH_CHAR_LIMIT);
+      if (cut < 160) cut = READER_PARAGRAPH_CHAR_LIMIT;
+      pieces.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) pieces.push(rest);
+    return pieces;
+  });
+};
+
 const chunkReaderParagraphs = (blocks: string[]) => {
   const pages: string[][] = [];
   const pushPage = (paragraphs: string[]) => {
@@ -320,12 +356,12 @@ const chunkReaderParagraphs = (blocks: string[]) => {
   };
 
   blocks.forEach((block) => {
-    const paragraphs = formatPreviewText(block);
+    const paragraphs = formatPreviewText(block).flatMap(splitLongReaderParagraph);
     let current: string[] = [];
     let currentLength = 0;
     paragraphs.forEach((paragraph) => {
       const nextLength = currentLength + paragraph.length;
-      if (current.length > 0 && nextLength > 860) {
+      if (current.length > 0 && (nextLength > READER_PAGE_CHAR_LIMIT || current.length >= 3)) {
         pushPage(current);
         current = [];
         currentLength = 0;
@@ -342,10 +378,10 @@ const chunkReaderParagraphs = (blocks: string[]) => {
 const buildReaderTeaser = (chapter: ReaderChapter) => {
   const source = formatPreviewText(chapter.textBlocks[0] || '').join(' ');
   if (!source) return '';
-  const sentences = source.match(/[^.!?…]+[.!?…]+(?:["»”])?/g) || [source];
+  const sentences = splitReaderSentences(source);
   const teaser = sentences.slice(0, 2).join(' ').trim();
-  if (teaser.length <= 230) return teaser;
-  return `${teaser.slice(0, 215).replace(/\s+\S*$/, '')}...`;
+  if (teaser.length <= 180) return teaser;
+  return `${teaser.slice(0, 165).replace(/\s+\S*$/, '')}...`;
 };
 
 const buildReaderPages = (chapters: ReaderChapter[]): ReaderPage[] => {
@@ -419,9 +455,6 @@ const BookReaderPage: React.FC<{ page?: ReaderPage }> = ({ page }) => {
 
 const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
   title,
-  subtitle,
-  coverSummary,
-  coverImageUrl,
   chapters,
   fullTextStatus,
   fullVisualsStatus,
@@ -431,7 +464,6 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
   continueSubmitting,
   onContinueStory,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [spreadIndex, setSpreadIndex] = useState(0);
   const pages = buildReaderPages(chapters);
   const spreadCount = Math.max(1, Math.ceil(pages.length / 2));
@@ -446,35 +478,18 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
   const canGoNext = spreadIndex < spreadCount - 1;
   const statusText = fullTextStatus === 'ready'
     ? renderStatus === 'ready'
-      ? 'Печатная книга собрана'
-      : 'История готова, собираем PDF'
+      ? 'PDF готов'
+      : 'Собираем печатный PDF'
     : fullTextStatus === 'generating'
-      ? 'Продолжение пишется'
+      ? 'Пишем продолжение'
       : 'Первая глава готова';
-
-  if (!isOpen) {
-    return (
-      <section className="generated-book-reader">
-        <button type="button" className="generated-book-cover" onClick={() => setIsOpen(true)}>
-          <div className="generated-book-cover-copy">
-            <span>{subtitle || 'Fairyteller'}</span>
-            <h4>{title || 'Ваша сказка'}</h4>
-            {coverSummary && <p>{coverSummary}</p>}
-          </div>
-          <div className="generated-book-cover-art">
-            {coverImageUrl ? <img src={coverImageUrl} alt="" /> : <BookOpen aria-hidden="true" />}
-          </div>
-          <div className="generated-book-cover-hint">Открыть книгу</div>
-        </button>
-      </section>
-    );
-  }
 
   return (
     <section className="generated-book-reader">
       <div className="generated-book-toolbar">
-        <div>
+        <div className="generated-book-toolbar-main">
           <div className="generated-book-status">{statusText}</div>
+          <h4 className="generated-book-title">{title || 'Ваша сказка'}</h4>
           <div className="generated-book-counter">
             Разворот {spreadIndex + 1} из {spreadCount}
           </div>
@@ -509,9 +524,9 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
         <span>
           {fullTextStatus === 'ready'
             ? fullVisualsStatus === 'ready'
-              ? 'Главы и иллюстрации готовы'
-              : 'Иллюстрации дорисовываются'
-            : 'Нажмите “Хочу всю историю”, чтобы открыть всю книгу'}
+              ? 'Книга обновляется здесь по мере готовности'
+              : 'Иллюстрации появляются по главам'
+            : 'Первая глава уже перед вами'}
         </span>
         <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
           <ChevronRight size={18} aria-hidden="true" />
@@ -684,11 +699,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     || fullTextArtifact?.text?.preview?.title
     || jobStatus?.preview?.title
     || 'Ваша сказка';
-  const readerSubtitle = fullTextArtifact?.text?.bible?.subtitle || undefined;
-  const readerCoverSummary = fullTextArtifact?.text?.bible?.coverSummary
-    || fullTextArtifact?.text?.preview?.summary
-    || jobStatus?.preview?.summary
-    || undefined;
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -834,8 +844,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     }
 
     toast({
-      title: ok ? "Задача принята" : "Ошибка отправки",
-      description: ok ? "История генерируется" : "Не удалось отправить данные. Попробуйте ещё раз."
+      title: ok ? "Начали создавать книгу" : "Не получилось отправить форму",
+      description: ok ? "Пишем первую главу и готовим первый разворот." : "Проверьте данные и попробуйте ещё раз."
     });
     
     setShowLoader(false);
@@ -1435,7 +1445,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                 autoComplete="email"
                 required
               />
-              <p className="mixer-hint">Мы вышлем PDF на этот адрес.</p>
+              <p className="mixer-hint">Печатный PDF и полная версия будут доступны здесь и по ссылке.</p>
 
               {/* Consent Checkbox */}
               <div className="flex items-start gap-3 mt-4">
@@ -1466,7 +1476,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
           </div>
           
           <p className="mixer-subtitle text-center mt-6">
-            Готовый PDF в течение 15 минут придет на указанную почту.
+            Первая глава появится на этой странице, а затем можно будет собрать всю книгу.
           </p>
         </div>
       )}
@@ -1476,49 +1486,39 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="mixer-modal-panel max-w-md text-center">
             <div className="mixer-loading-indicator" />
-            <h3 className="text-xl font-semibold mixer-display-value mb-2">Задача отправлена</h3>
-            <p className="mixer-subtitle">Обработка запроса...</p>
+            <h3 className="text-xl font-semibold mixer-display-value mb-2">Готовим первую главу</h3>
+            <p className="mixer-subtitle">Скоро здесь появится книжный предпросмотр.</p>
           </div>
         </div>
       )}
 
       {/* Success Overlay */}
       {showSuccessOverlay && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="generated-preview-backdrop">
           <div
-            className="w-full max-w-5xl max-h-[92vh] overflow-y-auto bg-[#031B28] text-[#DBA858] border-2 border-[#E89C31] rounded-2xl shadow-2xl p-5 md:p-8 text-center"
+            className={`generated-preview-dialog ${hasFirstChapterPreview ? 'generated-preview-dialog-reader' : ''}`}
             role="dialog"
             aria-modal="true"
           >
-            <div className="text-5xl mb-4">✨📚</div>
-            <h3 className="text-2xl md:text-3xl font-semibold mb-3 mixer-nameplate">Запрос принят!</h3>
-            <p className="text-base md:text-lg mixer-subtitle mb-5">
-              Книга придет на почту в течение 15 минут.
-            </p>
-            {submittedJobId && (
-              <div className="mb-6 text-left bg-[#06283A] border border-[#E89C31]/40 rounded-lg p-4">
-                <div className="flex items-center justify-between gap-4 text-sm text-[#DBA858]/80 mb-2">
-                  <span>Статус генерации</span>
-                  <span>{Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-black/30 overflow-hidden mb-3">
-                  <div
-                    className="h-full bg-[#E89C31] transition-all duration-500"
-                    style={{ width: `${Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%` }}
-                  />
-                </div>
-                <p className="text-sm text-[#DBA858]">
-                  {jobStatus?.message || 'Задача поставлена в очередь'}
-                </p>
+            {!hasFirstChapterPreview && (
+              <div className="generated-preview-waiting">
+                <div className="generated-preview-mark" aria-hidden="true">✦</div>
+                <h3>Начали создавать книгу</h3>
+                <p>{jobStatus?.message || 'Пишем первую главу и готовим образ героев.'}</p>
+                {submittedJobId && (
+                  <div className="generated-preview-progress" aria-label="Прогресс создания книги">
+                    <div
+                      className="generated-preview-progress-bar"
+                      style={{ width: `${Math.max(0, Math.min(100, jobStatus?.progress ?? 0))}%` }}
+                    />
+                  </div>
+                )}
               </div>
             )}
             {submittedJobId && hasFirstChapterPreview && (
-              <div className="mb-6">
+              <>
                 <GeneratedBookReader
                   title={readerTitle}
-                  subtitle={readerSubtitle}
-                  coverSummary={readerCoverSummary}
-                  coverImageUrl={previewImageUrl}
                   chapters={readerChapters}
                   fullTextStatus={fullTextStatus}
                   fullVisualsStatus={fullVisualsStatus}
@@ -1529,33 +1529,37 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                   onContinueStory={handleContinueStory}
                 />
                 {renderStatus === 'ready' && (coverPdfUrl || interiorPdfUrl) && (
-                  <div className="mt-3 flex flex-wrap justify-center gap-3 text-sm">
+                  <div className="generated-preview-secondary-links">
                     {coverPdfUrl && (
-                      <a href={coverPdfUrl} target="_blank" rel="noreferrer" className="text-[#DBA858]/80 underline-offset-4 hover:underline">
+                      <a href={coverPdfUrl} target="_blank" rel="noreferrer">
                         Обложка PDF
                       </a>
                     )}
                     {interiorPdfUrl && (
-                      <a href={interiorPdfUrl} target="_blank" rel="noreferrer" className="text-[#DBA858]/80 underline-offset-4 hover:underline">
+                      <a href={interiorPdfUrl} target="_blank" rel="noreferrer">
                         Внутренний блок PDF
                       </a>
                     )}
                   </div>
                 )}
-              </div>
+              </>
             )}
-            <p className="text-sm text-[#DBA858]/70">
-              Проверьте папку «Спам», если письмо не появится во входящих.
-            </p>
-            <button
-              onClick={() => {
-                setShowSuccessOverlay(false);
-                resetForm();
-              }}
-              className="mt-6 mixer-main-button px-8 py-3"
-            >
-              Создать ещё одну сказку
-            </button>
+            <div className="generated-preview-footer">
+              <p>
+                {hasFirstChapterPreview
+                  ? 'Предпросмотр обновляется прямо на этой странице.'
+                  : 'Первый разворот появится автоматически.'}
+              </p>
+              <button
+                onClick={() => {
+                  setShowSuccessOverlay(false);
+                  resetForm();
+                }}
+                className="generated-preview-new-button"
+              >
+                Создать другую сказку
+              </button>
+            </div>
           </div>
         </div>
       )}
