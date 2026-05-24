@@ -290,10 +290,11 @@ interface ReaderChapter {
 
 type ReaderPage = {
   key: string;
-  kind: 'chapter' | 'text';
+  kind: 'chapter' | 'image' | 'text';
   chapter: number;
   title: string;
   imageUrl?: string;
+  teaser?: string;
   paragraphs?: string[];
 };
 
@@ -338,11 +339,26 @@ const chunkReaderParagraphs = (blocks: string[]) => {
   return pages.length > 0 ? pages : [[]];
 };
 
+const buildReaderTeaser = (chapter: ReaderChapter) => {
+  const source = formatPreviewText(chapter.textBlocks[0] || '').join(' ');
+  if (!source) return '';
+  const sentences = source.match(/[^.!?…]+[.!?…]+(?:["»”])?/g) || [source];
+  const teaser = sentences.slice(0, 2).join(' ').trim();
+  if (teaser.length <= 230) return teaser;
+  return `${teaser.slice(0, 215).replace(/\s+\S*$/, '')}...`;
+};
+
 const buildReaderPages = (chapters: ReaderChapter[]): ReaderPage[] => {
   return chapters.flatMap((chapter) => {
     const pages: ReaderPage[] = [{
       key: `chapter-${chapter.n}-opener`,
       kind: 'chapter',
+      chapter: chapter.n,
+      title: chapter.title,
+      teaser: buildReaderTeaser(chapter),
+    }, {
+      key: `chapter-${chapter.n}-image`,
+      kind: 'image',
       chapter: chapter.n,
       title: chapter.title,
       imageUrl: chapter.imageUrl,
@@ -373,6 +389,14 @@ const BookReaderPage: React.FC<{ page?: ReaderPage }> = ({ page }) => {
         <div className="generated-book-chapter-kicker">Глава {page.chapter}</div>
         <h4>{page.title}</h4>
         <div className="generated-book-rule" aria-hidden="true" />
+        {page.teaser && <p>{page.teaser}</p>}
+      </article>
+    );
+  }
+
+  if (page.kind === 'image') {
+    return (
+      <article className="generated-book-page generated-book-page-image">
         <div className="generated-book-chapter-image">
           {page.imageUrl ? (
             <img src={page.imageUrl} alt={`Иллюстрация к главе ${page.chapter}`} />

@@ -938,28 +938,24 @@ function drawPptWritingLines(page, box, options = {}) {
   }
 }
 
-function drawChapterHeading(page, chapter, chapterIndex, fonts) {
-  const roman = ['I', 'II', 'III', 'IV', 'V'][chapterIndex - 1] || String(chapterIndex);
-  drawPptText(page, `Глава ${roman}`, pptBox(29.69, 34.15, 326.13, 24), {
-    font: fonts.fontInterStrong,
-    size: 15.77,
-    minSize: 12,
-    align: 'center',
-    valign: 'center',
-    color: hexColor('#292929'),
-  });
-  drawPptText(page, chapter.title || `Глава ${chapterIndex}`, pptBox(29.69, 58.5, 326.13, 28.85), {
-    font: fonts.fontInterStrong,
-    size: 16,
-    minSize: 9,
-    lineHeightRatio: 1.1,
-    align: 'center',
-    valign: 'center',
-    color: hexColor('#292929'),
-  });
+function chapterRoman(chapterIndex) {
+  return ['I', 'II', 'III', 'IV', 'V'][chapterIndex - 1] || String(chapterIndex);
 }
 
-const CHAPTER_START_PAGES = [8, 14, 20, 26, 32];
+function chapterTeaser(chapter, blocks = []) {
+  const explicit = cleanText(chapter.summary || chapter.teaser || '');
+  if (explicit) return explicit;
+  const source = cleanText(blocks[0] || chapter.text || '');
+  if (!source) return '';
+  const sentences = splitSentences(source);
+  const teaser = (sentences.length ? sentences.slice(0, 2).join(' ') : source).trim();
+  if (teaser.length <= 260) return teaser;
+  return `${teaser.slice(0, 245).replace(/\s+\S*$/, '')}...`;
+}
+
+const CHAPTER_START_PAGES = [5, 12, 19, 26, 33];
+const CHAPTER_FIRST_TEXT_PAGES = [7, 14, 21, 28, 35];
+const CHAPTER_FINAL_TEXT_PAGES = [11, 18, 25, 32, 39];
 const TEXT_PAGE_BOX = pptBox(29.69, 28.35, 327.52, 300.35);
 const TEXT_PAGE_NUM_BOXES = {
   9: pptBox(178.9, 328.9, 27.6, 28.3),
@@ -994,25 +990,79 @@ function drawBookPaper(page, assets, variant = 'image8') {
   drawPptImage(page, image, pptBox(-6.43, -3.64, 395.16, 392.2));
 }
 
-async function addPptChapterOpening(pdf, fonts, assets, dir, visuals, chapter, chapterIndex, pageNumber) {
+function addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pageNumber, blocks) {
   const page = addPptInteriorPage(pdf);
-  drawPptImage(page, assets.book.image6, pptBox(-1.07, 1.53, 391.11, 385.51));
-  drawChapterHeading(page, chapter, chapterIndex, fonts);
+  drawPptImage(page, assets.book.image6, pptBox(-13.07, -0.73, 398.59, 392.88));
+  drawPptText(page, `Глава ${chapterRoman(chapterIndex)}`, pptBox(29.69, 56, 326.13, 28), {
+    font: fonts.fontInterStrong,
+    size: 14,
+    minSize: 10,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
+  drawPptText(page, chapter.title || `Глава ${chapterIndex}`, pptBox(29.69, 103, 326.13, 92), {
+    font: fonts.fontRubik,
+    size: 30,
+    minSize: 15,
+    lineHeightRatio: 1.06,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
+  drawPptImage(page, assets.book.image2, pptBox(74, 207, 237, 5.64));
+  const teaser = chapterTeaser(chapter, blocks);
+  if (teaser) {
+    const teaserLayout = drawPptText(page, teaser, pptBox(49.5, 230, 286, 63), {
+      font: fonts.fontInterBody,
+      size: 10.2,
+      minSize: 7.2,
+      lineHeightRatio: 1.34,
+      align: 'center',
+      valign: 'top',
+      color: hexColor('#292929'),
+    });
+    if (teaserLayout.truncated) throw new Error(`Chapter ${chapterIndex} teaser does not fit on title page`);
+  }
   drawPptPageNumber(page, pageNumber, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
-  drawPptImage(page, assets.book.image2, pptBox(49.17, 99.94, 287.17, 5.64));
+}
+
+async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex) {
+  const page = addPptInteriorPage(pdf);
   const image = await embedImage(pdf, dir, findImage(visuals, `chapter_${chapterIndex}`));
   if (image) {
-    drawClippedCoverImage(page, image, topLeftBox(page, pptBox(47.32, 118.75, 289.13, 202.39)));
+    drawClippedCoverImage(page, image, {
+      x: 0,
+      y: 0,
+      width: mmToPt(INTERIOR_SIZE_MM[0]),
+      height: mmToPt(INTERIOR_SIZE_MM[1]),
+    });
+    return;
   }
+  page.drawRectangle({
+    x: 0,
+    y: 0,
+    width: mmToPt(INTERIOR_SIZE_MM[0]),
+    height: mmToPt(INTERIOR_SIZE_MM[1]),
+    color: hexColor('#FBF8EF'),
+  });
+  drawPptText(page, 'Иллюстрация готовится', pptBox(50, 170, 285.51, 28), {
+    font: fonts.fontInterBody,
+    size: 11,
+    minSize: 9,
+    align: 'center',
+    valign: 'center',
+    color: hexColor('#292929'),
+  });
 }
 
 function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
   const page = addPptInteriorPage(pdf);
-  drawBookPaper(page, assets, [13, 19, 25, 31, 37, 40].includes(pageNumber) ? 'image9' : 'image8');
-  const textBox = [13, 19, 25, 37].includes(pageNumber)
-    ? pptBox(29.69, 28.35, 327.52, pageNumber === 13 ? 284.5 : pageNumber === 19 ? 292.7 : pageNumber === 25 ? 294.5 : 300.35)
+  drawBookPaper(page, assets, CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber) ? 'image9' : 'image8');
+  const textBox = CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)
+    ? pptBox(29.69, 28.35, 327.52, pageNumber === 11 ? 284.5 : pageNumber === 18 ? 292.7 : pageNumber === 25 ? 294.5 : 300.35)
     : TEXT_PAGE_BOX;
-  const hasDropCap = [9, 15, 21, 27, 33].includes(pageNumber);
+  const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);
   const textLayout = drawPptParagraphText(page, text, textBox, {
     font: fonts.fontInterBody,
     size: 11,
@@ -1034,10 +1084,10 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber) {
     color: hexColor('#292929'),
   });
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
-  if ([13, 19, 25, 31].includes(pageNumber)) {
+  if ([11, 18, 25, 32].includes(pageNumber)) {
     drawPptImage(page, assets.book.image15, pptBox(146.1, 324.7, 94.8, 8.0));
   }
-  if (pageNumber === 37) {
+  if (pageNumber === 39) {
     drawPptImage(page, assets.book.image17, pptBox(80.27, 296.92, 245.15, 51.56));
     drawPptImage(page, assets.book.image15, pptBox(146.07, 325.08, 97.48, 7.95));
   }
@@ -1056,12 +1106,6 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   const bible = fullText.text?.bible || {};
 
   let page = addPptInteriorPage(pdf);
-  drawBookPaper(page, assets, 'image8');
-
-  page = addPptInteriorPage(pdf);
-  drawBookPaper(page, assets, 'image8');
-
-  page = addPptInteriorPage(pdf);
   drawPptImage(page, assets.book.image6, pptBox(-13.07, -0.73, 398.59, 392.88));
   drawPptText(page, bible.bookTitle || fullText.text?.preview?.title || 'Сказка', pptBox(29.69, 84.87, 326.13, 215.76), {
     font: fonts.fontRubik,
@@ -1103,7 +1147,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     valign: 'top',
     color: hexColor('#292929'),
   });
-  drawPptPageNumber(page, 4, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
+  drawPptPageNumber(page, 2, fonts, pptBox(178.58, 328.7, 28.35, 29.24));
 
   page = addPptInteriorPage(pdf);
   drawPptImage(page, assets.book.image7, pptBox(-41.38, -2.24, 385.51, 390.0));
@@ -1123,7 +1167,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     opacity: 0.45,
     thickness: 0.6,
   });
-  drawPptPageNumber(page, 5, fonts);
+  drawPptPageNumber(page, 3, fonts);
 
   page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, 'image8');
@@ -1148,9 +1192,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     align: 'right',
     color: hexColor('#292929'),
   });
-
-  page = addPptInteriorPage(pdf);
-  drawBookPaper(page, assets, 'image8');
+  drawPptPageNumber(page, 4, fonts);
 
   for (const chapter of chapters) {
     const blocks = getChapterTextBlocks(chapter);
@@ -1158,7 +1200,8 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       throw new Error(`Expected ${layout.pagePlan.textPagesPerChapter} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
     }
     const chapterIndex = Number(chapter.n);
-    await addPptChapterOpening(pdf, fonts, assets, dir, visuals, chapter, chapterIndex, pdf.getPageCount() + 1);
+    addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pdf.getPageCount() + 1, blocks);
+    await addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex);
     for (const block of blocks) {
       const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1);
       if (textLayout.truncated) {
@@ -1177,14 +1220,6 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     valign: 'center',
     color: hexColor('#292929'),
   });
-
-  page = addPptInteriorPage(pdf);
-  drawPptImage(page, assets.book.image6, pptBox(0, 0.45, 385.51, 385.51));
-  drawPptImage(page, assets.book.image16, pptBox(12, 24, 361.51, 361.51));
-
-  page = addPptInteriorPage(pdf);
-  drawPptImage(page, assets.book.image9, pptBox(0, 95.54, 385.51, 289.98));
-  drawPptPageNumber(page, 40, fonts, pptBox(177.52, 329.59, 30.47, 27.59));
 
   if (pdf.getPageCount() !== TARGET_INTERIOR_PAGES) {
     throw new Error(`Interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${pdf.getPageCount()}`);

@@ -7,9 +7,13 @@
   },
   "pagePlan": {
     "interiorPages": 40,
+    "frontMatterPages": 4,
     "chapters": 5,
+    "chapterTitlePagesPerChapter": 1,
+    "chapterImagePagesPerChapter": 1,
     "textPagesPerChapter": 5,
-    "outroPages": 3
+    "outroPages": 1,
+    "chapterStartPages": [5, 12, 19, 26, 33]
   },
   "templates": {
     "cover": {

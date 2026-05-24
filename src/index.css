@@ -1231,19 +1231,22 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
 .generated-book-chapter-kicker {
-  margin-top: 2px;
-  font-size: clamp(1rem, 2vw, 1.25rem);
+  margin-top: 0;
+  font-size: 1.05rem;
   font-weight: 700;
 }
 
 .generated-book-page-chapter h4 {
-  margin: 18px 0 12px;
-  font-size: clamp(1.35rem, 3vw, 2.1rem);
-  line-height: 1.1;
+  max-width: 11ch;
+  margin: 20px 0 14px;
+  font-family: "Arial Black", Impact, "Inter", Arial, sans-serif;
+  font-size: 2.05rem;
+  line-height: 1.06;
 }
 
 .generated-book-rule {
@@ -1254,16 +1257,29 @@ html, body {
   background: #2f2f2f;
 }
 
+.generated-book-page-chapter p {
+  max-width: 31ch;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.98rem;
+  line-height: 1.48;
+  color: rgba(45, 45, 45, 0.78);
+}
+
+.generated-book-page-image {
+  padding: 0;
+  background: #16120f;
+}
+
 .generated-book-chapter-image {
-  width: min(100%, 360px);
-  margin-top: auto;
-  aspect-ratio: 1.43;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  background: rgba(3, 27, 40, 0.08);
+  background: rgba(3, 27, 40, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(45, 45, 45, 0.58);
+  color: rgba(255, 247, 232, 0.78);
   font-size: 0.9rem;
 }
 
@@ -1352,6 +1368,10 @@ html, body {
 
   .generated-book-page {
     min-height: 420px;
+  }
+
+  .generated-book-page-chapter h4 {
+    font-size: 1.65rem;
   }
 
   .generated-book-nav {
