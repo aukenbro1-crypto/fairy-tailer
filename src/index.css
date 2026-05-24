@@ -1247,11 +1247,13 @@ html, body {
 
 .generated-book-page {
   position: relative;
+  container-type: inline-size;
   min-width: 0;
   min-height: 0;
   width: 100%;
   height: 100%;
-  padding: 30px;
+  padding: clamp(20px, 7cqw, 30px);
+  padding: clamp(18px, calc((100svh - 255px) * 0.058), 30px);
   overflow: hidden;
   background:
     radial-gradient(circle at 75% 5%, rgba(120, 120, 120, 0.08), transparent 24%),
@@ -1339,12 +1341,32 @@ html, body {
 
 .generated-book-page-text {
   font-size: 12.5px;
+  font-size: clamp(8.8px, 3.2cqw, 12.5px);
+  font-size: clamp(8.4px, calc((100svh - 255px) * 0.021), 12.5px);
   line-height: 1.42;
+}
+
+.generated-book-page-text-dense {
+  font-size: 11.8px;
+  font-size: clamp(8.1px, 3cqw, 11.8px);
+  font-size: clamp(7.8px, calc((100svh - 255px) * 0.0195), 11.8px);
+  line-height: 1.39;
+}
+
+.generated-book-page-text-compact {
+  font-size: 11.1px;
+  font-size: clamp(7.6px, 2.8cqw, 11.1px);
+  font-size: clamp(7.2px, calc((100svh - 255px) * 0.018), 11.1px);
+  line-height: 1.36;
 }
 
 .generated-book-page-text p {
   margin: 0 0 0.82em;
   text-indent: 1.4em;
+}
+
+.generated-book-page-text p:last-child {
+  margin-bottom: 0;
 }
 
 .generated-book-page-text p:first-child::first-letter {
@@ -1417,7 +1439,23 @@ html, body {
 
   .generated-book-page-text {
     font-size: 10px;
+    font-size: clamp(7.8px, 2.55cqw, 10px);
+    font-size: clamp(7.6px, calc((100svh - 290px) * 0.022), 10px);
     line-height: 1.38;
+  }
+
+  .generated-book-page-text-dense {
+    font-size: 9.4px;
+    font-size: clamp(7.4px, 2.35cqw, 9.4px);
+    font-size: clamp(7.1px, calc((100svh - 290px) * 0.0205), 9.4px);
+    line-height: 1.35;
+  }
+
+  .generated-book-page-text-compact {
+    font-size: 8.9px;
+    font-size: clamp(6.9px, 2.2cqw, 8.9px);
+    font-size: clamp(6.7px, calc((100svh - 290px) * 0.019), 8.9px);
+    line-height: 1.32;
   }
 
   .generated-book-page-chapter h4 {

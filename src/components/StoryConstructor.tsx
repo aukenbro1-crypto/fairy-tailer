@@ -349,7 +349,7 @@ const splitLongReaderParagraph = (paragraph: string) => {
   });
 };
 
-const chunkReaderParagraphs = (blocks: string[]) => {
+const chunkLooseReaderParagraphs = (blocks: string[]) => {
   const pages: string[][] = [];
   const pushPage = (paragraphs: string[]) => {
     if (paragraphs.length > 0) pages.push(paragraphs);
@@ -373,6 +373,23 @@ const chunkReaderParagraphs = (blocks: string[]) => {
   });
 
   return pages.length > 0 ? pages : [[]];
+};
+
+const buildReaderTextPages = (blocks: string[]) => {
+  const printPages = blocks
+    .map((block) => formatPreviewText(block))
+    .filter((paragraphs) => paragraphs.length > 0);
+
+  if (printPages.length > 1) return printPages;
+
+  return chunkLooseReaderParagraphs(blocks);
+};
+
+const getReaderTextDensityClass = (paragraphs: string[] = []) => {
+  const textLength = paragraphs.join(' ').length;
+  if (textLength > 1700 || paragraphs.length > 7) return 'generated-book-page-text-compact';
+  if (textLength > 1200 || paragraphs.length > 5) return 'generated-book-page-text-dense';
+  return '';
 };
 
 const buildReaderTeaser = (chapter: ReaderChapter) => {
@@ -400,7 +417,7 @@ const buildReaderPages = (chapters: ReaderChapter[]): ReaderPage[] => {
       imageUrl: chapter.imageUrl,
     }];
 
-    chunkReaderParagraphs(chapter.textBlocks).forEach((paragraphs, index) => {
+    buildReaderTextPages(chapter.textBlocks).forEach((paragraphs, index) => {
       pages.push({
         key: `chapter-${chapter.n}-text-${index}`,
         kind: 'text',
@@ -445,7 +462,7 @@ const BookReaderPage: React.FC<{ page?: ReaderPage }> = ({ page }) => {
   }
 
   return (
-    <article className="generated-book-page generated-book-page-text">
+    <article className={`generated-book-page generated-book-page-text ${getReaderTextDensityClass(page.paragraphs)}`}>
       {page.paragraphs?.map((paragraph, index) => (
         <p key={`${page.key}-${index}`}>{paragraph}</p>
       ))}
