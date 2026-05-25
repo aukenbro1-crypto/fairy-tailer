@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-25 12:20 UTC
+Last updated: 2026-05-25 15:24 UTC
 
 ## Project Context
 
@@ -101,8 +101,10 @@ Visual generation note:
 
 - `fairyteller_visuals` prioritizes `chapter_1` before cover and later chapter images.
 - `fairyteller_intake` detects uploaded hero photo binary fields and stores per-hero metadata: `photoField`, `photoMime`, `photoFileName`, and `hasPhoto`.
+- `fairyteller_intake` also derives each hero's `ageGroup` from an explicit future `heroN_age_group` field or from the free-form name/description/relation text. Current values are `child`, `teen`, `adult`, `senior`, or `unknown`, with `ageGroupSource` recorded as `explicit`, `age_number`, `keyword`, or `not_detected`.
 - `fairyteller_visuals` first generates `hero-reference-sheet.png` as a stylized character sheet from hero descriptions and uploaded photo references when present.
 - Chapter image generation uses the generated hero reference sheet as an inline image reference, so chapter 1 can preserve the same character designs.
+- Portraitizer, chapter, and cover prompts treat hero age group as mandatory visual canon: children, teenagers, adults, and seniors must keep distinct proportions, maturity, and relative height/scale instead of being averaged into the main hero's apparent age.
 - `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same generated portrait sheet instead of regenerating character identity from scratch.
 - Chapter illustration prompts must target the actual interior image page: `136 x 136 mm`, square `1:1`, full-bleed, roughly `1606 x 1606 px` at 300 DPI. Key faces, hands, silhouettes, and the important object must stay away from the left 15% gutter/spine area and outer 3 mm trim edge.
 - Chapter illustration prompts must explicitly forbid rendered typography: no chapter numbers, titles, captions, signs, labels, fake letters, posters, banners, UI, white margins, blank paper backgrounds, or decorative borders. If a scene contains papers/books/signs, they must be abstract unreadable texture only; the PDF renderer owns all visible text.
@@ -314,3 +316,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added optional passwordless access for the same PDF list through `/api/fairyteller/books/:secret`, where `:secret` is configured only on production as `FAIRYTELLER_ADMIN_BOOKS_SECRET` in `/etc/fairyteller/api.env`. This keeps the normal token login available while giving operators a bookmarkable no-token URL.
 - Removed the intermediate web book preview from the default `/create` UX. After submit, the user now sees one staged full-generation overlay with an approximate timer; `fairyteller_text` automatically starts `fairyteller_full_text` alongside first visuals, and the UI links the final print `book.pdf` when render completes. Strengthened text density prompts to target one print-ready block per page (`780-1050` chars for chapter 1, `820-1050` chars for chapters 2-5), strengthened image prompts to forbid rendered typography/white margins, and moved the decorative `Конец` label up/right on page 39.
 - Changed the `/api/fairyteller/books` login form to use a separate operator password from `FAIRYTELLER_ADMIN_BOOKS_PASSWORD` instead of asking for the API token. Bearer/header API-token access remains available for technical checks, and the password value must stay only in production environment config.
+- Added inferred hero age groups to the visual pipeline. `fairyteller_intake` now stores `ageGroup`/`ageGroupSource` for each hero from explicit future fields or from free-form descriptions, and `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` pass those labels into the portraitizer, visual bible, chapter-image prompts, and cover prompt so secondary heroes keep stable adult/child/teen/senior proportions.
