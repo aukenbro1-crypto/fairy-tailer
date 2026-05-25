@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-25 15:24 UTC
+Last updated: 2026-05-25 15:59 UTC
 
 ## Project Context
 
@@ -52,11 +52,11 @@ The new n8n pipeline is intentionally split into modular workflows:
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
 | `fairyteller_continue` | `Y7Bt3zq9XTContinue` | Legacy/manual continuation webhook kept for old jobs and recovery, no longer part of the default UX. |
 | `fairyteller_full_text` | `C2Pcin7lctSY5nc2` | Background continuation generator for chapters 2-5 and `full-text.json`. |
-| `fairyteller_full_visuals` | `FVFullVisuals20260523` | Background generator for chapter 2-5 illustrations using the existing visual bible and portrait sheet. |
-| `fairyteller_cover` | `FVCover20260523` | Background cover-art generator using full text, visual bible, and portrait sheet. |
+| `fairyteller_full_visuals` | `FVFullVisuals20260523` | Background generator for chapter 2-5 illustrations using the existing visual bible and per-hero reference cards. |
+| `fairyteller_cover` | `FVCover20260523` | Background cover-art generator using full text, visual bible, and per-hero reference cards. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-25: the internal text, full-text, visuals, cover, and PDF render paths are published and connected to the Job API. The text workflow generates chapter 1 with Gemini, writes `text.json`, then starts `fairyteller_visuals` and `fairyteller_full_text` asynchronously from the same payload. The website no longer waits for a user continuation click; it shows staged full-book progress until `book.pdf` is ready. The visuals workflows generate a hero reference sheet, chapter illustrations, cover art, and `visuals.json`; the PDF render step creates `cover.pdf`, `interior.pdf`, `book.pdf`, `preview.pdf`, and `render.json`.
+Current state as of 2026-05-25: the internal text, full-text, visuals, cover, and PDF render paths are published and connected to the Job API. The text workflow generates chapter 1 with Gemini, writes `text.json`, then starts `fairyteller_visuals` and `fairyteller_full_text` asynchronously from the same payload. The website no longer waits for a user continuation click; it shows staged full-book progress until `book.pdf` is ready. The visuals workflows generate per-hero reference cards, optional combined hero reference sheet, chapter illustrations, cover art, and `visuals.json`; the PDF render step creates `cover.pdf`, `interior.pdf`, `book.pdf`, `preview.pdf`, and `render.json`.
 
 Activation state:
 
@@ -102,10 +102,11 @@ Visual generation note:
 - `fairyteller_visuals` prioritizes `chapter_1` before cover and later chapter images.
 - `fairyteller_intake` detects uploaded hero photo binary fields and stores per-hero metadata: `photoField`, `photoMime`, `photoFileName`, and `hasPhoto`.
 - `fairyteller_intake` also derives each hero's `ageGroup` from an explicit future `heroN_age_group` field or from the free-form name/description/relation text. Current values are `child`, `teen`, `adult`, `senior`, or `unknown`, with `ageGroupSource` recorded as `explicit`, `age_number`, `keyword`, or `not_detected`.
-- `fairyteller_visuals` first generates `hero-reference-sheet.png` as a stylized character sheet from hero descriptions and uploaded photo references when present.
-- Chapter image generation uses the generated hero reference sheet as an inline image reference, so chapter 1 can preserve the same character designs.
+- `fairyteller_visuals` now uses `per_hero_reference_cards_v1`: original uploaded hero photos are used only inside the portraitizer to generate separate `hero-1-reference.*`, `hero-2-reference.*`, etc. Each card is tied to exactly one hero and carries name, description, relation, and `ageGroup`.
+- The combined `hero-reference-sheet.png` is optional overview/fallback material, not the primary identity source. If a hero has an uploaded source photo and that hero's reference card cannot be generated, the workflow fails clearly instead of silently continuing with unrelated art.
+- Chapter 1, chapter 2-5, and cover image generation attach the ready per-hero reference cards inline to Gemini as the primary identity canon. If no cards exist, they can fall back to the combined sheet.
 - Portraitizer, chapter, and cover prompts treat hero age group as mandatory visual canon: children, teenagers, adults, and seniors must keep distinct proportions, maturity, and relative height/scale instead of being averaged into the main hero's apparent age.
-- `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same generated portrait sheet instead of regenerating character identity from scratch.
+- `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, per-hero reference card URLs/statuses, optional portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same per-hero reference cards instead of regenerating character identity from scratch.
 - Chapter illustration prompts must target the actual interior image page: `136 x 136 mm`, square `1:1`, full-bleed, roughly `1606 x 1606 px` at 300 DPI. Key faces, hands, silhouettes, and the important object must stay away from the left 15% gutter/spine area and outer 3 mm trim edge.
 - Chapter illustration prompts must explicitly forbid rendered typography: no chapter numbers, titles, captions, signs, labels, fake letters, posters, banners, UI, white margins, blank paper backgrounds, or decorative borders. If a scene contains papers/books/signs, they must be abstract unreadable texture only; the PDF renderer owns all visible text.
 - Cover-art prompts target the front-cover image frame in the PPTX-derived cover template, not the whole wraparound spread: about `1.46:1` landscape artwork placed into the white front-cover frame. The final PDF page remains `268.5 x 136 mm`.
@@ -317,3 +318,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Removed the intermediate web book preview from the default `/create` UX. After submit, the user now sees one staged full-generation overlay with an approximate timer; `fairyteller_text` automatically starts `fairyteller_full_text` alongside first visuals, and the UI links the final print `book.pdf` when render completes. Strengthened text density prompts to target one print-ready block per page (`780-1050` chars for chapter 1, `820-1050` chars for chapters 2-5), strengthened image prompts to forbid rendered typography/white margins, and moved the decorative `Конец` label up/right on page 39.
 - Changed the `/api/fairyteller/books` login form to use a separate operator password from `FAIRYTELLER_ADMIN_BOOKS_PASSWORD` instead of asking for the API token. Bearer/header API-token access remains available for technical checks, and the password value must stay only in production environment config.
 - Added inferred hero age groups to the visual pipeline. `fairyteller_intake` now stores `ageGroup`/`ageGroupSource` for each hero from explicit future fields or from free-form descriptions, and `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` pass those labels into the portraitizer, visual bible, chapter-image prompts, and cover prompt so secondary heroes keep stable adult/child/teen/senior proportions.
+- Replaced the single critical portrait-sheet identity path with `per_hero_reference_cards_v1`. `fairyteller_visuals` now generates one reference card per hero from the original photo and hero metadata, stores those cards as Job API files, and writes them into `visuals.visualBible.heroReferenceCards`; chapter 1, chapter 2-5, and cover generation attach those cards inline as the primary identity canon. The combined `hero-reference-sheet.png` is now optional fallback/overview material. Deployed `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` to production, restarted Docker n8n, verified all three are active, and kept backup `/root/fairyteller-n8n-backups/20260525-155221-hero-cards`.
