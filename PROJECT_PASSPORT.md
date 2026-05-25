@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-25 15:59 UTC
+Last updated: 2026-05-25 16:34 UTC
 
 ## Project Context
 
@@ -34,7 +34,7 @@ The `/create` form is now compatible with both response shapes:
 
 - legacy Make response: any successful HTTP response marks the request as accepted and keeps the email-based UX
 - n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the generation overlay
-- current n8n UX: no intermediate first-chapter reader. The overlay shows a staged full-book progress/timer flow and links to the final print `book.pdf` when render is ready.
+- current n8n UX: no intermediate first-chapter reader. The overlay shows a staged full-book progress/timer flow while generation is running, then switches to a clean in-modal `preview.pdf` reader with a bottom print-payment CTA when render is ready.
 
 Frontend migration environment variables:
 
@@ -319,3 +319,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Changed the `/api/fairyteller/books` login form to use a separate operator password from `FAIRYTELLER_ADMIN_BOOKS_PASSWORD` instead of asking for the API token. Bearer/header API-token access remains available for technical checks, and the password value must stay only in production environment config.
 - Added inferred hero age groups to the visual pipeline. `fairyteller_intake` now stores `ageGroup`/`ageGroupSource` for each hero from explicit future fields or from free-form descriptions, and `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` pass those labels into the portraitizer, visual bible, chapter-image prompts, and cover prompt so secondary heroes keep stable adult/child/teen/senior proportions.
 - Replaced the single critical portrait-sheet identity path with `per_hero_reference_cards_v1`. `fairyteller_visuals` now generates one reference card per hero from the original photo and hero metadata, stores those cards as Job API files, and writes them into `visuals.visualBible.heroReferenceCards`; chapter 1, chapter 2-5, and cover generation attach those cards inline as the primary identity canon. The combined `hero-reference-sheet.png` is now optional fallback/overview material. Deployed `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` to production, restarted Docker n8n, verified all three are active, and kept backup `/root/fairyteller-n8n-backups/20260525-155221-hero-cards`.
+- Restored the ready-state PDF preview in `/create` without reintroducing the unstable HTML book spread: once render is ready, the modal hides the status/title header, opens `preview.pdf` in a larger frame, moves the print CTA to the bottom center as `Оплатить печатную версию`, and shows lightweight print/delivery popups. Deployed frontend release `/var/www/fairyteller/releases/20260525-163439-codex-pdf-preview-cta`; nginx root now points to that release.

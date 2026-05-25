@@ -256,11 +256,18 @@ interface GenerationStatusPanelProps {
   jobStatus: JobStatus | null;
   fullTextStatus: string | null;
   renderStatus: string | null;
-  bookPdfUrl: string;
+  previewPdfUrl: string;
+  printPdfUrl: string;
   generationStartedAt: number | null;
 }
 
 const GENERATION_ETA_SECONDS = 150;
+const PDF_READY_TIPS = [
+  'Печать книги занимает один день',
+  '3500₽, с учетом доставки',
+  'Бесплатная доставка по всей России',
+  'Доставка за несколько дней',
+];
 
 const formatGenerationTimer = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -294,17 +301,81 @@ const hasGenerationFailed = (jobStatus: JobStatus | null) => {
   );
 };
 
+const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string }> = ({
+  previewPdfUrl,
+  printPdfUrl,
+}) => {
+  const [visibleTipCount, setVisibleTipCount] = useState(0);
+  const pdfUrl = previewPdfUrl || printPdfUrl;
+  const directPdfUrl = printPdfUrl || previewPdfUrl;
+
+  useEffect(() => {
+    if (!pdfUrl) return;
+    setVisibleTipCount(0);
+    const timeouts = PDF_READY_TIPS.map((_, index) =>
+      window.setTimeout(() => {
+        setVisibleTipCount((count) => Math.max(count, index + 1));
+      }, 900 + index * 950)
+    );
+    return () => timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+  }, [pdfUrl]);
+
+  const revealNextTip = () => {
+    setVisibleTipCount((count) => Math.min(PDF_READY_TIPS.length, count + 1));
+  };
+
+  return (
+    <section
+      className="generated-pdf-preview"
+      aria-label="Предпросмотр готовой книги"
+      onWheelCapture={revealNextTip}
+      onTouchMove={revealNextTip}
+    >
+      <div className="generated-pdf-stage">
+        <div className="generated-pdf-frame">
+          <iframe
+            src={`${pdfUrl}#page=1&view=Fit`}
+            title="PDF-предпросмотр книги"
+            loading="lazy"
+          />
+        </div>
+        <div className="generated-pdf-popups" aria-hidden="true">
+          {PDF_READY_TIPS.slice(0, visibleTipCount).map((tip) => (
+            <div key={tip} className="generated-pdf-popup">
+              {tip}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="generated-pdf-actions">
+        <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link generated-pdf-print-link">
+          <Printer size={17} aria-hidden="true" />
+          Оплатить печатную версию
+        </a>
+        {directPdfUrl && (
+          <a href={directPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link generated-pdf-open-link">
+            <ExternalLink size={16} aria-hidden="true" />
+            PDF
+          </a>
+        )}
+      </div>
+    </section>
+  );
+};
+
 const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
   title,
   jobStatus,
   fullTextStatus,
   renderStatus,
-  bookPdfUrl,
+  previewPdfUrl,
+  printPdfUrl,
   generationStartedAt,
 }) => {
   const [nowMs, setNowMs] = useState(Date.now());
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
-  const isReady = renderStatus === 'ready' && Boolean(bookPdfUrl);
+  const isReady = renderStatus === 'ready' && Boolean(previewPdfUrl || printPdfUrl);
   const isFailed = hasGenerationFailed(jobStatus);
   const activeStepIndex = getGenerationStepIndex(jobStatus, fullTextStatus, renderStatus);
 
@@ -336,6 +407,10 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
     'Финальная книга готова',
   ];
   const steps = ['Детали', 'Мир и герои', 'Текст', 'Картинки', 'Обложка', 'PDF', 'Готово'];
+
+  if (isReady) {
+    return <GeneratedPdfPreview previewPdfUrl={previewPdfUrl} printPdfUrl={printPdfUrl} />;
+  }
 
   return (
     <section className="generation-status-panel" aria-live="polite">
@@ -376,19 +451,6 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
           );
         })}
       </ol>
-
-      {isReady && (
-        <div className="generation-status-actions">
-          <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link">
-            <ExternalLink size={16} aria-hidden="true" />
-            Открыть PDF
-          </a>
-          <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link">
-            <Printer size={16} aria-hidden="true" />
-            Купить печатную книгу
-          </a>
-        </div>
-      )}
     </section>
   );
 };
@@ -490,13 +552,16 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const validateEmail = (email: string) => EMAIL_RX.test(email);
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
-  const bookPdfUrl = jobStatus?.artifacts?.bookPdf?.url
-    || jobStatus?.artifacts?.render?.files?.book?.url
-    || jobStatus?.artifacts?.previewPdf?.url
+  const previewPdfUrl = jobStatus?.artifacts?.previewPdf?.url
     || jobStatus?.artifacts?.render?.files?.preview?.url
     || '';
+  const printPdfUrl = jobStatus?.artifacts?.bookPdf?.url
+    || jobStatus?.artifacts?.render?.files?.book?.url
+    || '';
+  const bookPdfUrl = previewPdfUrl || printPdfUrl;
   const readerTitle = jobStatus?.preview?.title
     || 'Ваша сказка';
+  const hasReadyPdfPreview = renderStatus === 'ready' && Boolean(bookPdfUrl);
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -1251,7 +1316,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       {showSuccessOverlay && (
         <div className="generated-preview-backdrop">
           <div
-            className="generated-preview-dialog generated-preview-dialog-status"
+            className={`generated-preview-dialog generated-preview-dialog-status ${hasReadyPdfPreview ? 'generated-preview-dialog-pdf' : ''}`}
             role="dialog"
             aria-modal="true"
           >
@@ -1268,7 +1333,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
               jobStatus={jobStatus}
               fullTextStatus={fullTextStatus}
               renderStatus={renderStatus}
-              bookPdfUrl={bookPdfUrl}
+              previewPdfUrl={previewPdfUrl}
+              printPdfUrl={printPdfUrl}
               generationStartedAt={generationStartedAt}
             />
           </div>
