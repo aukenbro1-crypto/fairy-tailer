@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { appendFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -17,6 +17,9 @@ const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fai
 const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
+const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
+const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
+const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -90,6 +93,35 @@ function requireAuth(req) {
   }
 }
 
+function authTokenMatches(value) {
+  return Boolean(API_TOKEN && value && safeEqual(String(value), API_TOKEN));
+}
+
+function cookieValue(req, name) {
+  const header = req.headers.cookie || '';
+  for (const part of header.split(';')) {
+    const [rawName, ...rawValue] = part.trim().split('=');
+    if (rawName !== name) continue;
+    try {
+      return decodeURIComponent(rawValue.join('='));
+    } catch {
+      return rawValue.join('=');
+    }
+  }
+  return '';
+}
+
+function hasAdminBooksAuth(req) {
+  if (NODE_ENV !== 'production' && !API_TOKEN) {
+    return true;
+  }
+  const auth = req.headers.authorization || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
+  const apiKey = req.headers['x-api-key'] || '';
+  const cookieToken = cookieValue(req, ADMIN_BOOKS_COOKIE);
+  return [bearer, apiKey, cookieToken].some(authTokenMatches);
+}
+
 async function readJsonBody(req) {
   const chunks = [];
   let size = 0;
@@ -109,6 +141,25 @@ async function readJsonBody(req) {
   } catch {
     throw httpError(400, 'Invalid JSON body');
   }
+}
+
+async function readTextBody(req, limitBytes = 16 * 1024) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limitBytes) {
+      throw httpError(413, 'Request body too large');
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+async function readFormToken(req) {
+  const text = await readTextBody(req);
+  const params = new URLSearchParams(text);
+  return params.get('token') || '';
 }
 
 async function readJsonFile(path, fallback = null) {
@@ -263,6 +314,298 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function sendHtml(req, res, status, html, headers = {}) {
+  res.writeHead(status, {
+    ...corsHeaders(req),
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+    'referrer-policy': 'no-referrer',
+    ...headers,
+  });
+  res.end(html);
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+async function optionalFileInfo(path) {
+  try {
+    const info = await stat(path);
+    return {
+      bytes: info.size,
+      updatedAt: info.mtime.toISOString(),
+    };
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function titleFromFullText(fullText) {
+  return fullText?.text?.bible?.bookTitle
+    || fullText?.text?.preview?.title
+    || fullText?.text?.chapters?.[0]?.title
+    || '';
+}
+
+async function bookTitle(dir, status) {
+  const statusTitle = status?.artifacts?.fullText?.title || status?.preview?.title || '';
+  if (statusTitle) return statusTitle;
+  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  return titleFromFullText(fullText);
+}
+
+async function listGeneratedBooks() {
+  const root = resolve(DATA_DIR, 'jobs');
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const rows = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      let dir;
+      try {
+        dir = jobDir(entry.name);
+      } catch {
+        return null;
+      }
+
+      const fileNames = ['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf'];
+      const filePairs = await Promise.all(fileNames.map(async (fileName) => {
+        const info = await optionalFileInfo(join(dir, 'files', fileName));
+        if (!info) return null;
+        return [
+          fileName.replace(/\.pdf$/i, ''),
+          {
+            fileName,
+            url: `/api/fairyteller/jobs/${entry.name}/files/${fileName}`,
+            ...info,
+          },
+        ];
+      }));
+      const files = Object.fromEntries(filePairs.filter(Boolean));
+      if (Object.keys(files).length === 0) return null;
+
+      const [status, orderEnvelope] = await Promise.all([
+        readJsonFile(join(dir, 'status.json'), {}),
+        readJsonFile(join(dir, 'order.json'), {}),
+      ]);
+      const summary = summarizeOrder(orderEnvelope.order || orderEnvelope);
+      const fileUpdatedAt = Object.values(files)
+        .map((file) => file.updatedAt)
+        .sort()
+        .at(-1);
+
+      return {
+        jobId: entry.name,
+        title: await bookTitle(dir, status),
+        status: status?.status || '',
+        stage: status?.stage || '',
+        createdAt: status?.createdAt || orderEnvelope.receivedAt || '',
+        updatedAt: status?.updatedAt || fileUpdatedAt || '',
+        email: summary.email,
+        heroNames: summary.heroNames,
+        files,
+      };
+    }));
+
+  return rows
+    .filter(Boolean)
+    .sort((left, right) => String(right.updatedAt || right.createdAt).localeCompare(String(left.updatedAt || left.createdAt)))
+    .slice(0, ADMIN_BOOKS_MAX_ROWS);
+}
+
+function renderFileLink(file, label) {
+  if (!file) return '';
+  const size = formatBytes(file.bytes);
+  return [
+    `<a class="file-link" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">`,
+    `<span>${escapeHtml(label)}</span>`,
+    size ? `<small>${escapeHtml(size)}</small>` : '',
+    '</a>',
+  ].join('');
+}
+
+function renderBooksLoginPage(errorMessage = '') {
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller PDF</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    main { width: min(420px, 100%); background: #fffaf0; border: 1px solid #ded5c5; border-radius: 8px; padding: 28px; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.12); }
+    h1 { margin: 0 0 8px; font-size: 24px; line-height: 1.2; }
+    p { margin: 0 0 20px; color: #56616b; line-height: 1.45; }
+    label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; }
+    input { width: 100%; height: 44px; border: 1px solid #cdbfaaa; border-radius: 6px; padding: 0 12px; font: inherit; background: #fff; }
+    button { width: 100%; height: 44px; margin-top: 14px; border: 0; border-radius: 6px; background: #1f5d53; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+    .error { padding: 10px 12px; margin-bottom: 14px; color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PDF-сказки</h1>
+    <p>Служебная страница FairyTeller. Введите API-токен, чтобы открыть список готовых PDF.</p>
+    ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ''}
+    <form method="post" action="${ADMIN_BOOKS_PATH}">
+      <label for="token">Токен</label>
+      <input id="token" name="token" type="password" autocomplete="current-password" autofocus>
+      <button type="submit">Открыть список</button>
+    </form>
+  </main>
+</body>
+</html>`;
+}
+
+function renderBooksPage(books) {
+  const rows = books.map((book) => {
+    const title = book.title || 'Без названия';
+    const people = [book.email, ...book.heroNames].filter(Boolean).join(' · ');
+    const status = [statusLabel(book.status), book.stage].filter(Boolean).join(' · ');
+    return `<tr>
+      <td>
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(book.jobId)}</span>
+      </td>
+      <td>${escapeHtml(people || '—')}</td>
+      <td>${escapeHtml(status || '—')}</td>
+      <td>${escapeHtml(formatDateTime(book.createdAt) || '—')}</td>
+      <td>${escapeHtml(formatDateTime(book.updatedAt) || '—')}</td>
+      <td class="links">
+        ${renderFileLink(book.files.preview, 'preview')}
+        ${renderFileLink(book.files.book, 'print')}
+        ${renderFileLink(book.files.cover, 'cover')}
+        ${renderFileLink(book.files.interior, 'interior')}
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller PDF</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 0 auto 22px; max-width: 1220px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    p { margin: 8px 0 0; color: #56616b; }
+    .logout { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    main { max-width: 1220px; margin: 0 auto; overflow-x: auto; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.08); }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    strong { display: block; margin-bottom: 4px; font-size: 15px; color: #172126; }
+    span { display: block; color: #68737d; font-size: 12px; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; min-width: 270px; }
+    .file-link { display: inline-flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
+    .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
+    .empty { padding: 32px; color: #56616b; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .logout { display: inline-block; margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>PDF-сказки</h1>
+      <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
+    </div>
+    <a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+  </header>
+  <main>
+    ${books.length ? `<table>
+      <thead>
+        <tr>
+          <th>Сказка</th>
+          <th>Клиент / герои</th>
+          <th>Статус</th>
+          <th>Создано</th>
+          <th>Обновлено</th>
+          <th>PDF</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<div class="empty">Готовых PDF пока не нашлось.</div>'}
+  </main>
+</body>
+</html>`;
+}
+
+async function handleAdminBooksSession(req, res, url, method) {
+  if (method === 'GET' && url.searchParams.get('logout') === '1') {
+    res.writeHead(303, {
+      'cache-control': 'no-store',
+      'x-robots-tag': 'noindex, nofollow, noarchive',
+      'referrer-policy': 'no-referrer',
+      'set-cookie': `${ADMIN_BOOKS_COOKIE}=; Path=${ADMIN_BOOKS_PATH}; HttpOnly; SameSite=Lax; Max-Age=0${NODE_ENV === 'production' ? '; Secure' : ''}`,
+      location: ADMIN_BOOKS_PATH,
+    });
+    res.end();
+    return true;
+  }
+
+  if (method !== 'POST') return false;
+  const token = await readFormToken(req);
+  if (!authTokenMatches(token)) {
+    sendHtml(req, res, 401, renderBooksLoginPage('Токен не подошел. Проверьте значение FAIRYTELLER_API_TOKEN.'));
+    return true;
+  }
+  res.writeHead(303, {
+    'cache-control': 'no-store',
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+    'referrer-policy': 'no-referrer',
+    'set-cookie': `${ADMIN_BOOKS_COOKIE}=${encodeURIComponent(token)}; Path=${ADMIN_BOOKS_PATH}; HttpOnly; SameSite=Lax; Max-Age=2592000${NODE_ENV === 'production' ? '; Secure' : ''}`,
+    location: ADMIN_BOOKS_PATH,
+  });
+  res.end();
+  return true;
 }
 
 function customerEmailPayload(status, orderEnvelope = {}) {
@@ -728,6 +1071,19 @@ async function route(req, res) {
 
   if (method === 'GET' && url.pathname === '/healthz') {
     sendJson(req, res, 200, { ok: true, service: 'fairyteller-api', dataDir: DATA_DIR });
+    return;
+  }
+
+  if ((method === 'GET' || method === 'POST') && url.pathname === ADMIN_BOOKS_PATH) {
+    if (await handleAdminBooksSession(req, res, url, method)) return;
+    if (method !== 'GET') {
+      throw httpError(405, 'Method not allowed');
+    }
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    sendHtml(req, res, 200, renderBooksPage(await listGeneratedBooks()));
     return;
   }
 
