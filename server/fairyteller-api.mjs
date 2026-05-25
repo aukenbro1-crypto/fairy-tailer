@@ -11,6 +11,12 @@ const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
 const RENDER_SCRIPT = process.env.FAIRYTELLER_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-render-pdf.mjs';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
+const TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
+const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fairyteller.ru').replace(/\/+$/, '');
+const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
+const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
+const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -126,6 +132,244 @@ async function appendEvent(dir, event) {
   await appendFile(join(dir, 'events.jsonl'), `${JSON.stringify({ at: nowIso(), ...event })}\n`, { mode: 0o600 });
 }
 
+function normalizeEmail(value) {
+  const email = String(value || '').trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) ? email : '';
+}
+
+function summarizeOrder(order = {}) {
+  const heroes = Array.isArray(order.heroes)
+    ? order.heroes.map((hero) => hero?.name).filter(Boolean).slice(0, 4)
+    : [];
+  return {
+    email: normalizeEmail(order.email),
+    world: order.world || '',
+    location: order.location || '',
+    artifact: order.artifact || '',
+    style: order.illustrationStyle || order.illustration_style || '',
+    heroNames: heroes,
+  };
+}
+
+async function appendLead(jobId, source, order) {
+  const summary = summarizeOrder(order);
+  if (!summary.email) return;
+  await appendFile(join(DATA_DIR, 'leads.jsonl'), `${JSON.stringify({
+    at: nowIso(),
+    jobId,
+    source: source || 'fairyteller',
+    ...summary,
+  })}\n`, { mode: 0o600 });
+}
+
+function statusLabel(status) {
+  return {
+    received: 'Новая заявка',
+    text_generating: 'Пишем первую главу',
+    chapter_1_ready: 'Первая глава готова',
+    text_ready: 'Текст готов',
+    visuals_generating: 'Готовим иллюстрации',
+    visuals_ready: 'Иллюстрации готовы',
+    rendering: 'Собираем PDF',
+    done: 'Книга готова',
+    failed: 'Ошибка генерации',
+  }[status] || status;
+}
+
+function artifactStatusLine(artifacts = {}) {
+  const labels = [];
+  if (artifacts.fullText?.status) labels.push(`текст: ${artifacts.fullText.status}`);
+  if (artifacts.fullVisuals?.status) labels.push(`картинки: ${artifacts.fullVisuals.status}`);
+  if (artifacts.cover?.status) labels.push(`обложка: ${artifacts.cover.status}`);
+  if (artifacts.render?.status) labels.push(`PDF: ${artifacts.render.status}`);
+  return labels.join(', ');
+}
+
+function shouldNotifyJobUpdate(current, next, patch) {
+  if (next.status !== current.status || next.stage !== current.stage) return true;
+  if (!patch.artifacts || typeof patch.artifacts !== 'object') return false;
+  const currentArtifacts = current.artifacts || {};
+  return ['fullText', 'fullVisuals', 'cover', 'render'].some((key) => (
+    patch.artifacts[key]?.status && patch.artifacts[key]?.status !== currentArtifacts[key]?.status
+  )) || Boolean(patch.artifacts.bookPdf || patch.artifacts.previewPdf);
+}
+
+function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
+  const order = orderEnvelope.order || orderEnvelope;
+  const summary = summarizeOrder(order);
+  const title = status.preview?.title || status.artifacts?.fullText?.title || '';
+  const previewPdfUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
+  const printPdfUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
+  const lines = [
+    eventType === 'created' ? 'Fairyteller: новая заявка' : `Fairyteller: ${statusLabel(status.status)}`,
+    `job: ${status.jobId}`,
+    `stage: ${status.stage || '-'} · progress: ${status.progress ?? 0}%`,
+  ];
+  if (summary.email) lines.push(`email: ${summary.email}`);
+  if (summary.world) lines.push(`world: ${summary.world}`);
+  if (summary.location) lines.push(`place: ${summary.location}`);
+  if (summary.artifact) lines.push(`artifact: ${summary.artifact}`);
+  if (summary.heroNames.length) lines.push(`heroes: ${summary.heroNames.join(', ')}`);
+  if (title) lines.push(`title: ${title}`);
+  const artifacts = artifactStatusLine(status.artifacts);
+  if (artifacts) lines.push(artifacts);
+  if (previewPdfUrl) lines.push(`preview PDF: ${previewPdfUrl}`);
+  if (printPdfUrl && printPdfUrl !== previewPdfUrl) lines.push(`print PDF: ${printPdfUrl}`);
+  if (status.error?.message) lines.push(`error: ${status.error.message}`);
+  lines.push(`admin: https://fairyteller.ru/api/fairyteller/jobs/${status.jobId}`);
+  return lines.join('\n');
+}
+
+async function sendTelegramMessage(text) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
+        disable_web_page_preview: true,
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      console.warn(`Telegram notification failed: ${response.status}`);
+    }
+  } catch (error) {
+    console.warn(`Telegram notification failed: ${error.message}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function notifyJob(eventType, status, orderEnvelope) {
+  void sendTelegramMessage(telegramMessageForJob(eventType, status, orderEnvelope));
+}
+
+function publicUrl(pathOrUrl) {
+  const value = String(pathOrUrl || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${PUBLIC_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function customerEmailPayload(status, orderEnvelope = {}) {
+  const order = orderEnvelope.order || orderEnvelope;
+  const email = normalizeEmail(order.email);
+  if (!email) return null;
+
+  const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
+  const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
+  const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
+  const coverUrl = publicUrl(status.artifacts?.coverPdf?.url || status.artifacts?.render?.files?.cover?.url);
+  const buyPrintUrl = `${PUBLIC_BASE_URL}/print`;
+
+  const links = [
+    previewUrl ? `Открыть книгу: ${previewUrl}` : '',
+    printUrl ? `Печатный PDF: ${printUrl}` : '',
+    coverUrl ? `Обложка отдельно: ${coverUrl}` : '',
+    `Печать книги: ${buyPrintUrl}`,
+  ].filter(Boolean);
+
+  const subject = `Ваша сказка "${title}" готова`;
+  const text = [
+    'Здравствуйте!',
+    '',
+    `Ваша сказка "${title}" готова.`,
+    '',
+    ...links,
+    '',
+    'С любовью, FairyTeller',
+  ].join('\n');
+  const htmlLinks = links.map((line) => {
+    const [label, ...rest] = line.split(': ');
+    const href = rest.join(': ');
+    return href
+      ? `<li><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`
+      : `<li>${escapeHtml(line)}</li>`;
+  }).join('');
+
+  const html = [
+    '<div style="font-family: Georgia, serif; color: #24302f; line-height: 1.55;">',
+    '<p>Здравствуйте!</p>',
+    `<p>Ваша сказка <strong>${escapeHtml(title)}</strong> готова.</p>`,
+    `<ul>${htmlLinks}</ul>`,
+    '<p>С любовью,<br>FairyTeller</p>',
+    '</div>',
+  ].join('');
+
+  return { to: email, subject, text, html };
+}
+
+async function sendCustomerEmail(payload) {
+  if (!payload) return { status: 'skipped', reason: 'missing_email' };
+  if (!RESEND_API_KEY || !MAIL_FROM) {
+    return { status: 'skipped', reason: 'mail_provider_not_configured' };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${RESEND_API_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: MAIL_FROM,
+        to: [payload.to],
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+        ...(MAIL_REPLY_TO ? { reply_to: MAIL_REPLY_TO } : {}),
+      }),
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { status: 'failed', provider: 'resend', code: response.status, error: body.message || response.statusText };
+    }
+    return { status: 'sent', provider: 'resend', id: body.id || null };
+  } catch (error) {
+    return { status: 'failed', provider: 'resend', error: error.message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function deliverCustomerCompletionEmail(jobId, status) {
+  const dir = jobDir(jobId);
+  const artifactsDir = join(dir, 'artifacts');
+  const existing = await readJsonFile(join(artifactsDir, 'email.json'), null);
+  if (existing?.email?.status === 'sent') return existing.email;
+
+  const orderEnvelope = await readJsonFile(join(dir, 'order.json'), {});
+  const payload = customerEmailPayload(status, orderEnvelope);
+  const delivery = {
+    attemptedAt: nowIso(),
+    to: payload?.to || null,
+    subject: payload?.subject || null,
+    ...(await sendCustomerEmail(payload)),
+  };
+  await mkdir(artifactsDir, { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(join(artifactsDir, 'email.json'), { email: delivery });
+  await appendEvent(dir, { type: 'job.email.delivery', status: delivery.status, reason: delivery.reason, provider: delivery.provider });
+  return delivery;
+}
+
 async function createJob(body) {
   const order = body.order;
   if (!order || typeof order !== 'object' || Array.isArray(order)) {
@@ -167,6 +411,8 @@ async function createJob(body) {
   });
   await writeJsonAtomic(join(dir, 'status.json'), status);
   await appendEvent(dir, { type: 'job.created', status: status.status, stage: status.stage });
+  await appendLead(jobId, body.source, order);
+  notifyJob('created', status, { source: body.source || 'fairyteller', order });
 
   return status;
 }
@@ -221,6 +467,10 @@ async function updateJobStatus(jobId, patch) {
     progress: next.progress,
     message: next.message,
   });
+  if (shouldNotifyJobUpdate(current, next, patch)) {
+    const orderEnvelope = await readJsonFile(join(dir, 'order.json'), {});
+    notifyJob('status', next, orderEnvelope);
+  }
 
   return next;
 }
@@ -348,45 +598,70 @@ async function renderJobPdf(jobId) {
     },
   });
 
-  await new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(process.execPath, [RENDER_SCRIPT, jobId], {
-      env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      rejectPromise(httpError(504, 'PDF render timed out'));
-    }, 240000);
+  try {
+    await new Promise((resolvePromise, rejectPromise) => {
+      const child = spawn(process.execPath, [RENDER_SCRIPT, jobId], {
+        env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        rejectPromise(httpError(504, 'PDF render timed out'));
+      }, 240000);
 
-    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      rejectPromise(error);
+      child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        rejectPromise(error);
+      });
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (code === 0) {
+          resolvePromise(stdout);
+          return;
+        }
+        rejectPromise(httpError(500, `PDF render failed: ${stderr || stdout || `exit ${code}`}`));
+      });
     });
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      if (code === 0) {
-        resolvePromise(stdout);
-        return;
-      }
-      rejectPromise(httpError(500, `PDF render failed: ${stderr || stdout || `exit ${code}`}`));
-    });
-  });
 
-  const renderArtifact = await getJobJsonArtifact(jobId, 'render.json');
-  const render = renderArtifact.render || renderArtifact;
-  await updateJobStatus(jobId, {
-    artifacts: {
-      render,
-      bookPdf: render.files?.book || null,
-      coverPdf: render.files?.cover || null,
-      interiorPdf: render.files?.interior || null,
-    },
-  });
-  return renderArtifact;
+    const renderArtifact = await getJobJsonArtifact(jobId, 'render.json');
+    const render = renderArtifact.render || renderArtifact;
+    const nextStatus = await updateJobStatus(jobId, {
+      status: 'done',
+      stage: 'complete',
+      progress: 100,
+      message: 'PDF готов',
+      error: null,
+      artifacts: {
+        render,
+        bookPdf: render.files?.book || null,
+        previewPdf: render.files?.preview || null,
+        coverPdf: render.files?.cover || null,
+        interiorPdf: render.files?.interior || null,
+      },
+    });
+    await deliverCustomerCompletionEmail(jobId, nextStatus);
+    return renderArtifact;
+  } catch (error) {
+    const message = error?.message || 'PDF render failed';
+    await updateJobStatus(jobId, {
+      status: 'failed',
+      stage: 'render',
+      message,
+      artifacts: {
+        render: {
+          status: 'failed',
+          failedAt: nowIso(),
+          message,
+        },
+      },
+      error: { message },
+    });
+    throw error;
+  }
 }
 
 function requireJsonArtifactName(fileName) {

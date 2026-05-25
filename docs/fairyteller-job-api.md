@@ -9,6 +9,9 @@ It is intentionally small and dependency-free:
 - append-only event log
 - authenticated mutations
 - public status without email or full order details
+- local lead capture in `leads.jsonl` when an email is provided
+- optional Telegram operations notifications from server-side environment variables
+- optional customer completion email through Resend-compatible environment variables
 
 ## Run
 
@@ -42,12 +45,27 @@ Authorization: Bearer <token>
     text.json
     visuals.json
     render.json
+    email.json
   files/
     chapter-1.png
     book.pdf
+    preview.pdf
     cover.pdf
     interior.pdf
 ```
+
+## Notifications and Mail
+
+The API never stores notification secrets in the repo. Configure them on the server:
+
+- `FAIRYTELLER_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_TELEGRAM_CHAT_ID` enable operations updates.
+- `FAIRYTELLER_RESEND_API_KEY` and `FAIRYTELLER_MAIL_FROM` enable customer completion email after the PDF render is ready.
+- `FAIRYTELLER_MAIL_REPLY_TO` is optional.
+- `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.
+
+Telegram messages include direct `preview.pdf` and `book.pdf` links once the render artifact is ready. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
+
+If mail is not configured, generation still succeeds and `artifacts/email.json` records `mail_provider_not_configured`.
 
 ## Endpoints
 

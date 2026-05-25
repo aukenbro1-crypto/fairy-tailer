@@ -1277,6 +1277,45 @@ async function renderCombinedBookPdf({ coverPdf, interiorPdf }) {
   return target.save({ useObjectStreams: false });
 }
 
+function addPreviewCoverHalfPage(target, coverPage, half) {
+  const [targetWidth, targetHeight] = INTERIOR_SIZE_MM.map(mmToPt);
+  const page = target.addPage([targetWidth, targetHeight]);
+  page.drawRectangle({ x: 0, y: 0, width: targetWidth, height: targetHeight, color: rgb(1, 1, 1) });
+
+  const scale = targetHeight / coverPage.height;
+  const drawnWidth = coverPage.width * scale;
+  const drawnHeight = coverPage.height * scale;
+  const halfWidth = drawnWidth / 2;
+  const contentX = (targetWidth - halfWidth) / 2;
+  const drawX = half === 'front' ? contentX - halfWidth : contentX;
+
+  page.pushOperators(
+    pushGraphicsState(),
+    rectangle(contentX, 0, halfWidth, targetHeight),
+    clip(),
+    endPath(),
+  );
+  page.drawPage(coverPage, { x: drawX, y: 0, width: drawnWidth, height: drawnHeight });
+  page.pushOperators(popGraphicsState());
+}
+
+async function renderPreviewPdf({ coverPdf, interiorPdf }) {
+  const target = await PDFDocument.create();
+  const [coverPage] = await target.embedPdf(coverPdf, [0]);
+  const interiorDoc = await PDFDocument.load(interiorPdf);
+  const interiorPages = await target.copyPages(interiorDoc, interiorDoc.getPageIndices());
+
+  addPreviewCoverHalfPage(target, coverPage, 'front');
+  for (const page of interiorPages) target.addPage(page);
+  addPreviewCoverHalfPage(target, coverPage, 'back');
+
+  const expectedPages = TARGET_INTERIOR_PAGES + 2;
+  if (target.getPageCount() !== expectedPages) {
+    throw new Error(`Preview PDF page count mismatch: expected ${expectedPages}, got ${target.getPageCount()}`);
+  }
+  return target.save();
+}
+
 async function main() {
   const dir = jobDir(JOB_ID);
   const artifactsDir = join(dir, 'artifacts');
@@ -1292,13 +1331,16 @@ async function main() {
   const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
   const interiorPdf = await renderInteriorPdf({ dir, fullText, visuals, layout });
   const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf });
+  const previewPdf = await renderPreviewPdf({ coverPdf, interiorPdf });
 
   const coverPath = join(filesDir, 'cover.pdf');
   const interiorPath = join(filesDir, 'interior.pdf');
   const bookPath = join(filesDir, 'book.pdf');
+  const previewPath = join(filesDir, 'preview.pdf');
   await writeFile(coverPath, coverPdf, { mode: 0o600 });
   await writeFile(interiorPath, interiorPdf, { mode: 0o600 });
   await writeFile(bookPath, bookPdf, { mode: 0o600 });
+  await writeFile(previewPath, previewPdf, { mode: 0o600 });
 
   const render = {
     status: 'ready',
@@ -1320,6 +1362,17 @@ async function main() {
         },
         bytes: bookPdf.length,
       },
+      preview: {
+        fileName: 'preview.pdf',
+        url: `/api/fairyteller/jobs/${JOB_ID}/files/preview.pdf`,
+        pageCount: TARGET_INTERIOR_PAGES + 2,
+        pageSizeMm: INTERIOR_SIZE_MM,
+        coverPlacement: {
+          firstPage: 'front cover, right half of print cover spread',
+          lastPage: 'back cover, left half of print cover spread',
+        },
+        bytes: previewPdf.length,
+      },
       cover: {
         fileName: 'cover.pdf',
         url: `/api/fairyteller/jobs/${JOB_ID}/files/cover.pdf`,
@@ -1338,10 +1391,12 @@ async function main() {
     preflight: {
       noTextTruncation: true,
       combinedPageCount: TARGET_INTERIOR_PAGES + 1,
+      previewPageCount: TARGET_INTERIOR_PAGES + 2,
       coverPageCount: 1,
       interiorPageCount: TARGET_INTERIOR_PAGES,
       coverPageSizeMm: COVER_SIZE_MM,
       interiorPageSizeMm: INTERIOR_SIZE_MM,
+      previewPageSizeMm: INTERIOR_SIZE_MM,
       expectedTextBlocksByChapter: layout.pagePlan.chapterTextPages,
       chapterStartPages: layout.pagePlan.chapterStartPages || CHAPTER_START_PAGES,
     },

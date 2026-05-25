@@ -67,11 +67,13 @@ interface JobStatus {
       status?: 'generating' | 'ready' | 'failed';
       files?: {
         book?: { url?: string; pageCount?: number };
+        preview?: { url?: string; pageCount?: number };
         cover?: { url?: string; pageCount?: number };
         interior?: { url?: string; pageCount?: number };
       };
     };
     bookPdf?: { url?: string; pageCount?: number };
+    previewPdf?: { url?: string; pageCount?: number };
     coverPdf?: { url?: string; pageCount?: number };
     interiorPdf?: { url?: string; pageCount?: number };
   };
@@ -685,7 +687,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
-  const bookPdfUrl = jobStatus?.artifacts?.bookPdf?.url || jobStatus?.artifacts?.render?.files?.book?.url || '';
+  const bookPdfUrl = jobStatus?.artifacts?.previewPdf?.url
+    || jobStatus?.artifacts?.render?.files?.preview?.url
+    || jobStatus?.artifacts?.bookPdf?.url
+    || jobStatus?.artifacts?.render?.files?.book?.url
+    || '';
   const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
   const allFullChapters = fullTextArtifact?.text?.chapters || [];
   const readerChapters: ReaderChapter[] = allFullChapters.length > 0
