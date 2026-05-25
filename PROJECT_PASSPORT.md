@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-24 14:55 UTC
+Last updated: 2026-05-25 12:20 UTC
 
 ## Project Context
 
@@ -33,8 +33,8 @@ Current production default is the n8n intake webhook through `https://fairytelle
 The `/create` form is now compatible with both response shapes:
 
 - legacy Make response: any successful HTTP response marks the request as accepted and keeps the email-based UX
-- n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the success overlay
-- n8n status preview: when `preview.title`, `preview.text`, and first-chapter image URLs are present, the success overlay can show the first chapter and illustration before the full book is complete
+- n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the generation overlay
+- current n8n UX: no intermediate first-chapter reader. The overlay shows a staged full-book progress/timer flow and links to the final print `book.pdf` when render is ready.
 
 Frontend migration environment variables:
 
@@ -48,22 +48,22 @@ The new n8n pipeline is intentionally split into modular workflows:
 | Workflow | ID | Purpose |
 | --- | --- | --- |
 | `fairyteller_intake` | `Vty7vSn4vd5Nduht` | Receive order, create `jobId`, start text pipeline, return fast `202`. |
-| `fairyteller_text` | `kCtpw2d7pEOI3QRF` | Story bible, first chapter preview, chapters 2-5, validation/repair. |
+| `fairyteller_text` | `kCtpw2d7pEOI3QRF` | Story bible, chapter 1 text, then starts first visuals and full-text generation automatically. |
 | `fairyteller_visuals` | `RXzoJ7Bdlr2y3l60` | Portraitizer, image generation, retries/cache. |
-| `fairyteller_continue` | `Y7Bt3zq9XTContinue` | User-triggered webhook that starts full story generation after the first chapter preview. |
+| `fairyteller_continue` | `Y7Bt3zq9XTContinue` | Legacy/manual continuation webhook kept for old jobs and recovery, no longer part of the default UX. |
 | `fairyteller_full_text` | `C2Pcin7lctSY5nc2` | Background continuation generator for chapters 2-5 and `full-text.json`. |
 | `fairyteller_full_visuals` | `FVFullVisuals20260523` | Background generator for chapter 2-5 illustrations using the existing visual bible and portrait sheet. |
 | `fairyteller_cover` | `FVCover20260523` | Background cover-art generator using full text, visual bible, and portrait sheet. |
 | `fairyteller_render_publish` | `XAaFdi6hJjnQFiAQ` | Print PDF render, preflight, publish/email. |
 
-Current state as of 2026-05-24: the internal text, continue/full-text, visuals, cover, and PDF render paths are published and connected to the Job API. The text workflow generates a real first chapter with Gemini and writes `text.json`; the website then exposes a "full story" continuation action, which calls `fairyteller_continue` and starts `fairyteller_full_text` for chapters 2-5; the visuals workflows generate a hero reference sheet, chapter illustrations, cover art, and `visuals.json`; the PDF render step creates `cover.pdf`, `interior.pdf`, `book.pdf`, and `render.json`.
+Current state as of 2026-05-25: the internal text, full-text, visuals, cover, and PDF render paths are published and connected to the Job API. The text workflow generates chapter 1 with Gemini, writes `text.json`, then starts `fairyteller_visuals` and `fairyteller_full_text` asynchronously from the same payload. The website no longer waits for a user continuation click; it shows staged full-book progress until `book.pdf` is ready. The visuals workflows generate a hero reference sheet, chapter illustrations, cover art, and `visuals.json`; the PDF render step creates `cover.pdf`, `interior.pdf`, `book.pdf`, `preview.pdf`, and `render.json`.
 
 Activation state:
 
 - `fairyteller_intake`: active public production intake.
 - `fairyteller_text`: active internal sub-workflow.
 - `fairyteller_visuals`: active internal sub-workflow.
-- `fairyteller_continue`: active public continuation webhook.
+- `fairyteller_continue`: active public recovery/legacy continuation webhook.
 - `fairyteller_full_text`: active internal sub-workflow.
 - `fairyteller_full_visuals`: active internal sub-workflow.
 - `fairyteller_cover`: active internal sub-workflow.
@@ -88,7 +88,7 @@ Text generation note:
 - The first-chapter normalizer extracts fenced/embedded JSON and repairs raw control characters inside strings before `JSON.parse`.
 - The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
-- `fairyteller_text` no longer starts the full book automatically. The website calls `/webhook/fairyteller/continue` after the first chapter preview; `fairyteller_continue` fetches the protected `text.json` artifact and starts `fairyteller_full_text` asynchronously.
+- `fairyteller_text` starts the full book automatically after chapter 1 is normalized. It fans out to `fairyteller_visuals` for the portrait sheet/chapter 1 image and to `fairyteller_full_text` for chapters 2-5. `fairyteller_continue` remains available only for old jobs or manual recovery.
 
 Gemini integration note:
 
@@ -105,6 +105,7 @@ Visual generation note:
 - Chapter image generation uses the generated hero reference sheet as an inline image reference, so chapter 1 can preserve the same character designs.
 - `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same generated portrait sheet instead of regenerating character identity from scratch.
 - Chapter illustration prompts must target the actual interior image page: `136 x 136 mm`, square `1:1`, full-bleed, roughly `1606 x 1606 px` at 300 DPI. Key faces, hands, silhouettes, and the important object must stay away from the left 15% gutter/spine area and outer 3 mm trim edge.
+- Chapter illustration prompts must explicitly forbid rendered typography: no chapter numbers, titles, captions, signs, labels, fake letters, posters, banners, UI, white margins, blank paper backgrounds, or decorative borders. If a scene contains papers/books/signs, they must be abstract unreadable texture only; the PDF renderer owns all visible text.
 - Cover-art prompts target the front-cover image frame in the PPTX-derived cover template, not the whole wraparound spread: about `1.46:1` landscape artwork placed into the white front-cover frame. The final PDF page remains `268.5 x 136 mm`.
 - First chapter image generation uses `gemini-2.5-flash-image` through `generateContent`.
 - The `minibrick` style is explicitly mapped to brick-built minifigure/toy diorama prompts; do not rely on fallback style mapping for it.
@@ -166,7 +167,7 @@ Final output target from print shop upload requirements:
 - Total page count, including cover: 41
 - Page 1 (cover/back-cover spread): `268.5 x 136.0 mm`
 - Pages 2-41: `136.0 x 136.0 mm`
-- Current PDF UX exposes a combined print PDF (`book.pdf`) plus a browser-friendly square-page `preview.pdf`; separate `cover.pdf` and `interior.pdf` remain debug/backup files. `book.pdf` is the preferred print-shop upload artifact and contains mixed page sizes: page 1 is the cover/back-cover spread, pages 2-41 are square interior pages. `preview.pdf` is for browser/customer preview: page 1 is the right/front half of the cover spread, pages 2-41 are the square interior pages, and page 42 is the left/back half of the cover spread.
+- Current PDF UX links the combined print PDF (`book.pdf`) as the primary customer artifact. `book.pdf` contains mixed page sizes: page 1 is the cover/back-cover spread, pages 2-41 are square interior pages. The renderer still writes `preview.pdf` for internal/debug use: page 1 is the right/front half of the cover spread, pages 2-41 are the square interior pages, and page 42 is the left/back half of the cover spread.
 - Current production smoke PDF weights from job `ft_1779609291175_25otqb`: `book.pdf` ~21.3 MB, `interior.pdf` ~19.0 MB, `cover.pdf` ~9.8 MB. This is acceptable for print proofing but too heavy for a fast web preview; the likely optimization layer is image resampling/compression before PDF embedding while preserving the print-size contract.
 
 Reference production PDF:
@@ -311,4 +312,5 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Replaced the final web reader surface with the real `preview.pdf` once PDF render is ready, and replaced the unstable full-text HTML spread during render with a clean waiting state. The early first-chapter preview still uses the lightweight HTML reader until the customer asks for the full book. The print CTA now reads `Купить печатную книгу`, opens `/print` in a new tab, and production frontend release `/var/www/fairyteller/releases/20260525-140237-codex-pdf-preview-reader` is live.
 - Added a protected noindex service page at `/api/fairyteller/books` in the Job API. It lists generated PDF artifacts from `/data/fairyteller/jobs/*/files` (`preview.pdf`, `book.pdf`, `cover.pdf`, `interior.pdf`), requires the existing `FAIRYTELLER_API_TOKEN` through bearer/header or a POST login form that sets an HttpOnly cookie, sends `X-Robots-Tag: noindex, nofollow, noarchive`, and uses `Referrer-Policy: no-referrer`.
 - Added optional passwordless access for the same PDF list through `/api/fairyteller/books/:secret`, where `:secret` is configured only on production as `FAIRYTELLER_ADMIN_BOOKS_SECRET` in `/etc/fairyteller/api.env`. This keeps the normal token login available while giving operators a bookmarkable no-token URL.
+- Removed the intermediate web book preview from the default `/create` UX. After submit, the user now sees one staged full-generation overlay with an approximate timer; `fairyteller_text` automatically starts `fairyteller_full_text` alongside first visuals, and the UI links the final print `book.pdf` when render completes. Strengthened text density prompts to target one print-ready block per page (`780-1050` chars for chapter 1, `820-1050` chars for chapters 2-5), strengthened image prompts to forbid rendered typography/white margins, and moved the decorative `Конец` label up/right on page 39.
 - Changed the `/api/fairyteller/books` login form to use a separate operator password from `FAIRYTELLER_ADMIN_BOOKS_PASSWORD` instead of asking for the API token. Bearer/header API-token access remains available for technical checks, and the password value must stay only in production environment config.

@@ -63,7 +63,7 @@ The API never stores notification secrets in the repo. Configure them on the ser
 - `FAIRYTELLER_MAIL_REPLY_TO` is optional.
 - `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.
 
-Telegram messages include direct `preview.pdf` and `book.pdf` links once the render artifact is ready. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
+Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
 
 If mail is not configured, generation still succeeds and `artifacts/email.json` records `mail_provider_not_configured`.
 
@@ -174,7 +174,7 @@ GET /api/fairyteller/jobs/:jobId/artifacts/text.json
 Authorization: Bearer <token>
 ```
 
-Internal use only. The continue workflow uses this to fetch the first-chapter `text.json` before generating chapters 2-5.
+Internal use only. The default pipeline now starts full-text generation automatically after chapter 1; the legacy continue workflow can still fetch the first-chapter `text.json` for old jobs or manual recovery.
 
 ### Write File Artifact
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink, Printer, X } from 'lucide-react';
+import { Check, ExternalLink, Printer, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -18,7 +18,6 @@ import romanticStoryImage from '@/assets/romantic-story.png';
 
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
-const CONTINUE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CONTINUE_URL || "/webhook/fairyteller/continue";
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 const PRINT_PAYMENT_URL = "https://fairyteller.ru/print";
 
@@ -34,6 +33,8 @@ interface JobStatus {
   status: string;
   stage: string;
   progress: number;
+  createdAt?: string;
+  updatedAt?: string;
   message?: string;
   preview?: {
     chapter?: number;
@@ -63,6 +64,9 @@ interface JobStatus {
         absoluteUrl?: string;
       }>;
     };
+    cover?: {
+      status?: 'generating' | 'ready' | 'failed';
+    };
     render?: {
       status?: 'generating' | 'ready' | 'failed';
       files?: {
@@ -79,42 +83,6 @@ interface JobStatus {
   };
   error?: string | null;
 }
-
-interface FullTextChapter {
-  n: number;
-  title: string;
-  text?: string;
-  textBlocks?: string[];
-}
-
-interface FullTextArtifact {
-  text?: {
-    bible?: {
-      bookTitle?: string;
-      subtitle?: string;
-      coverSummary?: string;
-    };
-    preview?: {
-      title?: string;
-      summary?: string;
-    };
-    chapters?: FullTextChapter[];
-  };
-}
-
-const getPreviewImageUrl = (preview: JobStatus['preview']) => {
-  if (!preview?.imageUrl && !preview?.imageAbsoluteUrl) {
-    return '';
-  }
-  return preview.imageAbsoluteUrl || preview.imageUrl || '';
-};
-
-const formatPreviewText = (text = '') => {
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-};
 
 interface FormData {
   world: string;
@@ -283,298 +251,143 @@ const StylePicker8Bit: React.FC<StylePicker8BitProps> = ({ value, onChange }) =>
   );
 };
 
-interface ReaderChapter {
-  n: number;
+interface GenerationStatusPanelProps {
   title: string;
-  textBlocks: string[];
-  imageUrl?: string;
-  imageStatus?: string;
-}
-
-type ReaderPage = {
-  key: string;
-  kind: 'chapter' | 'image' | 'text';
-  chapter: number;
-  title: string;
-  imageUrl?: string;
-  teaser?: string;
-  paragraphs?: string[];
-};
-
-interface GeneratedBookReaderProps {
-  title: string;
-  chapters: ReaderChapter[];
+  jobStatus: JobStatus | null;
   fullTextStatus: string | null;
   renderStatus: string | null;
   bookPdfUrl: string;
-  canContinueStory: boolean;
-  continueSubmitting: boolean;
-  onContinueStory: () => void;
+  generationStartedAt: number | null;
 }
 
-const READER_PAGE_CHAR_LIMIT = 560;
-const READER_PARAGRAPH_CHAR_LIMIT = 360;
+const GENERATION_ETA_SECONDS = 150;
 
-const splitReaderSentences = (text: string) => {
-  const sentences = text.match(/[^.!?…]+[.!?…]+(?:["»”])?/g);
-  return sentences?.length ? sentences.map((sentence) => sentence.trim()).filter(Boolean) : [text.trim()].filter(Boolean);
+const formatGenerationTimer = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = safeSeconds % 60;
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
 };
 
-const splitLongReaderParagraph = (paragraph: string) => {
-  if (paragraph.length <= READER_PARAGRAPH_CHAR_LIMIT) return [paragraph];
-
-  const chunks: string[] = [];
-  let current = '';
-  splitReaderSentences(paragraph).forEach((sentence) => {
-    const next = current ? `${current} ${sentence}` : sentence;
-    if (current && next.length > READER_PARAGRAPH_CHAR_LIMIT) {
-      chunks.push(current);
-      current = sentence;
-      return;
-    }
-    current = next;
-  });
-  if (current) chunks.push(current);
-
-  return chunks.flatMap((chunk) => {
-    if (chunk.length <= READER_PARAGRAPH_CHAR_LIMIT) return [chunk];
-    const pieces: string[] = [];
-    let rest = chunk;
-    while (rest.length > READER_PARAGRAPH_CHAR_LIMIT) {
-      let cut = rest.lastIndexOf(' ', READER_PARAGRAPH_CHAR_LIMIT);
-      if (cut < 160) cut = READER_PARAGRAPH_CHAR_LIMIT;
-      pieces.push(rest.slice(0, cut).trim());
-      rest = rest.slice(cut).trim();
-    }
-    if (rest) pieces.push(rest);
-    return pieces;
-  });
+const getGenerationStepIndex = (jobStatus: JobStatus | null, fullTextStatus: string | null, renderStatus: string | null) => {
+  if (!jobStatus) return 0;
+  const fullVisualsStatus = jobStatus.artifacts?.fullVisuals?.status || null;
+  const coverStatus = jobStatus.artifacts?.cover?.status || null;
+  if (renderStatus === 'ready') return 6;
+  if (renderStatus === 'generating' || coverStatus === 'ready') return 5;
+  if (coverStatus === 'generating' || fullVisualsStatus === 'ready') return 4;
+  if (fullVisualsStatus === 'generating' || fullTextStatus === 'ready') return 3;
+  if (fullTextStatus === 'generating') return 2;
+  if (jobStatus.preview || jobStatus.status === 'chapter_1_ready') return 1;
+  return 0;
 };
 
-const chunkLooseReaderParagraphs = (blocks: string[]) => {
-  const pages: string[][] = [];
-  const pushPage = (paragraphs: string[]) => {
-    if (paragraphs.length > 0) pages.push(paragraphs);
-  };
-
-  blocks.forEach((block) => {
-    const paragraphs = formatPreviewText(block).flatMap(splitLongReaderParagraph);
-    let current: string[] = [];
-    let currentLength = 0;
-    paragraphs.forEach((paragraph) => {
-      const nextLength = currentLength + paragraph.length;
-      if (current.length > 0 && (nextLength > READER_PAGE_CHAR_LIMIT || current.length >= 3)) {
-        pushPage(current);
-        current = [];
-        currentLength = 0;
-      }
-      current.push(paragraph);
-      currentLength += paragraph.length;
-    });
-    pushPage(current);
-  });
-
-  return pages.length > 0 ? pages : [[]];
-};
-
-const buildReaderTextPages = (blocks: string[]) => {
-  const printPages = blocks
-    .map((block) => formatPreviewText(block))
-    .filter((paragraphs) => paragraphs.length > 0);
-
-  if (printPages.length > 1) return printPages;
-
-  return chunkLooseReaderParagraphs(blocks);
-};
-
-const getReaderTextDensityClass = (paragraphs: string[] = []) => {
-  const textLength = paragraphs.join(' ').length;
-  if (textLength > 1700 || paragraphs.length > 7) return 'generated-book-page-text-compact';
-  if (textLength > 1200 || paragraphs.length > 5) return 'generated-book-page-text-dense';
-  return '';
-};
-
-const buildReaderTeaser = (chapter: ReaderChapter) => {
-  const source = formatPreviewText(chapter.textBlocks[0] || '').join(' ');
-  if (!source) return '';
-  const sentences = splitReaderSentences(source);
-  const teaser = sentences.slice(0, 2).join(' ').trim();
-  if (teaser.length <= 180) return teaser;
-  return `${teaser.slice(0, 165).replace(/\s+\S*$/, '')}...`;
-};
-
-const buildReaderPages = (chapters: ReaderChapter[]): ReaderPage[] => {
-  return chapters.flatMap((chapter) => {
-    const pages: ReaderPage[] = [{
-      key: `chapter-${chapter.n}-opener`,
-      kind: 'chapter',
-      chapter: chapter.n,
-      title: chapter.title,
-      teaser: buildReaderTeaser(chapter),
-    }, {
-      key: `chapter-${chapter.n}-image`,
-      kind: 'image',
-      chapter: chapter.n,
-      title: chapter.title,
-      imageUrl: chapter.imageUrl,
-    }];
-
-    buildReaderTextPages(chapter.textBlocks).forEach((paragraphs, index) => {
-      pages.push({
-        key: `chapter-${chapter.n}-text-${index}`,
-        kind: 'text',
-        chapter: chapter.n,
-        title: chapter.title,
-        paragraphs,
-      });
-    });
-
-    return pages;
-  });
-};
-
-const BookReaderPage: React.FC<{ page?: ReaderPage }> = ({ page }) => {
-  if (!page) {
-    return <div className="generated-book-page generated-book-page-empty" aria-hidden="true" />;
-  }
-
-  if (page.kind === 'chapter') {
-    return (
-      <article className="generated-book-page generated-book-page-chapter">
-        <div className="generated-book-chapter-kicker">Глава {page.chapter}</div>
-        <h4>{page.title}</h4>
-        <div className="generated-book-rule" aria-hidden="true" />
-        {page.teaser && <p>{page.teaser}</p>}
-      </article>
-    );
-  }
-
-  if (page.kind === 'image') {
-    return (
-      <article className="generated-book-page generated-book-page-image">
-        <div className="generated-book-chapter-image">
-          {page.imageUrl ? (
-            <img src={page.imageUrl} alt={`Иллюстрация к главе ${page.chapter}`} />
-          ) : (
-            <span>Иллюстрация готовится</span>
-          )}
-        </div>
-      </article>
-    );
-  }
-
-  return (
-    <article className={`generated-book-page generated-book-page-text ${getReaderTextDensityClass(page.paragraphs)}`}>
-      {page.paragraphs?.map((paragraph, index) => (
-        <p key={`${page.key}-${index}`}>{paragraph}</p>
-      ))}
-    </article>
+const hasGenerationFailed = (jobStatus: JobStatus | null) => {
+  if (!jobStatus) return false;
+  return Boolean(
+    jobStatus.status === 'failed'
+    || jobStatus.error
+    || jobStatus.artifacts?.fullText?.status === 'failed'
+    || jobStatus.artifacts?.fullVisuals?.status === 'failed'
+    || jobStatus.artifacts?.cover?.status === 'failed'
+    || jobStatus.artifacts?.render?.status === 'failed'
   );
 };
 
-const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
+const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
   title,
-  chapters,
+  jobStatus,
   fullTextStatus,
   renderStatus,
   bookPdfUrl,
-  canContinueStory,
-  continueSubmitting,
-  onContinueStory,
+  generationStartedAt,
 }) => {
-  const [spreadIndex, setSpreadIndex] = useState(0);
-  const pages = buildReaderPages(chapters);
-  const spreadCount = Math.max(1, Math.ceil(pages.length / 2));
-  const leftPage = pages[spreadIndex * 2];
-  const rightPage = pages[spreadIndex * 2 + 1];
+  const [nowMs, setNowMs] = useState(Date.now());
+  const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
+  const isReady = renderStatus === 'ready' && Boolean(bookPdfUrl);
+  const isFailed = hasGenerationFailed(jobStatus);
+  const activeStepIndex = getGenerationStepIndex(jobStatus, fullTextStatus, renderStatus);
 
   useEffect(() => {
-    setSpreadIndex(0);
-  }, [chapters.length, fullTextStatus]);
+    if (isReady || isFailed) return;
+    const intervalId = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(intervalId);
+  }, [isReady, isFailed]);
 
-  const canGoPrev = spreadIndex > 0;
-  const canGoNext = spreadIndex < spreadCount - 1;
-  const showPdfPreview = Boolean(bookPdfUrl && renderStatus === 'ready');
-  const showRenderWaiting = fullTextStatus === 'ready' && renderStatus !== 'ready';
-  const statusText = fullTextStatus === 'ready'
-    ? renderStatus === 'ready'
-      ? 'PDF готов'
-      : 'Собираем печатный PDF'
-    : fullTextStatus === 'generating'
-      ? 'Пишем продолжение'
-      : 'Первая глава готова';
-  const isBusy = fullTextStatus === 'generating' || (fullTextStatus === 'ready' && renderStatus !== 'ready');
+  const startedAt = generationStartedAt || nowMs;
+  const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAt) / 1000));
+  const remainingSeconds = Math.max(0, GENERATION_ETA_SECONDS - elapsedSeconds);
+  const progressFromStage = [8, 20, 38, 58, 74, 88, 100][activeStepIndex] || 8;
+  const progress = isReady ? 100 : Math.max(Math.min(jobStatus?.progress ?? progressFromStage, 98), progressFromStage);
+  const titleText = title || jobStatus?.preview?.title || 'Ваша сказка';
+  const statusLabel = isReady ? 'PDF готов' : isFailed ? 'Нужна проверка' : jobStatus?.message || 'Книга создается';
+  const timerText = isReady ? 'готово' : remainingSeconds > 0 ? formatGenerationTimer(remainingSeconds) : 'финальная проверка';
+  const fullVisualsDetail = fullVisuals?.total
+    ? `Рисуем иллюстрации: ${fullVisuals.completed || 0} из ${fullVisuals.total}`
+    : 'Рисуем иллюстрации и держим единый образ героев';
+
+  const stepDetails = [
+    'Принимаем анкету и фотографии героев',
+    'Создаем мир, завязку и визуальный канон',
+    'Пишем главы 2-5 цельной историей',
+    fullVisualsDetail,
+    'Собираем обложку в печатный макет',
+    'Верстаем PDF под требования типографии',
+    'Финальная книга готова',
+  ];
+  const steps = ['Детали', 'Мир и герои', 'Текст', 'Картинки', 'Обложка', 'PDF', 'Готово'];
 
   return (
-    <section className="generated-book-reader">
-      <div className="generated-book-toolbar">
-        <div className="generated-book-toolbar-main">
-          <div className={`generated-book-status ${isBusy ? 'generated-book-status-active' : ''}`}>{statusText}</div>
-          <h4 className="generated-book-title">{title || 'Ваша сказка'}</h4>
-          {!showPdfPreview && !showRenderWaiting && (
-            <div className="generated-book-counter">
-              Разворот {spreadIndex + 1} из {spreadCount}
-            </div>
-          )}
+    <section className="generation-status-panel" aria-live="polite">
+      <div className="generation-status-header">
+        <div>
+          <div className={`generated-book-status ${!isReady && !isFailed ? 'generated-book-status-active' : ''}`}>
+            {statusLabel}
+          </div>
+          <h3>{isReady ? 'Книга готова' : titleText}</h3>
+          <p>{isFailed ? 'Похоже, генерация оборвалась. Мы уже видим ошибку и сможем пересобрать книгу.' : stepDetails[activeStepIndex]}</p>
         </div>
-        <div className="generated-book-actions">
-          {fullTextStatus !== 'ready' && (
-            <button
-              type="button"
-              onClick={onContinueStory}
-              disabled={!canContinueStory || continueSubmitting}
-              className="mixer-main-button px-5 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {continueSubmitting || fullTextStatus === 'generating' ? 'Продолжаем...' : 'Хочу всю историю'}
-            </button>
-          )}
-          {renderStatus === 'ready' && (
-            <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link">
-              <Printer size={16} aria-hidden="true" />
-              Купить печатную книгу
-            </a>
-          )}
-          {bookPdfUrl && renderStatus === 'ready' && (
-            <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link">
-              <ExternalLink size={16} aria-hidden="true" />
-              PDF
-            </a>
-          )}
+        <div className="generation-status-timer" aria-label="Примерное время до готовности">
+          <span>{timerText}</span>
+          {!isReady && <small>примерно осталось</small>}
         </div>
       </div>
-      {showPdfPreview ? (
-        <div className="generated-book-pdf-frame">
-          <iframe
-            src={`${bookPdfUrl}#view=FitH`}
-            title="PDF-предпросмотр книги"
-            loading="lazy"
-          />
+
+      <div className="generation-status-progress" aria-label="Прогресс создания книги">
+        <div style={{ width: `${progress}%` }} />
+      </div>
+
+      <ol className="generation-status-steps">
+        {steps.map((step, index) => {
+          const done = isReady || index < activeStepIndex;
+          const active = !isReady && index === activeStepIndex;
+          return (
+            <li
+              key={step}
+              className={[
+                done ? 'generation-status-step-done' : '',
+                active ? 'generation-status-step-active' : '',
+                isFailed && active ? 'generation-status-step-failed' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <span>{done ? <Check size={14} aria-hidden="true" /> : index + 1}</span>
+              <strong>{step}</strong>
+            </li>
+          );
+        })}
+      </ol>
+
+      {isReady && (
+        <div className="generation-status-actions">
+          <a href={bookPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link">
+            <ExternalLink size={16} aria-hidden="true" />
+            Открыть PDF
+          </a>
+          <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link">
+            <Printer size={16} aria-hidden="true" />
+            Купить печатную книгу
+          </a>
         </div>
-      ) : showRenderWaiting ? (
-        <div className="generated-book-render-waiting" aria-live="polite">
-          <div className="generated-preview-loader" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <h5>Собираем финальную верстку</h5>
-          <p>Через пару минут здесь появится точный PDF-предпросмотр книги.</p>
-        </div>
-      ) : (
-        <>
-          <div className="generated-book-spread" aria-live="polite">
-            <BookReaderPage page={leftPage} />
-            <BookReaderPage page={rightPage} />
-          </div>
-          <div className="generated-book-nav">
-            <button type="button" onClick={() => setSpreadIndex((value) => Math.max(0, value - 1))} disabled={!canGoPrev} aria-label="Предыдущий разворот">
-              <ChevronLeft size={18} aria-hidden="true" />
-            </button>
-            <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          </div>
-        </>
       )}
     </section>
   );
@@ -592,8 +405,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
-  const [fullTextArtifact, setFullTextArtifact] = useState<FullTextArtifact | null>(null);
-  const [continueSubmitting, setContinueSubmitting] = useState(false);
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -663,37 +475,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     };
   }, [submittedJobId, submittedStatusUrl]);
 
-  useEffect(() => {
-    if (!submittedJobId || jobStatus?.artifacts?.fullText?.status !== 'ready' || fullTextArtifact) {
-      return;
-    }
-
-    let cancelled = false;
-    const artifactUrl = jobStatus.artifacts.fullText.url || `${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}/artifacts/full-text.json`;
-
-    const loadFullText = async () => {
-      try {
-        const response = await fetch(artifactUrl, { cache: 'no-store' });
-        if (!response.ok) {
-          return;
-        }
-        const artifact = await response.json() as FullTextArtifact;
-        if (!cancelled) {
-          setFullTextArtifact(artifact);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setFullTextArtifact((current) => current);
-        }
-      }
-    };
-
-    void loadFullText();
-    return () => {
-      cancelled = true;
-    };
-  }, [submittedJobId, jobStatus?.artifacts?.fullText?.status, jobStatus?.artifacts?.fullText?.url, fullTextArtifact]);
-  
   const [heroSections, setHeroSections] = useState({
     hero2: true,
     hero3: false,
@@ -707,90 +488,18 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
 
   const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   const validateEmail = (email: string) => EMAIL_RX.test(email);
-  const previewImageUrl = getPreviewImageUrl(jobStatus?.preview);
-  const previewParagraphs = formatPreviewText(jobStatus?.preview?.text);
-  const hasFirstChapterPreview = Boolean(jobStatus?.preview?.title || previewParagraphs.length > 0 || previewImageUrl);
   const fullTextStatus = jobStatus?.artifacts?.fullText?.status || null;
-  const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
-  const bookPdfUrl = jobStatus?.artifacts?.previewPdf?.url
-    || jobStatus?.artifacts?.render?.files?.preview?.url
-    || jobStatus?.artifacts?.bookPdf?.url
+  const bookPdfUrl = jobStatus?.artifacts?.bookPdf?.url
     || jobStatus?.artifacts?.render?.files?.book?.url
+    || jobStatus?.artifacts?.previewPdf?.url
+    || jobStatus?.artifacts?.render?.files?.preview?.url
     || '';
-  const canContinueStory = Boolean(submittedJobId && hasFirstChapterPreview && fullTextStatus !== 'generating' && fullTextStatus !== 'ready');
-  const allFullChapters = fullTextArtifact?.text?.chapters || [];
-  const readerChapters: ReaderChapter[] = allFullChapters.length > 0
-    ? allFullChapters.map((chapter) => {
-      const image = chapter.n === 1
-        ? null
-        : (fullVisuals?.images || []).find((item) => Number(item.chapter) === chapter.n || item.slot === `chapter_${chapter.n}`);
-      return {
-        n: chapter.n,
-        title: chapter.title || `Глава ${chapter.n}`,
-        textBlocks: chapter.textBlocks?.length ? chapter.textBlocks : [chapter.text || ''],
-        imageUrl: chapter.n === 1 ? previewImageUrl : (image?.absoluteUrl || image?.url || ''),
-        imageStatus: chapter.n === 1 ? jobStatus?.preview?.imageStatus : image?.status,
-      };
-    })
-    : [{
-      n: 1,
-      title: jobStatus?.preview?.title || 'Первая глава',
-      textBlocks: [jobStatus?.preview?.text || ''],
-      imageUrl: previewImageUrl,
-      imageStatus: jobStatus?.preview?.imageStatus,
-    }];
-  const readerTitle = fullTextArtifact?.text?.bible?.bookTitle
-    || fullTextArtifact?.text?.preview?.title
-    || jobStatus?.preview?.title
+  const readerTitle = jobStatus?.preview?.title
     || 'Ваша сказка';
-  const waitingProgress = Math.max(0, Math.min(100, jobStatus?.progress ?? 8));
-  const waitingText = waitingProgress >= 55
-    ? 'Оживляем первый разворот и проверяем, чтобы герои держались одного образа.'
-    : waitingProgress >= 25
-      ? 'Пишем завязку, собираем характеры героев и настроение мира.'
-      : 'Принимаем детали сказки и готовим персональную историю.';
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
-  };
-
-  const handleContinueStory = async () => {
-    if (!submittedJobId || !canContinueStory) {
-      return;
-    }
-
-    setContinueSubmitting(true);
-    try {
-      const response = await fetch(CONTINUE_ENDPOINT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId: submittedJobId })
-      });
-      const ok = response.ok;
-      toast({
-        title: ok ? "Продолжаем историю" : "Не удалось продолжить",
-        description: ok ? "Полная книга начала готовиться" : "Попробуйте ещё раз через минуту."
-      });
-      if (ok) {
-        setFullTextArtifact(null);
-        setJobStatus((current) => current ? {
-          ...current,
-          artifacts: {
-            ...(current.artifacts || {}),
-            fullText: { ...(current.artifacts?.fullText || {}), status: 'generating' }
-          }
-        } : current);
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Не удалось продолжить",
-        description: "Проверьте соединение и попробуйте ещё раз."
-      });
-    } finally {
-      setContinueSubmitting(false);
-    }
   };
 
   const handleSubmit = async () => {
@@ -822,6 +531,11 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     }
 
     setShowLoader(true);
+    setShowSuccessOverlay(true);
+    setSubmittedJobId(null);
+    setSubmittedStatusUrl(null);
+    setJobStatus(null);
+    setGenerationStartedAt(Date.now());
 
     const multipartData = new FormData();
     multipartData.append('world', formData.world);
@@ -896,7 +610,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
 
     toast({
       title: ok ? "Начали создавать книгу" : "Не получилось отправить форму",
-      description: ok ? "Пишем первую главу и готовим первый разворот." : "Проверьте данные и попробуйте ещё раз."
+      description: ok ? "Запустили полный цикл: текст, картинки, обложка и печатный PDF." : "Проверьте данные и попробуйте ещё раз."
     });
     
     setShowLoader(false);
@@ -904,8 +618,10 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       setSubmittedJobId(createResult?.jobId || null);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setJobStatus(null);
-      setFullTextArtifact(null);
       showSuccessScreen();
+    } else {
+      setShowSuccessOverlay(false);
+      setGenerationStartedAt(null);
     }
   };
 
@@ -950,7 +666,6 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
-    setFullTextArtifact(null);
   };
 
   return (
@@ -1527,19 +1242,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
           </div>
           
           <p className="mixer-subtitle text-center mt-6">
-            Первая глава появится на этой странице, а затем можно будет собрать всю книгу.
+            Книга соберется целиком: текст, иллюстрации, обложка и печатный PDF.
           </p>
-        </div>
-      )}
-
-      {/* Loader Modal */}
-      {showLoader && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="mixer-modal-panel max-w-md text-center">
-            <div className="mixer-loading-indicator" />
-            <h3 className="text-xl font-semibold mixer-display-value mb-2">Готовим первую главу</h3>
-            <p className="mixer-subtitle">Скоро здесь появится книжный предпросмотр.</p>
-          </div>
         </div>
       )}
 
@@ -1547,7 +1251,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       {showSuccessOverlay && (
         <div className="generated-preview-backdrop">
           <div
-            className={`generated-preview-dialog ${hasFirstChapterPreview ? 'generated-preview-dialog-reader' : ''}`}
+            className="generated-preview-dialog generated-preview-dialog-status"
             role="dialog"
             aria-modal="true"
           >
@@ -1555,43 +1259,18 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
               type="button"
               className="generated-preview-close"
               onClick={() => setShowSuccessOverlay(false)}
-              aria-label="Закрыть предпросмотр"
+              aria-label="Закрыть окно создания книги"
             >
               <X size={18} aria-hidden="true" />
             </button>
-            {!hasFirstChapterPreview && (
-              <div className="generated-preview-waiting">
-                <div className="generated-preview-loader" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <h3>Собираем первую главу</h3>
-                <p>{waitingText}</p>
-                {submittedJobId && (
-                  <div className="generated-preview-progress" aria-label="Прогресс создания книги">
-                    <div
-                      className="generated-preview-progress-bar"
-                      style={{ width: `${waitingProgress}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            {submittedJobId && hasFirstChapterPreview && (
-              <>
-                <GeneratedBookReader
-                  title={readerTitle}
-                  chapters={readerChapters}
-                  fullTextStatus={fullTextStatus}
-                  renderStatus={renderStatus}
-                  bookPdfUrl={bookPdfUrl}
-                  canContinueStory={canContinueStory}
-                  continueSubmitting={continueSubmitting}
-                  onContinueStory={handleContinueStory}
-                />
-              </>
-            )}
+            <GenerationStatusPanel
+              title={readerTitle}
+              jobStatus={jobStatus}
+              fullTextStatus={fullTextStatus}
+              renderStatus={renderStatus}
+              bookPdfUrl={bookPdfUrl}
+              generationStartedAt={generationStartedAt}
+            />
           </div>
         </div>
       )}

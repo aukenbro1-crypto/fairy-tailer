@@ -1154,7 +1154,7 @@ function addPptDecorativeOutroPage(pdf, fonts, assets) {
   const page = addPptInteriorPage(pdf);
   drawPptImage(page, assets.book.image6, pptBox(0, 0.45, 385.51, 385.51));
   drawPptImage(page, assets.book.image16, pptBox(12, 24, 361.51, 361.51));
-  drawPptText(page, 'Конец', pptBox(120, 165, 145.51, 42), {
+  drawPptText(page, 'Конец', pptBox(188, 82, 145.51, 42), {
     font: fonts.fontRubik,
     size: 24,
     minSize: 16,
