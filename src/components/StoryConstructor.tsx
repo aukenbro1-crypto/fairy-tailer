@@ -494,6 +494,8 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
 
   const canGoPrev = spreadIndex > 0;
   const canGoNext = spreadIndex < spreadCount - 1;
+  const showPdfPreview = Boolean(bookPdfUrl && renderStatus === 'ready');
+  const showRenderWaiting = fullTextStatus === 'ready' && renderStatus !== 'ready';
   const statusText = fullTextStatus === 'ready'
     ? renderStatus === 'ready'
       ? 'PDF готов'
@@ -509,9 +511,11 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
         <div className="generated-book-toolbar-main">
           <div className={`generated-book-status ${isBusy ? 'generated-book-status-active' : ''}`}>{statusText}</div>
           <h4 className="generated-book-title">{title || 'Ваша сказка'}</h4>
-          <div className="generated-book-counter">
-            Разворот {spreadIndex + 1} из {spreadCount}
-          </div>
+          {!showPdfPreview && !showRenderWaiting && (
+            <div className="generated-book-counter">
+              Разворот {spreadIndex + 1} из {spreadCount}
+            </div>
+          )}
         </div>
         <div className="generated-book-actions">
           {fullTextStatus !== 'ready' && (
@@ -525,9 +529,9 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
             </button>
           )}
           {renderStatus === 'ready' && (
-            <a href={PRINT_PAYMENT_URL} className="generated-book-print-link">
+            <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link">
               <Printer size={16} aria-hidden="true" />
-              Заказать печать
+              Купить печатную книгу
             </a>
           )}
           {bookPdfUrl && renderStatus === 'ready' && (
@@ -538,18 +542,40 @@ const GeneratedBookReader: React.FC<GeneratedBookReaderProps> = ({
           )}
         </div>
       </div>
-      <div className="generated-book-spread" aria-live="polite">
-        <BookReaderPage page={leftPage} />
-        <BookReaderPage page={rightPage} />
-      </div>
-      <div className="generated-book-nav">
-        <button type="button" onClick={() => setSpreadIndex((value) => Math.max(0, value - 1))} disabled={!canGoPrev} aria-label="Предыдущий разворот">
-          <ChevronLeft size={18} aria-hidden="true" />
-        </button>
-        <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
-          <ChevronRight size={18} aria-hidden="true" />
-        </button>
-      </div>
+      {showPdfPreview ? (
+        <div className="generated-book-pdf-frame">
+          <iframe
+            src={`${bookPdfUrl}#view=FitH`}
+            title="PDF-предпросмотр книги"
+            loading="lazy"
+          />
+        </div>
+      ) : showRenderWaiting ? (
+        <div className="generated-book-render-waiting" aria-live="polite">
+          <div className="generated-preview-loader" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <h5>Собираем финальную верстку</h5>
+          <p>Через пару минут здесь появится точный PDF-предпросмотр книги.</p>
+        </div>
+      ) : (
+        <>
+          <div className="generated-book-spread" aria-live="polite">
+            <BookReaderPage page={leftPage} />
+            <BookReaderPage page={rightPage} />
+          </div>
+          <div className="generated-book-nav">
+            <button type="button" onClick={() => setSpreadIndex((value) => Math.max(0, value - 1))} disabled={!canGoPrev} aria-label="Предыдущий разворот">
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => setSpreadIndex((value) => Math.min(spreadCount - 1, value + 1))} disabled={!canGoNext} aria-label="Следующий разворот">
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </>
+      )}
     </section>
   );
 };

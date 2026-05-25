@@ -1297,6 +1297,51 @@ html, body {
   box-shadow: 0 18px 58px rgba(0, 0, 0, 0.22);
 }
 
+.generated-book-pdf-frame,
+.generated-book-render-waiting {
+  width: min(100%, 1120px, calc((100svh - 255px) * 1.45));
+  height: min(74svh, 820px);
+  min-height: 460px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 12px solid rgba(42, 73, 68, 0.16);
+  border-radius: 8px;
+  background: #fbf8ef;
+  box-shadow: 0 18px 58px rgba(0, 0, 0, 0.2);
+}
+
+.generated-book-pdf-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fbf8ef;
+}
+
+.generated-book-render-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  color: #263532;
+  text-align: center;
+}
+
+.generated-book-render-waiting h5 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  color: #243734;
+}
+
+.generated-book-render-waiting p {
+  max-width: 34ch;
+  margin: 0;
+  color: rgba(38, 53, 50, 0.66);
+}
+
 .generated-book-page {
   position: relative;
   container-type: inline-size;
@@ -1483,6 +1528,14 @@ html, body {
     width: min(100%, calc((100svh - 290px) * 2));
     max-height: calc(100svh - 290px);
     padding: 5px;
+  }
+
+  .generated-book-pdf-frame,
+  .generated-book-render-waiting {
+    width: 100%;
+    height: calc(100svh - 260px);
+    min-height: 420px;
+    border-width: 7px;
   }
 
   .generated-book-page {
