@@ -20,6 +20,7 @@ const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
+const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
@@ -102,6 +103,18 @@ function authTokenMatches(value) {
   return secretMatches(API_TOKEN, value);
 }
 
+function adminBooksPasswordMatches(value) {
+  return secretMatches(ADMIN_BOOKS_PASSWORD, value);
+}
+
+function adminBooksCookieMatches(value) {
+  return secretMatches(ADMIN_BOOKS_SECRET, value) || authTokenMatches(value);
+}
+
+function adminBooksSessionValue(value) {
+  return ADMIN_BOOKS_SECRET || API_TOKEN || value;
+}
+
 function cookieValue(req, name) {
   const header = req.headers.cookie || '';
   for (const part of header.split(';')) {
@@ -124,7 +137,7 @@ function hasAdminBooksAuth(req) {
   const bearer = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
   const apiKey = req.headers['x-api-key'] || '';
   const cookieToken = cookieValue(req, ADMIN_BOOKS_COOKIE);
-  return [bearer, apiKey, cookieToken].some(authTokenMatches);
+  return [bearer, apiKey].some(authTokenMatches) || adminBooksCookieMatches(cookieToken);
 }
 
 function hasAdminBooksSecretPath(pathname) {
@@ -169,10 +182,10 @@ async function readTextBody(req, limitBytes = 16 * 1024) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-async function readFormToken(req) {
+async function readFormCredential(req) {
   const text = await readTextBody(req);
   const params = new URLSearchParams(text);
-  return params.get('token') || '';
+  return params.get('password') || params.get('token') || '';
 }
 
 async function readJsonFile(path, fallback = null) {
@@ -494,11 +507,11 @@ function renderBooksLoginPage(errorMessage = '') {
 <body>
   <main>
     <h1>PDF-сказки</h1>
-    <p>Служебная страница FairyTeller. Введите API-токен, чтобы открыть список готовых PDF.</p>
+    <p>Служебная страница FairyTeller. Введите пароль, чтобы открыть список готовых PDF.</p>
     ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ''}
     <form method="post" action="${ADMIN_BOOKS_PATH}">
-      <label for="token">Токен</label>
-      <input id="token" name="token" type="password" autocomplete="current-password" autofocus>
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" inputmode="numeric" autocomplete="current-password" autofocus>
       <button type="submit">Открыть список</button>
     </form>
   </main>
@@ -606,16 +619,17 @@ async function handleAdminBooksSession(req, res, url, method) {
   }
 
   if (method !== 'POST') return false;
-  const token = await readFormToken(req);
-  if (!authTokenMatches(token)) {
-    sendHtml(req, res, 401, renderBooksLoginPage('Токен не подошел. Проверьте значение FAIRYTELLER_API_TOKEN.'));
+  const credential = await readFormCredential(req);
+  if (!adminBooksPasswordMatches(credential) && !authTokenMatches(credential)) {
+    sendHtml(req, res, 401, renderBooksLoginPage('Пароль не подошел.'));
     return true;
   }
+  const sessionValue = adminBooksSessionValue(credential);
   res.writeHead(303, {
     'cache-control': 'no-store',
     'x-robots-tag': 'noindex, nofollow, noarchive',
     'referrer-policy': 'no-referrer',
-    'set-cookie': `${ADMIN_BOOKS_COOKIE}=${encodeURIComponent(token)}; Path=${ADMIN_BOOKS_PATH}; HttpOnly; SameSite=Lax; Max-Age=2592000${NODE_ENV === 'production' ? '; Secure' : ''}`,
+    'set-cookie': `${ADMIN_BOOKS_COOKIE}=${encodeURIComponent(sessionValue)}; Path=${ADMIN_BOOKS_PATH}; HttpOnly; SameSite=Lax; Max-Age=2592000${NODE_ENV === 'production' ? '; Secure' : ''}`,
     location: ADMIN_BOOKS_PATH,
   });
   res.end();
