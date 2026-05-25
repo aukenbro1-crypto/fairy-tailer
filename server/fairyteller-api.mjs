@@ -19,6 +19,7 @@ const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
+const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
@@ -93,8 +94,12 @@ function requireAuth(req) {
   }
 }
 
+function secretMatches(expected, value) {
+  return Boolean(expected && value && safeEqual(String(value), String(expected)));
+}
+
 function authTokenMatches(value) {
-  return Boolean(API_TOKEN && value && safeEqual(String(value), API_TOKEN));
+  return secretMatches(API_TOKEN, value);
 }
 
 function cookieValue(req, name) {
@@ -120,6 +125,14 @@ function hasAdminBooksAuth(req) {
   const apiKey = req.headers['x-api-key'] || '';
   const cookieToken = cookieValue(req, ADMIN_BOOKS_COOKIE);
   return [bearer, apiKey, cookieToken].some(authTokenMatches);
+}
+
+function hasAdminBooksSecretPath(pathname) {
+  if (!ADMIN_BOOKS_SECRET) return false;
+  const prefix = `${ADMIN_BOOKS_PATH}/`;
+  if (!pathname.startsWith(prefix)) return false;
+  const provided = pathname.slice(prefix.length);
+  return !provided.includes('/') && secretMatches(ADMIN_BOOKS_SECRET, provided);
 }
 
 async function readJsonBody(req) {
@@ -493,7 +506,8 @@ function renderBooksLoginPage(errorMessage = '') {
 </html>`;
 }
 
-function renderBooksPage(books) {
+function renderBooksPage(books, options = {}) {
+  const showLogout = options.showLogout !== false;
   const rows = books.map((book) => {
     const title = book.title || 'Без названия';
     const people = [book.email, ...book.heroNames].filter(Boolean).join(' · ');
@@ -557,7 +571,7 @@ function renderBooksPage(books) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    <a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+    ${showLogout ? `<a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -1071,6 +1085,11 @@ async function route(req, res) {
 
   if (method === 'GET' && url.pathname === '/healthz') {
     sendJson(req, res, 200, { ok: true, service: 'fairyteller-api', dataDir: DATA_DIR });
+    return;
+  }
+
+  if (method === 'GET' && hasAdminBooksSecretPath(url.pathname)) {
+    sendHtml(req, res, 200, renderBooksPage(await listGeneratedBooks(), { showLogout: false }));
     return;
   }
 
