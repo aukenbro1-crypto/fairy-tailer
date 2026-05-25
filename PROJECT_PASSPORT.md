@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-25 16:34 UTC
+Last updated: 2026-05-25 17:50 UTC
 
 ## Project Context
 
@@ -85,7 +85,9 @@ Text generation note:
 - `fairyteller_text` calls Gemini through `https://generativelanguage.googleapis.com/v1beta/models/:generateContent`.
 - The request uses `$env.GEMINI_API_KEY`; do not store the literal key value in the workflow JSON.
 - Model configured for first-chapter generation: `gemini-2.5-flash` with JSON response mode and `responseSchema`.
+- The first-chapter Gemini call is wrapped in a code node with controlled transient retries/backoff (`10s`, `20s`, `35s`, `55s`). If Gemini still returns provider errors, the workflow patches the Job API to `failed` before throwing so the frontend and Telegram do not hang silently.
 - The first-chapter normalizer extracts fenced/embedded JSON and repairs raw control characters inside strings before `JSON.parse`.
+- The first-chapter normalizer also patches the Job API to `failed` before throwing if Gemini returns unrecoverable JSON or an invalid print-ready block shape.
 - The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
 - `fairyteller_text` starts the full book automatically after chapter 1 is normalized. It fans out to `fairyteller_visuals` for the portrait sheet/chapter 1 image and to `fairyteller_full_text` for chapters 2-5. `fairyteller_continue` remains available only for old jobs or manual recovery.
@@ -320,3 +322,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added inferred hero age groups to the visual pipeline. `fairyteller_intake` now stores `ageGroup`/`ageGroupSource` for each hero from explicit future fields or from free-form descriptions, and `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` pass those labels into the portraitizer, visual bible, chapter-image prompts, and cover prompt so secondary heroes keep stable adult/child/teen/senior proportions.
 - Replaced the single critical portrait-sheet identity path with `per_hero_reference_cards_v1`. `fairyteller_visuals` now generates one reference card per hero from the original photo and hero metadata, stores those cards as Job API files, and writes them into `visuals.visualBible.heroReferenceCards`; chapter 1, chapter 2-5, and cover generation attach those cards inline as the primary identity canon. The combined `hero-reference-sheet.png` is now optional fallback/overview material. Deployed `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover` to production, restarted Docker n8n, verified all three are active, and kept backup `/root/fairyteller-n8n-backups/20260525-155221-hero-cards`.
 - Restored the ready-state PDF preview in `/create` without reintroducing the unstable HTML book spread: once render is ready, the modal hides the status/title header, opens `preview.pdf` in a larger frame, moves the print CTA to the bottom center as `Оплатить печатную версию`, and shows lightweight print/delivery popups. Deployed frontend release `/var/www/fairyteller/releases/20260525-163439-codex-pdf-preview-cta`; nginx root now points to that release.
+- Hardened `fairyteller_text` after production job `ft_1779729265248_8he7z7` hit Gemini `503 high demand` during "Пишем первую главу" and left the public job stuck at `text_generating`. The Gemini request node now performs longer controlled retries and marks the job `failed` on exhausted provider errors; `Normalize First Chapter` now also marks the job `failed` on unrecoverable response-shape errors. Deployed to production n8n, restarted `baku-n8n-docker`, verified workflow `kCtpw2d7pEOI3QRF` active, and kept backup `/root/fairyteller-n8n-backups/20260526-014428`. The stuck job was manually patched to `failed` with a user-safe Gemini-overload message.
