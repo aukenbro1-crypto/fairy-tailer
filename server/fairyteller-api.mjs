@@ -262,6 +262,28 @@ function artifactStatusLine(artifacts = {}) {
   return labels.join(', ');
 }
 
+function artifactHasUrl(value) {
+  return Boolean(value && typeof value === 'object' && typeof value.url === 'string' && value.url.trim());
+}
+
+function hasReadyPdfArtifacts(artifacts = {}) {
+  const render = artifacts.render && typeof artifacts.render === 'object' ? artifacts.render : {};
+  const files = render.files && typeof render.files === 'object' ? render.files : {};
+  return artifactHasUrl(artifacts.bookPdf)
+    || artifactHasUrl(artifacts.previewPdf)
+    || artifactHasUrl(files.book)
+    || artifactHasUrl(files.preview);
+}
+
+function failedArtifactStage(artifacts = {}) {
+  if (artifacts.fullText?.status === 'failed') return 'text';
+  if (artifacts.heroReferences?.status === 'failed') return 'visuals';
+  if (artifacts.fullVisuals?.status === 'failed') return 'visuals';
+  if (artifacts.cover?.status === 'failed') return 'cover';
+  if (artifacts.render?.status === 'failed') return 'render';
+  return '';
+}
+
 function shouldNotifyJobUpdate(current, next, patch) {
   if (next.status !== current.status || next.stage !== current.stage) return true;
   if (!patch.artifacts || typeof patch.artifacts !== 'object') return false;
@@ -811,7 +833,12 @@ async function updateJobStatus(jobId, patch) {
     throw httpError(404, 'Job not found');
   }
 
-  const nextStatus = patch.status || current.status;
+  const nextArtifacts = patch.artifacts && typeof patch.artifacts === 'object'
+    ? { ...current.artifacts, ...patch.artifacts }
+    : current.artifacts;
+  const failedStage = failedArtifactStage(nextArtifacts);
+  const inferredFailure = !patch.status && failedStage && !hasReadyPdfArtifacts(nextArtifacts);
+  const nextStatus = inferredFailure ? 'failed' : (patch.status || current.status);
   if (typeof nextStatus !== 'string' || !STATUS_FIELDS.has(nextStatus)) {
     throw httpError(400, 'Invalid status');
   }
@@ -819,16 +846,18 @@ async function updateJobStatus(jobId, patch) {
   const next = {
     ...current,
     status: nextStatus,
-    stage: typeof patch.stage === 'string' ? patch.stage : current.stage,
+    stage: typeof patch.stage === 'string' ? patch.stage : (inferredFailure ? failedStage : current.stage),
     progress: typeof patch.progress === 'number' ? Math.max(0, Math.min(100, patch.progress)) : current.progress,
     message: typeof patch.message === 'string' ? patch.message : current.message,
     preview: patch.preview === undefined ? current.preview : patch.preview,
-    artifacts: patch.artifacts && typeof patch.artifacts === 'object'
-      ? { ...current.artifacts, ...patch.artifacts }
-      : current.artifacts,
+    artifacts: nextArtifacts,
     error: patch.error === undefined ? current.error : patch.error,
     updatedAt: nowIso(),
   };
+
+  if (next.status === 'done' && !hasReadyPdfArtifacts(next.artifacts)) {
+    throw httpError(409, 'Cannot mark job done before real PDF artifacts exist');
+  }
 
   await writeJsonAtomic(path, next);
   await appendEvent(dir, {

@@ -311,7 +311,8 @@
           "options": {
             "waitForSubWorkflow": false
           }
-        }
+        },
+        "disabled": true
       },
       {
         "id": "a4d0f4d1-6f6d-4c34-8a0d-portrait001",
@@ -597,13 +598,7 @@
       },
       "Restore Visuals Payload": {
         "main": [
-          [
-            {
-              "node": "Start Render Publish Pipeline",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          []
         ]
       }
     },
