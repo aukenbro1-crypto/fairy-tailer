@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ExternalLink, Printer, X } from 'lucide-react';
+import { Check, Printer, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -274,12 +274,6 @@ interface GenerationStatusPanelProps {
 }
 
 const GENERATION_ETA_SECONDS = 150;
-const PDF_READY_TIPS = [
-  'Печать книги занимает один день',
-  '3500₽, с учетом доставки',
-  'Бесплатная доставка по всей России',
-  'Доставка за несколько дней',
-];
 
 const formatGenerationTimer = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -317,46 +311,33 @@ const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string
   previewPdfUrl,
   printPdfUrl,
 }) => {
-  const [visibleTipCount, setVisibleTipCount] = useState(0);
+  const [isPdfLoaded, setIsPdfLoaded] = useState(false);
   const pdfUrl = previewPdfUrl || printPdfUrl;
-  const directPdfUrl = printPdfUrl || previewPdfUrl;
 
   useEffect(() => {
-    if (!pdfUrl) return;
-    setVisibleTipCount(0);
-    const timeouts = PDF_READY_TIPS.map((_, index) =>
-      window.setTimeout(() => {
-        setVisibleTipCount((count) => Math.max(count, index + 1));
-      }, 900 + index * 950)
-    );
-    return () => timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    setIsPdfLoaded(false);
   }, [pdfUrl]);
 
-  const revealNextTip = () => {
-    setVisibleTipCount((count) => Math.min(PDF_READY_TIPS.length, count + 1));
-  };
-
   return (
-    <section
-      className="generated-pdf-preview"
-      aria-label="Предпросмотр готовой книги"
-      onWheelCapture={revealNextTip}
-      onTouchMove={revealNextTip}
-    >
+    <section className="generated-pdf-preview" aria-label="Предпросмотр готовой книги">
       <div className="generated-pdf-stage">
-        <div className="generated-pdf-frame">
+        <div className={`generated-pdf-frame ${isPdfLoaded ? 'generated-pdf-frame-loaded' : ''}`}>
+          {!isPdfLoaded && (
+            <div className="generated-pdf-loading" aria-live="polite">
+              <div className="generated-pdf-loader-book" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <p>Открываем предпросмотр</p>
+            </div>
+          )}
           <iframe
             src={`${pdfUrl}#page=1&view=Fit`}
             title="PDF-предпросмотр книги"
             loading="lazy"
+            onLoad={() => setIsPdfLoaded(true)}
           />
-        </div>
-        <div className="generated-pdf-popups" aria-hidden="true">
-          {PDF_READY_TIPS.slice(0, visibleTipCount).map((tip) => (
-            <div key={tip} className="generated-pdf-popup">
-              {tip}
-            </div>
-          ))}
         </div>
       </div>
 
@@ -365,12 +346,6 @@ const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string
           <Printer size={17} aria-hidden="true" />
           Оплатить печатную версию
         </a>
-        {directPdfUrl && (
-          <a href={directPdfUrl} target="_blank" rel="noreferrer" className="generated-book-link generated-pdf-open-link">
-            <ExternalLink size={16} aria-hidden="true" />
-            PDF
-          </a>
-        )}
       </div>
     </section>
   );

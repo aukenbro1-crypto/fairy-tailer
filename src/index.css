@@ -1438,7 +1438,7 @@ html, body {
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 14px;
   min-height: calc(min(980px, 96svh) - 36px);
-  padding: 0 42px 0 0;
+  padding: 0;
 }
 
 .generated-pdf-stage {
@@ -1450,7 +1450,8 @@ html, body {
 }
 
 .generated-pdf-frame {
-  width: min(100%, 1120px);
+  position: relative;
+  width: min(100%, 1280px);
   height: min(84svh, 860px);
   overflow: hidden;
   border: 10px solid rgba(42, 73, 68, 0.13);
@@ -1466,40 +1467,102 @@ html, body {
   height: 100%;
   border: 0;
   background: #f8f4ea;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 
-.generated-pdf-popups {
+.generated-pdf-frame-loaded iframe {
+  opacity: 1;
+}
+
+.generated-pdf-loading {
   position: absolute;
-  top: 18%;
-  right: clamp(8px, 1.6vw, 24px);
+  inset: 0;
   z-index: 1;
   display: grid;
-  gap: 10px;
-  width: min(230px, 17vw);
+  place-content: center;
+  gap: 16px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(244, 222, 192, 0.84), rgba(255, 250, 240, 0.96) 42%, rgba(248, 244, 234, 0.98) 100%);
+  color: #263532;
+  text-align: center;
   pointer-events: none;
 }
 
-.generated-pdf-popup {
-  padding: 12px 14px;
-  border: 1px solid rgba(137, 72, 60, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 250, 240, 0.94);
-  color: #713b32;
-  font-weight: 700;
-  font-size: clamp(0.78rem, 0.95vw, 0.96rem);
-  line-height: 1.18;
-  box-shadow: 0 14px 38px rgba(137, 72, 60, 0.16);
-  animation: generated-pdf-popup-in 0.45s ease both;
+.generated-pdf-loading p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.15rem, 2.1vw, 1.75rem);
+  color: rgba(38, 53, 50, 0.78);
 }
 
-@keyframes generated-pdf-popup-in {
-  from {
+.generated-pdf-loader-book {
+  position: relative;
+  width: 86px;
+  height: 58px;
+  margin: 0 auto;
+  perspective: 240px;
+}
+
+.generated-pdf-loader-book span {
+  position: absolute;
+  top: 0;
+  left: 38px;
+  width: 34px;
+  height: 58px;
+  border: 1px solid rgba(137, 72, 60, 0.22);
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(90deg, #fffaf0 0%, #f4dec0 100%);
+  box-shadow: 0 10px 24px rgba(137, 72, 60, 0.12);
+  transform-origin: left center;
+  animation: generated-pdf-page-flip 1.45s ease-in-out infinite;
+}
+
+.generated-pdf-loader-book span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.generated-pdf-loader-book span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.generated-pdf-loader-book::before,
+.generated-pdf-loader-book::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 34px;
+  height: 58px;
+  border: 1px solid rgba(42, 73, 68, 0.15);
+  background: #fffaf0;
+}
+
+.generated-pdf-loader-book::before {
+  left: 4px;
+  border-radius: 6px 0 0 6px;
+}
+
+.generated-pdf-loader-book::after {
+  left: 38px;
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+@keyframes generated-pdf-page-flip {
+  0% {
     opacity: 0;
-    transform: translate3d(18px, 8px, 0) scale(0.96);
+    transform: rotateY(0deg);
   }
-  to {
+  18% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+  }
+  62% {
+    opacity: 0.82;
+    transform: rotateY(-126deg);
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(-168deg);
   }
 }
 
@@ -1521,33 +1584,9 @@ html, body {
   box-shadow: 0 12px 34px rgba(137, 72, 60, 0.14);
 }
 
-.generated-pdf-open-link {
-  min-height: 42px;
-  padding: 0 16px;
-}
-
-@media (min-width: 1180px) {
-  .generated-pdf-stage {
-    padding-right: min(18vw, 270px);
-  }
-}
-
 @media (max-width: 1080px) {
   .generated-pdf-frame {
     height: min(62svh, 640px);
-  }
-
-  .generated-pdf-popups {
-    position: static;
-    grid-template-columns: repeat(2, minmax(0, max-content));
-    justify-content: center;
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .generated-pdf-popup {
-    max-width: min(100%, 260px);
-    text-align: center;
   }
 }
 
@@ -1576,15 +1615,6 @@ html, body {
     width: 100%;
     height: min(58svh, 520px);
     border-width: 7px;
-  }
-
-  .generated-pdf-popups {
-    grid-template-columns: 1fr;
-  }
-
-  .generated-pdf-popup {
-    width: fit-content;
-    justify-self: center;
   }
 
   .generated-pdf-actions {

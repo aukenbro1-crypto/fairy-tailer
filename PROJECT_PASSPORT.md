@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-26 03:15 UTC
+Last updated: 2026-05-26 09:25 UTC
 
 ## Project Context
 
@@ -325,3 +325,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Restored the ready-state PDF preview in `/create` without reintroducing the unstable HTML book spread: once render is ready, the modal hides the status/title header, opens `preview.pdf` in a larger frame, moves the print CTA to the bottom center as `Оплатить печатную версию`, and shows lightweight print/delivery popups. Deployed frontend release `/var/www/fairyteller/releases/20260525-163439-codex-pdf-preview-cta`; nginx root now points to that release.
 - Hardened `fairyteller_text` after production job `ft_1779729265248_8he7z7` hit Gemini `503 high demand` during "Пишем первую главу" and left the public job stuck at `text_generating`. The Gemini request node now performs longer controlled retries and marks the job `failed` on exhausted provider errors; `Normalize First Chapter` now also marks the job `failed` on unrecoverable response-shape errors. Deployed to production n8n, restarted `baku-n8n-docker`, verified workflow `kCtpw2d7pEOI3QRF` active, and kept backup `/root/fairyteller-n8n-backups/20260526-014428`. The stuck job was manually patched to `failed` with a user-safe Gemini-overload message.
 - Added explicit hero age-group selection to `/create` (`Ребенок`, `Подросток`, `Взрослый`) and sends `heroN_age_group` to the n8n intake for every filled hero. Hardened visual reference generation after production jobs `ft_1779761155173_uq2c9l` and `ft_1779763092303_h1rz3w`: individual hero-card failures from Gemini no longer immediately collapse the whole visual run; they become `source_photo_fallback`, the private source photo is used only to build the combined reference sheet, and chapter/cover workflows attach both ready cards and the combined sheet whenever the card set is partial.
+- Simplified the final `/create` PDF preview: removed the secondary `PDF` button and the right-side print/delivery tip bubbles, kept only the `preview.pdf` frame plus the centered `Оплатить печатную версию` CTA, and added an animated book-page loader while the embedded PDF viewer initializes.
