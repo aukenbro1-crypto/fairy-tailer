@@ -84,6 +84,8 @@ interface JobStatus {
   error?: string | null;
 }
 
+type HeroAgeGroup = '' | 'child' | 'teen' | 'adult';
+
 interface FormData {
   world: string;
   newyear_mode: boolean;
@@ -99,24 +101,34 @@ interface FormData {
   hero1_name: string;
   hero1_desc: string;
   hero1_rel: string;
+  hero1_age_group: HeroAgeGroup;
   hero1_photo: File | null;
   hero1_photo_url: string;
   hero2_name: string;
   hero2_desc: string;
   hero2_rel: string;
+  hero2_age_group: HeroAgeGroup;
   hero2_photo: File | null;
   hero2_photo_url: string;
   hero3_name: string;
   hero3_desc: string;
   hero3_rel: string;
+  hero3_age_group: HeroAgeGroup;
   hero3_photo: File | null;
   hero3_photo_url: string;
   hero4_name: string;
   hero4_desc: string;
   hero4_rel: string;
+  hero4_age_group: HeroAgeGroup;
   hero4_photo: File | null;
   hero4_photo_url: string;
 }
+
+const HERO_AGE_GROUPS: Array<{ value: Exclude<HeroAgeGroup, ''>; label: string }> = [
+  { value: 'child', label: 'Ребенок' },
+  { value: 'teen', label: 'Подросток' },
+  { value: 'adult', label: 'Взрослый' },
+];
 
 export const WORLDS = [{
   value: 'adventure_classic',
@@ -485,21 +497,25 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     hero1_name: '',
     hero1_desc: '',
     hero1_rel: '',
+    hero1_age_group: '',
     hero1_photo: null,
     hero1_photo_url: '',
     hero2_name: '',
     hero2_desc: '',
     hero2_rel: '',
+    hero2_age_group: '',
     hero2_photo: null,
     hero2_photo_url: '',
     hero3_name: '',
     hero3_desc: '',
     hero3_rel: '',
+    hero3_age_group: '',
     hero3_photo: null,
     hero3_photo_url: '',
     hero4_name: '',
     hero4_desc: '',
     hero4_rel: '',
+    hero4_age_group: '',
     hero4_photo: null,
     hero4_photo_url: ''
   });
@@ -562,6 +578,36 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const readerTitle = jobStatus?.preview?.title
     || 'Ваша сказка';
   const hasReadyPdfPreview = renderStatus === 'ready' && Boolean(bookPdfUrl);
+  const heroHasContent = (heroNum: 1 | 2 | 3 | 4) => {
+    const name = formData[`hero${heroNum}_name` as keyof FormData] as string;
+    const desc = formData[`hero${heroNum}_desc` as keyof FormData] as string;
+    const photo = formData[`hero${heroNum}_photo` as keyof FormData] as File | null;
+    return Boolean(name.trim() || desc.trim() || photo);
+  };
+  const renderAgeGroupControl = (heroNum: 1 | 2 | 3 | 4) => {
+    const key = `hero${heroNum}_age_group` as keyof FormData;
+    const value = formData[key] as HeroAgeGroup;
+
+    return (
+      <div>
+        <label className="mixer-control-label block mb-2">Возрастная группа</label>
+        <div className="hero-age-segmented" role="radiogroup" aria-label={`Возрастная группа героя ${heroNum}`}>
+          {HERO_AGE_GROUPS.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              className={`hero-age-option ${value === option.value ? 'active' : ''}`}
+              role="radio"
+              aria-checked={value === option.value}
+              onClick={() => setFormData(prev => ({ ...prev, [key]: option.value }))}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   const showSuccessScreen = () => {
     setShowSuccessOverlay(true);
@@ -595,6 +641,26 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       return;
     }
 
+    const activeHeroNumbers: Array<1 | 2 | 3 | 4> = [
+      1,
+      ...(heroSections.hero2 ? [2 as const] : []),
+      ...(heroSections.hero3 ? [3 as const] : []),
+      ...(heroSections.hero4 ? [4 as const] : []),
+    ];
+    const missingAgeHero = activeHeroNumbers.find(heroNum => {
+      const ageGroup = formData[`hero${heroNum}_age_group` as keyof FormData] as HeroAgeGroup;
+      return heroHasContent(heroNum) && !ageGroup;
+    });
+    if (missingAgeHero) {
+      toast({
+        variant: "destructive",
+        title: "Возраст героя",
+        description: `Выберите возрастную группу для героя ${missingAgeHero}.`
+      });
+      setCurrentStep(2);
+      return;
+    }
+
     setShowLoader(true);
     setShowSuccessOverlay(true);
     setSubmittedJobId(null);
@@ -618,6 +684,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     multipartData.append('hero1_name', formData.hero1_name);
     multipartData.append('hero1_desc', formData.hero1_desc);
     multipartData.append('hero1_rel', formData.hero1_rel);
+    multipartData.append('hero1_age_group', formData.hero1_age_group);
     if (formData.hero1_photo) {
       multipartData.append('hero1_photo', formData.hero1_photo);
       multipartData.append('hero1_photo_name', formData.hero1_photo.name);
@@ -628,6 +695,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       multipartData.append('hero2_name', formData.hero2_name);
       multipartData.append('hero2_desc', formData.hero2_desc);
       multipartData.append('hero2_rel', formData.hero2_rel);
+      multipartData.append('hero2_age_group', formData.hero2_age_group);
       if (formData.hero2_photo) {
         multipartData.append('hero2_photo', formData.hero2_photo);
         multipartData.append('hero2_photo_name', formData.hero2_photo.name);
@@ -639,6 +707,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       multipartData.append('hero3_name', formData.hero3_name);
       multipartData.append('hero3_desc', formData.hero3_desc);
       multipartData.append('hero3_rel', formData.hero3_rel);
+      multipartData.append('hero3_age_group', formData.hero3_age_group);
       if (formData.hero3_photo) {
         multipartData.append('hero3_photo', formData.hero3_photo);
         multipartData.append('hero3_photo_name', formData.hero3_photo.name);
@@ -650,6 +719,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       multipartData.append('hero4_name', formData.hero4_name);
       multipartData.append('hero4_desc', formData.hero4_desc);
       multipartData.append('hero4_rel', formData.hero4_rel);
+      multipartData.append('hero4_age_group', formData.hero4_age_group);
       if (formData.hero4_photo) {
         multipartData.append('hero4_photo', formData.hero4_photo);
         multipartData.append('hero4_photo_name', formData.hero4_photo.name);
@@ -706,21 +776,25 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       hero1_name: '',
       hero1_desc: '',
       hero1_rel: '',
+      hero1_age_group: '',
       hero1_photo: null,
       hero1_photo_url: '',
       hero2_name: '',
       hero2_desc: '',
       hero2_rel: '',
+      hero2_age_group: '',
       hero2_photo: null,
       hero2_photo_url: '',
       hero3_name: '',
       hero3_desc: '',
       hero3_rel: '',
+      hero3_age_group: '',
       hero3_photo: null,
       hero3_photo_url: '',
       hero4_name: '',
       hero4_desc: '',
       hero4_rel: '',
+      hero4_age_group: '',
       hero4_photo: null,
       hero4_photo_url: ''
     });
@@ -980,6 +1054,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                   value={formData.hero1_name}
                   onChange={e => setFormData(prev => ({ ...prev, hero1_name: e.target.value }))}
                 />
+
+                {renderAgeGroupControl(1)}
                 
                 <div>
                   <label className="mixer-control-label block mb-2">Описание героя</label>
@@ -1062,6 +1138,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     value={formData.hero2_name}
                     onChange={e => setFormData(prev => ({ ...prev, hero2_name: e.target.value }))}
                   />
+
+                  {renderAgeGroupControl(2)}
                   
                   <div>
                     <label className="mixer-control-label block mb-2">Описание героя</label>
@@ -1158,6 +1236,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                         value={formData[`hero${heroNum}_name` as keyof FormData] as string}
                         onChange={e => setFormData(prev => ({ ...prev, [`hero${heroNum}_name`]: e.target.value }))}
                       />
+
+                      {renderAgeGroupControl(heroNum as 3 | 4)}
                       
                       <div>
                         <label className="mixer-control-label block mb-2">Описание героя</label>
