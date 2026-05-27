@@ -4,6 +4,7 @@ import {
   BookOpen,
   Camera,
   Check,
+  ChevronRight,
   Gift,
   Heart,
   PackageCheck,
@@ -29,7 +30,7 @@ const sectionTitleClass =
   "max-w-[980px] text-[36px] font-black uppercase leading-[1.12] tracking-normal md:text-[58px] xl:text-[62px]";
 
 const metrics = [
-  ["3 минуты", "Первое превью"],
+  ["От 2-х дней", "Доставка по РФ"],
   ["40 страниц", "Полная история"],
   ["5 глав", "С иллюстрациями"],
 ];
@@ -187,8 +188,8 @@ const CoupleGiftLanding = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
-        title="Подарок для пары — персональная книга с вашей историей | Fairyteller"
-        description="Создайте книгу с вашими именами, фото, знаковыми местами, общими шутками и воспоминаниями. От 3500₽, 40 страниц и 5 иллюстрированных глав."
+        title="Подарок для пары — книга с вашей историей | Fairyteller"
+        description="Создайте персонализированную книгу с вашими именами, фото, знаковыми местами, общими шутками и воспоминаниями. От 3500₽, 40 страниц, 5 глав и доставка по РФ."
         path="/podarok/dlya-pary"
         image="/images/book-exmpl6.jpg"
         type="product"
@@ -290,12 +291,11 @@ const CoupleGiftLanding = () => {
                 Подарок для пары
               </p>
               <h1 className="mt-5 w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[38px] md:max-w-[760px] md:text-[50px] xl:text-[56px]">
-                <span className="block">Подарок для пары: </span>
-                <span className="block">персональная книга </span>
+                <span className="block">Подарок для пары: книга </span>
                 <span className="block">с вашей историей</span>
               </h1>
               <p className="mt-5 w-full max-w-[340px] text-[16px] leading-[1.42] md:max-w-[680px] md:text-[21px] md:leading-[1.35]">
-                Создайте книгу с вашими именами, фото, знаковыми местами, общими шутками
+                Создайте персонализированную книгу с вашими именами, фото, знаковыми местами, общими шутками
                 и воспоминаниями. От 3500₽
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -316,11 +316,11 @@ const CoupleGiftLanding = () => {
               </div>
             </div>
 
-            <div className="mt-8 grid w-full max-w-[340px] border-t border-black text-sm font-bold uppercase tracking-[0.04em] sm:max-w-full sm:grid-cols-3 md:w-auto lg:mt-10">
+            <div className="mt-8 grid w-full max-w-[340px] border-t border-black text-sm font-bold uppercase tracking-normal min-[520px]:max-w-full min-[520px]:grid-cols-3 md:w-auto lg:mt-10">
               {metrics.map(([value, label]) => (
-                <div key={value} className="border-black py-3 sm:border-r sm:px-4 sm:first:pl-0 sm:last:border-r-0">
-                  <span className="block text-[15px]">{value}</span>
-                  <span className="mt-1 block text-[11px] text-[#5e6264]">{label}</span>
+                <div key={value} className="border-black py-3 min-[520px]:border-r min-[520px]:px-3 min-[520px]:first:pl-0 min-[520px]:last:border-r-0">
+                  <span className="block text-[13px] leading-tight min-[640px]:text-[15px]">{value}</span>
+                  <span className="mt-1 block text-[10px] leading-tight text-[#5e6264] min-[640px]:text-[11px]">{label}</span>
                 </div>
               ))}
             </div>
@@ -343,18 +343,18 @@ const CoupleGiftLanding = () => {
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
                 <Heart className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Собрана из ваших деталей</h3>
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">На основе вашей жизни</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  В историю можно добавить то, чего нет в обычном подарке: город, первое
-                  свидание, вашу шутку, обещание, маршрут или символ, понятный только вам двоим.
+                  Добавьте в историю персональные детали: город или важное место, первое свидание,
+                  общую шутку, знаковый маршрут или символ, понятный только вам двоим.
                 </p>
               </article>
               <article className="border-b border-r border-black bg-white p-5">
                 <BookOpen className="h-7 w-7" />
                 <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Хочется сохранить</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Это не сертификат и не случайный сувенир. У книги есть сюжет, герои и детали
-                  ваших отношений, поэтому ее хочется перечитать и показать близким.
+                  Это не сертификат и не случайный сувенир. У книги есть личный сюжет, детали ваших
+                  отношений и яркие иллюстрации, поэтому ее хочется перечитать и показать близким.
                 </p>
               </article>
             </div>
@@ -365,7 +365,7 @@ const CoupleGiftLanding = () => {
           <FairytellerInlineConstructor
             lockedWorld={romanticLockedWorld}
             heading="Соберите книгу про вашу пару."
-            description="Романтический формат уже выбран. Добавьте двоих героев, важное место, символ пары и стиль иллюстраций."
+            description="Добавьте информацию про героев, место, где будет происходить история, личную деталь или важный символ и выберите стиль иллюстраций."
             defaultVisibleHeroIndexes={[0, 1]}
             defaultHeroAgeGroup="adult"
             requiredHeroCount={2}
@@ -395,8 +395,8 @@ const CoupleGiftLanding = () => {
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
               <h2 className={sectionTitleClass}>Что добавить в историю.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Чем точнее детали, тем сильнее подарок: книга звучит не как универсальная романтика,
-                а как история, которая могла случиться только с вами.
+                Личные детали превращают книгу из красивой романтической истории в подарок,
+                который сразу узнается как ваш.
               </p>
             </div>
 
@@ -454,26 +454,56 @@ const CoupleGiftLanding = () => {
           </div>
         </section>
 
-        <section className="bg-black px-5 py-12 text-white md:px-8 md:py-14">
-          <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[1fr_auto] md:items-end">
-            <div>
-              <h2 className="max-w-[920px] text-[34px] font-black uppercase leading-[1.08] tracking-normal text-[#E89C31] md:text-[58px]">
-                Соберите книгу про вашу пару.
-              </h2>
-              <p className="mt-5 max-w-[640px] text-[16px] leading-7 text-white/65">
-                Начните с имен, фото и пары деталей. Fairyteller соберет из них историю,
-                которую можно подарить как PDF или заказать в печатной версии.
-              </p>
+        <footer className="border-t border-black bg-black px-5 py-12 text-white md:px-8 md:py-14">
+          <div className="mx-auto max-w-[1480px]">
+            <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+              <div>
+                <img src={logoImage} alt="FairyTeller" className="h-12 w-auto bg-white px-2 py-1" />
+                <p className="mt-5 max-w-[620px] text-[15px] leading-7 text-white/60">
+                  FairyTeller помогает создавать персональные бумажные книги по фото: для детей, любимых, родителей, друзей и важных событий.
+                </p>
+                <nav className="mt-6 flex flex-wrap gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
+                  <a href="#process" className="hover:text-white hover:underline">Как работает</a>
+                  <a href="#create" className="hover:text-white hover:underline">Создать</a>
+                  <a href="#examples" className="hover:text-white hover:underline">Примеры</a>
+                  <Link to="/podarok/dlya-pary" className="hover:text-white hover:underline">Для пары</Link>
+                  <a href="#faq" className="hover:text-white hover:underline">FAQ</a>
+                  <Link to="/blog" className="hover:text-white hover:underline">Журнал</Link>
+                </nav>
+              </div>
+              <div className="md:text-right">
+                <div className="flex flex-wrap gap-3 md:justify-end">
+                  <a
+                    href="https://vk.com/fairyteller"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-11 items-center justify-center border border-white px-5 text-[12px] font-bold uppercase tracking-[0.1em] text-white transition hover:bg-white hover:text-black"
+                  >
+                    VK
+                  </a>
+                  <a
+                    href="https://dzen.ru/fairyteller"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-11 items-center justify-center border border-white px-5 text-[12px] font-bold uppercase tracking-[0.1em] text-white transition hover:bg-white hover:text-black"
+                  >
+                    Дзен
+                  </a>
+                  <a
+                    href="#create"
+                    className="inline-flex h-11 items-center justify-center gap-2 border border-white bg-white px-5 text-[12px] font-bold uppercase tracking-[0.1em] text-black transition hover:bg-black hover:text-white"
+                  >
+                    Создать книгу
+                    <ChevronRight className="h-4 w-4" />
+                  </a>
+                </div>
+                <p className="mt-6 text-[13px] font-bold uppercase tracking-[0.12em] text-white/50">
+                  2026. Fairyteller.ru — персональные бумажные книги в подарок
+                </p>
+              </div>
             </div>
-            <a
-              href="#create"
-              className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
-            >
-              Создать книгу
-              <ArrowRight className="h-5 w-5" />
-            </a>
           </div>
-        </section>
+        </footer>
       </div>
     </main>
   );
