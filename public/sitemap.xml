@@ -14,9 +14,15 @@
   </url>
   <url>
     <loc>https://fairyteller.ru/podarok/dlya-pary</loc>
-    <lastmod>2026-05-26</lastmod>
+    <lastmod>2026-05-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://fairyteller.ru/podarok/na-godovshchinu</loc>
+    <lastmod>2026-05-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.94</priority>
   </url>
   <url>
     <loc>https://fairyteller.ru/romantic</loc>

@@ -191,7 +191,7 @@ const giftIdeas = [
   {
     title: "На годовщину",
     text: "Издание про пару: поездку, обещание, смешное событие или что-то, что хочется сохранить в памяти.",
-    href: "/podarok/dlya-pary",
+    href: "/podarok/na-godovshchinu",
   },
   {
     title: "Для себя",

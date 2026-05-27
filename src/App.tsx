@@ -22,6 +22,7 @@ const NarutoStory = lazy(() => import("./pages/NarutoStory"));
 const Wizard = lazy(() => import("./pages/Wizard"));
 const DesignTest = lazy(() => import("./pages/DesignTest"));
 const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
+const AnniversaryGiftLanding = lazy(() => import("./pages/AnniversaryGiftLanding"));
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/" element={<DesignTest />} />
             <Route path="/create" element={<DesignTest />} />
             <Route path="/podarok/dlya-pary" element={<CoupleGiftLanding />} />
+            <Route path="/podarok/na-godovshchinu" element={<AnniversaryGiftLanding />} />
             <Route path="/print" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
             <Route path="/indian" element={<Indian />} />

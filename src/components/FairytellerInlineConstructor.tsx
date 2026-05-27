@@ -138,8 +138,16 @@ type LockedWorld = {
 
 type FairytellerInlineConstructorProps = {
   lockedWorld?: LockedWorld;
+  availableWorldIds?: string[];
+  worldTabLabel?: string;
+  worldLegend?: string;
   heading?: string;
   description?: string;
+  locationLabel?: string;
+  locationPlaceholder?: string;
+  artifactLabel?: string;
+  artifactPlaceholder?: string;
+  heroIntro?: string;
   defaultVisibleHeroIndexes?: number[];
   defaultHeroAgeGroup?: string;
   requiredHeroCount?: number;
@@ -168,8 +176,16 @@ const buildInitialAgeGroups = (indexes: number[], defaultAgeGroup?: string) => {
 
 const FairytellerInlineConstructor = ({
   lockedWorld,
+  availableWorldIds,
+  worldTabLabel = "Мир",
+  worldLegend = "Выберите мир",
   heading = "Соберите свою книгу.",
   description = "Добавьте место действия, героев, фото, стиль иллюстраций и email для готового превью.",
+  locationLabel = "Место действия",
+  locationPlaceholder = "Город знакомства, дом, поездка, любимое место",
+  artifactLabel = "Символ пары",
+  artifactPlaceholder = "Кулон, билет, песня, питомец, фраза",
+  heroIntro = "Добавьте двух героев пары. Фото помогут сделать иллюстрации узнаваемыми.",
   defaultVisibleHeroIndexes = [0],
   defaultHeroAgeGroup,
   requiredHeroCount = 1,
@@ -180,9 +196,14 @@ const FairytellerInlineConstructor = ({
   const inputPrefix = useId();
   const initialVisibleHeroes = defaultVisibleHeroIndexes.length > 0 ? defaultVisibleHeroIndexes : [0];
   const isWorldLocked = Boolean(lockedWorld);
-  const constructorTabs = isWorldLocked ? ["Детали", "Герои", "Стиль"] : ["Мир", "Герои", "Стиль"];
+  const constructorTabs = isWorldLocked ? ["Детали", "Герои", "Стиль"] : [worldTabLabel, "Герои", "Стиль"];
+  const selectableWorlds = availableWorldIds
+    ? availableWorldIds
+        .map((id) => worlds.find((item) => item.id === id))
+        .filter((item): item is (typeof worlds)[number] => Boolean(item))
+    : worlds;
 
-  const [world, setWorld] = useState(worlds[0].id);
+  const [world, setWorld] = useState(selectableWorlds[0]?.id ?? worlds[0].id);
   const [style, setStyle] = useState(styles[0].id);
   const [constructorStep, setConstructorStep] = useState(0);
   const [visibleHeroes, setVisibleHeroes] = useState(initialVisibleHeroes);
@@ -204,7 +225,7 @@ const FairytellerInlineConstructor = ({
   const styleStripRef = useRef<HTMLDivElement>(null);
   const generationStatusRef = useRef<HTMLDivElement>(null);
 
-  const selectedWorld = lockedWorld ?? worlds.find((item) => item.id === world) ?? worlds[0];
+  const selectedWorld = lockedWorld ?? selectableWorlds.find((item) => item.id === world) ?? selectableWorlds[0] ?? worlds[0];
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
   const bookPdfUrl =
     jobStatus?.artifacts?.previewPdf?.url ||
@@ -497,7 +518,7 @@ const FairytellerInlineConstructor = ({
                   <div>
                     <div className="flex items-center justify-between gap-4">
                       <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
-                        Выберите мир
+                        {worldLegend}
                       </legend>
                       <div className="flex shrink-0 border-l border-t border-black">
                         <button
@@ -522,7 +543,7 @@ const FairytellerInlineConstructor = ({
                       ref={worldStripRef}
                       className="fairyteller-choice-strip mt-5 flex snap-x snap-mandatory overflow-x-auto scroll-smooth border-l border-t border-black"
                     >
-                      {worlds.map((item) => (
+                      {selectableWorlds.map((item) => (
                         <button
                           key={item.id}
                           type="button"
@@ -546,21 +567,21 @@ const FairytellerInlineConstructor = ({
 
               <div className="mt-8 grid gap-5 md:grid-cols-2">
                 <label className="block">
-                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Место действия</span>
+                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{locationLabel}</span>
                   <input
                     value={location}
                     onChange={(event) => setLocation(event.currentTarget.value)}
                     className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                    placeholder="Город знакомства, дом, поездка, любимое место"
+                    placeholder={locationPlaceholder}
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Символ пары</span>
+                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{artifactLabel}</span>
                   <input
                     value={artifact}
                     onChange={(event) => setArtifact(event.currentTarget.value)}
                     className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                    placeholder="Кулон, билет, песня, питомец, фраза"
+                    placeholder={artifactPlaceholder}
                   />
                 </label>
               </div>
@@ -586,7 +607,7 @@ const FairytellerInlineConstructor = ({
                 </legend>
                 <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
                   <p className="max-w-[520px] text-[14px] leading-6 text-[#5e6264]">
-                    Добавьте двух героев пары. Фото помогут сделать иллюстрации узнаваемыми.
+                    {heroIntro}
                   </p>
                   <div className="relative">
                     <button
