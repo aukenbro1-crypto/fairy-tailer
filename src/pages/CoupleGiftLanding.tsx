@@ -284,13 +284,13 @@ const CoupleGiftLanding = () => {
           </div>
         </header>
 
-        <section className="mx-auto grid w-full max-w-[1480px] min-w-0 overflow-hidden border-black lg:min-h-[640px] lg:grid-cols-[0.92fr_1.08fr]">
+        <section className="mx-auto grid w-full max-w-[1480px] min-w-0 overflow-hidden border-black lg:min-h-[640px] lg:grid-cols-[1.08fr_0.92fr]">
           <div className="flex min-w-0 flex-col justify-between border-black px-5 py-9 md:px-8 md:py-11 lg:border-r lg:pb-16">
             <div className="w-full max-w-[340px] md:max-w-none">
               <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
                 Подарок для пары
               </p>
-              <h1 className="mt-5 w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[38px] md:max-w-[760px] md:text-[50px] xl:text-[56px]">
+              <h1 className="mt-5 w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[34px] md:max-w-[760px] md:text-[34px] lg:text-[34px] 2xl:text-[42px]">
                 <span className="block">Подарок для пары: книга </span>
                 <span className="block">с вашей историей</span>
               </h1>
@@ -395,8 +395,8 @@ const CoupleGiftLanding = () => {
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
               <h2 className={sectionTitleClass}>Что добавить в историю.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Личные детали превращают книгу из красивой романтической истории в подарок,
-                который сразу узнается как ваш.
+                Имена, места, шутки и символы делают сюжет узнаваемым: это уже не просто
+                романтическая история, а книга про конкретных людей.
               </p>
             </div>
 
