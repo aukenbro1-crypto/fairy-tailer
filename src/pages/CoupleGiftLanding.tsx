@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import SEO from "@/components/SEO";
+import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import logoImage from "@/assets/logo.png";
 import romanticBookImage from "@/assets/romantic-book-cover-new.png";
 import bookHandsImage from "@/assets/book-hands-romantic.png";
@@ -29,8 +30,8 @@ const sectionTitleClass =
 
 const metrics = [
   ["3 минуты", "Первое превью"],
-  ["от 3500₽", "Печатная книга"],
-  ["1 день", "Печать после оплаты"],
+  ["40 страниц", "Полная история"],
+  ["5 глав", "С иллюстрациями"],
 ];
 
 const occasions = [
@@ -66,14 +67,14 @@ const ingredients = [
   "общая шутка, фраза или привычка",
   "фото для узнаваемых героев",
   "питомец, талисман или предмет",
-  "жанр: романтика, приключение, фэнтези или киберпанк",
+  "настроение: нежно, смешно, кинематографично или сказочно",
 ];
 
 const process = [
   {
     icon: Heart,
-    title: "Вспомните вас",
-    text: "Добавьте имена, пару личных деталей, место, которое что-то значит, и настроение будущей истории.",
+    title: "Расскажите о вас",
+    text: "Добавьте имена, фото, важное место, пару личных деталей и настроение будущей истории.",
   },
   {
     icon: Camera,
@@ -82,8 +83,8 @@ const process = [
   },
   {
     icon: Sparkles,
-    title: "Выберите мир",
-    text: "Романтическая история может быть нежной, смешной, приключенческой, сказочной или совсем кинематографичной.",
+    title: "Добавьте детали",
+    text: "Романтический формат уже выбран: добавьте место, символ пары, героев и стиль иллюстраций.",
   },
   {
     icon: PackageCheck,
@@ -92,11 +93,19 @@ const process = [
   },
 ];
 
+const romanticLockedWorld = {
+  value: "disney_light",
+  title: "Романтическая история",
+  text: "Книга строится вокруг пары: общего маршрута, воспоминаний, узнаваемых деталей и теплого финала.",
+};
+
+const coupleHeroSlots = ["Первый герой", "Второй герой", "Герой 3", "Герой 4"];
+
 const faqs = [
   {
     question: "Это подходит только для влюбленных?",
     answer:
-      "Нет. Страница про подарок для пары, но книга может быть про супругов, жениха и невесту, друзей, родителей или пару, которую хочется поздравить общим подарком.",
+      "Нет. Книга может быть про супругов, жениха и невесту, друзей, родителей или любую пару, которую хочется поздравить общим подарком.",
   },
   {
     question: "Можно ли сделать историю без детской сказочности?",
@@ -129,9 +138,9 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "Персональная книга для пары",
+    name: "Подарок для пары: персональная книга с вашей историей",
     description:
-      "Романтическая персональная книга по фото: история для двоих, где пара становится главными героями.",
+      "Книга для пары с именами, фото, знаковыми местами, общими шутками и воспоминаниями.",
     brand: { "@type": "Brand", name: "Fairyteller" },
     image: "https://fairyteller.ru/images/book-exmpl6.jpg",
     offers: {
@@ -178,8 +187,8 @@ const CoupleGiftLanding = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
-        title="Подарок для пары — персональная книга о вашей истории | Fairyteller"
-        description="Создайте подарок для пары: романтическую персональную книгу по фото, где двое становятся главными героями. Превью за несколько минут, печать от 3500₽."
+        title="Подарок для пары — персональная книга с вашей историей | Fairyteller"
+        description="Создайте книгу с вашими именами, фото, знаковыми местами, общими шутками и воспоминаниями. От 3500₽, 40 страниц и 5 иллюстрированных глав."
         path="/podarok/dlya-pary"
         image="/images/book-exmpl6.jpg"
         type="product"
@@ -218,6 +227,20 @@ const CoupleGiftLanding = () => {
           .couple-page button {
             font-family: inherit;
           }
+
+          .couple-page input,
+          .couple-page textarea {
+            font-family: inherit;
+          }
+
+          .couple-page .fairyteller-choice-strip {
+            overscroll-behavior-x: contain;
+            scrollbar-width: none;
+          }
+
+          .couple-page .fairyteller-choice-strip::-webkit-scrollbar {
+            display: none;
+          }
         `}
       </style>
 
@@ -236,6 +259,9 @@ const CoupleGiftLanding = () => {
               <a href="#meaning" className="hover:underline">
                 Почему это работает
               </a>
+              <a href="#create" className="hover:underline">
+                Создать
+              </a>
               <a href="#occasions" className="hover:underline">
                 Поводы
               </a>
@@ -247,13 +273,13 @@ const CoupleGiftLanding = () => {
               </a>
             </nav>
 
-            <Link
-              to="/create"
+            <a
+              href="#create"
               className="inline-flex h-10 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black"
             >
               <Gift className="h-4 w-4" />
               <span className="hidden sm:inline">Создать</span>
-            </Link>
+            </a>
           </div>
         </header>
 
@@ -263,21 +289,23 @@ const CoupleGiftLanding = () => {
               <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
                 Подарок для пары
               </p>
-              <h1 className="mt-5 w-full max-w-full break-words text-[26px] font-black uppercase leading-[1.1] tracking-normal min-[420px]:text-[30px] sm:text-[42px] md:max-w-[760px] md:text-[58px] xl:text-[62px]">
-                Книга, где вы вдвоем главные герои.
+              <h1 className="mt-5 w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[38px] md:max-w-[760px] md:text-[50px] xl:text-[56px]">
+                <span className="block">Подарок для пары: </span>
+                <span className="block">персональная книга </span>
+                <span className="block">с вашей историей</span>
               </h1>
               <p className="mt-5 w-full max-w-[340px] text-[16px] leading-[1.42] md:max-w-[680px] md:text-[21px] md:leading-[1.35]">
-                Соберите романтическую персональную историю по фото: ваши имена, места, шутки,
-                воспоминания и общий символ станут настоящей бумажной книгой.
+                Создайте книгу с вашими именами, фото, знаковыми местами, общими шутками
+                и воспоминаниями. От 3500₽
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  to="/create"
+                <a
+                  href="#create"
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-black px-4 py-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264] sm:w-auto sm:px-6 sm:text-[13px]"
                 >
                   <BookOpen className="h-5 w-5" />
                   Создать книгу для пары
-                </Link>
+                </a>
                 <a
                   href="#examples"
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 border border-black bg-white px-4 py-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white sm:w-auto sm:px-6 sm:text-[13px]"
@@ -315,22 +343,35 @@ const CoupleGiftLanding = () => {
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
                 <Heart className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Попадает в отношения</h3>
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Собрана из ваших деталей</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  В книге можно сохранить то, что не поместится в обычный подарок: ваш город,
-                  первое свидание, внутреннюю шутку, обещание или маршрут, который понятен только вам.
+                  В историю можно добавить то, чего нет в обычном подарке: город, первое
+                  свидание, вашу шутку, обещание, маршрут или символ, понятный только вам двоим.
                 </p>
               </article>
               <article className="border-b border-r border-black bg-white p-5">
                 <BookOpen className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Остается на полке</h3>
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Хочется сохранить</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Это не сертификат и не сувенир. Печатная книга остается как личный артефакт пары:
-                  ее можно дарить, перечитывать и показывать спустя годы.
+                  Это не сертификат и не случайный сувенир. У книги есть сюжет, герои и детали
+                  ваших отношений, поэтому ее хочется перечитать и показать близким.
                 </p>
               </article>
             </div>
           </div>
+        </section>
+
+        <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
+          <FairytellerInlineConstructor
+            lockedWorld={romanticLockedWorld}
+            heading="Соберите книгу про вашу пару."
+            description="Романтический формат уже выбран. Добавьте двоих героев, важное место, символ пары и стиль иллюстраций."
+            defaultVisibleHeroIndexes={[0, 1]}
+            defaultHeroAgeGroup="adult"
+            requiredHeroCount={2}
+            heroSlots={coupleHeroSlots}
+            submitLabel="Создать книгу для пары"
+          />
         </section>
 
         <section id="occasions" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
@@ -352,10 +393,10 @@ const CoupleGiftLanding = () => {
         <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Что можно вплести в сюжет.</h2>
+              <h2 className={sectionTitleClass}>Что добавить в историю.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Чем точнее детали, тем сильнее подарок: книга начинает звучать не как универсальная романтика,
-                а как ваша собственная история.
+                Чем точнее детали, тем сильнее подарок: книга звучит не как универсальная романтика,
+                а как история, которая могла случиться только с вами.
               </p>
             </div>
 
@@ -420,17 +461,17 @@ const CoupleGiftLanding = () => {
                 Соберите книгу про вашу пару.
               </h2>
               <p className="mt-5 max-w-[640px] text-[16px] leading-7 text-white/65">
-                Начните с имен, фото и пары деталей. Остальное Fairyteller превратит в историю,
-                которую можно подарить в PDF или напечатанной книгой.
+                Начните с имен, фото и пары деталей. Fairyteller соберет из них историю,
+                которую можно подарить как PDF или заказать в печатной версии.
               </p>
             </div>
-            <Link
-              to="/create"
+            <a
+              href="#create"
               className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
             >
               Создать книгу
               <ArrowRight className="h-5 w-5" />
-            </Link>
+            </a>
           </div>
         </section>
       </div>
