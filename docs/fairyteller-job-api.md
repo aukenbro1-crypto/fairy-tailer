@@ -58,7 +58,9 @@ Authorization: Bearer <token>
 
 The API never stores notification secrets in the repo. Configure them on the server:
 
-- `FAIRYTELLER_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_TELEGRAM_CHAT_ID` enable operations updates.
+- `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID` enable generation progress and failure alerts.
+- `FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN`, `FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID`, `FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET`, and optional `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` enable website chat messages and replies.
+- Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when split role-specific variables are absent.
 - `FAIRYTELLER_RESEND_API_KEY` and `FAIRYTELLER_MAIL_FROM` enable customer completion email after the PDF render is ready.
 - `FAIRYTELLER_MAIL_REPLY_TO` is optional.
 - `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.

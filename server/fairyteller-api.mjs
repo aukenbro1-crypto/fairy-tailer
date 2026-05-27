@@ -11,10 +11,12 @@ const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
 const RENDER_SCRIPT = process.env.FAIRYTELLER_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-render-pdf.mjs';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
-const TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
-const TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
-const TELEGRAM_WEBHOOK_SECRET = (process.env.FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET || '').trim();
-const TELEGRAM_POLLING_ENABLED = process.env.FAIRYTELLER_TELEGRAM_POLLING === '1';
+const ALERT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
+const ALERT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
+const SUPPORT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
+const SUPPORT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
+const SUPPORT_TELEGRAM_WEBHOOK_SECRET = (process.env.FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET || process.env.FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET || '').trim();
+const SUPPORT_TELEGRAM_POLLING_ENABLED = (process.env.FAIRYTELLER_CHAT_TELEGRAM_POLLING || process.env.FAIRYTELLER_TELEGRAM_POLLING) === '1';
 const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fairyteller.ru').replace(/\/+$/, '');
 const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
@@ -326,12 +328,12 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   return lines.join('\n');
 }
 
-async function callTelegramApi(method, payload = {}, timeoutMs = 5000) {
-  if (!TELEGRAM_BOT_TOKEN) return null;
+async function callTelegramApi(botToken, method, payload = {}, timeoutMs = 5000, label = 'Telegram') {
+  if (!botToken) return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`, {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
@@ -339,34 +341,50 @@ async function callTelegramApi(method, payload = {}, timeoutMs = 5000) {
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.warn(`Telegram notification failed: ${response.status}`);
+      console.warn(`${label} failed: ${response.status}`);
       return body || null;
     }
     return body || null;
   } catch (error) {
-    console.warn(`Telegram notification failed: ${error.message}`);
+    console.warn(`${label} failed: ${error.message}`);
     return null;
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function sendTelegramPayload(payload) {
-  return callTelegramApi('sendMessage', payload);
-}
-
-async function sendTelegramMessage(text, options = {}) {
-  if (!TELEGRAM_CHAT_ID) return null;
-  return sendTelegramPayload({
-    chat_id: TELEGRAM_CHAT_ID,
+async function sendTelegramMessage(botToken, chatId, text, options = {}, label = 'Telegram sendMessage') {
+  if (!chatId) return null;
+  return callTelegramApi(botToken, 'sendMessage', {
+    chat_id: chatId,
     text,
     disable_web_page_preview: true,
     ...options,
-  });
+  }, 5000, label);
+}
+
+async function sendAlertTelegramMessage(text, options = {}) {
+  return sendTelegramMessage(
+    ALERT_TELEGRAM_BOT_TOKEN,
+    ALERT_TELEGRAM_CHAT_ID,
+    text,
+    options,
+    'Telegram job notification',
+  );
+}
+
+async function sendSupportTelegramMessage(text, options = {}) {
+  return sendTelegramMessage(
+    SUPPORT_TELEGRAM_BOT_TOKEN,
+    SUPPORT_TELEGRAM_CHAT_ID,
+    text,
+    options,
+    'Telegram support chat',
+  );
 }
 
 function notifyJob(eventType, status, orderEnvelope) {
-  void sendTelegramMessage(telegramMessageForJob(eventType, status, orderEnvelope));
+  void sendAlertTelegramMessage(telegramMessageForJob(eventType, status, orderEnvelope));
 }
 
 function publicUrl(pathOrUrl) {
@@ -566,7 +584,7 @@ async function rememberTelegramChatMessage(chatId, messageId, sessionId) {
 async function sessionIdFromTelegramReply(message) {
   const reply = message?.reply_to_message;
   if (!reply?.message_id) return '';
-  const chatId = message.chat?.id || TELEGRAM_CHAT_ID;
+  const chatId = message.chat?.id || SUPPORT_TELEGRAM_CHAT_ID;
   const map = await readTelegramMessageMap();
   const mapped = map.messages?.[telegramMessageMapKey(chatId, reply.message_id)]?.sessionId;
   if (mapped) return mapped;
@@ -588,19 +606,19 @@ function chatAdminMessage(session, message) {
 }
 
 async function notifyChatMessage(session, message) {
-  const response = await sendTelegramMessage(chatAdminMessage(session, message));
+  const response = await sendSupportTelegramMessage(chatAdminMessage(session, message));
   const messageId = response?.result?.message_id;
   if (messageId) {
-    await rememberTelegramChatMessage(TELEGRAM_CHAT_ID, messageId, session.sessionId);
+    await rememberTelegramChatMessage(SUPPORT_TELEGRAM_CHAT_ID, messageId, session.sessionId);
   }
 }
 
 function hasTelegramWebhookAuth(req, url) {
-  if (!TELEGRAM_WEBHOOK_SECRET) {
+  if (!SUPPORT_TELEGRAM_WEBHOOK_SECRET) {
     return NODE_ENV !== 'production';
   }
   const headerSecret = req.headers['x-telegram-bot-api-secret-token'] || '';
-  return secretMatches(TELEGRAM_WEBHOOK_SECRET, headerSecret) || secretMatches(TELEGRAM_WEBHOOK_SECRET, url.searchParams.get('secret'));
+  return secretMatches(SUPPORT_TELEGRAM_WEBHOOK_SECRET, headerSecret) || secretMatches(SUPPORT_TELEGRAM_WEBHOOK_SECRET, url.searchParams.get('secret'));
 }
 
 function telegramReplyCommand(text) {
@@ -611,13 +629,13 @@ function telegramReplyCommand(text) {
 
 async function handleTelegramChatMessage(message) {
   const chatId = message?.chat?.id;
-  if (!chatId || String(chatId) !== String(TELEGRAM_CHAT_ID)) {
+  if (!chatId || String(chatId) !== String(SUPPORT_TELEGRAM_CHAT_ID)) {
     return { ok: true, ignored: true };
   }
 
   const text = String(message.text || message.caption || '').trim();
   if (/^\/(start|help)(@\w+)?\b/i.test(text)) {
-    await sendTelegramMessage(
+    await sendSupportTelegramMessage(
       'Чат FairyTeller подключен. Чтобы ответить посетителю, ответьте реплаем на сообщение с сайта или используйте /reply <session> текст.',
       { reply_to_message_id: message.message_id },
     );
@@ -635,7 +653,7 @@ async function handleTelegramChatMessage(message) {
   }
 
   if (!sessionId || !replyText) {
-    await sendTelegramMessage(
+    await sendSupportTelegramMessage(
       'Не нашел чат для ответа. Ответьте реплаем на сообщение с сайта или напишите /reply <session> текст.',
       { reply_to_message_id: message.message_id },
     );
@@ -651,12 +669,12 @@ async function handleTelegramChatMessage(message) {
     });
   } catch (error) {
     if (error.status === 404) {
-      await sendTelegramMessage(`Не нашел чат ${safeSessionId}. Возможно, сессия уже очищена.`, { reply_to_message_id: message.message_id });
+      await sendSupportTelegramMessage(`Не нашел чат ${safeSessionId}. Возможно, сессия уже очищена.`, { reply_to_message_id: message.message_id });
       return { ok: true, ignored: true };
     }
     throw error;
   }
-  await sendTelegramMessage(`Ответ отправлен в чат ${safeSessionId}.`, { reply_to_message_id: message.message_id });
+  await sendSupportTelegramMessage(`Ответ отправлен в чат ${safeSessionId}.`, { reply_to_message_id: message.message_id });
   return { ok: true, sessionId: safeSessionId };
 }
 
@@ -681,7 +699,7 @@ function wait(ms) {
 }
 
 async function pollTelegramUpdates() {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  if (!SUPPORT_TELEGRAM_BOT_TOKEN || !SUPPORT_TELEGRAM_CHAT_ID) {
     console.warn('Telegram polling skipped: bot token or chat id is missing.');
     return;
   }
@@ -691,11 +709,11 @@ async function pollTelegramUpdates() {
 
   while (true) {
     try {
-      const response = await callTelegramApi('getUpdates', {
+      const response = await callTelegramApi(SUPPORT_TELEGRAM_BOT_TOKEN, 'getUpdates', {
         offset: offset ? offset + 1 : undefined,
         timeout: 25,
         allowed_updates: ['message'],
-      }, 35_000);
+      }, 35_000, 'Telegram support chat polling');
 
       if (!response?.ok || !Array.isArray(response.result)) {
         await wait(5000);
@@ -1665,7 +1683,7 @@ async function main() {
     console.log(`fairyteller data dir: ${DATA_DIR}`);
   });
 
-  if (TELEGRAM_POLLING_ENABLED) {
+  if (SUPPORT_TELEGRAM_POLLING_ENABLED) {
     void pollTelegramUpdates();
   }
 }

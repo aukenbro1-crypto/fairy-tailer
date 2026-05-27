@@ -178,14 +178,21 @@ Message flow:
 5. Telegram calls `POST /api/fairyteller/telegram/webhook`; the API appends the operator reply to the matching session.
 6. The widget polls `GET /api/fairyteller/chat/sessions/:sessionId/messages` while open and shows new replies.
 
-If Telegram cannot register a public webhook for the domain, set `FAIRYTELLER_TELEGRAM_POLLING=1` on the API service. In that mode the same server reads bot updates with Telegram `getUpdates` and uses the same reply handling logic.
+If Telegram cannot register a public webhook for the domain, set `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` on the API service. In that mode the same server reads bot updates with Telegram `getUpdates` and uses the same reply handling logic.
 
 Required production env for two-way chat:
 
-- `FAIRYTELLER_TELEGRAM_BOT_TOKEN`
-- `FAIRYTELLER_TELEGRAM_CHAT_ID`
-- `FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET`
-- optional fallback: `FAIRYTELLER_TELEGRAM_POLLING=1`
+- `FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN`
+- `FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID`
+- `FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET`
+- optional fallback: `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1`
+
+Generation progress and failure alerts use a separate Telegram bot identity:
+
+- `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN`
+- `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID`
+
+Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when the split role-specific variables are absent. Production should keep the site support chat on the support bot and generation alerts on the operations bot.
 
 The webhook should be registered with Telegram using `secret_token` and URL `https://fairyteller.ru/api/fairyteller/telegram/webhook`. Do not store bot tokens or webhook secrets in git.
 
@@ -355,3 +362,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Simplified the final `/create` PDF preview: removed the secondary `PDF` button and the right-side print/delivery tip bubbles, kept only the `preview.pdf` frame plus the centered `Оплатить печатную версию` CTA, and added an animated book-page loader while the embedded PDF viewer initializes.
 - Hardened the full-visuals/render tail after production jobs reached `85%` with `Gemini did not return an inline image ... IMAGE_OTHER`. `fairyteller_visuals` no longer starts the legacy `fairyteller_render_publish` placeholder after chapter 1, `fairyteller_full_visuals` can fall back to an existing ready chapter image for a single failed later-chapter image instead of aborting the book, and the Job API now infers a public `failed` state from failed critical artifacts when no real PDF artifact exists. Re-ran `/webhook/fairyteller/continue` for stuck job `ft_1779811711746_r1rkcb` and verified it completed with `preview.pdf` and `book.pdf`.
 - Current production frontend baseline is `/var/www/fairyteller/releases/20260527-0909-codex-create-status-center`, with `/var/www/fairyteller/current` repointed to it. This release locks in the boutique Fairyteller redesign on `/` and `/create`: real book-object header imagery, the three-step constructor bound to the Job API, age-group fields for heroes, updated genres/styles, centered generation status, no legacy Lovable fallback, and the examples carousel/photos. It also includes `/podarok/dlya-pary`, route-specific title/description/canonical/OG/Twitter/JSON-LD output, generated static SEO HTML for key routes, updated `sitemap.xml`, and Yandex/OAI-friendly `robots.txt`. Production smoke on May 27, 2026 verified `/create` serves the new constructor without the removed "Компас над старым городом" preview block, Yandex.Metrika `109116448` is present, `/podarok/dlya-pary` returns pair landing metadata/JSON-LD, and `sitemap.xml` includes `/create`, `/podarok/dlya-pary`, and blog routes.
+- Split Telegram bot roles in the Job API on May 27, 2026. Website support chat now uses the chat-specific `FAIRYTELLER_CHAT_TELEGRAM_*` env group and production polling, while generation progress/failure alerts use `FAIRYTELLER_ALERT_TELEGRAM_*`. Production was updated from the saved pre-switch env backup so support chat remains on the support bot and generation alerts return to the operations bot; `/healthz` verified after restart.
