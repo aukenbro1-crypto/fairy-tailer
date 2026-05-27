@@ -171,26 +171,32 @@ const giftIdeas = [
   {
     title: "Ребенку",
     text: "Приключение, где ребенок узнает себя, свои привычки, любимые вещи и маленькие победы. И с удовольствием прочтет рассказ сам или вместе с родителем.",
+    href: "/create",
   },
   {
     title: "Любимому человеку",
     text: "История про вашу встречу, знаковые места и общие моменты.",
+    href: "/podarok/dlya-pary",
   },
   {
     title: "Родителям",
     text: "Семейная книга с благодарностью, памятью о детстве и традициях.",
+    href: "/create",
   },
   {
     title: "Другу",
     text: "Подарок для близкого человека, которого хочется рассмешить, поддержать или удивить.",
+    href: "/create",
   },
   {
     title: "На годовщину",
     text: "Издание про пару: поездку, обещание, смешное событие или что-то, что хочется сохранить в памяти.",
+    href: "/podarok/dlya-pary",
   },
   {
     title: "Для себя",
     text: "Личная книга как способ пережить и отрефлексировать период жизни, мечту или важное событие.",
+    href: "/create",
   },
 ];
 
@@ -1392,12 +1398,20 @@ const DesignTest = () => {
 
           <div className="grid border-l border-t border-black md:grid-cols-3">
             {giftIdeas.map((item) => (
-              <article key={item.title} className="min-h-[230px] border-b border-r border-black bg-white p-5">
-                <h3 className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
-                  {item.title}
-                </h3>
+              <Link
+                key={item.title}
+                to={item.href}
+                className="group flex min-h-[230px] flex-col border-b border-r border-black bg-white p-5 text-left transition hover:bg-[#fae7e1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-black"
+                aria-label={`Создать книгу: ${item.title.toLowerCase()}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
+                    {item.title}
+                  </h3>
+                  <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-black transition group-hover:translate-x-1" />
+                </div>
                 <p className="mt-6 text-[15px] leading-7 text-[#5e6264]">{item.text}</p>
-              </article>
+              </Link>
             ))}
           </div>
         </div>
