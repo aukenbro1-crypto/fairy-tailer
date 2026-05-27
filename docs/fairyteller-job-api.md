@@ -89,7 +89,7 @@ Content-Type: application/json
 {
   "source": "fairyteller_create",
   "order": {
-    "world": "disney_light",
+    "world": "romantic_story",
     "location": "Стамбул у Босфора",
     "artifact": "старый серебряный компас",
     "email": "reader@example.com",

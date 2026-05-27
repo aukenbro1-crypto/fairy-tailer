@@ -245,7 +245,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
     const multipartData = new FormData();
     
     // Hardcoded fields
-    multipartData.append('world', worldOverride || 'disney_light');
+    multipartData.append('world', worldOverride || 'romantic_story');
     multipartData.append('newyear_mode', 'false');
     multipartData.append('length_target', '15000');
     multipartData.append('chapters', '5');

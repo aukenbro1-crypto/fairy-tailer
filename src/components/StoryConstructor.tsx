@@ -159,7 +159,7 @@ export const WORLDS = [{
   description: 'Неоновые вывески, матрешки и одиночество в панельке.',
   tagline: '— Следуй за белым роботом.'
 }, {
-  value: 'disney_light',
+  value: 'romantic_story',
   emoji: '💖',
   image: romanticStoryImage,
   title: 'Романтическая история',
@@ -458,7 +458,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
-    world: 'disney_light',
+    world: 'romantic_story',
     newyear_mode: false,
     location: '',
     artifact: '',
@@ -737,7 +737,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
 
   const resetForm = () => {
     setFormData({
-      world: 'disney_light',
+      world: 'romantic_story',
       newyear_mode: false,
       location: '',
       artifact: '',

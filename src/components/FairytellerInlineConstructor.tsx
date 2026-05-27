@@ -26,7 +26,7 @@ const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_UR
 const worlds = [
   {
     id: "romance",
-    value: "disney_light",
+    value: "romantic_story",
     title: "Романтическая история",
     text: "Знаковые места, общие моменты, нежность и личная память.",
   },

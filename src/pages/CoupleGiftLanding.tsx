@@ -95,7 +95,7 @@ const process = [
 ];
 
 const romanticLockedWorld = {
-  value: "disney_light",
+  value: "romantic_story",
   title: "Романтическая история",
   text: "Книга строится вокруг пары: общего маршрута, воспоминаний, узнаваемых деталей и теплого финала.",
 };

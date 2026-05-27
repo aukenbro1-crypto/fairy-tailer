@@ -58,7 +58,7 @@ const sectionTitleClass =
 const worlds = [
   {
     id: "romance",
-    value: "disney_light",
+    value: "romantic_story",
     title: "Романтическая история",
     text: "Знаковые места, общие моменты, нежность и личная память.",
     detail: "романтическая история",
