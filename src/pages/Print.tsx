@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import logoImage from "@/assets/logo.png";
 
-const PRINT_VIEW_NOTIFY_URL = "/api/fairyteller/print/payment-page-view";
+const PRINT_VIEW_NOTIFY_URL = "/api/fairyteller/pay/payment-page-view";
 
 const typeStyle = {
   fontFamily:

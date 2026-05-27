@@ -1086,7 +1086,7 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
   const coverUrl = publicUrl(status.artifacts?.coverPdf?.url || status.artifacts?.render?.files?.cover?.url);
-  const buyPrintUrl = `${PUBLIC_BASE_URL}/print${printUrl ? `?pdf=${encodeURIComponent(printUrl)}` : ''}`;
+  const buyPrintUrl = `${PUBLIC_BASE_URL}/pay${printUrl ? `?pdf=${encodeURIComponent(printUrl)}` : ''}`;
 
   const links = [
     previewUrl ? `Открыть книгу: ${previewUrl}` : '',

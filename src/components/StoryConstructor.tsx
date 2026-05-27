@@ -19,7 +19,7 @@ import romanticStoryImage from '@/assets/romantic-story.png';
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
-const PRINT_PAYMENT_URL = "https://fairyteller.ru/print";
+const PRINT_PAYMENT_URL = "https://fairyteller.ru/pay";
 
 interface CreateResponse {
   ok?: boolean;
