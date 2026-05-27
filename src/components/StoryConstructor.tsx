@@ -313,6 +313,9 @@ const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string
 }) => {
   const [isPdfLoaded, setIsPdfLoaded] = useState(false);
   const pdfUrl = previewPdfUrl || printPdfUrl;
+  const printPaymentUrl = printPdfUrl || previewPdfUrl
+    ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(printPdfUrl || previewPdfUrl)}`
+    : PRINT_PAYMENT_URL;
 
   useEffect(() => {
     setIsPdfLoaded(false);
@@ -342,9 +345,9 @@ const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string
       </div>
 
       <div className="generated-pdf-actions">
-        <a href={PRINT_PAYMENT_URL} target="_blank" rel="noreferrer" className="generated-book-print-link generated-pdf-print-link">
+        <a href={printPaymentUrl} target="_blank" rel="noreferrer" className="generated-book-print-link generated-pdf-print-link">
           <Printer size={17} aria-hidden="true" />
-          Оплатить печатную версию
+          Оплатить и отправить в печать
         </a>
       </div>
     </section>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+
 import {
   Dialog,
   DialogContent,
@@ -8,29 +9,69 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import logoImage from "@/assets/logo.png";
+
+const PRINT_VIEW_NOTIFY_URL = "/api/fairyteller/print/payment-page-view";
+
+const typeStyle = {
+  fontFamily:
+    '"Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif',
+};
 
 const Print = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailModal, setShowFailModal] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const paymentStatus = searchParams.get("status");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    if (!consentChecked) {
-      e.preventDefault();
-      alert("Пожалуйста, подтвердите согласие на обработку персональных данных");
-      return;
-    }
-  };
+  const initialPdfUrl = useMemo(() => {
+    return searchParams.get("pdf") || searchParams.get("pdfUrl") || "";
+  }, [searchParams]);
 
   useEffect(() => {
-    const status = searchParams.get("status");
-    if (status === "success") {
+    if (paymentStatus === "success") {
       setShowSuccessModal(true);
-    } else if (status === "fail") {
+    } else if (paymentStatus === "fail") {
       setShowFailModal(true);
     }
-  }, [searchParams]);
+  }, [paymentStatus]);
+
+  useEffect(() => {
+    if (paymentStatus) return;
+
+    const payload = JSON.stringify({
+      pdfUrl: initialPdfUrl,
+      referrer: document.referrer,
+    });
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(PRINT_VIEW_NOTIFY_URL, new Blob([payload], { type: "application/json" }));
+      return;
+    }
+
+    void fetch(PRINT_VIEW_NOTIFY_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: payload,
+      keepalive: true,
+    }).catch(() => undefined);
+  }, [initialPdfUrl, paymentStatus]);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const form = event.currentTarget;
+
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      form.reportValidity();
+      return;
+    }
+
+    if (!consentChecked) {
+      event.preventDefault();
+      alert("Пожалуйста, подтвердите согласие на обработку персональных данных");
+    }
+  };
 
   const clearStatusParam = () => {
     const newParams = new URLSearchParams(searchParams);
@@ -49,231 +90,303 @@ const Print = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] py-12 px-4">
-      <div className="max-w-xl mx-auto">
-        {/* A. Заголовок */}
-        <div className="text-center mb-10">
-          <h1 className="font-playfair text-3xl md:text-4xl text-[#E89C31] mb-3">
-            Страница оплаты
-          </h1>
-          <p className="text-[#DBA858]/80 text-lg">
-            Мы напечатаем вашу персональную сказку в мягкой обложке и доставим вам.
-          </p>
-        </div>
+    <main className="print-page min-h-screen bg-[#fffaf0] px-5 py-8 text-black md:px-8 md:py-10" style={typeStyle}>
+      <style>{`
+        .print-page,
+        .print-page * {
+          box-sizing: border-box;
+          min-width: 0;
+        }
 
-        {/* B. Что входит */}
-        <div className="bg-[#0B2838]/60 rounded-2xl p-6 mb-8 border border-[#E89C31]/20">
-          <h2 className="font-playfair text-xl text-[#E89C31] mb-4">Что входит</h2>
-          <ul className="space-y-3 text-[#DBA858]/90">
-            <li className="flex items-start gap-3">
-              <span className="text-xl">📖</span>
-              <span>Та же сказка из 5 глав, что пришла в PDF</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-xl">🎨</span>
-              <span>Цветная обложка и иллюстрации</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-xl">🧾</span>
-              <span>Подтверждение оплаты придет на email</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-xl">🚚</span>
-              <span>Доставка включена в стоимость</span>
-            </li>
-          </ul>
-        </div>
+        .print-page h1,
+        .print-page h2 {
+          color: #111111;
+          font-family: "Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif;
+          letter-spacing: 0;
+          text-shadow: none;
+        }
 
-        {/* C. Цена */}
-        <div className="text-center mb-8">
-          <div className="text-5xl font-playfair text-[#E89C31] mb-2">2 500 ₽</div>
-          <p className="text-[#DBA858]/70 text-sm">
-            Цена фиксированная, без скрытых доплат.
-          </p>
-        </div>
+        .print-page input,
+        .print-page button {
+          font-family: inherit;
+        }
 
-        {/* D. Важное уточнение */}
-        <div className="bg-[#E89C31]/10 rounded-xl p-5 mb-8 border border-[#E89C31]/30">
-          <p className="text-[#DBA858]/90 text-sm leading-relaxed">
-            Пожалуйста, укажите корректные email и телефон — мы пришлем подтверждение 
-            и сможем связаться по доставке. Адрес вводите полностью: город, улица, дом, квартира.
-          </p>
-        </div>
+        .print-payment-card {
+          background: #ffffff;
+          box-shadow: 10px 10px 0 #111111;
+        }
 
-        {/* E. Форма оплаты Юкассы */}
-        <div className="mb-8">
-          <link 
-            rel="stylesheet" 
-            href="https://yookassa.ru/integration/simplepay/css/yookassa_construct_form.css?v=1.30.0" 
-          />
-          <style>{`
-            .yoomoney-payment-form .ym-input {
-              width: 100% !important;
-              padding: 16px !important;
-              font-size: 16px !important;
-              margin-bottom: 12px !important;
-              display: block !important;
-              color: #000000 !important;
-              background: #ffffff !important;
-            }
-            .yoomoney-payment-form .ym-input::placeholder {
-              color: #666666 !important;
-            }
-            .yoomoney-payment-form .ym-customer-info {
-              display: flex !important;
-              flex-direction: column !important;
-            }
-            .yoomoney-payment-form .ym-block-title {
-              color: #E89C31 !important;
-              font-size: 18px !important;
-              font-weight: 600 !important;
-            }
-            .yoomoney-payment-form .ym-btn-pay {
-              padding: 20px 40px !important;
-              font-size: 20px !important;
-              width: 100% !important;
-              min-height: 60px !important;
-              background: #E89C31 !important;
-              border: none !important;
-              border-radius: 8px !important;
-              cursor: pointer !important;
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-            }
-            .yoomoney-payment-form .ym-btn-pay .ym-text-crop {
-              color: #000000 !important;
-              font-weight: 600 !important;
-              text-align: center !important;
-            }
-            .yoomoney-payment-form .ym-price-output {
-              display: none !important;
-            }
-            .yoomoney-payment-form .ym-payment-btn-block {
-              display: flex !important;
-              flex-direction: column !important;
-              align-items: center !important;
-              gap: 24px !important;
-              margin-top: 20px !important;
-            }
-            .yoomoney-payment-form .ym-logo {
-              margin-top: 16px !important;
-            }
-          `}</style>
-          <form 
-            className="yoomoney-payment-form"
-            action="https://yookassa.ru/integration/simplepay/payment"
-            method="post"
-            acceptCharset="utf-8"
-            onSubmit={handleSubmit}
-          >
-            <div className="ym-customer-info">
-              <div className="ym-block-title">Информация для оплаты</div>
-              <input name="cps_email" className="ym-input" placeholder="Email (для подтверждения)" type="text" />
-              <input name="cps_phone" className="ym-input" placeholder="Телефон" type="text" />
-              <input name="custName" className="ym-input" placeholder="ФИО получателя" type="text" />
-              <input name="custAddr" className="ym-input" placeholder="Адрес доставки (город, улица, дом, квартира)" type="text" />
-              
-              <label className="flex items-start gap-3 mt-4 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={consentChecked}
-                  onChange={(e) => setConsentChecked(e.target.checked)}
-                  className="mt-1 w-5 h-5 accent-[#E89C31] cursor-pointer"
-                />
-                <span className="text-[#DBA858]/90 text-sm leading-relaxed">
-                  Даю согласие на обработку персональных данных <span className="text-red-400">*</span>
-                </span>
-              </label>
-            </div>
+        .print-page .yoomoney-payment-form {
+          display: grid;
+          gap: 24px;
+        }
 
-            <div className="ym-hidden-inputs">
-              <input name="shopSuccessURL" type="hidden" value="https://fairyteller.ru/print?status=success" />
-              <input name="shopFailURL" type="hidden" value="https://fairyteller.ru/print?status=fail" />
-            </div>
+        .print-page .ym-customer-info {
+          display: grid !important;
+          gap: 14px !important;
+        }
 
-            <input name="sum" type="hidden" value="2500" />
-            <input name="shopId" type="hidden" value="1228521" />
+        .print-page .ym-block-title {
+          color: #111111 !important;
+          font-size: 15px !important;
+          font-weight: 900 !important;
+          letter-spacing: 0.14em !important;
+          line-height: 1.25 !important;
+          margin-bottom: 8px !important;
+          text-transform: uppercase !important;
+        }
 
-            <div className="ym-payment-btn-block ym-before-line">
-              <button className="ym-btn-pay" type="submit">
-                <span className="ym-text-crop">Оплатить</span>
-              </button>
-              <img 
-                src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.30.0"
-                className="ym-logo"
-                width="114"
-                height="27"
-                alt="ЮKassa"
-              />
-            </div>
-          </form>
-          <script src="https://yookassa.ru/integration/simplepay/js/yookassa_construct_form.js?v=1.30.0"></script>
-        </div>
+        .print-field-label {
+          display: grid;
+          gap: 8px;
+          color: #5e6264;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.14em;
+          line-height: 1.2;
+          text-transform: uppercase;
+        }
 
-        {/* F. Доверие */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-[#DBA858]/70 text-sm mt-14">
-          <span className="flex items-center gap-2">
-            <span>🔒</span> Оплата проходит через Юкассу
-          </span>
-          <span className="flex items-center gap-2">
-            <span>💳</span> Банковские карты РФ
-          </span>
-        </div>
+        .print-page .ym-input {
+          width: 100% !important;
+          min-height: 58px !important;
+          padding: 16px 18px !important;
+          border: 2px solid #111111 !important;
+          border-radius: 8px !important;
+          background: #ffffff !important;
+          color: #111111 !important;
+          display: block !important;
+          font-size: 18px !important;
+          font-weight: 600 !important;
+          line-height: 1.25 !important;
+          margin: 0 !important;
+          outline: none !important;
+        }
+
+        .print-page .ym-input::placeholder {
+          color: #777777 !important;
+          font-weight: 500 !important;
+        }
+
+        .print-page .ym-input:focus {
+          box-shadow: 4px 4px 0 #e89c31 !important;
+        }
+
+        .print-page .ym-price-output,
+        .print-page .ym-logo {
+          display: none !important;
+        }
+
+        .print-page .ym-payment-btn-block {
+          display: grid !important;
+          margin-top: 6px !important;
+          position: static !important;
+        }
+
+        .print-page .ym-btn-pay {
+          align-items: center !important;
+          background: #111111 !important;
+          border: 1px solid #111111 !important;
+          border-radius: 8px !important;
+          box-shadow: 8px 8px 0 #e89c31 !important;
+          cursor: pointer !important;
+          display: inline-flex !important;
+          justify-content: center !important;
+          min-height: 62px !important;
+          padding: 18px 24px !important;
+          transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+          width: 100% !important;
+        }
+
+        .print-page .ym-btn-pay:hover {
+          background: #5e6264 !important;
+          box-shadow: 4px 4px 0 #e89c31 !important;
+          transform: translate(4px, 4px);
+        }
+
+        .print-page .ym-btn-pay .ym-text-crop {
+          color: #ffffff !important;
+          font-size: 15px !important;
+          font-weight: 900 !important;
+          letter-spacing: 0.08em !important;
+          max-width: none !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          text-transform: uppercase !important;
+          white-space: nowrap !important;
+          width: auto !important;
+        }
+      `}</style>
+
+      <div className="mx-auto mb-8 flex max-w-[760px] items-center justify-between gap-4">
+        <Link to="/" aria-label="Fairyteller">
+          <img src={logoImage} alt="Fairyteller" className="h-11 w-auto object-contain" />
+        </Link>
+        <span className="text-right text-[10px] font-black uppercase tracking-[0.16em] text-[#5e6264]">
+          Оплата печати
+        </span>
       </div>
 
-      {/* Модалка "Успех" */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="bg-[#0B2838] border-[#E89C31]/30">
+      <section className="print-payment-card mx-auto max-w-[760px] border-2 border-black px-5 py-8 md:px-14 md:py-12">
+        <p className="text-[13px] font-black uppercase tracking-[0.22em] text-[#5e6264]">
+          Оплата печати
+        </p>
+        <h1 className="mt-5 text-[34px] font-black uppercase leading-none md:text-[52px]">
+          Печатная книга
+        </h1>
+        <p className="mt-5 max-w-[560px] text-[20px] leading-8 text-[#5e6264]">
+          Укажите контактные данные и полный адрес доставки.
+        </p>
+
+        <div className="mt-8">
+          <div className="text-[48px] font-black leading-none md:text-[64px]">3 500 ₽</div>
+          <div className="mt-2 text-[13px] font-black uppercase tracking-[0.16em] text-[#5e6264]">
+            Итоговая цена
+          </div>
+        </div>
+
+        <div className="my-9 border-t-2 border-black" />
+
+        <link
+          rel="stylesheet"
+          href="https://yookassa.ru/integration/simplepay/css/yookassa_construct_form.css?v=1.30.0"
+        />
+        <form
+          className="yoomoney-payment-form"
+          action="https://yookassa.ru/integration/simplepay/payment"
+          method="post"
+          acceptCharset="utf-8"
+          onSubmit={handleSubmit}
+        >
+          <div className="ym-customer-info">
+            <div className="ym-block-title">Данные для оплаты и доставки</div>
+            <label className="print-field-label">
+              Email
+              <input
+                name="cps_email"
+                className="ym-input"
+                placeholder="Для подтверждения оплаты"
+                required
+                type="email"
+              />
+            </label>
+            <label className="print-field-label">
+              Телефон
+              <input name="cps_phone" className="ym-input" placeholder="+7 999 000-00-00" required type="tel" />
+            </label>
+            <label className="print-field-label">
+              Получатель
+              <input name="custName" className="ym-input" placeholder="ФИО получателя" required type="text" />
+            </label>
+            <label className="print-field-label">
+              Адрес доставки
+              <input name="custAddr" className="ym-input" placeholder="Город, улица, дом, квартира" required type="text" />
+            </label>
+            <label className="print-field-label">
+              Ссылка на PDF
+              <input
+                name="pdfUrl"
+                className="ym-input"
+                defaultValue={initialPdfUrl}
+                placeholder="https://fairyteller.ru/..."
+                required
+                type="url"
+              />
+            </label>
+
+            <label className="mt-2 flex cursor-pointer items-start gap-4 border-2 border-black bg-[#fae7e1] p-5">
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(event) => setConsentChecked(event.target.checked)}
+                required
+                className="mt-1 h-6 w-6 shrink-0 cursor-pointer accent-[#111111]"
+              />
+              <span className="text-[16px] font-black leading-7 text-[#3f4447]">
+                Даю согласие на обработку персональных данных для оплаты и доставки заказа.
+              </span>
+            </label>
+          </div>
+
+          <div className="ym-hidden-inputs">
+            <input name="shopSuccessURL" type="hidden" value="https://fairyteller.ru/pay?status=success" />
+            <input name="shopFailURL" type="hidden" value="https://fairyteller.ru/pay?status=fail" />
+          </div>
+
+          <input name="sum" type="hidden" value="3500" />
+          <input name="shopId" type="hidden" value="1228521" />
+
+          <div className="ym-payment-btn-block ym-before-line">
+            <button className="ym-btn-pay" type="submit">
+              <span className="ym-text-crop">Оплатить книгу</span>
+            </button>
+            <img
+              src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.30.0"
+              className="ym-logo"
+              width="114"
+              height="27"
+              alt="ЮKassa"
+            />
+          </div>
+        </form>
+        <script src="https://yookassa.ru/integration/simplepay/js/yookassa_construct_form.js?v=1.30.0"></script>
+      </section>
+
+      <Dialog
+        open={showSuccessModal}
+        onOpenChange={(open) => {
+          setShowSuccessModal(open);
+          if (!open) clearStatusParam();
+        }}
+      >
+        <DialogContent className="border border-black bg-[#fffaf0] text-black sm:rounded-md">
           <DialogHeader>
-            <DialogTitle className="text-[#E89C31] font-playfair text-2xl">
+            <DialogTitle className="text-[28px] font-black uppercase text-black">
               Оплата прошла успешно
             </DialogTitle>
-            <DialogDescription className="text-[#DBA858]/90 pt-4">
-              Спасибо! Мы получили оплату. В ближайшее время мы напишем вам на email. 
-              Если вы указали адрес доставки, дополнительно ничего делать не нужно.
+            <DialogDescription className="pt-4 text-[15px] font-semibold leading-7 text-[#5e6264]">
+              Спасибо! Мы получили оплату. В ближайшее время напишем вам на email.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end pt-4">
-            <Button 
-              onClick={handleCloseSuccess}
-              className="bg-[#E89C31] hover:bg-[#DBA858] text-[#031B28]"
-            >
+            <Button onClick={handleCloseSuccess} className="bg-black text-white hover:bg-[#5e6264]">
               Закрыть
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Модалка "Неуспех" */}
-      <Dialog open={showFailModal} onOpenChange={setShowFailModal}>
-        <DialogContent className="bg-[#0B2838] border-[#E89C31]/30">
+      <Dialog
+        open={showFailModal}
+        onOpenChange={(open) => {
+          setShowFailModal(open);
+          if (!open) clearStatusParam();
+        }}
+      >
+        <DialogContent className="border border-black bg-[#fffaf0] text-black sm:rounded-md">
           <DialogHeader>
-            <DialogTitle className="text-[#E89C31] font-playfair text-2xl">
+            <DialogTitle className="text-[28px] font-black uppercase text-black">
               Оплата не прошла
             </DialogTitle>
-            <DialogDescription className="text-[#DBA858]/90 pt-4">
-              Похоже, платеж не завершился. Попробуйте еще раз — это займет минуту.
+            <DialogDescription className="pt-4 text-[15px] font-semibold leading-7 text-[#5e6264]">
+              Похоже, платеж не завершился. Проверьте данные карты или попробуйте еще раз.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 pt-4">
-            <Button 
+            <Button
               variant="outline"
               onClick={handleCloseFail}
-              className="border-[#E89C31]/50 text-[#DBA858] hover:bg-[#E89C31]/10"
+              className="border-black text-black hover:bg-[#fae7e1]"
             >
               Закрыть
             </Button>
-            <Button 
-              onClick={handleCloseFail}
-              className="bg-[#E89C31] hover:bg-[#DBA858] text-[#031B28]"
-            >
+            <Button onClick={handleCloseFail} className="bg-black text-white hover:bg-[#5e6264]">
               Попробовать снова
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 };
 

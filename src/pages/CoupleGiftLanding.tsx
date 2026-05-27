@@ -14,12 +14,11 @@ import {
 import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import logoImage from "@/assets/logo.png";
-import romanticBookImage from "@/assets/romantic-book-cover-new.png";
-import bookHandsImage from "@/assets/book-hands-romantic.png";
-import romanticStoryImage from "@/assets/romantic-story.png";
-import exampleCactusCityImage from "@/assets/example-photos/cactus-city-open-book-hands-bench.webp";
-import exampleCactusFlatlayImage from "@/assets/example-photos/cactus-flatlay-mood.webp";
-import exampleMapTableImage from "@/assets/example-photos/map-open-book-table.webp";
+import snowRouteFlatlayImage from "@/assets/product-photos/snow-route-flatlay.jpg";
+import snowRouteHandsImage from "@/assets/product-photos/snow-route-hands.jpg";
+import snowRouteShelfImage from "@/assets/product-photos/snow-route-shelf.jpg";
+import snowRouteTableImage from "@/assets/product-photos/snow-route-table.jpg";
+import loveCityOpenImage from "@/assets/product-photos/love-city-open.jpg";
 
 const typeStyle = {
   fontFamily:
@@ -327,10 +326,10 @@ const CoupleGiftLanding = () => {
           </div>
 
           <div className="grid min-h-[420px] overflow-hidden bg-[#f5f5f5] md:grid-cols-2 lg:min-h-0">
-            <img src={romanticBookImage} alt="Персональная книга для пары" className="h-full min-h-[360px] w-full object-cover" />
+            <img src={snowRouteHandsImage} alt="Персональная книга для пары в руках" className="h-full min-h-[360px] w-full object-cover" />
             <div className="grid border-l border-black">
-              <img src={bookHandsImage} alt="Печатная романтическая книга в руках" className="h-full min-h-[220px] w-full border-b border-black object-cover" />
-              <img src={romanticStoryImage} alt="Иллюстрация романтической истории для двоих" className="h-full min-h-[220px] w-full object-cover" />
+              <img src={snowRouteFlatlayImage} alt="Подарочная персональная книга для пары на столе" className="h-full min-h-[220px] w-full border-b border-black object-cover" />
+              <img src={snowRouteShelfImage} alt="Готовая персональная книга для пары на полке" className="h-full min-h-[220px] w-full object-cover" />
             </div>
           </div>
         </section>
@@ -410,9 +409,9 @@ const CoupleGiftLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={exampleCactusCityImage} alt="Пример персональной книги в руках" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={exampleMapTableImage} alt="Разворот персональной книги на столе" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={exampleCactusFlatlayImage} alt="Подарочная книга как необычный подарок для пары" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={snowRouteTableImage} alt="Готовая книга для пары на столе" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={loveCityOpenImage} alt="Иллюстрированный разворот книги с историей пары" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={snowRouteFlatlayImage} alt="Подарочная персональная книга с деталями пары" className="h-full min-h-[260px] w-full object-cover" />
               </div>
             </div>
           </div>

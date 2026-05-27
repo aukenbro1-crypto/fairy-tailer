@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/podarok/dlya-pary" element={<CoupleGiftLanding />} />
             <Route path="/podarok/na-godovshchinu" element={<AnniversaryGiftLanding />} />
             <Route path="/print" element={<Print />} />
+            <Route path="/pay" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
             <Route path="/indian" element={<Indian />} />
             <Route path="/blog" element={<Blog />} />

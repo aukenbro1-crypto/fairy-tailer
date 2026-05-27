@@ -51,6 +51,15 @@ const typeStyle = {
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
+const PRINT_PAYMENT_URL = "https://fairyteller.ru/print";
+const GENERATION_ETA_SECONDS = 240;
+
+const formatGenerationTimer = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = safeSeconds % 60;
+  return `${minutes}:${String(rest).padStart(2, "0")}`;
+};
 
 const sectionTitleClass =
   "max-w-[980px] text-[36px] font-black uppercase leading-[1.14] tracking-normal md:text-[58px] xl:text-[62px]";
@@ -391,6 +400,8 @@ const DesignTest = () => {
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
+  const [generationNowMs, setGenerationNowMs] = useState(Date.now());
   const worldStripRef = useRef<HTMLDivElement>(null);
   const styleStripRef = useRef<HTMLDivElement>(null);
   const exampleStripRef = useRef<HTMLDivElement>(null);
@@ -410,8 +421,32 @@ const DesignTest = () => {
     jobStatus?.artifacts?.bookPdf?.url ||
     jobStatus?.artifacts?.render?.files?.book?.url ||
     "";
-  const statusProgress = Math.max(0, Math.min(100, Number(jobStatus?.progress || (submittedJobId ? 8 : 0))));
   const isGenerationReady = renderStatus === "ready" && Boolean(bookPdfUrl);
+  const isGenerationFailed = Boolean(
+    jobStatus?.status === "failed" ||
+    jobStatus?.error ||
+    jobStatus?.artifacts?.fullText?.status === "failed" ||
+    jobStatus?.artifacts?.fullVisuals?.status === "failed" ||
+    jobStatus?.artifacts?.cover?.status === "failed" ||
+    jobStatus?.artifacts?.render?.status === "failed",
+  );
+  const generationElapsedSeconds = generationStartedAt
+    ? Math.max(0, Math.floor((generationNowMs - generationStartedAt) / 1000))
+    : 0;
+  const generationTimedProgress = submittedJobId && !isGenerationReady
+    ? Math.min(96, Math.max(8, Math.round((generationElapsedSeconds / GENERATION_ETA_SECONDS) * 96)))
+    : 0;
+  const rawStatusProgress = Math.max(0, Math.min(100, Number(jobStatus?.progress || (submittedJobId ? 8 : 0))));
+  const statusProgress = isGenerationReady ? 100 : Math.max(rawStatusProgress, generationTimedProgress);
+  const generationRemainingSeconds = Math.max(0, GENERATION_ETA_SECONDS - generationElapsedSeconds);
+  const generationTimerText = isGenerationReady
+    ? "готово"
+    : generationRemainingSeconds > 0
+      ? `примерно ${formatGenerationTimer(generationRemainingSeconds)}`
+      : "финальная проверка";
+  const printPaymentUrl = bookPdfUrl
+    ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(bookPdfUrl)}`
+    : PRINT_PAYMENT_URL;
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index > 0 && !visibleHeroes.includes(item.index));
@@ -541,6 +576,7 @@ const DesignTest = () => {
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
+    setGenerationStartedAt(null);
 
     try {
       const response = await fetch(CREATE_ENDPOINT_URL, {
@@ -558,6 +594,7 @@ const DesignTest = () => {
 
       setSubmittedJobId(createResult?.jobId || null);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
+      setGenerationStartedAt(Date.now());
       toast({
         title: "Книга создается",
         description: "Запустили генерацию текста, иллюстраций и печатного макета.",
@@ -692,6 +729,15 @@ const DesignTest = () => {
       window.clearInterval(intervalId);
     };
   }, [submittedJobId, submittedStatusUrl]);
+
+  useEffect(() => {
+    if (!submittedJobId || isGenerationReady || isGenerationFailed) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => setGenerationNowMs(Date.now()), 1000);
+    return () => window.clearInterval(intervalId);
+  }, [submittedJobId, isGenerationReady, isGenerationFailed]);
 
   useEffect(() => {
     if (window.location.pathname !== "/create") {
@@ -1327,18 +1373,35 @@ const DesignTest = () => {
                   <div className="mt-3 h-4 border border-black bg-white">
                     <div className="h-full bg-black transition-all duration-500" style={{ width: `${statusProgress}%` }} />
                   </div>
+                  {!isGenerationReady && (
+                    <div className="mx-auto mt-4 flex max-w-[560px] flex-col gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-[#5e6264] sm:flex-row sm:justify-center sm:gap-6">
+                      <span>Прошло {formatGenerationTimer(generationElapsedSeconds)}</span>
+                      <span>{generationTimerText}</span>
+                    </div>
+                  )}
                   <p className="mx-auto mt-5 max-w-[560px] text-[17px] leading-7 text-[#5e6264]">
                     {jobStatus?.message || "Готовим сюжет, иллюстрации, обложку и печатный макет."}
                   </p>
                   {isGenerationReady && (
-                    <a
-                      href={bookPdfUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-7 inline-flex h-[52px] items-center justify-center border border-black bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white hover:text-black"
-                    >
-                      Открыть превью
-                    </a>
+                    <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                      <a
+                        href={bookPdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-[52px] items-center justify-center border border-black bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white hover:text-black"
+                      >
+                        Открыть превью
+                      </a>
+                      <a
+                        href={printPaymentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-[#E89C31] px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+                      >
+                        <ShoppingBag className="h-5 w-5" />
+                        ОПЛАТИТЬ И ОТПРАВИТЬ В ПЕЧАТЬ
+                      </a>
+                    </div>
                   )}
                 </div>
               )}

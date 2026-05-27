@@ -286,7 +286,6 @@ function hasReadyPdfArtifacts(artifacts = {}) {
 
 function failedArtifactStage(artifacts = {}) {
   if (artifacts.fullText?.status === 'failed') return 'text';
-  if (artifacts.heroReferences?.status === 'failed') return 'visuals';
   if (artifacts.fullVisuals?.status === 'failed') return 'visuals';
   if (artifacts.cover?.status === 'failed') return 'cover';
   if (artifacts.render?.status === 'failed') return 'render';
@@ -452,6 +451,13 @@ function normalizeChatUrl(value) {
   } catch {
     return '';
   }
+}
+
+function normalizePublicPdfUrl(value) {
+  const text = normalizeShortText(value, 800);
+  if (!text) return '';
+  const url = text.startsWith('/') ? publicUrl(text) : text;
+  return normalizeChatUrl(url);
 }
 
 function requestIp(req) {
@@ -750,6 +756,18 @@ async function createChatMessage(req) {
   });
   await notifyChatMessage(result.session, result.message);
   return sanitizePublicChatSession(result.session);
+}
+
+async function notifyPrintPaymentPageView(req) {
+  const body = await readJsonBody(req);
+  const pdfUrl = normalizePublicPdfUrl(body.pdfUrl || body.pdf || '');
+  const lines = ['Fairyteller: пользователь перешел на страницу оплаты'];
+  if (pdfUrl) lines.push(`pdf: ${pdfUrl}`);
+  const referrer = normalizeShortText(body.referrer || req.headers.referer || '', 500);
+  if (referrer) lines.push(`from: ${referrer}`);
+  const response = await sendSupportTelegramMessage(lines.join('\n'))
+    || await sendAlertTelegramMessage(lines.join('\n'));
+  return { notified: Boolean(response), pdfUrl };
 }
 
 async function getChatMessages(sessionId) {
@@ -1068,7 +1086,7 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
   const coverUrl = publicUrl(status.artifacts?.coverPdf?.url || status.artifacts?.render?.files?.cover?.url);
-  const buyPrintUrl = `${PUBLIC_BASE_URL}/print`;
+  const buyPrintUrl = `${PUBLIC_BASE_URL}/print${printUrl ? `?pdf=${encodeURIComponent(printUrl)}` : ''}`;
 
   const links = [
     previewUrl ? `Открыть книгу: ${previewUrl}` : '',
@@ -1534,6 +1552,17 @@ async function route(req, res) {
 
   if (method === 'POST' && url.pathname === '/api/fairyteller/chat/messages') {
     sendJson(req, res, 201, { ok: true, ...(await createChatMessage(req)) });
+    return;
+  }
+
+  if (
+    method === 'POST'
+    && (
+      url.pathname === '/api/fairyteller/pay/payment-page-view'
+      || url.pathname === '/api/fairyteller/print/payment-page-view'
+    )
+  ) {
+    sendJson(req, res, 201, { ok: true, ...(await notifyPrintPaymentPageView(req)) });
     return;
   }
 
