@@ -197,10 +197,7 @@ function buildHtml(template, page) {
   html = setMeta(html, "name", "twitter:image", page.image || defaultImage);
   html = setCanonical(html, canonicalUrl);
   html = setJsonLd(html, page.jsonLd || []);
-  html = html.replace(
-    /<div id="root">[\s\S]*?<\/div>\s*(?=<script type="module")/,
-    `<div id="root">${wrapFallback(page.fallback)}</div>\n    `,
-  );
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root"></div>`);
 
   return html;
 }
@@ -236,13 +233,6 @@ function setJsonLd(html, data) {
   }
 
   return html.replace("</head>", `  ${tag}\n</head>`);
-}
-
-function wrapFallback(content) {
-  return `
-      <div style="max-width: 860px; margin: 0 auto; padding: 40px 20px; font-family: Arial, sans-serif; color: #111; line-height: 1.55;">
-        ${content}
-      </div>`;
 }
 
 function organizationJsonLd() {
