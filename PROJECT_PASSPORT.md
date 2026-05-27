@@ -144,6 +144,9 @@ Planned production service:
 Core endpoints:
 
 - `GET /healthz`
+- `POST /api/fairyteller/chat/messages`
+- `GET /api/fairyteller/chat/sessions/:sessionId/messages`
+- `POST /api/fairyteller/telegram/webhook`
 - `POST /api/fairyteller/jobs`
 - `GET /api/fairyteller/jobs/:jobId`
 - `GET /api/fairyteller/jobs/:jobId/full`
@@ -161,6 +164,30 @@ Authorization: Bearer <FAIRYTELLER_API_TOKEN>
 ```
 
 Never commit the production token.
+
+## Website Support Chat
+
+The public site includes a lightweight support chat widget mounted globally from `src/components/FairytellerChat.tsx`.
+
+Message flow:
+
+1. Visitor messages are posted to `POST /api/fairyteller/chat/messages`.
+2. The Job API stores chat sessions under `${FAIRYTELLER_DATA_DIR}/chat/sessions`.
+3. Each visitor message is sent to the configured Telegram admin chat.
+4. The admin replies in Telegram by replying directly to the bot message, or by sending `/reply <sessionId> <text>`.
+5. Telegram calls `POST /api/fairyteller/telegram/webhook`; the API appends the operator reply to the matching session.
+6. The widget polls `GET /api/fairyteller/chat/sessions/:sessionId/messages` while open and shows new replies.
+
+If Telegram cannot register a public webhook for the domain, set `FAIRYTELLER_TELEGRAM_POLLING=1` on the API service. In that mode the same server reads bot updates with Telegram `getUpdates` and uses the same reply handling logic.
+
+Required production env for two-way chat:
+
+- `FAIRYTELLER_TELEGRAM_BOT_TOKEN`
+- `FAIRYTELLER_TELEGRAM_CHAT_ID`
+- `FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET`
+- optional fallback: `FAIRYTELLER_TELEGRAM_POLLING=1`
+
+The webhook should be registered with Telegram using `secret_token` and URL `https://fairyteller.ru/api/fairyteller/telegram/webhook`. Do not store bot tokens or webhook secrets in git.
 
 ## Print Target
 
@@ -327,3 +354,4 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Added explicit hero age-group selection to `/create` (`Ребенок`, `Подросток`, `Взрослый`) and sends `heroN_age_group` to the n8n intake for every filled hero. Hardened visual reference generation after production jobs `ft_1779761155173_uq2c9l` and `ft_1779763092303_h1rz3w`: individual hero-card failures from Gemini no longer immediately collapse the whole visual run; they become `source_photo_fallback`, the private source photo is used only to build the combined reference sheet, and chapter/cover workflows attach both ready cards and the combined sheet whenever the card set is partial.
 - Simplified the final `/create` PDF preview: removed the secondary `PDF` button and the right-side print/delivery tip bubbles, kept only the `preview.pdf` frame plus the centered `Оплатить печатную версию` CTA, and added an animated book-page loader while the embedded PDF viewer initializes.
 - Hardened the full-visuals/render tail after production jobs reached `85%` with `Gemini did not return an inline image ... IMAGE_OTHER`. `fairyteller_visuals` no longer starts the legacy `fairyteller_render_publish` placeholder after chapter 1, `fairyteller_full_visuals` can fall back to an existing ready chapter image for a single failed later-chapter image instead of aborting the book, and the Job API now infers a public `failed` state from failed critical artifacts when no real PDF artifact exists. Re-ran `/webhook/fairyteller/continue` for stuck job `ft_1779811711746_r1rkcb` and verified it completed with `preview.pdf` and `book.pdf`.
+- Deployed the SEO/couple landing frontend release `/var/www/fairyteller/releases/20260527-0910-codex-seo-pair-landing` and repointed `/var/www/fairyteller/current` to it. The release adds `/podarok/dlya-pary`, route-specific title/description/canonical/OG/Twitter/JSON-LD output, generated static SEO HTML for key routes, updated `sitemap.xml`, and Yandex/OAI-friendly `robots.txt`. Production smoke verified `https://fairyteller.ru/podarok/dlya-pary` and `/podarok/dlya-pary/` return the pair landing metadata, `sitemap.xml` includes the route, `robots.txt` exposes the Yandex block, and a mobile Chrome screenshot renders the hero without text clipping.

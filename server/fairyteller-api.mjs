@@ -13,6 +13,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
 const TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
+const TELEGRAM_WEBHOOK_SECRET = (process.env.FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET || '').trim();
+const TELEGRAM_POLLING_ENABLED = process.env.FAIRYTELLER_TELEGRAM_POLLING === '1';
 const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fairyteller.ru').replace(/\/+$/, '');
 const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
@@ -22,10 +24,15 @@ const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
+const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSAGE_LIMIT || 2000) || 2000);
+const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
+const CHAT_RATE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_RATE_LIMIT || 20) || 20);
+const CHAT_RATE_WINDOW_MS = Math.max(1000, Number(process.env.FAIRYTELLER_CHAT_RATE_WINDOW_MS || 60_000) || 60_000);
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const chatRateBuckets = new Map();
 
 const STATUS_FIELDS = new Set([
   'received',
@@ -319,29 +326,43 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   return lines.join('\n');
 }
 
-async function sendTelegramMessage(text) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+async function callTelegramApi(method, payload = {}, timeoutMs = 5000) {
+  if (!TELEGRAM_BOT_TOKEN) return null;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        disable_web_page_preview: true,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
+    const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       console.warn(`Telegram notification failed: ${response.status}`);
+      return body || null;
     }
+    return body || null;
   } catch (error) {
     console.warn(`Telegram notification failed: ${error.message}`);
+    return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function sendTelegramPayload(payload) {
+  return callTelegramApi('sendMessage', payload);
+}
+
+async function sendTelegramMessage(text, options = {}) {
+  if (!TELEGRAM_CHAT_ID) return null;
+  return sendTelegramPayload({
+    chat_id: TELEGRAM_CHAT_ID,
+    text,
+    disable_web_page_preview: true,
+    ...options,
+  });
 }
 
 function notifyJob(eventType, status, orderEnvelope) {
@@ -353,6 +374,368 @@ function publicUrl(pathOrUrl) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
   return `${PUBLIC_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
+}
+
+function chatRootDir() {
+  return resolve(DATA_DIR, 'chat');
+}
+
+function chatSessionsDir() {
+  return resolve(chatRootDir(), 'sessions');
+}
+
+function makeChatSessionId() {
+  return `fc_${Date.now()}_${randomBytes(6).toString('hex')}`;
+}
+
+function makeChatMessageId() {
+  return `cm_${Date.now()}_${randomBytes(4).toString('hex')}`;
+}
+
+function assertSafeChatSessionId(sessionId) {
+  if (!/^fc_[a-zA-Z0-9_-]{8,100}$/.test(String(sessionId || ''))) {
+    throw httpError(400, 'Invalid chat session');
+  }
+  return String(sessionId);
+}
+
+function chatSessionPath(sessionId) {
+  const safeSessionId = assertSafeChatSessionId(sessionId);
+  const path = resolve(chatSessionsDir(), `${safeSessionId}.json`);
+  const root = chatSessionsDir();
+  if (!path.startsWith(`${root}/`)) {
+    throw httpError(400, 'Invalid chat path');
+  }
+  return path;
+}
+
+function normalizeChatText(value) {
+  const text = String(value || '').replace(/\r\n/g, '\n').trim();
+  if (!text) {
+    throw httpError(400, 'Message is empty');
+  }
+  if (text.length > CHAT_MESSAGE_LIMIT) {
+    throw httpError(413, 'Message is too long');
+  }
+  return text;
+}
+
+function normalizeShortText(value, maxLength = 240) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function normalizeChatUrl(value) {
+  const text = normalizeShortText(value, 600);
+  if (!text) return '';
+  try {
+    const parsed = new URL(text);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.toString().slice(0, 600);
+  } catch {
+    return '';
+  }
+}
+
+function requestIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || String(req.socket?.remoteAddress || 'unknown');
+}
+
+function enforceChatRateLimit(req) {
+  const key = requestIp(req);
+  const now = Date.now();
+  const current = chatRateBuckets.get(key);
+  if (!current || now >= current.resetAt) {
+    chatRateBuckets.set(key, { count: 1, resetAt: now + CHAT_RATE_WINDOW_MS });
+    return;
+  }
+  current.count += 1;
+  if (current.count > CHAT_RATE_LIMIT) {
+    throw httpError(429, 'Too many chat messages');
+  }
+  if (chatRateBuckets.size > 1000) {
+    for (const [bucketKey, bucket] of chatRateBuckets.entries()) {
+      if (now >= bucket.resetAt) chatRateBuckets.delete(bucketKey);
+    }
+  }
+}
+
+function chatVisitorFromBody(body, req) {
+  return {
+    name: normalizeShortText(body.name || body.visitorName, 120),
+    contact: normalizeShortText(body.contact || body.email || body.telegram, 180),
+    pageUrl: normalizeChatUrl(body.pageUrl || body.url),
+    userAgent: normalizeShortText(req.headers['user-agent'], 260),
+    ip: requestIp(req),
+  };
+}
+
+function sanitizePublicChatMessage(message) {
+  return {
+    id: message.id,
+    role: message.role,
+    text: message.text,
+    createdAt: message.createdAt,
+  };
+}
+
+function sanitizePublicChatSession(session) {
+  return {
+    sessionId: session.sessionId,
+    messages: (session.messages || []).map(sanitizePublicChatMessage),
+  };
+}
+
+async function readChatSession(sessionId) {
+  const session = await readJsonFile(chatSessionPath(sessionId), null);
+  if (!session) {
+    throw httpError(404, 'Chat session not found');
+  }
+  return session;
+}
+
+async function createOrUpdateChatSession(rawSessionId, visitor) {
+  const sessionId = rawSessionId ? assertSafeChatSessionId(rawSessionId) : makeChatSessionId();
+  const path = chatSessionPath(sessionId);
+  const current = await readJsonFile(path, null);
+  const now = nowIso();
+  const session = current || {
+    sessionId,
+    createdAt: now,
+    updatedAt: now,
+    visitor: {},
+    messages: [],
+  };
+  session.visitor = {
+    ...(session.visitor || {}),
+    ...Object.fromEntries(Object.entries(visitor).filter(([, value]) => Boolean(value))),
+  };
+  session.updatedAt = now;
+  await mkdir(chatSessionsDir(), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(path, session);
+  return session;
+}
+
+async function appendChatMessage(sessionId, message) {
+  const path = chatSessionPath(sessionId);
+  const session = await readChatSession(sessionId);
+  const now = nowIso();
+  const nextMessage = {
+    id: makeChatMessageId(),
+    createdAt: now,
+    ...message,
+  };
+  const messages = [...(session.messages || []), nextMessage].slice(-CHAT_MAX_MESSAGES);
+  const nextSession = {
+    ...session,
+    messages,
+    updatedAt: now,
+  };
+  await writeJsonAtomic(path, nextSession);
+  return { session: nextSession, message: nextMessage };
+}
+
+function telegramMessageMapPath() {
+  return join(chatRootDir(), 'telegram-message-map.json');
+}
+
+function telegramMessageMapKey(chatId, messageId) {
+  return `${String(chatId)}:${String(messageId)}`;
+}
+
+async function readTelegramMessageMap() {
+  return readJsonFile(telegramMessageMapPath(), { messages: {} });
+}
+
+async function rememberTelegramChatMessage(chatId, messageId, sessionId) {
+  if (!chatId || !messageId || !sessionId) return;
+  const map = await readTelegramMessageMap();
+  map.messages = map.messages || {};
+  map.messages[telegramMessageMapKey(chatId, messageId)] = {
+    sessionId,
+    updatedAt: nowIso(),
+  };
+  const entries = Object.entries(map.messages);
+  if (entries.length > 2000) {
+    map.messages = Object.fromEntries(entries.slice(-1500));
+  }
+  await mkdir(chatRootDir(), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(telegramMessageMapPath(), map);
+}
+
+async function sessionIdFromTelegramReply(message) {
+  const reply = message?.reply_to_message;
+  if (!reply?.message_id) return '';
+  const chatId = message.chat?.id || TELEGRAM_CHAT_ID;
+  const map = await readTelegramMessageMap();
+  const mapped = map.messages?.[telegramMessageMapKey(chatId, reply.message_id)]?.sessionId;
+  if (mapped) return mapped;
+  const fallback = String(reply.text || reply.caption || '').match(/\bsession:\s*(fc_[a-zA-Z0-9_-]{8,100})\b/i);
+  return fallback?.[1] || '';
+}
+
+function chatAdminMessage(session, message) {
+  const visitor = session.visitor || {};
+  const lines = [
+    'FairyTeller: сообщение с сайта',
+    `session: ${session.sessionId}`,
+  ];
+  if (visitor.pageUrl) lines.push(`page: ${visitor.pageUrl}`);
+  if (visitor.contact) lines.push(`contact: ${visitor.contact}`);
+  if (visitor.name) lines.push(`name: ${visitor.name}`);
+  lines.push('', message.text, '', 'Ответьте реплаем на это сообщение, и ответ появится в чате на сайте.');
+  return lines.join('\n');
+}
+
+async function notifyChatMessage(session, message) {
+  const response = await sendTelegramMessage(chatAdminMessage(session, message));
+  const messageId = response?.result?.message_id;
+  if (messageId) {
+    await rememberTelegramChatMessage(TELEGRAM_CHAT_ID, messageId, session.sessionId);
+  }
+}
+
+function hasTelegramWebhookAuth(req, url) {
+  if (!TELEGRAM_WEBHOOK_SECRET) {
+    return NODE_ENV !== 'production';
+  }
+  const headerSecret = req.headers['x-telegram-bot-api-secret-token'] || '';
+  return secretMatches(TELEGRAM_WEBHOOK_SECRET, headerSecret) || secretMatches(TELEGRAM_WEBHOOK_SECRET, url.searchParams.get('secret'));
+}
+
+function telegramReplyCommand(text) {
+  const match = String(text || '').match(/^\/reply(?:@\w+)?\s+(fc_[a-zA-Z0-9_-]{8,100})\s+([\s\S]+)$/i);
+  if (!match) return null;
+  return { sessionId: match[1], text: normalizeChatText(match[2]) };
+}
+
+async function handleTelegramChatMessage(message) {
+  const chatId = message?.chat?.id;
+  if (!chatId || String(chatId) !== String(TELEGRAM_CHAT_ID)) {
+    return { ok: true, ignored: true };
+  }
+
+  const text = String(message.text || message.caption || '').trim();
+  if (/^\/(start|help)(@\w+)?\b/i.test(text)) {
+    await sendTelegramMessage(
+      'Чат FairyTeller подключен. Чтобы ответить посетителю, ответьте реплаем на сообщение с сайта или используйте /reply <session> текст.',
+      { reply_to_message_id: message.message_id },
+    );
+    return { ok: true };
+  }
+
+  let sessionId = '';
+  let replyText = text;
+  const command = telegramReplyCommand(text);
+  if (command) {
+    sessionId = command.sessionId;
+    replyText = command.text;
+  } else {
+    sessionId = await sessionIdFromTelegramReply(message);
+  }
+
+  if (!sessionId || !replyText) {
+    await sendTelegramMessage(
+      'Не нашел чат для ответа. Ответьте реплаем на сообщение с сайта или напишите /reply <session> текст.',
+      { reply_to_message_id: message.message_id },
+    );
+    return { ok: true, ignored: true };
+  }
+
+  const safeSessionId = assertSafeChatSessionId(sessionId);
+  try {
+    await appendChatMessage(safeSessionId, {
+      role: 'operator',
+      text: normalizeChatText(replyText),
+      telegram: { chatId, messageId: message.message_id },
+    });
+  } catch (error) {
+    if (error.status === 404) {
+      await sendTelegramMessage(`Не нашел чат ${safeSessionId}. Возможно, сессия уже очищена.`, { reply_to_message_id: message.message_id });
+      return { ok: true, ignored: true };
+    }
+    throw error;
+  }
+  await sendTelegramMessage(`Ответ отправлен в чат ${safeSessionId}.`, { reply_to_message_id: message.message_id });
+  return { ok: true, sessionId: safeSessionId };
+}
+
+function telegramPollingStatePath() {
+  return join(chatRootDir(), 'telegram-polling-state.json');
+}
+
+async function readTelegramPollingOffset() {
+  const state = await readJsonFile(telegramPollingStatePath(), {});
+  return Number.isFinite(state?.offset) ? state.offset : 0;
+}
+
+async function writeTelegramPollingOffset(offset) {
+  await mkdir(chatRootDir(), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(telegramPollingStatePath(), { offset, updatedAt: nowIso() });
+}
+
+function wait(ms) {
+  return new Promise((resolvePromise) => {
+    setTimeout(resolvePromise, ms);
+  });
+}
+
+async function pollTelegramUpdates() {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.warn('Telegram polling skipped: bot token or chat id is missing.');
+    return;
+  }
+
+  let offset = await readTelegramPollingOffset();
+  console.log('Telegram polling enabled for Fairyteller chat.');
+
+  while (true) {
+    try {
+      const response = await callTelegramApi('getUpdates', {
+        offset: offset ? offset + 1 : undefined,
+        timeout: 25,
+        allowed_updates: ['message'],
+      }, 35_000);
+
+      if (!response?.ok || !Array.isArray(response.result)) {
+        await wait(5000);
+        continue;
+      }
+
+      for (const update of response.result) {
+        if (Number.isFinite(update.update_id)) {
+          offset = Math.max(offset, update.update_id);
+        }
+        if (update.message) {
+          await handleTelegramChatMessage(update.message);
+        }
+      }
+
+      if (response.result.length > 0) {
+        await writeTelegramPollingOffset(offset);
+      }
+    } catch (error) {
+      console.warn(`Telegram polling failed: ${error.message}`);
+      await wait(5000);
+    }
+  }
+}
+
+async function createChatMessage(req) {
+  enforceChatRateLimit(req);
+  const body = await readJsonBody(req);
+  const text = normalizeChatText(body.message || body.text);
+  const session = await createOrUpdateChatSession(body.sessionId, chatVisitorFromBody(body, req));
+  const result = await appendChatMessage(session.sessionId, {
+    role: 'visitor',
+    text,
+  });
+  await notifyChatMessage(result.session, result.message);
+  return sanitizePublicChatSession(result.session);
+}
+
+async function getChatMessages(sessionId) {
+  return sanitizePublicChatSession(await readChatSession(sessionId));
 }
 
 function escapeHtml(value) {
@@ -1131,6 +1514,27 @@ async function route(req, res) {
     return;
   }
 
+  if (method === 'POST' && url.pathname === '/api/fairyteller/chat/messages') {
+    sendJson(req, res, 201, { ok: true, ...(await createChatMessage(req)) });
+    return;
+  }
+
+  const chatMessagesMatch = url.pathname.match(/^\/api\/fairyteller\/chat\/sessions\/([^/]+)\/messages$/);
+  if (method === 'GET' && chatMessagesMatch) {
+    sendJson(req, res, 200, { ok: true, ...(await getChatMessages(chatMessagesMatch[1])) });
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/telegram/webhook') {
+    if (!hasTelegramWebhookAuth(req, url)) {
+      throw httpError(401, 'Unauthorized');
+    }
+    const update = await readJsonBody(req);
+    const result = update.message ? await handleTelegramChatMessage(update.message) : { ok: true, ignored: true };
+    sendJson(req, res, 200, result);
+    return;
+  }
+
   if (method === 'GET' && hasAdminBooksSecretPath(url.pathname)) {
     sendHtml(req, res, 200, renderBooksPage(await listGeneratedBooks(), { showLogout: false }));
     return;
@@ -1260,6 +1664,10 @@ async function main() {
     console.log(`fairyteller-api listening on :${PORT}`);
     console.log(`fairyteller data dir: ${DATA_DIR}`);
   });
+
+  if (TELEGRAM_POLLING_ENABLED) {
+    void pollTelegramUpdates();
+  }
 }
 
 main().catch(async (error) => {

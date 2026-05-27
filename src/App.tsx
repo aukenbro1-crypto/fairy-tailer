@@ -4,10 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import FairytellerChat from "./components/FairytellerChat";
 
 // Lazy load pages for better performance
-const Landing = lazy(() => import("./pages/Landing"));
-const Index = lazy(() => import("./pages/Index"));
 const Print = lazy(() => import("./pages/Print"));
 const Romantic = lazy(() => import("./pages/Romantic"));
 const Indian = lazy(() => import("./pages/Indian"));
@@ -21,13 +20,14 @@ const March8 = lazy(() => import("./pages/March8"));
 const BookPreview = lazy(() => import("./pages/BookPreview"));
 const NarutoStory = lazy(() => import("./pages/NarutoStory"));
 const Wizard = lazy(() => import("./pages/Wizard"));
+const DesignTest = lazy(() => import("./pages/DesignTest"));
+const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
 
 const queryClient = new QueryClient();
 
-// Loading fallback component
 const PageLoader = () => (
-  <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] flex items-center justify-center">
-    <div className="w-12 h-12 border-4 border-[#E89C31]/30 border-t-[#E89C31] rounded-full animate-spin" />
+  <div className="flex min-h-screen items-center justify-center bg-white">
+    <div className="h-10 w-10 animate-spin border-2 border-black border-t-transparent" />
   </div>
 );
 
@@ -39,8 +39,9 @@ const App = () => (
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/create" element={<Index />} />
+            <Route path="/" element={<DesignTest />} />
+            <Route path="/create" element={<DesignTest />} />
+            <Route path="/podarok/dlya-pary" element={<CoupleGiftLanding />} />
             <Route path="/print" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
             <Route path="/indian" element={<Indian />} />
@@ -53,10 +54,12 @@ const App = () => (
             <Route path="/book-preview" element={<BookPreview />} />
             <Route path="/naruto-story" element={<NarutoStory />} />
             <Route path="/wizard" element={<Wizard />} />
+            <Route path="/design-test" element={<DesignTest />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <FairytellerChat />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

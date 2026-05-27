@@ -1,6 +1,16 @@
 import { useParams, Link, Navigate } from "react-router-dom";
+import { BookOpen, ChevronLeft, ChevronRight, Home } from "lucide-react";
+
 import { getBlogPostsByTag } from "@/data/blogPosts";
-import BlogHeader from "@/components/BlogHeader";
+import SEO from "@/components/SEO";
+import logoImage from "@/assets/logo.png";
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 const BlogTag = () => {
   const { tag } = useParams<{ tag: string }>();
@@ -10,42 +20,117 @@ const BlogTag = () => {
   if (!tag || posts.length === 0) return <Navigate to="/blog" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] font-serif">
-      <BlogHeader />
+    <div
+      className="journal-page min-h-screen overflow-x-hidden bg-white text-black"
+      style={{ fontFamily: '"Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif' }}
+    >
+      <SEO
+        title={`Материалы про ${decodedTag} — журнал Fairyteller`}
+        description={`Подборка статей Fairyteller по теме «${decodedTag}»: идеи подарков, персональные книги и поводы для личных историй.`}
+        path={`/blog/tag/${encodeURIComponent(decodedTag)}`}
+      />
+      <style>
+        {`
+          .journal-page h1,
+          .journal-page h2,
+          .journal-page h3 {
+            color: #E89C31;
+            font-family: "Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif;
+            letter-spacing: inherit;
+            text-shadow: none;
+          }
 
-      <main className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-4 text-[#E89C31]">
-          #{decodedTag}
-        </h1>
-        <p className="text-center text-[#DBA858]/60 mb-12">
-          <Link to="/blog" className="hover:text-[#E89C31] transition-colors">← Все статьи</Link>
-        </p>
+          .journal-page,
+          .journal-page * {
+            min-width: 0;
+            box-sizing: border-box;
+          }
+        `}
+      </style>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {posts.map((post) => (
-            <Link key={post.slug} to={`/blog/${post.slug}`} className="group">
-              <article className="bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl overflow-hidden shadow-lg shadow-[#E89C31]/10 hover:shadow-xl hover:shadow-[#E89C31]/20 transition-all duration-500 h-full flex flex-col">
-                <div className="aspect-[16/10] overflow-hidden">
-                  <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
-                </div>
-                <div className="p-6 flex flex-col flex-1">
-                  <h2 className="text-xl font-bold text-[#E89C31] mb-2 group-hover:text-[#DBA858] transition-colors line-clamp-2">{post.title}</h2>
-                  <p className="text-[#DBA858]/70 text-sm mb-4 flex-1 line-clamp-3">{post.description}</p>
-                  <time className="text-xs text-[#DBA858]/50" dateTime={post.date}>
-                    {new Date(post.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
-                  </time>
-                </div>
-              </article>
+      <div className="border-b border-black bg-black px-5 py-2 text-center text-[11px] font-bold uppercase leading-4 tracking-[0.18em] text-white md:px-8">
+        <span className="hidden sm:inline">Журнал Fairyteller - подборка по рубрике</span>
+        <span className="sm:hidden">Журнал Fairyteller</span>
+      </div>
+
+      <header className="sticky top-0 z-50 border-b border-black bg-white">
+        <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-5 md:px-8">
+          <Link to="/" aria-label="FairyTeller">
+            <img src={logoImage} alt="FairyTeller" className="h-10 w-auto object-contain" />
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="hidden h-10 w-10 items-center justify-center border border-black bg-white text-black transition hover:bg-black hover:text-white sm:inline-flex"
+              aria-label="На главную"
+            >
+              <Home className="h-4 w-4" />
             </Link>
-          ))}
+            <Link
+              to="/create"
+              className="hidden h-10 shrink-0 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black sm:inline-flex"
+              aria-label="Создать книгу"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Создать книгу</span>
+            </Link>
+          </div>
         </div>
-      </main>
+      </header>
 
-      <footer className="bg-[#031B28] border-t border-[#E89C31]/20 py-10">
-        <div className="container mx-auto px-4 text-center text-[#DBA858]">
-          <p className="text-lg">© 2026 FairyTeller. Создаем персональные истории с любовью.</p>
-        </div>
-      </footer>
+      <main>
+        <section className="border-b border-black px-5 py-12 md:px-8 md:py-16">
+          <div className="mx-auto max-w-[1480px]">
+            <Link
+              to="/blog"
+              className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-black hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Все материалы
+            </Link>
+            <p className="mt-10 text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
+              Рубрика
+            </p>
+            <h1 className="mt-5 max-w-[920px] text-[52px] font-black uppercase leading-[0.9] tracking-[-0.03em] md:text-[104px]">
+              {decodedTag}
+            </h1>
+          </div>
+        </section>
+
+        <section className="bg-[#f5f5f5] px-5 py-10 md:px-8 md:py-14">
+          <div className="mx-auto grid max-w-[1480px] border-l border-t border-black md:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <Link key={post.slug} to={`/blog/${post.slug}`} className="group border-b border-r border-black bg-white">
+                <article className="flex h-full flex-col">
+                  <img
+                    src={post.coverImage}
+                    alt={post.title}
+                    className="aspect-[4/3] w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="flex flex-1 flex-col p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#5e6264]">
+                      {formatDate(post.date)}
+                    </p>
+                    <h2 className="mt-4 text-[28px] font-black uppercase leading-[0.94] tracking-[-0.02em]">
+                      {post.title}
+                    </h2>
+                    <p className="mt-4 line-clamp-4 text-[15px] leading-7 text-[#5e6264]">
+                      {post.description}
+                    </p>
+                    <span className="mt-6 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-black group-hover:underline">
+                      Читать
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

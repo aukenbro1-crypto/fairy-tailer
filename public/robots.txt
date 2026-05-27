@@ -1,7 +1,17 @@
 User-agent: Googlebot
 Allow: /
 
+User-agent: Yandex
+Allow: /
+Clean-param: codex&codexSmoke&status&utm_source&utm_medium&utm_campaign&utm_content&utm_term
+
 User-agent: Bingbot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
 Allow: /
 
 User-agent: Twitterbot

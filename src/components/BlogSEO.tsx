@@ -70,8 +70,7 @@ const BlogSEO = ({ post, isList, posts }: BlogSEOProps) => {
 };
 
 function setMeta(name: string, content: string) {
-  const isOg = name.startsWith("og:") || name.startsWith("twitter:");
-  const attr = isOg ? "property" : "name";
+  const attr = name.startsWith("og:") ? "property" : "name";
   let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
@@ -82,13 +81,13 @@ function setMeta(name: string, content: string) {
 }
 
 function setCanonical(href: string) {
-  let el = document.querySelector('link[data-blog-canonical]') as HTMLLinkElement | null;
+  let el = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (!el) {
     el = document.createElement("link");
     el.rel = "canonical";
-    el.setAttribute("data-blog-canonical", "true");
     document.head.appendChild(el);
   }
+  el.setAttribute("data-blog-canonical", "true");
   el.href = href;
 }
 
