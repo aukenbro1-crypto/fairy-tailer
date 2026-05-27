@@ -1403,6 +1403,7 @@ const DesignTest = () => {
                 to={item.href}
                 className="group flex min-h-[230px] flex-col border-b border-r border-black bg-white p-5 text-left transition hover:bg-[#fae7e1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-black"
                 aria-label={`Создать книгу: ${item.title.toLowerCase()}`}
+                data-fairyteller-occasion-link={item.href}
               >
                 <div className="flex items-start justify-between gap-4">
                   <h3 className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
