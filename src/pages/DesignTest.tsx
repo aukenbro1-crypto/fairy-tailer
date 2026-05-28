@@ -10,7 +10,6 @@ import {
   Menu,
   PackageCheck,
   Plus,
-  Search,
   ShoppingBag,
   Sparkles,
   X,
@@ -151,9 +150,9 @@ const process = [
 ];
 
 const heroMetrics = [
-  ["3 минуты", "Создание истории"],
-  ["1 день", "Печать после оплаты"],
-  ["40 страниц", "5 иллюстрированных глав"],
+  ["От 2-х дней", "Доставка по РФ"],
+  ["40 страниц", "Полная история"],
+  ["5 глав", "С иллюстрациями"],
 ];
 
 const heroImages = [
@@ -862,7 +861,7 @@ const DesignTest = () => {
 
           <nav className="hidden items-center gap-8 text-[13px] font-bold uppercase tracking-[0.05em] md:flex">
             <a href="#process" className="hover:underline">
-              Как работает
+              Как это работает
             </a>
             <a href="#create" className="hover:underline">
               Создать
@@ -870,9 +869,6 @@ const DesignTest = () => {
             <a href="#examples" className="hover:underline">
               Примеры
             </a>
-            <Link to="/podarok/dlya-pary" className="hover:underline">
-              Для пары
-            </Link>
             <a href="#faq" className="hover:underline">
               FAQ
             </a>
@@ -882,13 +878,6 @@ const DesignTest = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            <a
-              href="#examples"
-              className="hidden h-10 w-10 items-center justify-center border border-black bg-white text-black transition hover:bg-black hover:text-white sm:inline-flex"
-              aria-label="Смотреть примеры книг"
-            >
-              <Search className="h-4 w-4" />
-            </a>
             <a
               href="#create"
               className="inline-flex h-10 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black"
@@ -1009,7 +998,7 @@ const DesignTest = () => {
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
-              Мир, место действия, артефакт, герои, фото, стиль иллюстраций и email: это тот же сценарий старого конструктора, но в более спокойной книжной подаче.
+              Мир, место действия, артефакт, герои, фото, стиль иллюстраций и email — введите необходимую информацию и через несколько минут история будет готова. Чем больше подробностей вы укажете — тем интереснее получится текст.
             </p>
           </div>
 
