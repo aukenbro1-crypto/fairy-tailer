@@ -1,0 +1,249 @@
+{
+  "updatedAt": "2026-05-23T05:24:51.346Z",
+  "createdAt": "2026-05-23T04:37:22.635Z",
+  "id": "XAaFdi6hJjnQFiAQ",
+  "name": "fairyteller_render_publish",
+  "description": "Updates render-stage job status, writes render.json with print-shop specs, and marks the placeholder job complete until the PDF renderer is integrated.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "068057a4-afe3-40b1-8e65-98beb20cdcd6",
+      "name": "Render Publish Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"jobId\":\"ft_example\",\"order\":{\"email\":\"reader@example.com\"},\"text\":{},\"visuals\":{}}"
+      }
+    },
+    {
+      "id": "92077dbe-9299-427a-a6b5-690d4652b33b",
+      "name": "Mark Rendering",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        540,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": {
+          "status": "rendering",
+          "stage": "render",
+          "progress": 85,
+          "message": "Верстаем PDF для печати"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "0af716c0-8664-4e11-bd5d-f9a114d9725a",
+      "name": "Build Render Contract Placeholder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $('Render Publish Input').first().json;\nconst jobId = item.jobId || `ft_${Date.now()}`;\nconst printSpec = {\n  pdfVersion: '1.7',\n  colorSpace: 'RGB',\n  fonts: 'embedded',\n  protection: 'none',\n  totalPages: 41,\n  coverSpread: { page: 1, widthMm: 268.5, heightMm: 136.0 },\n  interiorPages: { from: 2, to: 41, widthMm: 136.0, heightMm: 136.0 },\n};\nconst outputs = [\n  { name: 'cover.pdf', type: 'print_cover', status: 'planned_stub', pageSizeMm: [268.5, 136.0] },\n  { name: 'interior.pdf', type: 'print_interior', status: 'planned_stub', pageSizeMm: [136.0, 136.0] },\n  { name: 'customer-preview.pdf', type: 'customer_preview', status: 'planned_stub' },\n];\nreturn [{\n  json: {\n    ...item,\n    jobId,\n    status: 'render_ready_stub',\n    render: {\n      printSpec,\n      engine: 'html-css-playwright-planned',\n      outputs,\n      preflight: {\n        required: true,\n        checks: ['pdf_version', 'embedded_fonts', 'rgb_color_space', 'no_pdf_protection', 'page_count', 'page_size', 'image_resolution', 'text_overflow'],\n      },\n    },\n  },\n  binary: $('Render Publish Input').first().binary,\n}];"
+      }
+    },
+    {
+      "id": "997f35f3-addb-468f-b81b-0280f121dc92",
+      "name": "Write Render Artifact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1140,
+        300
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $json.jobId + \"/artifacts/render.json\" }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { jobId: $json.jobId, status: $json.status, render: $json.render } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "91086fba-71b4-4e2d-9a39-1fa6ba6e3552",
+      "name": "Mark Done Stub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Build Render Contract Placeholder\").item.json.jobId }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.FAIRYTELLER_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: \"done\", stage: \"complete\", progress: 100, message: \"Макет подготовлен\", artifacts: $(\"Build Render Contract Placeholder\").item.json.render.outputs, render: $(\"Build Render Contract Placeholder\").item.json.render } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Render Publish Input": {
+      "main": [
+        [
+          {
+            "node": "Mark Rendering",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Rendering": {
+      "main": [
+        [
+          {
+            "node": "Build Render Contract Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Render Contract Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Write Render Artifact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Render Artifact": {
+      "main": [
+        [
+          {
+            "node": "Mark Done Stub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "aiBuilderAssisted": true
+  },
+  "pinData": {},
+  "versionId": "7502c490-63dd-455f-8f9e-d7fd8eebfb99",
+  "activeVersionId": "7502c490-63dd-455f-8f9e-d7fd8eebfb99",
+  "versionCounter": 52,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-05-23T04:37:22.638Z",
+      "createdAt": "2026-05-23T04:37:22.638Z",
+      "role": "workflow:owner",
+      "workflowId": "XAaFdi6hJjnQFiAQ",
+      "projectId": "yjU1WlmpOKrWZ5oA",
+      "project": {
+        "updatedAt": "2026-04-01T13:13:29.434Z",
+        "createdAt": "2026-04-01T12:58:08.424Z",
+        "id": "yjU1WlmpOKrWZ5oA",
+        "name": "Nikita Such <aukenbro1@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

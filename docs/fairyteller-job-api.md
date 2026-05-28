@@ -9,7 +9,7 @@ It is intentionally small and dependency-free:
 - append-only event log
 - authenticated mutations
 - public status without email or full order details
-- local lead capture in `leads.jsonl` when an email is provided
+- local lead capture in `leads.jsonl` when an email is provided, plus protected deduplicated email-list and CSV views
 - optional Telegram operations notifications from server-side environment variables
 - optional customer completion email through Resend-compatible environment variables
 
@@ -52,6 +52,7 @@ Authorization: Bearer <token>
     preview.pdf
     cover.pdf
     interior.pdf
+/data/fairyteller/leads.jsonl
 ```
 
 ## Notifications and Mail
@@ -67,7 +68,15 @@ The API never stores notification secrets in the repo. Configure them on the ser
 
 Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
 
-If mail is not configured, generation still succeeds and `artifacts/email.json` records `mail_provider_not_configured`.
+The customer email template references small public product-example images from `/images/email/`. If mail is not configured, generation still succeeds and `artifacts/email.json` records `mail_provider_not_configured`.
+
+## Protected Operator Views
+
+- `GET /api/fairyteller/books` lists generated PDF artifacts after operator login.
+- `GET /api/fairyteller/books/leads` shows a protected deduplicated email database built from `leads.jsonl`.
+- `GET /api/fairyteller/books/leads.csv` downloads the same email database as CSV.
+
+The email database is populated automatically when `POST /api/fairyteller/jobs` receives an order with a valid `email`.
 
 ## Endpoints
 

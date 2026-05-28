@@ -1,0 +1,210 @@
+{
+  "updatedAt": "2026-04-23T10:44:58.065Z",
+  "createdAt": "2026-04-12T02:43:14.506Z",
+  "id": "W6VdaoODKOSA3goV",
+  "name": "Baku Media Proofreader",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "baku-media-proofreader",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b9b7b34c-116d-4a55-9d9c-3b9dfc51d1d1",
+      "name": "Webhook - Proofreader Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        224,
+        432
+      ],
+      "webhookId": "baku-media-proofreader"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $json.body && typeof $json.body === 'object' ? $json.body : $json;\n\nconst asString = (value) => (value ?? '').toString();\nconst asBoolean = (value, fallback = true) => {\n  if (typeof value === 'boolean') return value;\n  if (typeof value === 'string') return !['false', '0', 'no'].includes(value.toLowerCase().trim());\n  return fallback;\n};\nconst asArray = (value) => Array.isArray(value) ? value : [];\n\nconst input = {\n  sessionId: asString(source.sessionId || source.session_id),\n  userId: asString(source.userId || source.user_id),\n  fileName: asString(source.fileName || source.file_name || 'manuscript.txt'),\n  originalText: asString(source.originalText || source.original_text || source.text),\n  serverCorrectedText: asString(source.serverCorrectedText || source.server_corrected_text || source.text),\n  includeChanges: asBoolean(source.includeChanges ?? source.include_changes, true),\n  styleConfigId: asString(source.styleConfigId || source.style_config_id || 'baku-media-general-style'),\n  styleRules: asArray(source.styleRules || source.style_rules),\n  serverChanges: asArray(source.serverChanges || source.server_changes),\n  serverSuggestions: asArray(source.serverSuggestions || source.server_suggestions),\n  socialFootnote: asString(source.socialFootnote || source.social_footnote),\n  glossary: asArray(source.glossary),\n  editorNotes: asString(source.editorNotes || source.editor_notes),\n};\n\nif (!input.originalText.trim() && !input.serverCorrectedText.trim()) {\n  throw new Error('text, originalText, or serverCorrectedText is required');\n}\n\nconst rulesForPrompt = input.styleRules.map((rule) => ({\n  id: rule.id,\n  title: rule.title,\n  category: rule.category,\n  mode: rule.mode,\n  description: rule.description,\n  examples: rule.examples,\n  note: rule.note,\n}));\n\nreturn [{ json: { input: { ...input, styleRules: rulesForPrompt } } }];"
+      },
+      "id": "1c9e8eb0-a665-4ca3-a070-a8e5578dca02",
+      "name": "Normalize Proofreader Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { input } = $json;\n\nconst styleRulesText = input.styleRules.length\n  ? input.styleRules.map((rule, index) => {\n      const examples = Array.isArray(rule.examples) && rule.examples.length\n        ? `\\n  Примеры: ${rule.examples.map((item) => `${item.before} -> ${item.after}`).join('; ')}`\n        : '';\n      const note = rule.note ? `\\n  Примечание: ${rule.note}` : '';\n      return `${index + 1}. [${rule.mode}] ${rule.title} (${rule.id})\\n  ${rule.description}${examples}${note}`;\n    }).join('\\n\\n')\n  : 'Backend не передал styleRules. Используй только общую корректуру и не меняй редакционные стандарты самовольно.';\n\nconst serverChangesText = input.serverChanges.length\n  ? input.serverChanges.map((item) => `- ${item.title || item.ruleId}: ${item.count || 0}`).join('\\n')\n  : '- нет автоматических правок от backend';\n\nconst serverSuggestionsText = input.serverSuggestions.length\n  ? input.serverSuggestions.map((item) => `- ${item.title || item.ruleId}: ${item.message || ''}`).join('\\n')\n  : '- нет подсказок от backend';\n\nconst glossaryText = input.glossary.length\n  ? JSON.stringify(input.glossary, null, 2)\n  : '[]';\n\nconst outputSchema = {\n  correctedText: 'финальный вычитанный текст',\n  changes: [\n    {\n      type: 'grammar|typo|punctuation|style_rule|legal_marking|other',\n      description: 'короткое описание изменения',\n      before: 'фрагмент до правки, если уместно',\n      after: 'фрагмент после правки, если уместно',\n      ruleId: 'id правила, если применимо'\n    }\n  ],\n  warnings: [\n    {\n      type: 'name_variant|yo|date|century|azerbaijani_term|ambiguous|other',\n      message: 'что нужно проверить человеку',\n      fragment: 'фрагмент текста, если есть'\n    }\n  ],\n  notesForEditor: 'одно-два предложения о важных рисках или пустая строка'\n};\n\nconst prompt = `Ты — серверный корректор журнала Baku Media. Работаешь после первого backend-слоя, который уже применил жесткие типографские правила.\n\nГлавная задача:\n- исправить ошибки, опечатки, согласование, очевидную пунктуацию;\n- привести текст к переданным редакционным правилам;\n- исправлять явные орфографические ошибки в общеупотребительных словах автоматически;\n- исправлять грамматические ошибки и нарушения согласования автоматически, если правильный вариант очевиден;\n- доводить фразу до нормативной формы целиком, а не ограничиваться частичной заменой одного элемента;\n- НЕ переписывать авторский стиль без необходимости;\n- НЕ менять имена собственные, азербайджанские топонимы и реалии по догадке;\n- НЕ применять правила mode=suggest к тексту, только warnings;\n- спорные варианты выносить в warnings, а не исправлять самовольно;\n- не удалять юридические сноски и маркировки.\n\nКак использовать правила:\n- Правила с mode=auto можно применять, если это не ломает цитату, имя собственное или смысл.\n- Правила с mode=suggest НЕЛЬЗЯ применять к correctedText. Даже если suggested-вариант кажется очевидным, оставь текст как есть и добавь warning. Это жесткое ограничение.\n- Backend передает правила в каждом запросе. Считай их единственным актуальным источником редакционного стандарта.\n- Если в тексте есть обычная опечатка или орфографическая ошибка, например в общеупотребительном слове или форме глагола, исправляй ее в correctedText и добавляй в changes.\n- Если после редакционной или типографической правки фраза остается грамматически неправильной, доведи ее до нормативной формы автоматически.\n- Если ты меняешь числовое обозначение века на римское, обязательно проверь грамматику всей конструкции целиком.\n- Исправляй не только запись века, но и форму слова по контексту: например, «в 19 век» -> «в XIX веке», а не «в XIX век».\n- Если правильная грамматическая форма очевидна, не выноси такой случай в warnings.\n- НЕ оставляй явные опечатки в correctedText ради демонстрации ошибки, примера, теста или близости к исходнику.\n- НЕ пиши в warnings, что ошибка сохранена как в исходнике, оставлена для примера или требует ручной проверки, если это обычная орфографическая или грамматическая ошибка.\n- В warnings выноси только спорные имена собственные, неоднозначные топонимы, сомнительные смысловые случаи и то, что действительно требует решения редактора.\n- Ошибки вроде «объеденили», «прийдут», «прейдут» и другие обычные орфографические ошибки не требуют ручной проверки и должны исправляться автоматически.\n- Конструкции вроде «в 14 век», «в 19 век» и аналогичные случаи после нормализации века не требуют ручной проверки, если по контексту очевидно, что нужно «в XIV веке», «в XIX веке».\n- Если упоминаются Facebook или Instagram, приводи их к единому каноническому написанию: Facebook* и Instagram*.\n- Не оставляй варианты вроде facebook, instagram, FACEBOOK, INSTAGRAM, если нет специальной причины сохранить регистр исходника.\n- Если юридическая маркировка требуется, применяй ее сразу к канонической форме: Facebook* и Instagram*.\n\nКак распределять результат:\n- changes: орфография, пунктуация, грамматика, типографика, редакционные автоисправления;\n- warnings: только неоднозначности, а не обычные ошибки.\n\nРедакционные правила от backend (${input.styleConfigId}):\n${styleRulesText}\n\nАвтоматические правки, уже сделанные backend:\n${serverChangesText}\n\nПодсказки backend для ручной проверки:\n${serverSuggestionsText}\n\nРедакционный словарь / glossary, если передан:\n${glossaryText}\n\nДополнительные пожелания редактора:\n${input.editorNotes || 'нет'}\n\nИсходный текст до backend-правок:\n${input.originalText}\n\nТекст после backend-правок, с ним нужно работать как с основной версией:\n${input.serverCorrectedText}\n\nВерни строго валидный JSON без markdown, без code fence, без комментариев. Схема ответа:\n${JSON.stringify(outputSchema, null, 2)}`;\n\nreturn [{ json: { ...$json, openAiPrompt: prompt } }];"
+      },
+      "id": "5e679fb7-fc74-4a1f-bd63-c9ae27159cab",
+      "name": "Build Proofreader Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.openAiPrompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "313329bb-f44e-4545-aec4-8d54daf0531c",
+      "name": "OpenAI - Proofread With Rules",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        432
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $('Build Proofreader Prompt').first().json;\nconst response = $input.first().json;\n\nconst extractText = (payload) => {\n  if (!payload) return '';\n  if (typeof payload.output_text === 'string') return payload.output_text.trim();\n  if (typeof payload.text === 'string') return payload.text.trim();\n  if (typeof payload.content === 'string') return payload.content.trim();\n  if (typeof payload.message?.content === 'string') return payload.message.content.trim();\n  if (Array.isArray(payload.output)) {\n    const chunks = payload.output\n      .flatMap((entry) => Array.isArray(entry.content) ? entry.content : [])\n      .map((entry) => entry.text || entry.output_text || '')\n      .filter(Boolean);\n    if (chunks.length) return chunks.join('\\n').trim();\n  }\n  if (Array.isArray(payload.choices)) {\n    const content = payload.choices[0]?.message?.content;\n    if (typeof content === 'string') return content.trim();\n  }\n  return '';\n};\n\nconst stripFence = (text) => text\n  .replace(/^```json\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/```$/i, '')\n  .trim();\n\nconst safeParse = (text) => {\n  const cleaned = stripFence(text);\n  try {\n    return JSON.parse(cleaned);\n  } catch (error) {\n    return {\n      correctedText: cleaned || previous.input.serverCorrectedText,\n      changes: [],\n      warnings: [{ type: 'parse_error', message: 'OpenAI returned non-JSON output; workflow used raw text fallback.', fragment: '' }],\n      notesForEditor: 'Ответ модели не удалось распарсить как JSON.'\n    };\n  }\n};\n\nconst parsed = safeParse(extractText(response));\nconst correctedText = typeof parsed.correctedText === 'string' && parsed.correctedText.trim()\n  ? parsed.correctedText.trim()\n  : previous.input.serverCorrectedText;\n\nconst changes = Array.isArray(parsed.changes) ? parsed.changes : [];\nconst warnings = Array.isArray(parsed.warnings) ? parsed.warnings : [];\nconst notesForEditor = typeof parsed.notesForEditor === 'string' ? parsed.notesForEditor : '';\n\nreturn [{\n  json: {\n    ok: true,\n    provider: 'n8n-native-openai',\n    sessionId: previous.input.sessionId,\n    userId: previous.input.userId,\n    fileName: previous.input.fileName,\n    correctedText,\n    changes,\n    warnings,\n    notesForEditor,\n    rawModelResponse: extractText(response),\n  },\n}];"
+      },
+      "id": "2c95492e-7f5a-49b3-9ac4-bcb421be2cfd",
+      "name": "Parse Proofreader Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "0aa30551-473c-4653-88a9-db039f853e24",
+      "name": "Respond To Backend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        432
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Proofreader Input": {
+      "main": [
+        [
+          {
+            "node": "Normalize Proofreader Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Proofreader Payload": {
+      "main": [
+        [
+          {
+            "node": "Build Proofreader Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Proofreader Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Proofread With Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Proofread With Rules": {
+      "main": [
+        [
+          {
+            "node": "Parse Proofreader Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Proofreader Response": {
+      "main": [
+        [
+          {
+            "node": "Respond To Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "baku-media-proofreader-blueprint"
+  },
+  "pinData": {},
+  "versionId": "ecc3c3fe-a76b-4f1d-9758-d886f13787e9",
+  "activeVersionId": "ecc3c3fe-a76b-4f1d-9758-d886f13787e9",
+  "versionCounter": 181,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-04-12T02:29:52.551Z",
+      "createdAt": "2026-04-12T02:29:52.551Z",
+      "role": "workflow:owner",
+      "workflowId": "W6VdaoODKOSA3goV",
+      "projectId": "yjU1WlmpOKrWZ5oA",
+      "project": {
+        "updatedAt": "2026-04-01T13:13:29.434Z",
+        "createdAt": "2026-04-01T12:58:08.424Z",
+        "id": "yjU1WlmpOKrWZ5oA",
+        "name": "Nikita Such <aukenbro1@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version ecc3c3fe",
+    "description": ""
+  }
+}

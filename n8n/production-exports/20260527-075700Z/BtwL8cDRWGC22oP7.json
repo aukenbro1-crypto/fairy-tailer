@@ -1,0 +1,416 @@
+{
+  "updatedAt": "2026-04-03T07:29:25.771Z",
+  "createdAt": "2026-04-01T13:15:05.933Z",
+  "id": "BtwL8cDRWGC22oP7",
+  "name": "BAKU Site Transcriber",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "baku-site-transcriber",
+        "options": {}
+      },
+      "id": "77f4275b-891f-4c5b-9dba-2cc0a130659f",
+      "name": "Incoming Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -144
+      ],
+      "webhookId": "baku-site-transcriber"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Incoming Webhook').first().json.body.fileUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "a008c794-99e3-49db-8767-d88d25ca5ac6",
+      "name": "Download Literal File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Incoming Webhook').first().json.body;\nconst transcript = $input.first().json.text || '';\n\nreturn [{\n  json: {\n    sessionId: source.sessionId,\n    userId: source.userId,\n    fileName: source.fileName,\n    mimeType: source.mimeType,\n    size: source.size,\n    mode: source.mode,\n    callbackUrl: source.callbackUrl,\n    callbackSecret: source.callbackSecret,\n    rawTranscript: transcript,\n    processedText: transcript,\n    status: 'completed',\n  },\n}];\n"
+      },
+      "id": "f81c2b13-edf7-43b6-b5af-da85064d42a5",
+      "name": "Build Raw Callback Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-make-secret",
+              "value": "={{ $json.callbackSecret }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ sessionId: $json.sessionId, userId: $json.userId, fileName: $json.fileName, mimeType: $json.mimeType, size: $json.size, mode: $json.mode, rawTranscript: $json.rawTranscript, processedText: $json.processedText, status: $json.status }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "5ee3e1d4-69bc-4eb0-9a45-13ad99931aae",
+      "name": "Callback Raw Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Incoming Webhook').first().json.body.fileUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "c9b0686b-b78e-4cb9-8455-f677419b8bd5",
+      "name": "Download Clean File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Incoming Webhook').first().json.body;\nconst rawTranscript = $('Transcribe a recording1').first().json.text || '';\nconst editorResponse = $input.first().json;\n\nconst extractResponseText = (payload) => {\n  if (!payload) return '';\n\n  if (typeof payload.output_text === 'string' && payload.output_text.trim()) {\n    return payload.output_text.trim();\n  }\n\n  if (Array.isArray(payload.output)) {\n    const chunks = payload.output\n      .flatMap((entry) => Array.isArray(entry.content) ? entry.content : [])\n      .map((entry) => entry.text || entry.output_text || '')\n      .filter(Boolean);\n\n    if (chunks.length) return chunks.join('\\n').trim();\n  }\n\n  if (Array.isArray(payload.choices)) {\n    const choice = payload.choices[0];\n    const content = choice?.message?.content;\n\n    if (typeof content === 'string') return content.trim();\n\n    if (Array.isArray(content)) {\n      const chunks = content.map((entry) => entry.text || '').filter(Boolean);\n      if (chunks.length) return chunks.join('\\n').trim();\n    }\n  }\n\n  if (typeof payload.text === 'string') {\n    return payload.text.trim();\n  }\n\n  return '';\n};\n\nreturn [{\n  json: {\n    sessionId: source.sessionId,\n    userId: source.userId,\n    fileName: source.fileName,\n    mimeType: source.mimeType,\n    size: source.size,\n    mode: source.mode,\n    callbackUrl: source.callbackUrl,\n    callbackSecret: source.callbackSecret,\n    rawTranscript,\n    processedText: extractResponseText(editorResponse),\n    status: 'completed',\n  },\n}];\n\n"
+      },
+      "id": "2614fd1e-51d9-4cc3-85d8-b74b21350167",
+      "name": "Build Clean Callback Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-make-secret",
+              "value": "={{ $json.callbackSecret }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ sessionId: $json.sessionId, userId: $json.userId, fileName: $json.fileName, mimeType: $json.mimeType, size: $json.size, mode: $json.mode, rawTranscript: $json.rawTranscript, processedText: $json.processedText, status: $json.status }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "8beebf0e-1e7b-4419-ad6d-457bb5d0d3b2",
+      "name": "Callback Clean Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1664,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "24b68a05-b952-47e5-b159-f366acd71774",
+              "leftValue": "={{ $json.body.mode }}",
+              "rightValue": "=literal",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "b05369b8-58da-478d-bc2d-fbf4e74d072a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        -240
+      ],
+      "id": "50112ffa-f00e-45c2-807c-74533635f898",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        -48
+      ],
+      "id": "0ad6e410-725d-4622-a402-d2620313ffec",
+      "name": "Transcribe a recording1",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Ты — опытный редактор  интервью для премиального культурного журнала с дипломатичной интонацией.  Задача: Перед тобой расшифровка интервью. Нужно провести первичную обработку текста, которую возьмет в работу живой редактор. Структурируй текст в формате «вопрос — ответ».  Если в расшифровке участвуют несколько спикеров, называй их: ГЕРОЙ 1, ГЕРОЙ 2, ГЕРОЙ 3 и так далее.  Правила: 1. Итоговый текст должен быть близок к исходнику по объему — примерно 90–95% от исходного текста. Сокращай только явные повторы, междометия, сбивки, технический мусор и очевидно лишние фрагменты. 2. Ничего не придумывай и не добавляй от себя. Не подменяй живую речь пересказом. 3. Сохраняй ход мысли героя, даже если он говорит не идеально линейно. 4. Сохраняй характерные формулировки и живые повороты фразы, если они отражают интонацию, нюанс или способ мышления героя. 5. Явные вопросы сокращай до одной четкой формулировки. 6. Если вопрос в расшифровке размыт, восстанови его бережно и минимально, не добавляя нового смысла. 7. Порядок тем не меняй. 8. Делай текст читабельным, но не превращай ответы в сухое резюме. 9. Не сжимай ответ до короткого тезиса, если в исходнике в нем есть развитие мысли, примеры или нюансы. 10. Не используй HTML и Markdown. 11. Вопросы начинай с префикса: ВОПРОС: 12. Ответы начинай с префикса: ОТВЕТ: 13. Если есть несколько спикеров, обозначай их в начале ответа так: [ГЕРОЙ 1], [ГЕРОЙ 2]. 14. Каждый новый вопрос и каждый новый ответ начинай с новой строки. 15. На выходе верни только финальный текст интервью, без комментариев, пояснений и служебных пометок.  Вот текст расшифровки интервью: {{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1088,
+        -48
+      ],
+      "id": "0720fcbd-9449-4ded-b836-2c8e681ef273",
+      "name": "Transcribe Clean",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Incoming Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Literal File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Raw Callback Payload": {
+      "main": [
+        [
+          {
+            "node": "Callback Raw Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Clean File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clean Callback Payload": {
+      "main": [
+        [
+          {
+            "node": "Callback Clean Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download Literal File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Clean File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Build Raw Callback Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Clean",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Clean": {
+      "main": [
+        [
+          {
+            "node": "Build Clean Callback Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "90ca7de2-a185-40d7-8779-6f613390d979",
+  "activeVersionId": "90ca7de2-a185-40d7-8779-6f613390d979",
+  "versionCounter": 223,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-04-01T13:15:05.937Z",
+      "createdAt": "2026-04-01T13:15:05.937Z",
+      "role": "workflow:owner",
+      "workflowId": "BtwL8cDRWGC22oP7",
+      "projectId": "yjU1WlmpOKrWZ5oA",
+      "project": {
+        "updatedAt": "2026-04-01T13:13:29.434Z",
+        "createdAt": "2026-04-01T12:58:08.424Z",
+        "id": "yjU1WlmpOKrWZ5oA",
+        "name": "Nikita Such <aukenbro1@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 90ca7de2",
+    "description": ""
+  }
+}

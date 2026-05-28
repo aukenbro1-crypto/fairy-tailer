@@ -22,6 +22,8 @@ const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
+const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
+const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
@@ -246,6 +248,94 @@ async function appendLead(jobId, source, order) {
     source: source || 'fairyteller',
     ...summary,
   })}\n`, { mode: 0o600 });
+}
+
+async function readLeadEvents() {
+  let text;
+  try {
+    text = await readFile(join(DATA_DIR, 'leads.jsonl'), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  return text
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter((row) => row && normalizeEmail(row.email));
+}
+
+function latestIso(left, right) {
+  if (!left) return right || '';
+  if (!right) return left || '';
+  return String(left) > String(right) ? left : right;
+}
+
+function earliestIso(left, right) {
+  if (!left) return right || '';
+  if (!right) return left || '';
+  return String(left) < String(right) ? left : right;
+}
+
+async function listEmailLeads() {
+  const events = await readLeadEvents();
+  const contacts = new Map();
+  for (const event of events) {
+    const email = normalizeEmail(event.email);
+    if (!email) continue;
+    const existing = contacts.get(email) || {
+      email,
+      firstSeenAt: '',
+      lastSeenAt: '',
+      submissions: 0,
+      latestJobId: '',
+      latestSource: '',
+      latestWorld: '',
+      latestStyle: '',
+      latestLocation: '',
+      latestArtifact: '',
+      heroNames: new Set(),
+      worlds: new Set(),
+      styles: new Set(),
+    };
+    existing.submissions += 1;
+    const isLatestEvent = !existing.lastSeenAt || String(event.at || '') >= String(existing.lastSeenAt || '');
+    existing.firstSeenAt = earliestIso(existing.firstSeenAt, event.at);
+    existing.lastSeenAt = latestIso(existing.lastSeenAt, event.at);
+    if (isLatestEvent) {
+      existing.latestJobId = event.jobId || '';
+      existing.latestSource = event.source || '';
+      existing.latestWorld = event.world || '';
+      existing.latestStyle = event.style || '';
+      existing.latestLocation = event.location || '';
+      existing.latestArtifact = event.artifact || '';
+    }
+    if (event.world) existing.worlds.add(event.world);
+    if (event.style) existing.styles.add(event.style);
+    if (Array.isArray(event.heroNames)) {
+      event.heroNames.filter(Boolean).slice(0, 8).forEach((name) => existing.heroNames.add(name));
+    }
+    contacts.set(email, existing);
+  }
+
+  return {
+    totalEvents: events.length,
+    contacts: [...contacts.values()]
+      .map((contact) => ({
+        ...contact,
+        heroNames: [...contact.heroNames],
+        worlds: [...contact.worlds],
+        styles: [...contact.styles],
+      }))
+      .sort((left, right) => String(right.lastSeenAt).localeCompare(String(left.lastSeenAt))),
+  };
 }
 
 function statusLabel(status) {
@@ -1000,6 +1090,7 @@ function renderBooksPage(books, options = {}) {
     h1 { margin: 0; font-size: 30px; line-height: 1.1; }
     p { margin: 8px 0 0; color: #56616b; }
     .logout { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .actions { display: flex; gap: 14px; align-items: center; }
     main { max-width: 1220px; margin: 0 auto; overflow-x: auto; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.08); }
     table { width: 100%; border-collapse: collapse; min-width: 980px; }
     th, td { padding: 14px 16px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
@@ -1015,7 +1106,8 @@ function renderBooksPage(books, options = {}) {
     @media (max-width: 760px) {
       body { padding: 18px; }
       header { display: block; }
-      .logout { display: inline-block; margin-top: 12px; }
+      .actions { margin-top: 12px; }
+      .logout { display: inline-block; }
     }
   </style>
 </head>
@@ -1025,7 +1117,7 @@ function renderBooksPage(books, options = {}) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    ${showLogout ? `<a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>` : ''}
+    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -1041,6 +1133,107 @@ function renderBooksPage(books, options = {}) {
       </thead>
       <tbody>${rows}</tbody>
     </table>` : '<div class="empty">Готовых PDF пока не нашлось.</div>'}
+  </main>
+</body>
+</html>`;
+}
+
+function csvCell(value) {
+  const text = Array.isArray(value) ? value.join(', ') : String(value || '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function leadsCsv({ contacts }) {
+  const rows = [
+    ['email', 'submissions', 'first_seen_at', 'last_seen_at', 'latest_job_id', 'latest_source', 'latest_world', 'worlds', 'latest_style', 'styles', 'latest_location', 'latest_artifact', 'hero_names'],
+    ...contacts.map((lead) => [
+      lead.email,
+      lead.submissions,
+      lead.firstSeenAt,
+      lead.lastSeenAt,
+      lead.latestJobId,
+      lead.latestSource,
+      lead.latestWorld,
+      lead.worlds,
+      lead.latestStyle,
+      lead.styles,
+      lead.latestLocation,
+      lead.latestArtifact,
+      lead.heroNames,
+    ]),
+  ];
+  return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
+function renderLeadsPage(leads) {
+  const rows = leads.contacts.map((lead) => `<tr>
+    <td><strong>${escapeHtml(lead.email)}</strong><span>${escapeHtml(lead.latestJobId || '—')}</span></td>
+    <td>${escapeHtml(String(lead.submissions))}</td>
+    <td>${escapeHtml(formatDateTime(lead.firstSeenAt) || '—')}</td>
+    <td>${escapeHtml(formatDateTime(lead.lastSeenAt) || '—')}</td>
+    <td>${escapeHtml([lead.latestWorld, lead.latestStyle].filter(Boolean).join(' · ') || '—')}</td>
+    <td>${escapeHtml(lead.heroNames.join(' · ') || '—')}</td>
+  </tr>`).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller Email-база</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 0 auto 22px; max-width: 1220px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    p { margin: 8px 0 0; color: #56616b; }
+    .actions { display: flex; gap: 14px; align-items: center; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    main { max-width: 1220px; margin: 0 auto; overflow-x: auto; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.08); }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    strong { display: block; margin-bottom: 4px; font-size: 15px; color: #172126; }
+    span { display: block; color: #68737d; font-size: 12px; }
+    .empty { padding: 32px; color: #56616b; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .actions { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Email-база</h1>
+      <p>${leads.contacts.length ? `Уникальных email: ${leads.contacts.length}; заявок с email: ${leads.totalEvents}` : 'Пока нет email из заявок'}</p>
+    </div>
+    <div class="actions">
+      <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_LEADS_CSV_PATH}">Скачать CSV</a>
+      <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+    </div>
+  </header>
+  <main>
+    ${leads.contacts.length ? `<table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Заявок</th>
+          <th>Первый раз</th>
+          <th>Последний раз</th>
+          <th>Последний формат</th>
+          <th>Герои</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<div class="empty">Email еще не сохранились.</div>'}
   </main>
 </body>
 </html>`;
@@ -1095,6 +1288,41 @@ function renderEmailButton(label, href, options = {}) {
     </table>`;
 }
 
+const CUSTOMER_EMAIL_EXAMPLES = [
+  {
+    path: '/images/email/fairyteller-email-example-cover-table.jpg',
+    alt: 'Обложка персональной книги на столе',
+  },
+  {
+    path: '/images/email/fairyteller-email-example-back-cover.jpg',
+    alt: 'Задняя обложка персональной книги',
+  },
+  {
+    path: '/images/email/fairyteller-email-example-bookshelf.jpg',
+    alt: 'Персональная книга на книжной полке',
+  },
+  {
+    path: '/images/email/fairyteller-email-example-marocco.jpg',
+    alt: 'Разворот персональной книги',
+  },
+];
+
+function renderCustomerEmailExampleGallery() {
+  const cells = CUSTOMER_EMAIL_EXAMPLES.map((image) => `
+                  <td width="25%" align="center" style="padding:0 4px;">
+                    <img src="${escapeHtml(publicUrl(image.path))}" width="126" height="95" alt="${escapeHtml(image.alt)}" style="display:block; width:126px; max-width:100%; height:auto; border:1px solid #000000;">
+                  </td>`).join('');
+
+  return `<tr>
+              <td style="padding:0 28px 30px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>${cells}
+                  </tr>
+                </table>
+              </td>
+            </tr>`;
+}
+
 function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
   const safeTitle = escapeHtml(title);
   const fallbackUrl = primaryBookUrl || buyPrintUrl;
@@ -1119,30 +1347,17 @@ function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
         <td align="center" style="padding:32px 16px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:1px solid #000000;">
             <tr>
-              <td style="padding:0; background:#000000; border-bottom:1px solid #000000;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td style="padding:12px 24px; text-align:center;">
-                      <div style="font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:15px; letter-spacing:0.18em; text-transform:uppercase; color:#ffffff; font-weight:800;">
-                        Персональные книги - история за 3 минуты, печать за 1 день
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:34px 32px 30px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
+              <td style="padding:24px 28px 22px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td style="text-align:center;">
                       <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; letter-spacing:0.18em; text-transform:uppercase; color:#5e6264; font-weight:800;">
                         FairyTeller
                       </div>
-                      <h1 style="margin:14px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:38px; line-height:42px; font-weight:900; letter-spacing:0; text-transform:none; color:#000000;">
+                      <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; letter-spacing:0; text-transform:none; color:#000000;">
                         Ваша книга почти готова
                       </h1>
-                      <p style="margin:16px auto 0; max-width:500px; font-family:Arial, Helvetica, sans-serif; font-size:17px; line-height:25px; color:#5e6264;">
+                      <p style="margin:10px auto 0; max-width:500px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#5e6264;">
                         Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.
                       </p>
                     </td>
@@ -1178,6 +1393,7 @@ function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
                 </p>
               </td>
             </tr>
+            ${renderCustomerEmailExampleGallery()}
             <tr>
               <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
                 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
@@ -1647,6 +1863,18 @@ function sendJson(req, res, status, payload) {
   res.end(`${JSON.stringify(payload)}\n`);
 }
 
+function sendCsv(req, res, fileName, content) {
+  res.writeHead(200, {
+    ...corsHeaders(req),
+    'content-type': 'text/csv; charset=utf-8',
+    'content-disposition': `attachment; filename="${fileName}"`,
+    'cache-control': 'no-store',
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+    'referrer-policy': 'no-referrer',
+  });
+  res.end(content);
+}
+
 async function route(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const method = req.method || 'GET';
@@ -1696,6 +1924,20 @@ async function route(req, res) {
 
   if (method === 'GET' && hasAdminBooksSecretPath(url.pathname)) {
     sendHtml(req, res, 200, renderBooksPage(await listGeneratedBooks(), { showLogout: false }));
+    return;
+  }
+
+  if (method === 'GET' && (url.pathname === ADMIN_LEADS_PATH || url.pathname === ADMIN_LEADS_CSV_PATH)) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    const leads = await listEmailLeads();
+    if (url.pathname === ADMIN_LEADS_CSV_PATH) {
+      sendCsv(req, res, 'fairyteller-email-leads.csv', leadsCsv(leads));
+      return;
+    }
+    sendHtml(req, res, 200, renderLeadsPage(leads));
     return;
   }
 

@@ -1,0 +1,412 @@
+{
+  "updatedAt": "2026-04-27T16:29:57.520Z",
+  "createdAt": "2026-04-11T05:31:54.649Z",
+  "id": "G9sheaWAqQ8fiymF",
+  "name": "Editorial Column Generate",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "editorial-column-generate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b6cc39a2-bddd-4c53-94f0-bb0825417626",
+      "name": "Webhook - Editorial Column Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "editorial-column-generate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $json.body && typeof $json.body === 'object' ? $json.body : $json;\n\nconst asString = (value) => (value ?? '').toString().trim();\nconst asArray = (value) => {\n  if (Array.isArray(value)) return value;\n  if (typeof value === 'string') return value.split('\\n').map((item) => item.trim()).filter(Boolean);\n  return [];\n};\n\nconst normalizeMaterials = (value) => {\n  if (Array.isArray(value)) {\n    return value\n      .map((item) => ({\n        title: asString(item.title),\n        format: asString(item.format),\n        summary: asString(item.summary),\n        column_angle: asString(item.column_angle || item.angle || item.reason),\n      }))\n      .filter((item) => item.title || item.summary || item.column_angle);\n  }\n\n  if (typeof value === 'string') {\n    return value\n      .split('\\n')\n      .map((line) => line.trim())\n      .filter(Boolean)\n      .map((line) => {\n        const [title, format, summary, column_angle] = line.replace(/^-+\\s*/, '').split('|').map((part) => part.trim());\n        return { title, format, summary, column_angle };\n      })\n      .filter((item) => item.title || item.summary || item.column_angle);\n  }\n\n  return [];\n};\n\nconst brief = {\n  session_id: asString(source.session_id || source.sessionId),\n  user_id: asString(source.user_id || source.userId),\n  issue_number: asString(source.issue_number || source.issueNumber),\n  issue_theme: asString(source.issue_theme || source.issueTheme),\n  issue_core_idea: asString(source.issue_core_idea || source.coreIdea),\n  issue_context: asString(source.issue_context || source.context),\n  issue_theses: asArray(source.issue_theses || source.theses),\n  issue_materials: normalizeMaterials(source.issue_materials || source.materials),\n  target_length: asString(source.target_length || source.targetLength || 'standard'),\n  personal_tone_level: asString(source.personal_tone_level || source.personalToneLevel || 'medium'),\n  editor_notes: asString(source.editor_notes || source.editorNotes),\n  source_transcript: asString(source.source_transcript || source.sourceTranscript),\n  callback_url: asString(source.callback_url || source.callbackUrl),\n  callback_secret: asString(source.callback_secret || source.callbackSecret),\n};\n\nconst tovProfile = asString(source.tov_profile || source.tovProfile);\nconst promptRules = asString(source.prompt_rules || source.promptRules);\n\nconst missing = [];\nif (!brief.issue_theme) missing.push('issue_theme');\nif (!brief.issue_core_idea && !brief.issue_context) missing.push('issue_core_idea or issue_context');\n\nif (missing.length) {\n  throw new Error(`Missing required editorial column fields: ${missing.join(', ')}`);\n}\n\nreturn [{\n  json: {\n    brief,\n    tov_profile: tovProfile,\n    prompt_rules: promptRules,\n  },\n}];"
+      },
+      "id": "ea1a345b-94d2-4842-b4d7-1748bae147cc",
+      "name": "Validate And Normalize Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tovProfile = ($json.tov_profile || '').trim();\nconst promptRules = ($json.prompt_rules || '').trim();\n\nif (!tovProfile) {\n  throw new Error('Missing tov_profile in webhook payload');\n}\n\nif (!promptRules) {\n  throw new Error('Missing prompt_rules in webhook payload');\n}\n\nreturn [{\n  json: {\n    ...$json,\n    tovProfile,\n    promptRules,\n  },\n}];"
+      },
+      "id": "de93132f-fc37-4354-a49c-d4afee1f6ba0",
+      "name": "Load ToV And Prompt Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { brief } = $json;\n\nconst facts = (brief.issue_context || '').trim();\nconst materials = (brief.issue_materials || [])\n  .map((m) => `${m.title} | ${m.format} | ${m.summary} | ${m.column_angle}`)\n  .join('\\n');\n\nconst input = `Тема номера:\n${brief.issue_theme || ''}\n\nГлавная мысль колонки:\n${brief.issue_core_idea || ''}\n\nФакты, которые нужно использовать:\n${facts}\n\nМатериалы номера:\n${materials}`;\n\nconst request = {\n  model: $env.OPENAI_TEXT_MODEL || 'gpt-5.1',\n  store: true,\n  temperature: 0.1,\n  max_output_tokens: 800,\n  input: `Определи, какой тип редакторской колонки лучше всего подходит для этого выпуска.\n\nВарианты:\n- cultural\n- city\n- values\n- personal\n- ecology\n- event\n\nВерни только JSON без markdown и пояснений:\n{\n  \"column_type\": \"city\",\n  \"confidence\": 0.84,\n  \"reason\": \"кратко, 1 предложение\",\n  \"secondary_type\": \"values\"\n}\n\nПравила:\n- выбирай один главный тип\n- secondary_type оставь пустой строкой, если он не нужен\n- ориентируйся в первую очередь на главную мысль колонки\n- факты и материалы используй как уточняющий контекст\n- не выбирай тип только по названиям материалов\n- event выбирай только если выпуск действительно держится на конкретном событии, дате или поводе\n- city выбирай, если в центре городская среда, память места, маршрут, пространство, городской опыт\n- ecology выбирай, если в центре природа, устойчивость, ресурсы, зеленая энергетика, экологическая оптика\n- personal выбирай, если в центре личное переживание, свидетельство, авторское наблюдение или персональная интонация\n- values выбирай, если в центре смысл, преемственность, традиция, общественная или культурная ценность\n- cultural выбирай, если в центре культурное явление, художественная практика, ремесло, историко-культурная тема\n- если тема культурная, но главная мысль скорее о преемственности и ценностях, values может быть точнее, чем cultural\n- если тема связана с городом, но смысловой центр в культурной памяти и городской ткани, city чаще приоритетнее event\n\nБриф:\n${input}`,\n};\n\nreturn [{ json: { ...$json, openaiRequest: JSON.stringify(request) } }];"
+      },
+      "id": "37312c6e-883f-4caf-930a-da3b20caedf5",
+      "name": "Build Classification Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $('Build Classification Request').first().json;\nconst response = $input.first().json;\n\nconst extractText = (payload) => {\n  if (!payload) return '';\n\n  if (typeof payload.output_text === 'string') return payload.output_text.trim();\n  if (typeof payload.text === 'string') return payload.text.trim();\n  if (typeof payload.output === 'string') return payload.output.trim();\n  if (typeof payload.content === 'string') return payload.content.trim();\n  if (typeof payload.response === 'string') return payload.response.trim();\n\n  if (typeof payload.message === 'string') return payload.message.trim();\n\n  if (payload.message?.content) {\n    if (typeof payload.message.content === 'string') return payload.message.content.trim();\n\n    if (Array.isArray(payload.message.content)) {\n      return payload.message.content\n        .map((entry) => entry.text || entry.output_text || '')\n        .filter(Boolean)\n        .join('\\n')\n        .trim();\n    }\n  }\n\n  if (Array.isArray(payload.output)) {\n    const chunks = payload.output\n      .flatMap((entry) => Array.isArray(entry.content) ? entry.content : [])\n      .map((entry) => entry.text || entry.output_text || '')\n      .filter(Boolean);\n\n    if (chunks.length) return chunks.join('\\n').trim();\n  }\n\n  if (Array.isArray(payload.choices)) {\n    const content = payload.choices[0]?.message?.content;\n    if (typeof content === 'string') return content.trim();\n  }\n\n  if (payload.data && typeof payload.data === 'object') {\n    return extractText(payload.data);\n  }\n\n  return '';\n};\n\nconst safeParse = (text) => {\n  try {\n    return JSON.parse(\n      text\n        .replace(/^```json\\s*/i, '')\n        .replace(/^```\\s*/i, '')\n        .replace(/```$/i, '')\n        .trim(),\n    );\n  } catch (error) {\n    return {\n      column_type: 'values',\n      confidence: 0.3,\n      reason: 'Fallback: не удалось распарсить классификацию.',\n      secondary_type: '',\n    };\n  }\n};\n\nconst classification = safeParse(extractText(response));\n\nreturn [\n  {\n    json: {\n      ...previous,\n      classification: {\n        column_type: classification.column_type || 'values',\n        confidence: Number(classification.confidence || 0.3),\n        reason: classification.reason || '',\n        secondary_type: classification.secondary_type || '',\n      },\n    },\n  },\n];"
+      },
+      "id": "d2300217-12f2-4ea0-be74-eeb522adfd6c",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { brief, tovProfile, promptRules, classification } = $json;\n\nconst lengthMap = {\n  short: 'примерно 220-280 слов',\n  standard: 'примерно 320-430 слов',\n  long: 'примерно 480-650 слов',\n};\n\nconst typeAccents = {\n  cultural: 'Сделай акцент на культурной теме, ремесле, художественной практике, преемственности и историко-культурной памяти.',\n  city: 'Сделай акцент на городской среде, памяти места, маршрутах, пространстве, образе города и человеческом опыте внутри него.',\n  values: 'Сделай акцент на смысле, преемственности, внутреннем выборе, достоинстве, мере, уважении, созидании.',\n  personal: 'Допусти немного больше личной интонации, но без исповедальности и без слишком частого \"я\".',\n  ecology: 'Сделай акцент на природе, устойчивости, ресурсах, бережности, зеленой энергетике и ответственности.',\n  event: 'Сделай акцент на конкретном событии или поводе как на знаке времени, но не превращай текст в новостной анонс.',\n};\n\nconst facts = (brief.issue_context || '').trim();\nconst theses = Array.isArray(brief.issue_theses) ? brief.issue_theses : [];\nconst materials = brief.issue_materials?.length\n  ? brief.issue_materials\n      .map(\n        (item, index) =>\n          `${index + 1}. ${item.title || 'Без названия'} | ${item.format || 'формат не указан'} | ${item.summary || 'краткое описание не указано'} | ${item.column_angle || 'связать с темой номера'}`,\n      )\n      .join('\\n')\n  : 'Материалы не указаны. Не выдумывай конкретные публикации.';\n\nconst userPrompt = `Тема номера:\n${brief.issue_theme || ''}\n\nГлавная мысль колонки:\n${brief.issue_core_idea || ''}\n\nФакты, которые нужно использовать:\n${facts || 'не указаны'}\n\nДополнительные тезисы:\n${theses.length ? theses.map((item) => `- ${item}`).join('\\n') : '- не указаны'}\n\nМатериалы номера:\n${materials}\n\nЖелаемая длина:\n${lengthMap[brief.target_length] || lengthMap.standard}\n\nСтепень личной интонации:\n${brief.personal_tone_level || 'medium'}\n\nДополнительные пожелания редактора:\n${brief.editor_notes || 'нет'}\n\nЕсли есть расшифровка голосового брифа, учитывай ее как дополнительный контекст, но не цитируй механически:\n${brief.source_transcript || 'нет'}\n\nВнутренний тип колонки:\n${classification.column_type || 'values'}\n\nВторичный тип:\n${classification.secondary_type || 'нет'}\n\nАкцент типа:\n${typeAccents[classification.column_type] || typeAccents.values}\n\nЗадача:\nНапиши колонку главного редактора в tone of voice Лейлы Алиевой.\n\nЧто особенно важно:\n- текст должен быть цельным, спокойным, ясным и собранным\n- не делай текст слишком гладким, слишком литературным или слишком идеально отполированным\n- не подменяй конкретику красивыми обобщениями\n- если в фактах есть выразительные, частные, запоминающиеся детали, постарайся сохранить хотя бы часть из них\n- не сокращай живую фактуру до сухого обобщения, если она делает текст человечнее и точнее\n- лучше сохранить 1-2 характерные детали, чем полностью выгладить текст\n- используй факты как смысловые опоры, а не как список\n- материалы номера должны быть встроены органично, а не перечислены подряд\n- не превращай колонку в анонс выпуска\n- не выдумывай новые факты, детали или материалы\n- если материалов мало и они важны, лучше использовать все\n- если фактов много, выбери самые сильные и выразительные, но не теряй центральные\n- в тексте должна остаться главная мысль номера, а не только атмосферный тон\n\nНа что обратить особое внимание stylistically:\n- мысль глубокая, но выражена простыми словами\n- автор не убеждает, а спокойно констатирует\n- текст должен читаться плавно; избегай серии коротких, обрывистых предложений подряд\n- абзац должен развиваться как единая смысловая волна, а не как набор аккуратных тезисов\n- можно строить фразы средней длины, если это помогает течению мысли\n- не злоупотребляй абстрактными словами вроде \"эпоха\", \"судьба\", \"истина\", \"гармония\", если они не подкреплены конкретикой\n- избегай пафоса, восторженности и лишней красивости\n- не делай текст стерильно-редакторским\n- избегай безопасных редакторских прокладок вроде \"важная для нас мысль\", \"одна простая вещь\", \"ясное напоминание\", если можно сказать точнее и прямее\n- не строй текст из универсальных фраз, которые можно вставить почти в любой номер\n- хотя бы в одном месте дай не только тезис, но и живую, конкретную опору или деталь\n- допустима легкая шероховатость живого текста, если она звучит естественно\n\nФинал:\nСобери колонку в ясную, сильную и спокойную мысль. Финал должен ощущаться человеческим и точным, а не просто красивым. Не закрывай текст слишком шаблонно или слишком назидательно.`;\n\nconst request = {\n  model: $env.OPENAI_TEXT_MODEL || 'gpt-5.1',\n  store: true,\n  temperature: 0.55,\n  max_output_tokens: 3500,\n  input: `${tovProfile}\\n\\n${promptRules}\\n\\n${userPrompt}`,\n};\n\nreturn [{ json: { ...$json, userPrompt, openaiRequest: JSON.stringify(request) } }];"
+      },
+      "id": "d6004839-f5a2-4771-b855-4d99b0b2d266",
+      "name": "Build Draft Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $('Build Draft Request').first().json;\nconst response = $input.first().json;\n\nconst extractText = (payload) => {\n  if (!payload) return '';\n\n  if (typeof payload.output_text === 'string') return payload.output_text.trim();\n  if (typeof payload.text === 'string') return payload.text.trim();\n  if (typeof payload.output === 'string') return payload.output.trim();\n  if (typeof payload.content === 'string') return payload.content.trim();\n  if (typeof payload.response === 'string') return payload.response.trim();\n\n  if (typeof payload.message === 'string') return payload.message.trim();\n\n  if (payload.message?.content) {\n    if (typeof payload.message.content === 'string') return payload.message.content.trim();\n\n    if (Array.isArray(payload.message.content)) {\n      return payload.message.content\n        .map((entry) => entry.text || entry.output_text || '')\n        .filter(Boolean)\n        .join('\\n')\n        .trim();\n    }\n  }\n\n  if (Array.isArray(payload.output)) {\n    const chunks = payload.output\n      .flatMap((entry) => Array.isArray(entry.content) ? entry.content : [])\n      .map((entry) => entry.text || entry.output_text || '')\n      .filter(Boolean);\n\n    if (chunks.length) return chunks.join('\\n').trim();\n  }\n\n  if (Array.isArray(payload.choices)) {\n    const content = payload.choices[0]?.message?.content;\n    if (typeof content === 'string') return content.trim();\n  }\n\n  if (payload.data && typeof payload.data === 'object') {\n    return extractText(payload.data);\n  }\n\n  return '';\n};\n\nconst draft = extractText(response);\nif (!draft) throw new Error('OpenAI draft response is empty');\n\nconst reviewPrompt = `Ты редактор выпуска журнала \"Баку\". Проверь и мягко улучши черновик колонки главного редактора.\n\nЦель: сохранить tone of voice Лейлы Алиевой и сделать текст более цельным.\n\nПроверь:\n- не выглядит ли текст списком анонсов\n- не слишком ли он общий\n- не потерян ли теплый, светлый, литературный тон\n- не слишком ли много материалов упомянуто\n- есть ли органичный финал\n\nЕсли текст уже хорош, оставь его почти без изменений. Не добавляй комментарии. Верни только финальный текст колонки без markdown, заголовков и пояснений.\n\nToV:\n${previous.tovProfile}\n\nИсходный бриф:\n${previous.userPrompt}\n\nЧерновик:\n${draft}`;\n\nconst request = {\n  model: $env.OPENAI_TEXT_MODEL || 'gpt-5.1',\n  store: true,\n  temperature: 0.25,\n  max_output_tokens: 3500,\n  input: reviewPrompt,\n};\n\nreturn [{ json: { ...previous, draft, openaiRequest: JSON.stringify(request) } }];"
+      },
+      "id": "05e0e043-98e5-49ee-b784-5f9c78702158",
+      "name": "Build Review Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $('Build Review Request').first().json;\nconst response = $input.first().json;\n\nconst extractText = (payload) => {\n  if (!payload) return '';\n\n  if (typeof payload.output_text === 'string') return payload.output_text.trim();\n  if (typeof payload.text === 'string') return payload.text.trim();\n  if (typeof payload.output === 'string') return payload.output.trim();\n  if (typeof payload.content === 'string') return payload.content.trim();\n  if (typeof payload.response === 'string') return payload.response.trim();\n\n  if (typeof payload.message === 'string') return payload.message.trim();\n\n  if (payload.message?.content) {\n    if (typeof payload.message.content === 'string') return payload.message.content.trim();\n\n    if (Array.isArray(payload.message.content)) {\n      return payload.message.content\n        .map((entry) => entry.text || entry.output_text || '')\n        .filter(Boolean)\n        .join('\\n')\n        .trim();\n    }\n  }\n\n  if (Array.isArray(payload.output)) {\n    const chunks = payload.output\n      .flatMap((entry) => Array.isArray(entry.content) ? entry.content : [])\n      .map((entry) => entry.text || entry.output_text || '')\n      .filter(Boolean);\n\n    if (chunks.length) return chunks.join('\\n').trim();\n  }\n\n  if (Array.isArray(payload.choices)) {\n    const content = payload.choices[0]?.message?.content;\n    if (typeof content === 'string') return content.trim();\n  }\n\n  if (payload.data && typeof payload.data === 'object') {\n    return extractText(payload.data);\n  }\n\n  return '';\n};\n\nconst finalDraft = extractText(response) || previous.draft;\n\nconst materialsUsed = previous.brief.issue_materials\n  .filter((material) => material.title && finalDraft.toLowerCase().includes(material.title.toLowerCase()))\n  .map((material) => material.title);\n\nreturn [\n  {\n    json: {\n      status: 'completed',\n      session_id: previous.brief.session_id,\n      user_id: previous.brief.user_id,\n      issue_number: previous.brief.issue_number,\n      issue_theme: previous.brief.issue_theme,\n      draft: finalDraft,\n      raw_draft: previous.draft,\n      column_type: previous.classification.column_type,\n      secondary_type: previous.classification.secondary_type,\n      confidence: previous.classification.confidence,\n      classification_reason: previous.classification.reason,\n      materials_used: materialsUsed,\n      notes_for_editor: 'Проверь фактические упоминания материалов и финальную редакторскую интонацию перед публикацией.',\n    },\n  },\n];"
+      },
+      "id": "a4ec2dae-0ce1-48b9-96b8-c33d2fb72798",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2624,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "http://82.26.198.127"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5e5159f8-f9a2-4ab6-8079-9298362a6846",
+      "name": "Respond To Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2848,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ JSON.parse($json.openaiRequest).input }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "6ccb30ff-4e1f-4968-90a1-72e74b9aca28",
+      "name": "OpenAI - Classify Column Type1",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ JSON.parse($json.openaiRequest).input }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1696,
+        0
+      ],
+      "id": "1c25dba9-f981-46be-9999-6e27861dd594",
+      "name": "OpenAI - Generate Draft",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ JSON.parse($json.openaiRequest).input }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        2272,
+        0
+      ],
+      "id": "3df62c4d-b507-458e-8841-4632692dc786",
+      "name": "OpenAI - Review And Refine",
+      "credentials": {
+        "openAiApi": {
+          "id": "FcyQhAzlKqA9VUyQ",
+          "name": "OpenAI account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Editorial Column Input": {
+      "main": [
+        [
+          {
+            "node": "Validate And Normalize Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate And Normalize Brief": {
+      "main": [
+        [
+          {
+            "node": "Load ToV And Prompt Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load ToV And Prompt Rules": {
+      "main": [
+        [
+          {
+            "node": "Build Classification Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classification Request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Classify Column Type1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [
+          {
+            "node": "Build Draft Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Draft Request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Generate Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Review Request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Review And Refine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond To Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Classify Column Type1": {
+      "main": [
+        [
+          {
+            "node": "Parse Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Generate Draft": {
+      "main": [
+        [
+          {
+            "node": "Build Review Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Review And Refine": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "18a544b2-40d2-4a08-8be4-929b31124e55",
+  "activeVersionId": "18a544b2-40d2-4a08-8be4-929b31124e55",
+  "versionCounter": 181,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-04-11T05:31:54.655Z",
+      "createdAt": "2026-04-11T05:31:54.655Z",
+      "role": "workflow:owner",
+      "workflowId": "G9sheaWAqQ8fiymF",
+      "projectId": "yjU1WlmpOKrWZ5oA",
+      "project": {
+        "updatedAt": "2026-04-01T13:13:29.434Z",
+        "createdAt": "2026-04-01T12:58:08.424Z",
+        "id": "yjU1WlmpOKrWZ5oA",
+        "name": "Nikita Such <aukenbro1@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "ad3f1947-a4d2-4d9f-9812-8101e2da0e99"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 18a544b2",
+    "description": ""
+  }
+}
