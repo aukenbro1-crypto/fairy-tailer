@@ -28,9 +28,9 @@ import toonflatStyleImage from "@/assets/toonflat-style.jpg";
 import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import romanticStoryImage from "@/assets/romantic-story.png";
 import heroCyberStackImage from "@/assets/header-photos/ischezayushchiy-express_header_cyber-stack_1800x1400.webp";
-import heroMapCoverImage from "@/assets/header-photos/tainy-zakoldovannoy-karty_header_cover-color-field_1800x1400.webp";
 import heroOpenSpreadImage from "@/assets/header-photos/tropa-za-holm_header_open-spread_1800x1400.webp";
 import heroStillLifeImage from "@/assets/header-photos/tropa-za-holm_header_website-hero-still-life_1800x1400.webp";
+import heroVolgaCoverImage from "@/assets/header-photos/zvezdopad-nad-volgoy_taschen_02_cover-color-field_header-1800x1400.webp";
 import exampleGenerated04Image from "@/assets/example-photos/generated-04.webp";
 import exampleGenerated23Image from "@/assets/example-photos/generated-23.webp";
 import exampleGenerated56Image from "@/assets/example-photos/generated-56.webp";
@@ -158,7 +158,7 @@ const heroMetrics = [
 const heroImages = [
   { title: "Тропа за холм", image: heroOpenSpreadImage },
   { title: "Исчезающий экспресс", image: heroCyberStackImage },
-  { title: "Тайны заколдованной карты", image: heroMapCoverImage },
+  { title: "Звездопад над Волгой", image: heroVolgaCoverImage },
   { title: "Подарочная книга", image: heroStillLifeImage },
 ];
 

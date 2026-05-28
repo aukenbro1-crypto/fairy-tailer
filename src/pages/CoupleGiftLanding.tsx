@@ -14,9 +14,9 @@ import {
 import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import logoImage from "@/assets/logo.png";
-import snowRouteFlatlayImage from "@/assets/product-photos/snow-route-flatlay.jpg";
-import snowRouteHandsImage from "@/assets/product-photos/snow-route-hands.jpg";
-import snowRouteShelfImage from "@/assets/product-photos/snow-route-shelf.jpg";
+import snowRouteFlatlayImage from "@/assets/product-photos/snow-route-flatlay.webp";
+import snowRouteHandsImage from "@/assets/product-photos/snow-route-hands.webp";
+import snowRouteShelfImage from "@/assets/product-photos/snow-route-shelf.webp";
 import snowRouteTableImage from "@/assets/product-photos/snow-route-table.jpg";
 import loveCityOpenImage from "@/assets/product-photos/love-city-open.jpg";
 
