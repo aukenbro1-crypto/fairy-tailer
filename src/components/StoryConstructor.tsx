@@ -365,7 +365,8 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
 }) => {
   const [nowMs, setNowMs] = useState(Date.now());
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
-  const isReady = renderStatus === 'ready' && Boolean(previewPdfUrl || printPdfUrl);
+  const jobCompleted = jobStatus?.status === 'done' || jobStatus?.stage === 'complete';
+  const isReady = Boolean(previewPdfUrl || printPdfUrl) && (renderStatus === 'ready' || jobCompleted);
   const isFailed = hasGenerationFailed(jobStatus);
   const activeStepIndex = getGenerationStepIndex(jobStatus, fullTextStatus, renderStatus);
 
@@ -555,7 +556,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const bookPdfUrl = previewPdfUrl || printPdfUrl;
   const readerTitle = jobStatus?.preview?.title
     || 'Ваша сказка';
-  const hasReadyPdfPreview = renderStatus === 'ready' && Boolean(bookPdfUrl);
+  const jobCompleted = jobStatus?.status === 'done' || jobStatus?.stage === 'complete';
+  const hasReadyPdfPreview = Boolean(bookPdfUrl) && (renderStatus === 'ready' || jobCompleted);
   const heroHasContent = (heroNum: 1 | 2 | 3 | 4) => {
     const name = formData[`hero${heroNum}_name` as keyof FormData] as string;
     const desc = formData[`hero${heroNum}_desc` as keyof FormData] as string;

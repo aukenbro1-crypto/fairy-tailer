@@ -248,7 +248,8 @@ const FairytellerInlineConstructor = ({
     jobStatus?.artifacts?.bookPdf?.url ||
     jobStatus?.artifacts?.render?.files?.book?.url ||
     "";
-  const isGenerationReady = renderStatus === "ready" && Boolean(bookPdfUrl);
+  const jobCompleted = jobStatus?.status === "done" || jobStatus?.stage === "complete";
+  const isGenerationReady = Boolean(bookPdfUrl) && (renderStatus === "ready" || jobCompleted);
   const isGenerationFailed = Boolean(
     jobStatus?.status === "failed" ||
     jobStatus?.error ||

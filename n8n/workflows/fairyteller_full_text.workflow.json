@@ -23,12 +23,27 @@
         }
       },
       {
+        "id": "b064b17d-a051-49e0-afb7-7bacae5e76b6",
+        "name": "Claim Full Text Slot",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          540,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "const item = $input.first().json;\nconst jobId = item.jobId;\nif (!jobId) throw new Error('Missing jobId for full text pipeline');\nconst apiToken = $env.FAIRYTELLER_API_TOKEN;\nif (!apiToken) throw new Error('FAIRYTELLER_API_TOKEN is not configured');\nconst jobUrl = 'https://fairyteller.ru/api/fairyteller/jobs/' + jobId;\n\nfunction cleanError(error) {\n  const body = error?.response?.body || error?.cause?.response?.body;\n  const message = typeof body === 'string'\n    ? body\n    : body?.error?.message || body?.message || error?.message || 'unknown error';\n  return String(message).replace(/\\s+/g, ' ').trim().slice(0, 500);\n}\n\nasync function request(options) {\n  return await this.helpers.httpRequest({\n    ...options,\n    headers: {\n      Authorization: 'Bearer ' + apiToken,\n      'Content-Type': 'application/json',\n      ...(options.headers || {}),\n    },\n    json: true,\n    timeout: options.timeout || 30000,\n  });\n}\n\nlet current = null;\ntry {\n  current = await request.call(this, { method: 'GET', url: jobUrl });\n} catch (error) {\n  console.log('Could not read current job before full text claim: ' + cleanError(error));\n}\n\nconst currentFullText = current?.artifacts?.fullText || {};\nconst currentFullTextStatus = String(currentFullText.status || '').toLowerCase();\nconst alreadyClaimed = currentFullTextStatus === 'generating' && Boolean(currentFullText.startedAt || currentFullText.trigger);\nif (currentFullTextStatus === 'ready' || alreadyClaimed) {\n  console.log('Full text already ' + currentFullTextStatus + ' for ' + jobId + '; skipping duplicate launch');\n  return [];\n}\n\nconst startedAt = new Date().toISOString();\nconst progress = Math.max(45, Number(current?.progress || item.progress || 35) || 45);\nconst trigger = item.pipeline?.fullTextFallback ? 'visuals_fallback' : 'text_fanout';\n\nawait request.call(this, {\n  method: 'PATCH',\n  url: jobUrl,\n  body: {\n    stage: 'text',\n    progress,\n    message: 'Пишем продолжение истории',\n    artifacts: {\n      fullText: { status: 'generating', startedAt, trigger },\n    },\n  },\n});\n\nreturn [{ json: { ...item, fullTextClaim: { status: 'generating', startedAt, trigger } } }];"
+        }
+      },
+      {
         "id": "a12fbf7f-f805-4a89-b5e3-66a0246adf6a",
         "name": "Build Full Text Prompt",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          520,
+          820,
           300
         ],
         "parameters": {
@@ -41,7 +56,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          800,
+          1100,
           300
         ],
         "parameters": {
@@ -84,7 +99,7 @@
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          1080,
+          1380,
           300
         ],
         "parameters": {
@@ -97,7 +112,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          1360,
+          1660,
           300
         ],
         "parameters": {
@@ -137,7 +152,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          1640,
+          1940,
           300
         ],
         "parameters": {
@@ -177,7 +192,7 @@
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          1920,
+          2220,
           300
         ],
         "parameters": {
@@ -190,7 +205,7 @@
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.3,
         "position": [
-          2200,
+          2500,
           300
         ],
         "parameters": {
@@ -213,7 +228,7 @@
         "main": [
           [
             {
-              "node": "Build Full Text Prompt",
+              "node": "Claim Full Text Slot",
               "type": "main",
               "index": 0
             }
@@ -285,11 +300,23 @@
             }
           ]
         ]
+      },
+      "Claim Full Text Slot": {
+        "main": [
+          [
+            {
+              "node": "Build Full Text Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
       "executionOrder": "v1",
-      "binaryMode": "separate"
+      "binaryMode": "separate",
+      "availableInMCP": true
     },
     "staticData": null,
     "meta": null,

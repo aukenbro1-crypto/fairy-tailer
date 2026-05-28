@@ -1077,6 +1077,128 @@ async function handleAdminBooksSession(req, res, url, method) {
   return true;
 }
 
+function renderEmailButton(label, href, options = {}) {
+  if (!href) return '';
+  const background = options.background || '#ffffff';
+  const color = options.color || '#000000';
+  const border = options.border || background;
+  const padding = options.padding || '15px 24px';
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+      <tr>
+        <td bgcolor="${background}" style="border:1px solid ${border};">
+          <a href="${escapeHtml(href)}" style="display:inline-block; padding:${padding}; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:${color}; text-decoration:none;">
+            ${escapeHtml(label)}
+          </a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
+  const safeTitle = escapeHtml(title);
+  const fallbackUrl = primaryBookUrl || buyPrintUrl;
+  const telegramUrl = 'https://t.me/nikita0shch';
+  const siteUrl = PUBLIC_BASE_URL;
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Ваша книга почти готова</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f5f5f5;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+      Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.
+    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f5f5; margin:0; padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:1px solid #000000;">
+            <tr>
+              <td style="padding:0; background:#000000; border-bottom:1px solid #000000;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:12px 24px; text-align:center;">
+                      <div style="font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:15px; letter-spacing:0.18em; text-transform:uppercase; color:#ffffff; font-weight:800;">
+                        Персональные книги - история за 3 минуты, печать за 1 день
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 32px 30px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="text-align:center;">
+                      <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; letter-spacing:0.18em; text-transform:uppercase; color:#5e6264; font-weight:800;">
+                        FairyTeller
+                      </div>
+                      <h1 style="margin:14px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:38px; line-height:42px; font-weight:900; letter-spacing:0; text-transform:none; color:#000000;">
+                        Ваша книга почти готова
+                      </h1>
+                      <p style="margin:16px auto 0; max-width:500px; font-family:Arial, Helvetica, sans-serif; font-size:17px; line-height:25px; color:#5e6264;">
+                        Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 32px 8px;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:25px; color:#000000;">
+                  Здравствуйте!
+                </p>
+                <p style="margin:14px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">
+                  Персональная книга <strong>«${safeTitle}»</strong> уже ждет вас. Откройте книгу, изучите сюжет и иллюстрации, оплатите заказ и мы доставим готовую книгу в ближайшее время.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 8px; text-align:center;">
+                ${renderEmailButton('Открыть книгу', fallbackUrl, { background: '#ffffff', color: '#000000', border: '#000000' })}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 26px; text-align:center;">
+                ${renderEmailButton('Оплатить заказ', buyPrintUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 28px;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#5e6264;">
+                  Если кнопка не открывается, скопируйте ссылку:<br>
+                  <a href="${escapeHtml(fallbackUrl)}" style="color:#000000; word-break:break-word;">${escapeHtml(fallbackUrl)}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
+                  Остались вопросы? Свяжитесь с нами в <a href="${telegramUrl}" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a> или через <a href="${escapeHtml(siteUrl)}" style="color:#E89C31; text-decoration:underline; font-weight:800;">форму на сайте</a>.
+                </p>
+                <p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#ffffff;">
+                  С любовью,<br>команда FairyTeller
+                </p>
+                <p style="margin:12px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#ffffff99;">
+                  Вы получили это письмо, потому что оставили email при создании персональной сказки на fairyteller.ru.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 function customerEmailPayload(status, orderEnvelope = {}) {
   const order = orderEnvelope.order || orderEnvelope;
   const email = normalizeEmail(order.email);
@@ -1085,42 +1207,32 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
   const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
-  const coverUrl = publicUrl(status.artifacts?.coverPdf?.url || status.artifacts?.render?.files?.cover?.url);
   const buyPrintUrl = `${PUBLIC_BASE_URL}/pay${printUrl ? `?pdf=${encodeURIComponent(printUrl)}` : ''}`;
+  const primaryBookUrl = previewUrl || printUrl;
 
   const links = [
-    previewUrl ? `Открыть книгу: ${previewUrl}` : '',
-    printUrl ? `Печатный PDF: ${printUrl}` : '',
-    coverUrl ? `Обложка отдельно: ${coverUrl}` : '',
-    `Печать книги: ${buyPrintUrl}`,
+    primaryBookUrl ? `Открыть книгу: ${primaryBookUrl}` : '',
+    `Оплатить заказ: ${buyPrintUrl}`,
+    'Telegram: https://t.me/nikita0shch',
+    `Форма на сайте: ${PUBLIC_BASE_URL}`,
   ].filter(Boolean);
 
-  const subject = `Ваша сказка "${title}" готова`;
+  const subject = 'Ваша книга почти готова';
   const text = [
+    'Ваша книга почти готова',
+    'Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.',
+    '',
     'Здравствуйте!',
     '',
-    `Ваша сказка "${title}" готова.`,
+    `Персональная книга "${title}" уже ждет вас. Откройте книгу, изучите сюжет и иллюстрации, оплатите заказ и мы доставим готовую книгу в ближайшее время.`,
     '',
     ...links,
     '',
+    'Остались вопросы? Свяжитесь с нами по Telegram или через форму на сайте.',
+    '',
     'С любовью, FairyTeller',
   ].join('\n');
-  const htmlLinks = links.map((line) => {
-    const [label, ...rest] = line.split(': ');
-    const href = rest.join(': ');
-    return href
-      ? `<li><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`
-      : `<li>${escapeHtml(line)}</li>`;
-  }).join('');
-
-  const html = [
-    '<div style="font-family: Georgia, serif; color: #24302f; line-height: 1.55;">',
-    '<p>Здравствуйте!</p>',
-    `<p>Ваша сказка <strong>${escapeHtml(title)}</strong> готова.</p>`,
-    `<ul>${htmlLinks}</ul>`,
-    '<p>С любовью,<br>FairyTeller</p>',
-    '</div>',
-  ].join('');
+  const html = renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl });
 
   return { to: email, subject, text, html };
 }
