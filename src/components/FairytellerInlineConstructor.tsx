@@ -15,7 +15,7 @@ import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
 import naiveStyleImage from "@/assets/naive-style.jpg";
-import romanticStoryImage from "@/assets/romantic-story.png";
+import photorealismStyleImage from "@/assets/photorealism-style.jpeg";
 import toonflatStyleImage from "@/assets/toonflat-style.jpg";
 import watercolorStyleImage from "@/assets/watercolor-style.jpg";
 import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
@@ -67,7 +67,7 @@ const worlds = [
 ];
 
 const styles = [
-  { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: romanticStoryImage },
+  { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: photorealismStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
   { id: "minibrick", title: "Лего", label: "Лего", image: minibrickStyleImage },

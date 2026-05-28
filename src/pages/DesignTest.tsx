@@ -26,7 +26,7 @@ import watercolorStyleImage from "@/assets/watercolor-style.jpg";
 import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
 import toonflatStyleImage from "@/assets/toonflat-style.jpg";
 import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
-import romanticStoryImage from "@/assets/romantic-story.png";
+import photorealismStyleImage from "@/assets/photorealism-style.jpeg";
 import heroCyberStackImage from "@/assets/header-photos/ischezayushchiy-express_header_cyber-stack_1800x1400.webp";
 import heroOpenSpreadImage from "@/assets/header-photos/tropa-za-holm_header_open-spread_1800x1400.webp";
 import heroStillLifeImage from "@/assets/header-photos/tropa-za-holm_header_website-hero-still-life_1800x1400.webp";
@@ -102,7 +102,7 @@ const worlds = [
 ];
 
 const styles = [
-  { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: romanticStoryImage },
+  { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: photorealismStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
   { id: "minibrick", title: "Лего", label: "Лего", image: minibrickStyleImage },

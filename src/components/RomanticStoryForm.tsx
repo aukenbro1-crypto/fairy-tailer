@@ -24,10 +24,10 @@ import naiveStyleImage from '@/assets/naive-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
-import romanticStoryImage from '@/assets/romantic-story.png';
+import photorealismStyleImage from '@/assets/photorealism-style.jpeg';
 
 const STYLE_SPRITES: Record<string, string> = {
-  'photorealistic': romanticStoryImage,
+  'photorealistic': photorealismStyleImage,
   'disney': disneyStyleImage,
   'toonflat': toonflatStyleImage,
   'minibrick': minibrickStyleImage,

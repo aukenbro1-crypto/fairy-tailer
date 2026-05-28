@@ -15,6 +15,7 @@ import hogwartsMagicImage from '@/assets/hogwarts-magic.png';
 import wizardFantasyImage from '@/assets/wizard-fantasy.png';
 import russianCyberpunkImage from '@/assets/russian-cyberpunk.png';
 import romanticStoryImage from '@/assets/romantic-story.png';
+import photorealismStyleImage from '@/assets/photorealism-style.jpeg';
 
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
@@ -192,7 +193,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
 };
 
 const STYLE_SPRITES: Record<string, string> = {
-  'photorealistic': romanticStoryImage,
+  'photorealistic': photorealismStyleImage,
   'disney': disneyStyleImage,
   'toonflat': toonflatStyleImage,
   'minibrick': minibrickStyleImage,
