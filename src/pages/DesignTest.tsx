@@ -31,16 +31,17 @@ import heroCyberStackImage from "@/assets/header-photos/ischezayushchiy-express_
 import heroOpenSpreadImage from "@/assets/header-photos/tropa-za-holm_header_open-spread_1800x1400.webp";
 import heroStillLifeImage from "@/assets/header-photos/tropa-za-holm_header_website-hero-still-life_1800x1400.webp";
 import heroVolgaCoverImage from "@/assets/header-photos/zvezdopad-nad-volgoy_taschen_02_cover-color-field_header-1800x1400.webp";
-import exampleGenerated04Image from "@/assets/example-photos/generated-04.webp";
-import exampleGenerated23Image from "@/assets/example-photos/generated-23.webp";
-import exampleGenerated56Image from "@/assets/example-photos/generated-56.webp";
-import exampleCactusCityImage from "@/assets/example-photos/cactus-city-open-book-hands-bench.webp";
-import exampleCactusShelfImage from "@/assets/example-photos/cactus-marocco-zellige-shelf-spine.webp";
-import exampleCactusLapImage from "@/assets/example-photos/cactus-open-spread-lap.webp";
-import exampleCactusFlatlayImage from "@/assets/example-photos/cactus-flatlay-mood.webp";
-import exampleCactusHeaderImage from "@/assets/example-photos/cactus-header.webp";
-import exampleMapTableImage from "@/assets/example-photos/map-open-book-table.webp";
-import exampleMapBackImage from "@/assets/example-photos/map-back-cover.webp";
+import exampleGenerated04Image from "@/assets/home-example-carousel/generated-04.webp";
+import exampleGenerated23Image from "@/assets/home-example-carousel/generated-23.webp";
+import exampleGenerated56Image from "@/assets/home-example-carousel/generated-56.webp";
+import exampleKogdaChudoImage from "@/assets/home-example-carousel/kogda-chudo-marocco-open.webp";
+import exampleDrevogradHandsImage from "@/assets/home-example-carousel/list-drevograd-hands.webp";
+import exampleDrevogradBackImage from "@/assets/home-example-carousel/list-drevograd-back.webp";
+import exampleKaktusHandsImage from "@/assets/home-example-carousel/kaktus-open-hands.webp";
+import exampleKaktusShelfImage from "@/assets/home-example-carousel/kaktus-shelf-spine.webp";
+import exampleMapTableImage from "@/assets/home-example-carousel/map-open-table.webp";
+import exampleZagadkaOpenImage from "@/assets/home-example-carousel/zagadka-open-lectern.webp";
+import exampleZagadkaShelfImage from "@/assets/home-example-carousel/zagadka-bookshelf.webp";
 
 const typeStyle = {
   fontFamily:
@@ -166,13 +167,14 @@ const exampleCarousel = [
   { title: "Книга на столе", label: "Пример", image: exampleGenerated04Image },
   { title: "Книжная стопка", label: "Пример", image: exampleGenerated23Image },
   { title: "Готовая обложка", label: "Пример", image: exampleGenerated56Image },
-  { title: "Книга в руках", label: "Пример", image: exampleCactusCityImage },
-  { title: "Корешок на полке", label: "Пример", image: exampleCactusShelfImage },
-  { title: "Разворот на коленях", label: "Пример", image: exampleCactusLapImage },
-  { title: "Подарочный flat lay", label: "Пример", image: exampleCactusFlatlayImage },
-  { title: "Обложка с кактусами", label: "Пример", image: exampleCactusHeaderImage },
+  { title: "Книга Когда чудо ждёт", label: "Пример", image: exampleKogdaChudoImage },
+  { title: "Книга в руках", label: "Пример", image: exampleDrevogradHandsImage },
+  { title: "Задняя обложка", label: "Пример", image: exampleDrevogradBackImage },
+  { title: "Разворот в руках", label: "Пример", image: exampleKaktusHandsImage },
+  { title: "Корешок на полке", label: "Пример", image: exampleKaktusShelfImage },
   { title: "Разворот на столе", label: "Пример", image: exampleMapTableImage },
-  { title: "Задняя обложка", label: "Пример", image: exampleMapBackImage },
+  { title: "Фэнтези-разворот", label: "Пример", image: exampleZagadkaOpenImage },
+  { title: "Книга на полке", label: "Пример", image: exampleZagadkaShelfImage },
 ];
 
 const giftIdeas = [
@@ -406,6 +408,8 @@ const DesignTest = () => {
   const exampleStripRef = useRef<HTMLDivElement>(null);
   const generationStatusRef = useRef<HTMLDivElement>(null);
   const exampleDragRef = useRef<{ x: number; scrollLeft: number } | null>(null);
+  const exampleAnimationRef = useRef<number | null>(null);
+  const exampleLastFrameRef = useRef<number | null>(null);
   const exampleHoverRef = useRef(false);
   const exampleDraggingRef = useRef(false);
 
@@ -679,20 +683,40 @@ const DesignTest = () => {
       return undefined;
     }
 
-    const cycleWidth = strip.scrollWidth / 3;
-    if (cycleWidth) {
-      strip.scrollLeft = cycleWidth;
-    }
+    const resetToMiddleCycle = () => {
+      const cycleWidth = strip.scrollWidth / 3;
+      if (cycleWidth) {
+        strip.scrollLeft = cycleWidth;
+      }
+    };
 
-    const intervalId = window.setInterval(() => {
+    resetToMiddleCycle();
+
+    const animate = (timestamp: number) => {
+      if (exampleLastFrameRef.current === null) {
+        exampleLastFrameRef.current = timestamp;
+      }
+
+      const elapsed = timestamp - exampleLastFrameRef.current;
+      exampleLastFrameRef.current = timestamp;
+
       if (!exampleHoverRef.current && !exampleDraggingRef.current && exampleStripRef.current) {
-        exampleStripRef.current.scrollLeft += 1;
+        exampleStripRef.current.scrollLeft += elapsed * 0.025;
         normalizeExampleScroll();
       }
-    }, 60);
+
+      exampleAnimationRef.current = window.requestAnimationFrame(animate);
+    };
+
+    exampleAnimationRef.current = window.requestAnimationFrame(animate);
+    window.addEventListener("resize", resetToMiddleCycle);
 
     return () => {
-      window.clearInterval(intervalId);
+      if (exampleAnimationRef.current !== null) {
+        window.cancelAnimationFrame(exampleAnimationRef.current);
+      }
+      exampleLastFrameRef.current = null;
+      window.removeEventListener("resize", resetToMiddleCycle);
     };
   }, [normalizeExampleScroll]);
 
@@ -1423,7 +1447,7 @@ const DesignTest = () => {
           onPointerCancel={stopExampleDrag}
           onPointerLeave={handleExamplePointerLeave}
           onScroll={normalizeExampleScroll}
-          className="fairyteller-example-strip -mx-5 cursor-grab touch-pan-x overflow-x-auto overflow-y-hidden border-y border-black bg-[#f5f5f5] active:cursor-grabbing md:-mx-8"
+          className="fairyteller-example-strip -mx-5 cursor-grab select-none touch-pan-x overflow-x-auto overflow-y-hidden border-y border-black bg-[#f5f5f5] active:cursor-grabbing md:-mx-8"
         >
           <div className="fairyteller-marquee-track flex w-max">
             {marqueeItems.map((item, index) => (
