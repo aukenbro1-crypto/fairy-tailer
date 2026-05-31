@@ -1,65 +1,43 @@
 import { Link } from "react-router-dom";
 import logoImage from "@/assets/logo.png";
-import dragonHeaderImage from "@/assets/dragon-header.png";
-import dragonHeaderHoverImage from "@/assets/dragon-header-hover.png";
-import { useState, useRef, useEffect } from "react";
-import { Home, BookOpen, Scroll, FileText } from "lucide-react";
+import { BookOpen, Home } from "lucide-react";
 
 const BlogHeader = () => {
-  const [dragonHovered, setDragonHovered] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
-
   return (
-    <header className="sticky top-0 z-50 bg-[#031B28]/90 backdrop-blur-sm border-b border-[#E89C31]/20 shadow-lg shadow-[#E89C31]/10">
-      <div className="container mx-auto px-4 py-5 flex justify-between items-center">
-        <Link to="/">
-          <img src={logoImage} alt="FairyTeller" className="h-16 object-contain" />
+    <header className="sticky top-0 z-50 border-b border-black bg-white">
+      <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-5 md:px-8">
+        <Link to="/" aria-label="FairyTeller">
+          <img src={logoImage} alt="FairyTeller" className="h-10 w-auto object-contain" />
         </Link>
 
-        <div className="flex items-center relative" ref={menuRef}>
-          <div
-            className="cursor-pointer"
-            onMouseEnter={() => setDragonHovered(true)}
-            onMouseLeave={() => setDragonHovered(false)}
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            <img
-              src={dragonHovered ? dragonHeaderHoverImage : dragonHeaderImage}
-              alt="Меню"
-              className="h-16 object-contain transition-all duration-200"
-            />
-          </div>
+        <nav className="hidden items-center gap-8 text-[13px] font-bold uppercase tracking-[0.05em] md:flex">
+          <Link to="/" className="hover:underline">
+            Главная
+          </Link>
+          <Link to="/blog" className="hover:underline">
+            Журнал
+          </Link>
+          <Link to="/create" className="hover:underline">
+            Создать
+          </Link>
+        </nav>
 
-          {menuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-64 bg-[#031B28] border border-[#E89C31]/30 rounded-lg shadow-xl shadow-[#E89C31]/20 z-50 animate-fade-in">
-              <div className="py-2">
-                <Link to="/" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
-                  <Home size={20} />
-                  <span>Главная</span>
-                </Link>
-                <Link to="/blog" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#DBA858] hover:text-[#E89C31]" onClick={() => setMenuOpen(false)}>
-                  <FileText size={20} />
-                  <span>Блог</span>
-                </Link>
-                <div className="h-px bg-[#E89C31]/20 my-2 mx-4" />
-                <Link to="/create" className="flex items-center gap-3 px-4 py-3 hover:bg-[#083248] transition-colors text-[#E89C31] font-semibold" onClick={() => setMenuOpen(false)}>
-                  <Scroll size={20} />
-                  <span>Создать сказку</span>
-                </Link>
-              </div>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="hidden h-10 w-10 items-center justify-center border border-black bg-white text-black transition hover:bg-black hover:text-white sm:inline-flex"
+            aria-label="На главную"
+          >
+            <Home className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/create"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black"
+            aria-label="Создать книгу"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Создать книгу</span>
+          </Link>
         </div>
       </div>
     </header>

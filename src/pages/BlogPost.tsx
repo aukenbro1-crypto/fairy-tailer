@@ -1,11 +1,21 @@
 import { useParams, Link, Navigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getBlogPostBySlug, getBlogPostsByTag, blogPosts, type BlogPost as BlogPostType } from "@/data/blogPosts";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+
+import { getBlogPostBySlug, getBlogPostsByTag } from "@/data/blogPosts";
 import BlogHeader from "@/components/BlogHeader";
 import BlogCTA from "@/components/BlogCTA";
 import BlogSEO from "@/components/BlogSEO";
+import BlogImage from "@/components/BlogImage";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -13,126 +23,309 @@ const BlogPostPage = () => {
 
   if (!post) return <Navigate to="/blog" replace />;
 
-  // Related posts by tags (exclude current)
   const related = post.tags
-    .flatMap(tag => getBlogPostsByTag(tag))
-    .filter((p, i, arr) => p.slug !== post.slug && !p.hidden && arr.findIndex(x => x.slug === p.slug) === i)
+    .flatMap((tag) => getBlogPostsByTag(tag))
+    .filter((candidate, index, posts) => (
+      candidate.slug !== post.slug &&
+      !candidate.hidden &&
+      posts.findIndex((item) => item.slug === candidate.slug) === index
+    ))
     .slice(0, 4);
 
   const content = post.contentMarkdown || "";
-
-  // Insert CTA after ~40% of content
   const lines = content.split("\n");
   const midPoint = Math.floor(lines.length * 0.4);
   const firstHalf = lines.slice(0, midPoint).join("\n");
   const secondHalf = lines.slice(midPoint).join("\n");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#031B28] via-[#083248] to-[#0B2838] font-serif">
+    <div
+      className="journal-page min-h-screen overflow-x-hidden bg-white text-black"
+      style={{ fontFamily: '"Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif' }}
+    >
       <BlogSEO post={post} />
+      <style>
+        {`
+          .journal-page,
+          .journal-page * {
+            min-width: 0;
+            box-sizing: border-box;
+          }
+
+          .journal-page h1,
+          .journal-page h2,
+          .journal-page h3,
+          .journal-page a,
+          .journal-page button {
+            font-family: "Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif;
+          }
+
+          .blog-prose {
+            color: #111111;
+            font-size: 18px;
+            line-height: 1.85;
+          }
+
+          .blog-prose > * + * {
+            margin-top: 1.35em;
+          }
+
+          .blog-prose h2,
+          .blog-prose h3 {
+            color: #E89C31;
+            font-weight: 900;
+            line-height: 0.98;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+          }
+
+          .blog-prose h2 {
+            margin-top: 2.1em;
+            font-size: clamp(2rem, 5vw, 4.4rem);
+          }
+
+          .blog-prose h3 {
+            margin-top: 1.8em;
+            font-size: clamp(1.45rem, 3vw, 2.5rem);
+          }
+
+          .blog-prose strong {
+            font-weight: 900;
+          }
+
+          .blog-prose ul,
+          .blog-prose ol {
+            padding-left: 1.2rem;
+          }
+
+          .blog-prose li + li {
+            margin-top: 0.65rem;
+          }
+
+          .blog-prose blockquote {
+            border-left: 3px solid #111111;
+            background: #f5f5f5;
+            padding: 1.25rem 1.5rem;
+            color: #5e6264;
+          }
+
+          .blog-prose hr {
+            border: 0;
+            border-top: 1px solid #111111;
+            margin: 3rem 0;
+          }
+
+          .blog-prose a {
+            color: #111111;
+            font-weight: 800;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 4px;
+          }
+
+          .blog-prose img {
+            width: 100%;
+            max-height: 560px;
+            object-fit: cover;
+            border: 1px solid #111111;
+            background: #f5f5f5;
+          }
+        `}
+      </style>
+
+      <div className="border-b border-black bg-black px-5 py-2 text-center text-[11px] font-bold uppercase leading-4 tracking-[0.18em] text-white md:px-8">
+        <span className="hidden sm:inline">Журнал Fairyteller - идеи подарков, персональные книги и истории</span>
+        <span className="sm:hidden">Журнал Fairyteller</span>
+      </div>
       <BlogHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        {/* Breadcrumbs */}
-        <Breadcrumb className="mb-8">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/" className="text-[#DBA858]/60 hover:text-[#E89C31]">Главная</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#DBA858]/40" />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/blog" className="text-[#DBA858]/60 hover:text-[#E89C31]">Блог</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#DBA858]/40" />
-            <BreadcrumbItem>
-              <BreadcrumbPage className="text-[#DBA858] line-clamp-1">{post.title}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        {/* Article header */}
+      <main>
         <article>
-          <header className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-[#E89C31] mb-4 leading-tight">
-              {post.title}
-            </h1>
-            <p className="text-lg text-[#DBA858]/80 mb-4">{post.description}</p>
-            <div className="flex items-center gap-4 flex-wrap">
-              <time className="text-sm text-[#DBA858]/50" dateTime={post.date}>
-                {new Date(post.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
-              </time>
-              <div className="flex gap-2 flex-wrap">
-                {post.tags.map(tag => (
-                  <Link
-                    key={tag}
-                    to={`/blog/tag/${encodeURIComponent(tag)}`}
-                    className="text-xs px-2 py-1 rounded-full bg-[#E89C31]/10 text-[#E89C31] border border-[#E89C31]/20 hover:bg-[#E89C31]/20 transition-colors"
-                  >
-                    {tag}
-                  </Link>
-                ))}
+          <header className="border-b border-black px-5 py-8 md:px-8 md:py-12">
+            <div className="mx-auto max-w-[1180px]">
+              <Breadcrumb className="mb-8">
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/" className="text-[#5e6264] hover:text-black">Главная</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5e6264]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/blog" className="text-[#5e6264] hover:text-black">Журнал</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5e6264]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="line-clamp-1 text-black">{post.title}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-black hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Все материалы
+              </Link>
+
+              <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    {post.tags.map((tag) => (
+                      <Link
+                        key={tag}
+                        to={`/blog/tag/${encodeURIComponent(tag)}`}
+                        className="border border-black px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition hover:bg-black hover:text-white"
+                      >
+                        {tag}
+                      </Link>
+                    ))}
+                  </div>
+                  <h1 className="mt-6 text-[44px] font-black uppercase leading-[0.9] tracking-[-0.03em] text-[#E89C31] md:text-[82px]">
+                    {post.title}
+                  </h1>
+                </div>
+                <div className="border-l border-black pl-5 lg:pl-7">
+                  <time className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#5e6264]" dateTime={post.date}>
+                    {formatDate(post.date)}
+                  </time>
+                  <p className="mt-5 text-[19px] leading-8 text-[#5e6264]">
+                    {post.description}
+                  </p>
+                </div>
               </div>
             </div>
           </header>
 
-          {/* Cover */}
-          <div className="rounded-2xl overflow-hidden mb-10">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full h-auto max-h-[400px] object-cover"
-              loading="eager"
-              decoding="async"
-            />
-          </div>
+          <section className="border-b border-black bg-[#f5f5f5] px-5 py-6 md:px-8 md:py-8">
+            <div className="mx-auto max-w-[1180px]">
+              <BlogImage
+                src={post.coverImage}
+                alt={post.title}
+                className="aspect-[16/9] w-full border border-black bg-white object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            </div>
+          </section>
 
-          {/* Content first half */}
-          <div className="blog-prose">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{firstHalf}</ReactMarkdown>
-          </div>
+          <section className="px-5 py-10 md:px-8 md:py-14">
+            <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,760px)_260px]">
+              <div>
+                <div className="blog-prose">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ node: _node, ...props }) => (
+                        <BlogImage {...props} alt={props.alt || ""} loading="lazy" decoding="async" />
+                      ),
+                    }}
+                  >
+                    {firstHalf}
+                  </ReactMarkdown>
+                </div>
 
-          {/* Mid-article CTA */}
-          <BlogCTA />
+                <BlogCTA />
 
-          {/* Content second half */}
-          <div className="blog-prose">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{secondHalf}</ReactMarkdown>
-          </div>
+                <div className="blog-prose">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ node: _node, ...props }) => (
+                        <BlogImage {...props} alt={props.alt || ""} loading="lazy" decoding="async" />
+                      ),
+                    }}
+                  >
+                    {secondHalf}
+                  </ReactMarkdown>
+                </div>
 
-          {/* End CTA */}
-          <BlogCTA />
+                <BlogCTA />
+              </div>
+
+              <aside className="hidden lg:block">
+                <div className="sticky top-24 border border-black bg-[#f5f5f5] p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#5e6264]">
+                    В этой теме
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {post.tags.map((tag) => (
+                      <Link
+                        key={tag}
+                        to={`/blog/tag/${encodeURIComponent(tag)}`}
+                        className="border border-black bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition hover:bg-black hover:text-white"
+                      >
+                        {tag}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </section>
         </article>
 
-        {/* Related posts */}
         {related.length > 0 && (
-          <section className="mt-16">
-            <h2 className="text-2xl font-bold text-[#E89C31] mb-8">Похожие статьи</h2>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {related.map(rp => (
-                <Link key={rp.slug} to={`/blog/${rp.slug}`} className="group">
-                  <div className="bg-[#083248]/80 border border-[#E89C31]/20 rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-[#E89C31]/15 transition-all duration-500">
-                    <div className="aspect-[16/10] overflow-hidden">
-                      <img src={rp.coverImage} alt={rp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-bold text-[#E89C31] group-hover:text-[#DBA858] transition-colors line-clamp-2">{rp.title}</h3>
-                      <p className="text-sm text-[#DBA858]/60 mt-1 line-clamp-2">{rp.description}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+          <section className="border-t border-black bg-[#f5f5f5] px-5 py-10 md:px-8 md:py-14">
+            <div className="mx-auto max-w-[1180px]">
+              <div className="mb-8 grid gap-4 md:grid-cols-[1fr_320px] md:items-end">
+                <h2 className="text-[42px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#E89C31] md:text-[72px]">
+                  Похожие статьи.
+                </h2>
+                <p className="text-[17px] leading-7 text-[#5e6264]">
+                  Еще несколько материалов, которые помогут выбрать повод, сюжет и формат подарка.
+                </p>
+              </div>
+              <div className="grid border-l border-t border-black md:grid-cols-2">
+                {related.map((relatedPost) => (
+                  <Link key={relatedPost.slug} to={`/blog/${relatedPost.slug}`} className="group border-b border-r border-black bg-white">
+                    <article className="grid gap-5 p-5 sm:grid-cols-[160px_1fr]">
+                      <BlogImage
+                        src={relatedPost.coverImage}
+                        alt={relatedPost.title}
+                        className="aspect-square w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#5e6264]">
+                          {formatDate(relatedPost.date)}
+                        </p>
+                        <h3 className="mt-3 text-[26px] font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#E89C31]">
+                          {relatedPost.title}
+                        </h3>
+                        <p className="mt-4 line-clamp-3 text-[15px] leading-7 text-[#5e6264]">
+                          {relatedPost.description}
+                        </p>
+                        <span className="mt-5 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-black group-hover:underline">
+                          Читать
+                          <ChevronRight className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
             </div>
           </section>
         )}
       </main>
 
-      <footer className="bg-[#031B28] border-t border-[#E89C31]/20 py-10 mt-16">
-        <div className="container mx-auto px-4 text-center text-[#DBA858]">
-          <p className="text-lg">© 2026 FairyTeller. Создаем персональные истории с любовью.</p>
+      <footer className="border-t border-black bg-black px-5 py-10 text-white md:px-8">
+        <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-5 md:flex-row md:items-center">
+          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">
+            © 2026 FairyTeller. Журнал персональных книг.
+          </p>
+          <Link
+            to="/create"
+            className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+          >
+            Создать книгу
+            <ChevronRight className="h-5 w-5" />
+          </Link>
         </div>
       </footer>
     </div>

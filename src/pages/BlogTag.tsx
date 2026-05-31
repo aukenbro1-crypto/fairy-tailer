@@ -3,6 +3,7 @@ import { BookOpen, ChevronLeft, ChevronRight, Home } from "lucide-react";
 
 import { getBlogPostsByTag } from "@/data/blogPosts";
 import SEO from "@/components/SEO";
+import BlogImage from "@/components/BlogImage";
 import logoImage from "@/assets/logo.png";
 
 const formatDate = (date: string) =>
@@ -103,7 +104,7 @@ const BlogTag = () => {
             {posts.map((post) => (
               <Link key={post.slug} to={`/blog/${post.slug}`} className="group border-b border-r border-black bg-white">
                 <article className="flex h-full flex-col">
-                  <img
+                  <BlogImage
                     src={post.coverImage}
                     alt={post.title}
                     className="aspect-[4/3] w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"

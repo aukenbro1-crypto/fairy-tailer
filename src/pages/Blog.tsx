@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, ChevronRight, Home, Search } from "lucide-react";
 
 import { blogPosts } from "@/data/blogPosts";
 import BlogSEO from "@/components/BlogSEO";
+import BlogImage from "@/components/BlogImage";
 import logoImage from "@/assets/logo.png";
 
 const visiblePosts = blogPosts.filter((post) => !post.hidden);
@@ -156,7 +157,7 @@ const Blog = () => {
               </Link>
 
               <Link to={`/blog/${featuredPost.slug}`} className="group border-b border-r border-black bg-white p-4 md:p-6">
-                <img
+                <BlogImage
                   src={featuredPost.coverImage}
                   alt={featuredPost.title}
                   className="h-full min-h-[360px] w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"
@@ -199,7 +200,7 @@ const Blog = () => {
               {secondaryPosts.map((post) => (
                 <Link key={post.slug} to={`/blog/${post.slug}`} className="group border-b border-r border-black bg-white">
                   <article className="flex h-full flex-col">
-                    <img
+                    <BlogImage
                       src={post.coverImage}
                       alt={post.title}
                       className="aspect-[4/3] w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"
@@ -250,7 +251,7 @@ const Blog = () => {
                 {restPosts.map((post) => (
                   <Link key={post.slug} to={`/blog/${post.slug}`} className="group border-b border-r border-black bg-white">
                     <article className="grid gap-5 p-5 sm:grid-cols-[160px_1fr]">
-                      <img
+                      <BlogImage
                         src={post.coverImage}
                         alt={post.title}
                         className="aspect-square w-full object-cover grayscale transition duration-500 group-hover:grayscale-0"
