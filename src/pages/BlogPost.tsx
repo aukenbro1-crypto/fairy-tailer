@@ -184,7 +184,7 @@ const BlogPostPage = () => {
                       </Link>
                     ))}
                   </div>
-                  <h1 className="mt-6 text-[44px] font-black uppercase leading-[0.9] tracking-[-0.03em] text-[#E89C31] md:text-[82px]">
+                  <h1 className="mt-6 text-[38px] font-black uppercase leading-[0.96] tracking-[-0.02em] text-[#E89C31] md:text-[64px] xl:text-[72px]">
                     {post.title}
                   </h1>
                 </div>

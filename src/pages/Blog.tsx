@@ -94,32 +94,47 @@ const Blog = () => {
       </header>
 
       <main>
-        <section className="border-b border-black px-5 py-12 md:px-8 md:py-16">
-          <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
+        <section className="border-b border-black bg-[#f7efe7] px-5 py-10 md:px-8 md:py-14">
+          <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(360px,0.68fr)] lg:items-end">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
                 Редакционный раздел
               </p>
-              <h1 className="mt-5 max-w-[840px] text-[50px] font-black uppercase leading-[0.9] tracking-[-0.03em] md:text-[104px]">
-                Журнал о подарках, которые попадают в человека.
+              <h1 className="mt-5 max-w-[920px] text-[48px] font-black uppercase leading-[0.96] tracking-[-0.02em] text-[#E89C31] md:text-[76px] xl:text-[92px]">
+                Журнал Fairyteller
               </h1>
-            </div>
-            <div className="max-w-[620px] lg:pb-3">
-              <p className="text-[20px] leading-8 text-black md:text-[24px]">
-                Идеи, поводы и разборы персональных книг: как выбрать сюжет,
-                какие детали добавить и почему хороший подарок начинается с внимания.
+              <p className="mt-6 max-w-[720px] text-[22px] leading-8 text-black md:text-[28px] md:leading-10">
+                Идеи подарков, персональные книги и короткие разборы о том,
+                как собрать историю под конкретного человека.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            </div>
+            <div className="border border-black bg-white p-5 md:p-6">
+              <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#5e6264]">
+                Быстрый маршрут
+              </p>
+              <div className="mt-5 grid gap-3">
+                {journalTags.slice(0, 5).map((tag) => (
+                  <Link
+                    key={tag}
+                    to={`/blog/tag/${encodeURIComponent(tag)}`}
+                    className="flex min-h-12 items-center justify-between border-b border-black pb-3 text-[14px] font-bold uppercase tracking-[0.08em] text-black transition last:border-b-0 last:pb-0 hover:text-[#E89C31]"
+                  >
+                    {tag}
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
                 <a
                   href="#articles"
-                  className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
+                  className="inline-flex h-12 items-center justify-center gap-2 bg-black px-5 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
                 >
-                  Читать журнал
+                  К статьям
                   <ArrowRight className="h-5 w-5" />
                 </a>
                 <Link
                   to="/create"
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-black bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-black bg-white px-5 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
                 >
                   Создать книгу
                 </Link>
@@ -137,7 +152,7 @@ const Blog = () => {
                     <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#5e6264]">
                       Главный материал
                     </p>
-                    <h2 className="mt-8 max-w-[760px] text-[42px] font-black uppercase leading-[0.92] tracking-[-0.03em] md:text-[72px]">
+                    <h2 className="mt-8 max-w-[760px] text-[34px] font-black uppercase leading-[0.96] tracking-[-0.02em] text-[#E89C31] md:text-[56px]">
                       {featuredPost.title}
                     </h2>
                     <p className="mt-6 max-w-[680px] text-[18px] leading-8 text-[#5e6264]">
@@ -173,8 +188,8 @@ const Blog = () => {
               <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
                 Рубрики
               </p>
-              <h2 className="mt-4 text-[38px] font-black uppercase leading-[0.92] tracking-[-0.03em]">
-                Найти повод.
+              <h2 className="mt-4 text-[32px] font-black uppercase leading-[0.96] tracking-[-0.02em] text-[#E89C31]">
+                Найти повод
               </h2>
               <div className="mt-7 flex flex-wrap gap-2">
                 {journalTags.map((tag) => (
@@ -237,8 +252,8 @@ const Blog = () => {
                   <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
                     Архив
                   </p>
-                  <h2 className="mt-4 text-[42px] font-black uppercase leading-[0.92] tracking-[-0.03em] md:text-[72px]">
-                    Ещё материалы.
+                  <h2 className="mt-4 text-[36px] font-black uppercase leading-[0.96] tracking-[-0.02em] text-[#E89C31] md:text-[58px]">
+                    Ещё материалы
                   </h2>
                 </div>
                 <p className="text-[18px] leading-7 text-[#5e6264]">
