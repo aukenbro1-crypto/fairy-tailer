@@ -25,6 +25,12 @@
     <priority>0.94</priority>
   </url>
   <url>
+    <loc>https://fairyteller.ru/podarok/skazka-po-foto</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.94</priority>
+  </url>
+  <url>
     <loc>https://fairyteller.ru/romantic</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>monthly</changefreq>

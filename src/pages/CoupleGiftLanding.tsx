@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -14,11 +15,12 @@ import {
 import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import logoImage from "@/assets/logo.png";
-import snowRouteFlatlayImage from "@/assets/product-photos/snow-route-flatlay.webp";
-import snowRouteHandsImage from "@/assets/product-photos/snow-route-hands.webp";
-import snowRouteShelfImage from "@/assets/product-photos/snow-route-shelf.webp";
-import snowRouteTableImage from "@/assets/product-photos/snow-route-table.jpg";
-import loveCityOpenImage from "@/assets/product-photos/love-city-open.jpg";
+import loveHeartsOpenImage from "@/assets/landing-photos/love-hearts-open.webp";
+import loveHeartsCoverImage from "@/assets/landing-photos/love-hearts-cover.webp";
+import loveHeartsBackImage from "@/assets/landing-photos/love-hearts-back.webp";
+import maroccoOpenHeaderImage from "@/assets/landing-photos/marocco-open-header.webp";
+import maroccoCoverShelfImage from "@/assets/landing-photos/marocco-cover-shelf.webp";
+import maroccoBackDoorwayImage from "@/assets/landing-photos/marocco-back-doorway.webp";
 
 const typeStyle = {
   fontFamily:
@@ -100,6 +102,12 @@ const romanticLockedWorld = {
 };
 
 const coupleHeroSlots = ["Первый герой", "Второй герой", "Герой 3", "Герой 4"];
+
+const heroImages = [
+  { title: "Разворот книги про город влюбленных сердец", image: loveHeartsOpenImage },
+  { title: "Обложка книги Город влюбленных сердец", image: loveHeartsCoverImage },
+  { title: "Задняя обложка персональной книги для пары", image: loveHeartsBackImage },
+];
 
 const faqs = [
   {
@@ -184,6 +192,16 @@ const jsonLd = [
 ];
 
 const CoupleGiftLanding = () => {
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((index) => (index + 1) % heroImages.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
@@ -325,11 +343,38 @@ const CoupleGiftLanding = () => {
             </div>
           </div>
 
-          <div className="grid min-h-[420px] overflow-hidden bg-[#f5f5f5] md:grid-cols-2 lg:min-h-0">
-            <img src={snowRouteHandsImage} alt="Персональная книга для пары в руках" className="h-full min-h-[360px] w-full object-cover" />
-            <div className="grid border-l border-black">
-              <img src={snowRouteFlatlayImage} alt="Подарочная персональная книга для пары на столе" className="h-full min-h-[220px] w-full border-b border-black object-cover" />
-              <img src={snowRouteShelfImage} alt="Готовая персональная книга для пары на полке" className="h-full min-h-[220px] w-full object-cover" />
+          <div className="min-w-0 overflow-hidden bg-[#f5f5f5]">
+            <div className="relative flex h-full min-h-[420px] items-center justify-center md:min-h-[560px] lg:min-h-0">
+              <button
+                type="button"
+                onClick={() => setHeroIndex((index) => (index + 1) % heroImages.length)}
+                className="absolute inset-0 cursor-pointer"
+                aria-label="Показать следующее фото книги для пары"
+              >
+                {heroImages.map((item, index) => (
+                  <img
+                    key={item.title}
+                    src={item.image}
+                    alt={item.title}
+                    className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
+                      index === heroIndex ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                ))}
+              </button>
+              <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center gap-2">
+                {heroImages.map((item, index) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => setHeroIndex(index)}
+                    className={`h-2.5 w-8 border border-black transition ${
+                      index === heroIndex ? "bg-black" : "bg-white/85 hover:bg-white"
+                    }`}
+                    aria-label={`Показать ${item.title}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -409,9 +454,9 @@ const CoupleGiftLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={snowRouteTableImage} alt="Готовая книга для пары на столе" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={loveCityOpenImage} alt="Иллюстрированный разворот книги с историей пары" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={snowRouteFlatlayImage} alt="Подарочная персональная книга с деталями пары" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={maroccoOpenHeaderImage} alt="Печатная книга для пары с открытым разворотом" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={maroccoCoverShelfImage} alt="Обложка персональной книги для пары" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={maroccoBackDoorwayImage} alt="Задняя обложка персональной книги для пары" className="h-full min-h-[260px] w-full object-cover" />
               </div>
             </div>
           </div>

@@ -23,6 +23,7 @@ const Wizard = lazy(() => import("./pages/Wizard"));
 const DesignTest = lazy(() => import("./pages/DesignTest"));
 const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
 const AnniversaryGiftLanding = lazy(() => import("./pages/AnniversaryGiftLanding"));
+const PhotoFairyTaleLanding = lazy(() => import("./pages/PhotoFairyTaleLanding"));
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/create" element={<DesignTest />} />
             <Route path="/podarok/dlya-pary" element={<CoupleGiftLanding />} />
             <Route path="/podarok/na-godovshchinu" element={<AnniversaryGiftLanding />} />
+            <Route path="/podarok/skazka-po-foto" element={<PhotoFairyTaleLanding />} />
             <Route path="/print" element={<Print />} />
             <Route path="/pay" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />

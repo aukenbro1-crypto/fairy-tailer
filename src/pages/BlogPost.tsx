@@ -37,6 +37,18 @@ const BlogPostPage = () => {
   const midPoint = Math.floor(lines.length * 0.4);
   const firstHalf = lines.slice(0, midPoint).join("\n");
   const secondHalf = lines.slice(midPoint).join("\n");
+  const isPhotoFairyTalePost = post.slug === "sozdat-skazku-po-foto";
+  const ctaProps = isPhotoFairyTalePost
+    ? {
+        title: "Создайте сказку по фото в печатной книге.",
+        description:
+          "Загрузите фото ребёнка, добавьте имя и детали героя, получите превью и оформите настоящую книгу с иллюстрациями.",
+        primaryLabel: "Создать сказку по фото",
+        primaryTo: "/podarok/skazka-po-foto",
+        secondaryLabel: "Как это выглядит",
+        secondaryTo: "/podarok/skazka-po-foto#examples",
+      }
+    : {};
 
   return (
     <div
@@ -228,7 +240,7 @@ const BlogPostPage = () => {
                   </ReactMarkdown>
                 </div>
 
-                <BlogCTA />
+                <BlogCTA {...ctaProps} />
 
                 <div className="blog-prose">
                   <ReactMarkdown
@@ -243,7 +255,7 @@ const BlogPostPage = () => {
                   </ReactMarkdown>
                 </div>
 
-                <BlogCTA />
+                <BlogCTA {...ctaProps} />
               </div>
 
               <aside className="hidden lg:block">
