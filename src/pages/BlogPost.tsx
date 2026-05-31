@@ -81,7 +81,7 @@ const BlogPostPage = () => {
 
           .blog-prose h2 {
             margin-top: 2.1em;
-            font-size: clamp(2rem, 5vw, 4.4rem);
+            font-size: clamp(1.6rem, 3vw, 2.7rem);
           }
 
           .blog-prose h3 {
