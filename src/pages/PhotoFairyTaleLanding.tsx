@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -59,6 +60,15 @@ const differences = [
   "можно добавить родителей, друга, питомца или любимый предмет",
 ];
 
+const exampleDetails = [
+  "чёткое фото лица ребёнка",
+  "имя, возраст и характер",
+  "любимое место или мир сказки",
+  "игрушка, питомец или талисман",
+  "стиль иллюстраций",
+  "важная деталь для сюжета",
+];
+
 const faqs = [
   {
     question: "Насколько похож герой на фото?",
@@ -78,6 +88,12 @@ const faqs = [
 ];
 
 const childHeroSlots = ["Ребёнок", "Друг", "Родитель", "Герой 4"];
+
+const heroImages = [
+  { title: "Разворот книги-сказки с иллюстрациями по фото", image: listSpreadImage },
+  { title: "Обложка именной книги по фото", image: listFrontImage },
+  { title: "Задняя обложка персональной сказки по фото", image: listBackImage },
+];
 
 const jsonLd = [
   {
@@ -116,6 +132,16 @@ const jsonLd = [
 ];
 
 const PhotoFairyTaleLanding = () => {
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((index) => (index + 1) % heroImages.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
@@ -218,11 +244,38 @@ const PhotoFairyTaleLanding = () => {
             </div>
           </div>
 
-          <div className="grid overflow-hidden bg-[#f5f5f5] md:h-[560px] md:grid-cols-2 lg:h-[640px]">
-            <img src={listSpreadImage} alt="Разворот книги-сказки с иллюстрациями по фото" className="h-[360px] w-full object-cover md:h-full md:min-h-0" />
-            <div className="grid grid-rows-2 border-t border-black md:h-full md:min-h-0 md:border-l md:border-t-0">
-              <img src={listFrontImage} alt="Обложка именной книги по фото" className="h-[220px] w-full border-b border-black object-cover md:h-full md:min-h-0" />
-              <img src={listBackImage} alt="Задняя обложка персональной сказки по фото" className="h-[220px] w-full object-cover md:h-full md:min-h-0" />
+          <div className="min-w-0 overflow-hidden bg-[#f5f5f5]">
+            <div className="relative flex h-full min-h-[420px] items-center justify-center md:min-h-[560px] lg:min-h-0">
+              <button
+                type="button"
+                onClick={() => setHeroIndex((index) => (index + 1) % heroImages.length)}
+                className="absolute inset-0 cursor-pointer"
+                aria-label="Показать следующее фото сказки по фото"
+              >
+                {heroImages.map((item, index) => (
+                  <img
+                    key={item.title}
+                    src={item.image}
+                    alt={item.title}
+                    className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
+                      index === heroIndex ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                ))}
+              </button>
+              <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center gap-2">
+                {heroImages.map((item, index) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => setHeroIndex(index)}
+                    className={`h-2.5 w-8 border border-black transition ${
+                      index === heroIndex ? "bg-black" : "bg-white/85 hover:bg-white"
+                    }`}
+                    aria-label={`Показать ${item.title}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -245,6 +298,26 @@ const PhotoFairyTaleLanding = () => {
               })}
             </div>
           </div>
+        </section>
+
+        <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
+          <FairytellerInlineConstructor
+            availableWorldIds={["adventure", "fantasy", "romance"]}
+            worldTabLabel="Сюжет"
+            worldLegend="Выберите сюжет"
+            heading="Создайте сказку по фото."
+            description="Добавьте фото ребёнка, имя, характер, место действия и важную деталь. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
+            locationLabel="Место сказки"
+            locationPlaceholder="Лес, город, дом, школа, волшебная страна"
+            artifactLabel="Важная деталь"
+            artifactPlaceholder="Игрушка, рюкзак, питомец, любимая книга, талисман"
+            heroIntro="Добавьте ребёнка как главного героя. Фото поможет сохранить узнаваемые черты в иллюстрациях."
+            defaultVisibleHeroIndexes={[0]}
+            defaultHeroAgeGroup="child"
+            requiredHeroCount={1}
+            heroSlots={childHeroSlots}
+            submitLabel="Создать сказку по фото"
+          />
         </section>
 
         <section id="difference" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
@@ -276,16 +349,27 @@ const PhotoFairyTaleLanding = () => {
         <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Примеры разворотов.</h2>
+              <h2 className={sectionTitleClass}>Что добавить в сказку.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Ниже реальные фото печатных книг: так выглядит книга-сказка с иллюстрациями по фото,
-                когда история уже живёт на бумаге.
+                Фото помогает сохранить узнаваемые черты, а детали делают сюжет личным:
+                так персональная сказка с фото превращается в книгу про конкретного ребёнка.
               </p>
             </div>
-            <div className="grid border-l border-t border-black md:grid-cols-3">
-              <img src={zagadkaSpreadImage} alt="Разворот персональной сказки с иллюстрациями" className="h-full min-h-[280px] w-full border-b border-r border-black object-cover" />
-              <img src={zagadkaFrontImage} alt="Фронтальная обложка именной книги с фото" className="h-full min-h-[280px] w-full border-b border-r border-black object-cover" />
-              <img src={zagadkaBackImage} alt="Задняя обложка персональной сказки" className="h-full min-h-[280px] w-full border-b border-r border-black object-cover" />
+
+            <div className="grid gap-0 border-l border-t border-black lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="grid border-b border-r border-black bg-white p-5 md:grid-cols-2">
+                {exampleDetails.map((item) => (
+                  <span key={item} className="flex min-h-[64px] items-center gap-3 border-b border-black py-3 text-[15px] font-bold uppercase leading-5 last:border-b-0 md:odd:border-r md:odd:pr-4 md:even:pl-4">
+                    <Check className="h-5 w-5 shrink-0" />
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
+                <img src={zagadkaSpreadImage} alt="Разворот персональной сказки с иллюстрациями" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={zagadkaFrontImage} alt="Фронтальная обложка именной книги с фото" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
+                <img src={zagadkaBackImage} alt="Задняя обложка персональной сказки" className="h-full min-h-[260px] w-full object-cover" />
+              </div>
             </div>
           </div>
         </section>
@@ -312,26 +396,6 @@ const PhotoFairyTaleLanding = () => {
               </article>
             </div>
           </div>
-        </section>
-
-        <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
-          <FairytellerInlineConstructor
-            availableWorldIds={["adventure", "fantasy", "romance"]}
-            worldTabLabel="Сюжет"
-            worldLegend="Выберите сюжет"
-            heading="Создайте сказку по фото."
-            description="Добавьте фото ребёнка, имя, характер, место действия и важную деталь. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
-            locationLabel="Место сказки"
-            locationPlaceholder="Лес, город, дом, школа, волшебная страна"
-            artifactLabel="Важная деталь"
-            artifactPlaceholder="Игрушка, рюкзак, питомец, любимая книга, талисман"
-            heroIntro="Добавьте ребёнка как главного героя. Фото поможет сохранить узнаваемые черты в иллюстрациях."
-            defaultVisibleHeroIndexes={[0]}
-            defaultHeroAgeGroup="child"
-            requiredHeroCount={1}
-            heroSlots={childHeroSlots}
-            submitLabel="Создать сказку по фото"
-          />
         </section>
 
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
