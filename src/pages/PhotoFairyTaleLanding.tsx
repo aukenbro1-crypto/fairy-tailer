@@ -4,7 +4,6 @@ import {
   BookOpen,
   Check,
   ChevronRight,
-  Gift,
   ImagePlus,
   PackageCheck,
   Sparkles,
@@ -12,6 +11,7 @@ import {
 
 import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
+import LandingHeader from "@/components/LandingHeader";
 import logoImage from "@/assets/logo.png";
 import listFrontImage from "@/assets/landing-photos/skazka-photo-list-front.webp";
 import listBackImage from "@/assets/landing-photos/skazka-photo-list-back.webp";
@@ -174,31 +174,7 @@ const PhotoFairyTaleLanding = () => {
       </style>
 
       <div className="photo-tale-page">
-        <div className="border-b border-black bg-black px-5 py-2 text-center text-[9px] font-bold uppercase leading-4 tracking-[0.14em] text-white sm:text-[10px] md:px-8">
-          Персональная сказка по фото
-        </div>
-
-        <header className="sticky inset-x-0 top-0 z-40 border-b border-black bg-white">
-          <div className="mx-auto flex h-14 max-w-[1480px] items-center justify-between px-5 md:px-8">
-            <Link to="/" className="flex items-center gap-3" aria-label="Fairyteller">
-              <img src={logoImage} alt="Fairyteller" className="h-10 w-auto object-contain" />
-            </Link>
-            <nav className="hidden items-center gap-8 text-[13px] font-bold uppercase tracking-[0.05em] md:flex">
-              <a href="#process" className="hover:underline">Как работает</a>
-              <a href="#difference" className="hover:underline">Отличие</a>
-              <a href="#examples" className="hover:underline">Примеры</a>
-              <a href="#create" className="hover:underline">Создать</a>
-              <a href="#faq" className="hover:underline">FAQ</a>
-            </nav>
-            <a
-              href="#create"
-              className="inline-flex h-10 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black"
-            >
-              <Gift className="h-4 w-4" />
-              <span className="hidden sm:inline">Создать</span>
-            </a>
-          </div>
-        </header>
+        <LandingHeader />
 
         <section className="mx-auto grid w-full max-w-[1480px] min-w-0 overflow-hidden border-black lg:min-h-[640px] lg:grid-cols-[1.08fr_0.92fr]">
           <div className="flex min-w-0 flex-col justify-between border-black px-5 py-9 md:px-8 md:py-11 lg:border-r lg:pb-16">
