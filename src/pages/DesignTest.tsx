@@ -835,12 +835,29 @@ const DesignTest = () => {
           }
 
           .fairyteller-marquee-track {
-            transform: translateZ(0);
+            animation: fairyteller-example-marquee 44s linear infinite;
+            will-change: transform;
+          }
+
+          @keyframes fairyteller-example-marquee {
+            from {
+              transform: translate3d(0, 0, 0);
+            }
+            to {
+              transform: translate3d(-33.333333%, 0, 0);
+            }
           }
 
           .fairyteller-example-strip {
+            overflow-x: hidden;
             overscroll-behavior-x: contain;
             scrollbar-width: none;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .fairyteller-marquee-track {
+              animation: none;
+            }
           }
 
           .fairyteller-choice-strip {
