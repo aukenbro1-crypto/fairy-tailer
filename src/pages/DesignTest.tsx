@@ -410,7 +410,6 @@ const DesignTest = () => {
   const exampleDragRef = useRef<{ x: number; scrollLeft: number } | null>(null);
   const exampleAnimationRef = useRef<number | null>(null);
   const exampleLastFrameRef = useRef<number | null>(null);
-  const exampleHoverRef = useRef(false);
   const exampleDraggingRef = useRef(false);
 
   const selectedWorld = useMemo(
@@ -661,11 +660,7 @@ const DesignTest = () => {
     exampleDraggingRef.current = false;
     normalizeExampleScroll();
   };
-  const handleExamplePointerEnter = () => {
-    exampleHoverRef.current = true;
-  };
   const handleExamplePointerLeave = () => {
-    exampleHoverRef.current = false;
     stopExampleDrag();
   };
 
@@ -700,8 +695,8 @@ const DesignTest = () => {
       const elapsed = timestamp - exampleLastFrameRef.current;
       exampleLastFrameRef.current = timestamp;
 
-      if (!exampleHoverRef.current && !exampleDraggingRef.current && exampleStripRef.current) {
-        exampleStripRef.current.scrollLeft += elapsed * 0.025;
+      if (!exampleDraggingRef.current && exampleStripRef.current) {
+        exampleStripRef.current.scrollLeft += elapsed * 0.07;
         normalizeExampleScroll();
       }
 
@@ -1440,7 +1435,6 @@ const DesignTest = () => {
 
         <div
           ref={exampleStripRef}
-          onPointerEnter={handleExamplePointerEnter}
           onPointerDown={startExampleDrag}
           onPointerMove={moveExampleDrag}
           onPointerUp={stopExampleDrag}
