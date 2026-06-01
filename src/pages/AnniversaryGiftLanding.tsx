@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -15,9 +16,9 @@ import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import LandingHeader from "@/components/LandingHeader";
 import logoImage from "@/assets/logo.png";
-import romanticBookImage from "@/assets/romantic-book-cover-new.png";
-import bookHandsImage from "@/assets/book-hands-romantic.png";
-import romanticStoryImage from "@/assets/romantic-story.png";
+import anniversaryZvezdopadSpreadImage from "@/assets/landing-photos/anniversary-zvezdopad-spread.jpg";
+import anniversaryZvezdopadBackImage from "@/assets/landing-photos/anniversary-zvezdopad-back.jpg";
+import anniversaryZvezdopadCoverImage from "@/assets/landing-photos/anniversary-zvezdopad-cover.jpg";
 import exampleCactusCityImage from "@/assets/example-photos/cactus-city-open-book-hands-bench.webp";
 import exampleCactusFlatlayImage from "@/assets/example-photos/cactus-flatlay-mood.webp";
 import exampleMapTableImage from "@/assets/example-photos/map-open-book-table.webp";
@@ -112,6 +113,12 @@ const process = [
 
 const coupleHeroSlots = ["Первый герой", "Второй герой", "Герой 3", "Герой 4"];
 
+const heroImages = [
+  { title: "Разворот книги Звездопад над Волгой", image: anniversaryZvezdopadSpreadImage },
+  { title: "Задняя обложка книги Звездопад над Волгой", image: anniversaryZvezdopadBackImage },
+  { title: "Обложка книги Звездопад над Волгой", image: anniversaryZvezdopadCoverImage },
+];
+
 const faqs = [
   {
     question: "Чем эта страница отличается от подарка для пары?",
@@ -195,6 +202,16 @@ const jsonLd = [
 ];
 
 const AnniversaryGiftLanding = () => {
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((index) => (index + 1) % heroImages.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
@@ -297,11 +314,38 @@ const AnniversaryGiftLanding = () => {
             </div>
           </div>
 
-          <div className="grid min-h-[420px] overflow-hidden bg-[#f5f5f5] md:grid-cols-2 lg:min-h-0">
-            <img src={romanticBookImage} alt="Персональная книга на годовщину" className="h-full min-h-[360px] w-full object-cover" />
-            <div className="grid border-l border-black">
-              <img src={bookHandsImage} alt="Печатная книга в руках" className="h-full min-h-[220px] w-full border-b border-black object-cover" />
-              <img src={romanticStoryImage} alt="История пары в иллюстрациях" className="h-full min-h-[220px] w-full object-cover" />
+          <div className="min-w-0 overflow-hidden bg-[#f5f5f5]">
+            <div className="relative flex h-full min-h-[420px] items-center justify-center md:min-h-[560px] lg:min-h-0">
+              <button
+                type="button"
+                onClick={() => setHeroIndex((index) => (index + 1) % heroImages.length)}
+                className="absolute inset-0 cursor-pointer"
+                aria-label="Показать следующее фото книги на годовщину"
+              >
+                {heroImages.map((item, index) => (
+                  <img
+                    key={item.title}
+                    src={item.image}
+                    alt={item.title}
+                    className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
+                      index === heroIndex ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                ))}
+              </button>
+              <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center gap-2">
+                {heroImages.map((item, index) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => setHeroIndex(index)}
+                    className={`h-2.5 w-8 border border-black transition ${
+                      index === heroIndex ? "bg-black" : "bg-white/85 hover:bg-white"
+                    }`}
+                    aria-label={`Показать ${item.title}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
