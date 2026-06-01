@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import FairytellerChat from "./components/FairytellerChat";
+import DesignTest from "./pages/DesignTest";
 
 // Lazy load pages for better performance
 const Print = lazy(() => import("./pages/Print"));
@@ -20,7 +21,6 @@ const March8 = lazy(() => import("./pages/March8"));
 const BookPreview = lazy(() => import("./pages/BookPreview"));
 const NarutoStory = lazy(() => import("./pages/NarutoStory"));
 const Wizard = lazy(() => import("./pages/Wizard"));
-const DesignTest = lazy(() => import("./pages/DesignTest"));
 const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
 const AnniversaryGiftLanding = lazy(() => import("./pages/AnniversaryGiftLanding"));
 const PhotoFairyTaleLanding = lazy(() => import("./pages/PhotoFairyTaleLanding"));
