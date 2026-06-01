@@ -16,9 +16,9 @@ import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import LandingHeader from "@/components/LandingHeader";
 import logoImage from "@/assets/logo.png";
-import listFrontImage from "@/assets/landing-photos/skazka-photo-list-front.webp";
-import listBackImage from "@/assets/landing-photos/skazka-photo-list-back.webp";
-import listSpreadImage from "@/assets/landing-photos/skazka-photo-list-spread.webp";
+import mechanicFrontImage from "@/assets/landing-photos/skazka-photo-mechanic-front.jpg";
+import mechanicBackImage from "@/assets/landing-photos/skazka-photo-mechanic-back.jpg";
+import mechanicSpreadImage from "@/assets/landing-photos/skazka-photo-mechanic-spread.jpg";
 import zagadkaFrontImage from "@/assets/landing-photos/skazka-photo-zagadka-front.webp";
 import zagadkaBackImage from "@/assets/landing-photos/skazka-photo-zagadka-back.webp";
 import zagadkaSpreadImage from "@/assets/landing-photos/skazka-photo-zagadka-spread.webp";
@@ -122,9 +122,9 @@ const faqs = [
 const childHeroSlots = ["Ребёнок", "Друг", "Родитель", "Герой 4"];
 
 const heroImages = [
-  { title: "Разворот книги-сказки с иллюстрациями по фото", image: listSpreadImage },
-  { title: "Обложка именной книги по фото", image: listFrontImage },
-  { title: "Задняя обложка персональной сказки по фото", image: listBackImage },
+  { title: "Разворот книги Пустынный механик и забытый голос", image: mechanicSpreadImage },
+  { title: "Обложка книги Пустынный механик и забытый голос", image: mechanicFrontImage },
+  { title: "Задняя обложка книги Пустынный механик и забытый голос", image: mechanicBackImage },
 ];
 
 const jsonLd = [
