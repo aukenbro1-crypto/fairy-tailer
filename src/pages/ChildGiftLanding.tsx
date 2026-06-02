@@ -45,7 +45,7 @@ const heroImages = [
 const ordinaryGifts = [
   {
     title: "Игрушка",
-    text: "Радует быстро, но часто теряется среди других вещей. Книга дольше живет дома и возвращает ребенка к собственной истории.",
+    text: "Радует быстро, но часто теряется среди других вещей, а именная книга для ребёнка дольше живет дома и возвращает его к собственной истории.",
   },
   {
     title: "Сладости",
@@ -64,7 +64,7 @@ const ordinaryGifts = [
 const occasions = [
   {
     title: "День рождения",
-    text: "Оригинальный подарок ребенку, где он становится главным героем приключения, а не просто получает очередную вещь.",
+    text: "Это именная книга для ребёнка на день рождения, где он становится главным героем приключения, а не просто получает очередную вещь.",
   },
   {
     title: "Новый год",
@@ -154,9 +154,9 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "Подарок ребенку: персональная бумажная книга",
+    name: "Сказка с именем ребёнка — персональная книга на заказ",
     description:
-      "Необычный подарок ребенку: персональная бумажная книга, где ребенок становится главным героем истории с иллюстрациями по фото.",
+      "Именная сказка для ребёнка: уникальный сюжет, иллюстрации по фото, персонаж похож на вашего малыша, физическая книга от 3500₽ с доставкой по России.",
     brand: { "@type": "Brand", name: "Fairyteller" },
     image: "https://fairyteller.ru/images/book-exmpl6.jpg",
     offers: {
@@ -181,7 +181,7 @@ const jsonLd = [
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: "https://fairyteller.ru/" },
-      { "@type": "ListItem", position: 2, name: "Подарок ребенку", item: "https://fairyteller.ru/podarok/rebenku" },
+      { "@type": "ListItem", position: 2, name: "Сказка с именем ребёнка", item: "https://fairyteller.ru/podarok/rebenku" },
     ],
   },
 ];
@@ -200,8 +200,8 @@ const ChildGiftLanding = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
-        title="Подарок ребенку — персональная книга, где он герой | Fairyteller"
-        description="Ищете подарок ребенку? Создайте персональную бумажную книгу, где ребенок становится главным героем. Фото, имя, любимые детали, печать от 3500₽ и доставка по России."
+        title="Сказка с именем ребёнка — персональная книга на заказ | Fairyteller"
+        description="Создайте именную сказку для ребёнка: уникальный сюжет, иллюстрации по фото, персонаж похож на вашего малыша. Физическая книга от 3500₽ с доставкой по России."
         path="/podarok/rebenku"
         image="/images/book-exmpl6.jpg"
         type="product"
@@ -261,15 +261,15 @@ const ChildGiftLanding = () => {
           <div className="flex min-w-0 flex-col justify-between border-black px-5 py-9 md:px-8 md:py-11 lg:border-r lg:pb-16">
             <div className="w-full max-w-[360px] md:max-w-none">
               <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
-                Идея подарка ребенку
+                Именная сказка для ребёнка
               </p>
               <h1 className="mt-5 w-full max-w-full break-normal text-[28px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[34px] sm:text-[40px] md:max-w-[780px] md:text-[46px] lg:text-[44px] 2xl:text-[54px]">
-                Подарок ребенку, где он сам становится героем
+                Сказка с именем ребёнка — персональная книга на заказ
               </h1>
               <p className="mt-5 w-full max-w-[340px] text-[16px] leading-[1.42] md:max-w-[680px] md:text-[21px] md:leading-[1.35]">
-                Если вы думаете, что подарить ребенку, начните не с вещи, а с ощущения:
-                "это история про меня". Персональная книга превращает фото, имя и любимые детали ребенка
-                в бумажную сказку, которую можно читать вместе и хранить дома.
+                Создайте именную сказку для ребёнка: имя, фото и любимые детали превращаются
+                в уникальный сюжет, где персонаж похож на вашего малыша. Это физическая книга,
+                которую можно читать вместе, дарить на праздник и хранить дома.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <a
@@ -277,7 +277,7 @@ const ChildGiftLanding = () => {
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-black px-4 py-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264] sm:w-auto sm:px-6 sm:text-[13px]"
                 >
                   <Gift className="h-5 w-5" />
-                  Создать подарок ребенку
+                  Создать именную сказку
                 </a>
                 <a
                   href="#why-book"
@@ -338,23 +338,23 @@ const ChildGiftLanding = () => {
         <section id="why-book" className="scroll-mt-24 border-y border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Почему книга, а не просто вещь.</h2>
+              <h2 className={sectionTitleClass}>Почему именная книга, а не просто вещь.</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
                 <Heart className="h-7 w-7" />
                 <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Про него</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Ребенок видит в книге себя: имя, внешность, характер, любимый мир и маленькие детали,
-                  которые обычно знают только близкие.
+                  Ребенок видит в книге себя: имя, внешность, характер, любимый мир и маленькие детали.
+                  Так персональная сказка для ребёнка становится подарком, сделанным именно про него.
                 </p>
               </article>
               <article className="border-b border-r border-black bg-white p-5">
                 <BookOpen className="h-7 w-7" />
                 <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Надолго</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Это не PDF и не игрушка на пару дней. Персональная книга для ребенка остается на полке,
-                  перечитывается и хранит конкретный возраст, мечты и семейную заботу.
+                  Это не PDF и не игрушка на пару дней. Такие сказки с именами детей остаются на полке,
+                  перечитываются и хранят конкретный возраст, мечты и семейную заботу.
                 </p>
               </article>
             </div>
@@ -366,8 +366,9 @@ const ChildGiftLanding = () => {
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
               <h2 className={sectionTitleClass}>Когда обычные подарки уже не попадают.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Запрос "я ищу подарок ребенку" обычно начинается с сомнения: хочется не банальность,
-                не очередную вещь и не подарок, который забудется после праздника.
+                Запрос "я ищу подарок ребенку" часто начинается с сомнения: хочется не банальность
+                и не очередную вещь. В этот момент именная книга для ребёнка отвечает личной историей,
+                которую можно держать в руках.
               </p>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-4">
@@ -387,7 +388,7 @@ const ChildGiftLanding = () => {
             worldTabLabel="Мир"
             worldLegend="Выберите мир"
             heading="Соберите книгу под ребенка."
-            description="Добавьте фото, имя, возраст, характер и важные детали. Конструктор соберет необычный подарок ребенку: персональную книгу, где он главный герой."
+            description="Добавьте фото, имя, возраст, характер и важные детали. Конструктор соберет персональную сказку по фото ребёнка: именную книгу, где он главный герой."
             locationLabel="Место истории"
             locationPlaceholder="Дом, школа, лес, город, волшебная страна"
             artifactLabel="Важная деталь"
@@ -397,7 +398,7 @@ const ChildGiftLanding = () => {
             defaultHeroAgeGroup="child"
             requiredHeroCount={1}
             heroSlots={childHeroSlots}
-            submitLabel="Создать подарок ребенку"
+            submitLabel="Создать именную сказку"
           />
         </section>
 
@@ -423,7 +424,8 @@ const ChildGiftLanding = () => {
               <h2 className={sectionTitleClass}>Что делает подарок личным.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
                 Самые сильные детали простые: фото ребенка, любимая игрушка, питомец, характер,
-                место действия и повод, ради которого книга появляется дома.
+                место действия и повод. Так персональная сказка по фото ребёнка выглядит узнаваемой,
+                но остается настоящей книжной историей.
               </p>
             </div>
 
