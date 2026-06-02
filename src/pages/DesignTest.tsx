@@ -329,6 +329,7 @@ const ageGroups = [
   { value: "adult", label: "Взрослый" },
 ];
 const marqueeItems = [...exampleCarousel, ...exampleCarousel, ...exampleCarousel];
+const EXAMPLE_AUTO_SCROLL_SPEED = 0.006;
 
 type HeroDraft = {
   name: string;
@@ -696,7 +697,7 @@ const DesignTest = () => {
       exampleLastFrameRef.current = timestamp;
 
       if (!exampleDraggingRef.current && exampleStripRef.current) {
-        exampleStripRef.current.scrollLeft += elapsed * 0.07;
+        exampleStripRef.current.scrollLeft += elapsed * EXAMPLE_AUTO_SCROLL_SPEED;
         normalizeExampleScroll();
       }
 
@@ -835,7 +836,7 @@ const DesignTest = () => {
           }
 
           .fairyteller-marquee-track {
-            animation: fairyteller-example-marquee 44s linear infinite;
+            animation: fairyteller-example-marquee 220s linear infinite;
             will-change: transform;
           }
 
