@@ -109,10 +109,19 @@ function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
-function normalizeParagraphText(value) {
+function normalizeDialogueDashes(value) {
   return String(value || '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+    .replace(/(^|[\s\n])—(?=\S)/gu, '$1— ')
+    .replace(/[ \t]*[—–][ \t]*(?=$|\n)/gm, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+function normalizeParagraphText(value) {
+  return normalizeDialogueDashes(value)
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').replace(/[ \t]+/g, ' ').trim())
     .filter(Boolean)
@@ -174,22 +183,35 @@ function splitSentences(text) {
 }
 
 function inferDisplayParagraphs(text) {
-  const sentences = splitSentences(text);
-  if (sentences.length <= 2) return [cleanText(text)].filter(Boolean);
+  const dialogueChunks = cleanText(normalizeDialogueDashes(text))
+    .replace(/(^|[.!?…]\s+)(—\s*(?=[A-ZА-ЯЁ0-9]))/gu, '$1\n\n$2')
+    .split(/\n{2,}/)
+    .map(cleanText)
+    .filter(Boolean);
+  const sourceParagraphs = dialogueChunks.length ? dialogueChunks : [cleanText(text)].filter(Boolean);
   const paragraphs = [];
-  let current = '';
   const targetLength = 260;
   const maxLength = 390;
-  for (const sentence of sentences) {
-    const candidate = current ? `${current} ${sentence}` : sentence;
-    if (current && (current.length >= targetLength || candidate.length > maxLength)) {
+  for (const sourceParagraph of sourceParagraphs) {
+    const sentences = splitSentences(sourceParagraph);
+    if (sentences.length <= 2) {
+      paragraphs.push(sourceParagraph);
+      continue;
+    }
+    let current = '';
+    for (const sentence of sentences) {
+      const candidate = current ? `${current} ${sentence}` : sentence;
+      if (current && (current.length >= targetLength || candidate.length > maxLength)) {
+        paragraphs.push(current);
+        current = sentence;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) {
       paragraphs.push(current);
-      current = sentence;
-    } else {
-      current = candidate;
     }
   }
-  if (current) paragraphs.push(current);
   return paragraphs;
 }
 
@@ -238,6 +260,10 @@ function splitDropCapParagraph(paragraph) {
   };
 }
 
+function startsWithDialogueDash(paragraph) {
+  return /^[\s"«]*[—–-]/u.test(String(paragraph || ''));
+}
+
 function buildParagraphLayout(paragraphs, font, options) {
   const {
     size,
@@ -250,7 +276,7 @@ function buildParagraphLayout(paragraphs, font, options) {
   const lineHeight = size * lineHeightRatio;
   const shapedParagraphs = [...paragraphs];
   let dropCapLayout = null;
-  if (dropCap?.enabled && shapedParagraphs.length) {
+  if (dropCap?.enabled && shapedParagraphs.length && !startsWithDialogueDash(shapedParagraphs[0])) {
     const split = splitDropCapParagraph(shapedParagraphs[0]);
     if (split?.char && split.rest) {
       const dropCapFont = dropCap.font || font;
