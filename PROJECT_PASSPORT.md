@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-05-31 12:05 UTC
+Last updated: 2026-06-03 01:35 UTC
 
 ## Project Context
 
@@ -245,6 +245,13 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-06-03
+
+- Prepared PageSpeed/Lighthouse performance patch from the June 3, 2026 mobile and desktop PageSpeed PDF reports for `https://fairyteller.ru/`. The reports showed mobile Performance `58` with FCP `5.7s`, LCP `6.8s`, Speed Index `11.9s`, and desktop Performance `72` with FCP `2.1s`, LCP `2.2s`, Speed Index `5.0s`; TBT and CLS were already healthy.
+- Reduced first-screen network pressure on the home page by replacing the heavy 957x453 PNG logo import in `DesignTest` with a compact 260x124 WebP asset, rendering only the active hero image instead of all hidden carousel hero images, and adding explicit image dimensions plus eager/high-priority loading only for the visible hero image.
+- Deferred non-critical startup work by lazy-loading the public support chat after browser idle and scheduling Yandex Metrika initialization after `window.load`/idle instead of fetching `mc.yandex.ru` during the initial render path.
+- Left the large global CSS cleanup as a follow-up because `src/index.css` still contains shared legacy constructor and route-specific styles. PageSpeed flags unused CSS around `153-156 KiB`, but safe extraction should be done with visual regression coverage for the old landing, romantic, wizard, and constructor screens.
 
 ### 2026-05-23
 

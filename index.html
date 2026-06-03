@@ -126,20 +126,40 @@
   <meta name="twitter:description" content="Создайте персональную бумажную книгу о близком человеке: уникальный сюжет, иллюстрации по фото, редактура и доставка по России. Подарок от 3500₽.">
   <!-- Yandex.Metrika counter -->
   <script type="text/javascript">
-    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-    m[i].l=1*new Date();
-    for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
-    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id=109116448", "ym");
+    (function(w,d){
+      function initMetrika(){
+        if (w.__fairytellerMetrikaLoaded) return;
+        w.__fairytellerMetrikaLoaded = true;
+        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < d.scripts.length; j++) { if (d.scripts[j].src === r) { return; } }
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+        (w, d, "script", "https://mc.yandex.ru/metrika/tag.js?id=109116448", "ym");
 
-    ym(109116448, "init", {
-      ssr: true,
-      webvisor: true,
-      clickmap: true,
-      ecommerce: "dataLayer",
-      accurateTrackBounce: true,
-      trackLinks: true
-    });
+        w.ym(109116448, "init", {
+          ssr: true,
+          webvisor: true,
+          clickmap: true,
+          ecommerce: "dataLayer",
+          accurateTrackBounce: true,
+          trackLinks: true
+        });
+      }
+
+      function scheduleMetrika(){
+        if ("requestIdleCallback" in w) {
+          w.requestIdleCallback(initMetrika, { timeout: 5000 });
+        } else {
+          w.setTimeout(initMetrika, 3000);
+        }
+      }
+
+      if (d.readyState === "complete") {
+        scheduleMetrika();
+      } else {
+        w.addEventListener("load", scheduleMetrika, { once: true });
+      }
+    })(window, document);
   </script>
   <!-- /Yandex.Metrika counter -->
 </head>

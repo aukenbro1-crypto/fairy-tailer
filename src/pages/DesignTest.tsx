@@ -17,7 +17,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import logoImage from "@/assets/logo.png";
+import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
 import naiveStyleImage from "@/assets/naive-style.jpg";
@@ -162,6 +162,21 @@ const heroImages = [
   { title: "Звездопад над Волгой", image: heroVolgaCoverImage },
   { title: "Подарочная книга", image: heroStillLifeImage },
 ];
+
+const heroImageSize = {
+  width: 1800,
+  height: 1400,
+};
+
+const squareImageSize = {
+  width: 1100,
+  height: 1100,
+};
+
+const logoImageSize = {
+  width: 260,
+  height: 124,
+};
 
 const exampleCarousel = [
   { title: "Книга на столе", label: "Пример", image: exampleGenerated04Image },
@@ -451,6 +466,7 @@ const DesignTest = () => {
   const printPaymentUrl = bookPdfUrl
     ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(bookPdfUrl)}`
     : PRINT_PAYMENT_URL;
+  const currentHeroImage = heroImages[heroIndex];
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index > 0 && !visibleHeroes.includes(item.index));
@@ -892,7 +908,13 @@ const DesignTest = () => {
               <Menu className="h-5 w-5" />
             </button>
             <Link to="/" className="flex items-center gap-3" aria-label="FairyTeller">
-              <img src={logoImage} alt="FairyTeller" className="h-10 w-auto object-contain" />
+              <img
+                src={logoImage}
+                alt="FairyTeller"
+                className="h-10 w-auto object-contain"
+                width={logoImageSize.width}
+                height={logoImageSize.height}
+              />
             </Link>
           </div>
 
@@ -972,16 +994,17 @@ const DesignTest = () => {
               className="absolute inset-0 cursor-pointer"
               aria-label="Показать следующее фото"
             >
-              {heroImages.map((item, index) => (
-                <img
-                  key={item.title}
-                  src={item.image}
-                  alt={item.title}
-                  className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
-                    index === heroIndex ? "opacity-100" : "opacity-0"
-                  }`}
-                />
-              ))}
+              <img
+                key={currentHeroImage.title}
+                src={currentHeroImage.image}
+                alt={currentHeroImage.title}
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                width={heroImageSize.width}
+                height={heroImageSize.height}
+                loading="eager"
+                decoding="async"
+                fetchPriority={heroIndex === 0 ? "high" : "auto"}
+              />
             </button>
             <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center gap-2">
               {heroImages.map((item, index) => (
@@ -1326,7 +1349,15 @@ const DesignTest = () => {
                           onClick={() => setStyle(item.id)}
                           className="group w-[220px] shrink-0 snap-start border-b border-r border-black bg-white text-left md:w-[245px]"
                         >
-                          <img src={item.image} alt={item.label} className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0" />
+                          <img
+                            src={item.image}
+                            alt={item.label}
+                            className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0"
+                            width={1100}
+                            height={660}
+                            loading="lazy"
+                            decoding="async"
+                          />
                           <span className={`flex min-h-[72px] items-center justify-between gap-2 px-3 py-3 text-[13px] font-bold uppercase tracking-[0.08em] ${
                             style === item.id ? "bg-black text-white" : "bg-white text-black"
                           }`}>
@@ -1468,6 +1499,8 @@ const DesignTest = () => {
                   src={item.image}
                   alt={item.title}
                   className="aspect-square w-full object-cover"
+                  width={squareImageSize.width}
+                  height={squareImageSize.height}
                   loading="lazy"
                   decoding="async"
                 />
@@ -1564,7 +1597,15 @@ const DesignTest = () => {
         <div className="mx-auto max-w-[1480px]">
           <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <img src={logoImage} alt="FairyTeller" className="h-12 w-auto bg-white px-2 py-1" />
+              <img
+                src={logoImage}
+                alt="FairyTeller"
+                className="h-12 w-auto bg-white px-2 py-1"
+                width={logoImageSize.width}
+                height={logoImageSize.height}
+                loading="lazy"
+                decoding="async"
+              />
               <p className="mt-5 max-w-[620px] text-[15px] leading-7 text-white/60">
                 FairyTeller помогает создавать персональные бумажные книги по фото: для детей, любимых, родителей, друзей и важных событий.
               </p>
