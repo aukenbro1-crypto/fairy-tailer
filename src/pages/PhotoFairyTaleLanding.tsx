@@ -82,7 +82,7 @@ const process = [
   {
     icon: Sparkles,
     title: "Соберите сюжет",
-    text: "Выберите приключение, мир Хогварства, фэнтези или русский киберпанк, добавьте место действия, талисман и важных героев.",
+    text: "Выберите приключение, мир Хогвартса, фэнтези или русский киберпанк, добавьте место действия, талисман и важных героев.",
   },
   {
     icon: Camera,
@@ -341,8 +341,8 @@ const PhotoFairyTaleLanding = () => {
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
             availableWorldIds={["adventure", "hogwarts", "fantasy", "cyber"]}
-            worldTabLabel="Мир"
-            worldLegend="Выберите мир"
+            worldTabLabel="Жанр"
+            worldLegend="Выберите жанр"
             heading="Создайте сказку по фото."
             description="Добавьте фото ребёнка, имя, характер, место действия и важную деталь. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
             locationLabel="Место сказки"
