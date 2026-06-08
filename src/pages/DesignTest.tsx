@@ -53,6 +53,8 @@ const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAU
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 const PRINT_PAYMENT_URL = "https://fairyteller.ru/pay";
 const GENERATION_ETA_SECONDS = 240;
+const SOCIAL_PREVIEW_IMAGE = "/images/fairyteller-social-preview.jpg";
+const SOCIAL_PREVIEW_IMAGE_URL = "https://fairyteller.ru/images/fairyteller-social-preview.jpg";
 
 const formatGenerationTimer = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -286,7 +288,7 @@ const homeJsonLd = [
     description:
       "Персональная бумажная книга о близком человеке с уникальным сюжетом, иллюстрациями по фото, редактурой и доставкой по России.",
     brand: { "@type": "Brand", name: "Fairyteller" },
-    image: "https://fairyteller.ru/images/book-exmpl6.jpg",
+    image: SOCIAL_PREVIEW_IMAGE_URL,
     offers: {
       "@type": "Offer",
       priceCurrency: "RUB",
@@ -809,7 +811,7 @@ const DesignTest = () => {
             : "Создайте персональную бумажную книгу о близком человеке: уникальный сюжет, иллюстрации по фото, редактура и доставка по России. Подарок от 3500₽."
         }
         path={isCreatePath ? "/create" : "/"}
-        image="/images/book-exmpl6.jpg"
+        image={isCreatePath ? "/images/book-exmpl6.jpg" : SOCIAL_PREVIEW_IMAGE}
         type="product"
         jsonLd={isCreatePath ? createJsonLd : homeJsonLd}
       />
