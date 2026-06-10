@@ -1149,13 +1149,94 @@ function renderBooksPage(books, options = {}) {
 </html>`;
 }
 
+function cleanEditorText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeEditorDialogueDashes(value) {
+  return String(value || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/(^|[\s\n])—(?=\S)/gu, '$1— ')
+    .replace(/[ \t]*[—–][ \t]*(?=$|\n)/gm, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+function normalizeEditorParagraphText(value) {
+  return normalizeEditorDialogueDashes(value)
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').replace(/[ \t]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function splitEditorSentences(value) {
+  const input = cleanEditorText(value);
+  if (!input) return [];
+  const sentences = [];
+  let start = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    if (!'.!?…'.includes(char)) continue;
+    let end = index + 1;
+    while (end < input.length && '»”"'.includes(input[end])) end += 1;
+    if (end < input.length && input[end] !== ' ') continue;
+    sentences.push(input.slice(start, end).trim());
+    start = end;
+  }
+  const tail = input.slice(start).trim();
+  if (tail) sentences.push(tail);
+  return sentences.filter(Boolean);
+}
+
+function inferEditorParagraphs(value) {
+  const dialogueChunks = cleanEditorText(normalizeEditorDialogueDashes(value))
+    .replace(/(^|[.!?…:]\s+)(—\s*(?=[A-ZА-ЯЁ0-9]))/gu, '$1\n\n$2')
+    .split(/\n{2,}/)
+    .map(cleanEditorText)
+    .filter(Boolean);
+  const sourceParagraphs = dialogueChunks.length ? dialogueChunks : [cleanEditorText(value)].filter(Boolean);
+  const paragraphs = [];
+  const targetLength = 260;
+  const maxLength = 390;
+  for (const sourceParagraph of sourceParagraphs) {
+    const sentences = splitEditorSentences(sourceParagraph);
+    if (sentences.length <= 2) {
+      paragraphs.push(sourceParagraph);
+      continue;
+    }
+    let current = '';
+    for (const sentence of sentences) {
+      const candidate = current ? `${current} ${sentence}` : sentence;
+      if (current && (current.length >= targetLength || candidate.length > maxLength)) {
+        paragraphs.push(current);
+        current = sentence;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) paragraphs.push(current);
+  }
+  return paragraphs;
+}
+
+function editorBlockText(value) {
+  const normalized = normalizeEditorParagraphText(value);
+  if (!normalized) return '';
+  const explicitParagraphs = normalized.split(/\n{2,}/).map(cleanEditorText).filter(Boolean);
+  if (explicitParagraphs.length > 1) return explicitParagraphs.join('\n\n');
+  return inferEditorParagraphs(explicitParagraphs[0]).join('\n\n');
+}
+
 function editableChapterBlocks(chapter) {
   if (Array.isArray(chapter?.textBlocks) && chapter.textBlocks.length) {
-    return chapter.textBlocks.map((block) => String(block || ''));
+    return chapter.textBlocks.map(editorBlockText);
   }
   return String(chapter?.text || '')
     .split(/\n{2,}/)
-    .map((block) => block.trim())
+    .map(editorBlockText)
     .filter(Boolean);
 }
 
@@ -1217,6 +1298,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     const blocks = editableChapterBlocks(chapter);
     const blockFields = blocks.map((block, index) => `
       <label for="chapter_${chapterNumber}_block_${index}">Блок ${index + 1}</label>
+      <p class="field-hint">Пустая строка внутри блока станет новым абзацем в PDF.</p>
       <textarea id="chapter_${chapterNumber}_block_${index}" name="chapter_${chapterNumber}_block_${index}" rows="${textareaRows(block)}">${escapeHtml(block)}</textarea>
     `).join('');
 
@@ -1255,6 +1337,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     p { margin: 8px 0 0; color: #56616b; }
     a { color: #1f5d53; font-weight: 800; text-decoration: none; }
     label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .field-hint { margin: -2px 0 7px; color: #766b60; font-size: 12px; }
     input, textarea { width: 100%; border: 1px solid #d2c4b0; border-radius: 6px; padding: 11px 12px; background: #fffdf8; color: #1f2933; font: inherit; line-height: 1.5; }
     textarea { resize: vertical; min-height: 110px; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
