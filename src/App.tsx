@@ -24,6 +24,8 @@ const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
 const AnniversaryGiftLanding = lazy(() => import("./pages/AnniversaryGiftLanding"));
 const PhotoFairyTaleLanding = lazy(() => import("./pages/PhotoFairyTaleLanding"));
 const ChildGiftLanding = lazy(() => import("./pages/ChildGiftLanding"));
+const WifeGiftLanding = lazy(() => import("./pages/WifeGiftLanding"));
+const MomGiftLanding = lazy(() => import("./pages/MomGiftLanding"));
 const FairytellerChat = lazy(() => import("./components/FairytellerChat"));
 
 const queryClient = new QueryClient();
@@ -80,6 +82,8 @@ const App = () => (
             <Route path="/podarok/na-godovshchinu" element={<AnniversaryGiftLanding />} />
             <Route path="/podarok/rebenku" element={<ChildGiftLanding />} />
             <Route path="/podarok/skazka-po-foto" element={<PhotoFairyTaleLanding />} />
+            <Route path="/podarok/zhene" element={<WifeGiftLanding />} />
+            <Route path="/podarok/mame" element={<MomGiftLanding />} />
             <Route path="/print" element={<Print />} />
             <Route path="/pay" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
