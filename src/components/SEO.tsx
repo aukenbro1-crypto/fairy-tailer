@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 
 const SITE_URL = "https://fairyteller.ru";
-const DEFAULT_IMAGE =
-  "https://storage.googleapis.com/gpt-engineer-file-uploads/yqflbB2p1tgOlRatLU4jwL7BzS02/social-images/social-1765873256333-Untitled-3.jpg";
+const DEFAULT_IMAGE = "https://fairyteller.ru/images/fairyteller-social-preview.jpg";
 
 type SEOProps = {
   title: string;
@@ -32,6 +31,8 @@ const SEO = ({
     setMeta("og:type", type);
     setMeta("og:url", canonicalUrl);
     setMeta("og:image", absoluteUrl(image));
+    setMeta("og:image:width", "1200");
+    setMeta("og:image:height", "630");
     setMeta("og:site_name", "Fairyteller");
     setMeta("og:locale", "ru_RU");
     setMeta("twitter:card", "summary_large_image");

@@ -3,8 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
-import FairytellerChat from "./components/FairytellerChat";
+import { lazy, Suspense, useEffect, useState } from "react";
 import DesignTest from "./pages/DesignTest";
 
 // Lazy load pages for better performance
@@ -25,14 +24,49 @@ const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
 const AnniversaryGiftLanding = lazy(() => import("./pages/AnniversaryGiftLanding"));
 const PhotoFairyTaleLanding = lazy(() => import("./pages/PhotoFairyTaleLanding"));
 const ChildGiftLanding = lazy(() => import("./pages/ChildGiftLanding"));
+const WifeGiftLanding = lazy(() => import("./pages/WifeGiftLanding"));
+const MomGiftLanding = lazy(() => import("./pages/MomGiftLanding"));
+const FairytellerChat = lazy(() => import("./components/FairytellerChat"));
 
 const queryClient = new QueryClient();
+
+const onIdle = (callback: () => void) => {
+  if ("requestIdleCallback" in window) {
+    const id = window.requestIdleCallback(callback, { timeout: 3500 });
+    return () => window.cancelIdleCallback(id);
+  }
+
+  const id = window.setTimeout(callback, 2500);
+  return () => window.clearTimeout(id);
+};
 
 const PageLoader = () => (
   <div className="flex min-h-screen items-center justify-center bg-white">
     <div className="h-10 w-10 animate-spin border-2 border-black border-t-transparent" />
   </div>
 );
+
+const DeferredFairytellerChat = () => {
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (window.location.pathname.startsWith("/blog-admin")) {
+      return undefined;
+    }
+
+    return onIdle(() => setShouldLoad(true));
+  }, []);
+
+  if (!shouldLoad) {
+    return null;
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <FairytellerChat />
+    </Suspense>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -48,6 +82,8 @@ const App = () => (
             <Route path="/podarok/na-godovshchinu" element={<AnniversaryGiftLanding />} />
             <Route path="/podarok/rebenku" element={<ChildGiftLanding />} />
             <Route path="/podarok/skazka-po-foto" element={<PhotoFairyTaleLanding />} />
+            <Route path="/podarok/zhene" element={<WifeGiftLanding />} />
+            <Route path="/podarok/mame" element={<MomGiftLanding />} />
             <Route path="/print" element={<Print />} />
             <Route path="/pay" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />
@@ -66,7 +102,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <FairytellerChat />
+        <DeferredFairytellerChat />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -199,6 +199,11 @@ async function readFormCredential(req) {
   return params.get('password') || params.get('token') || '';
 }
 
+async function readFormBody(req, limitBytes = 1024 * 1024) {
+  const text = await readTextBody(req, limitBytes);
+  return new URLSearchParams(text);
+}
+
 async function readJsonFile(path, fallback = null) {
   try {
     return JSON.parse(await readFile(path, 'utf8'));
@@ -1013,6 +1018,10 @@ function renderFileLink(file, label) {
   ].join('');
 }
 
+function adminBookEditPath(jobId) {
+  return `${ADMIN_BOOKS_PATH}/${encodeURIComponent(jobId)}/edit`;
+}
+
 function renderBooksLoginPage(errorMessage = '') {
   return `<!doctype html>
 <html lang="ru">
@@ -1066,6 +1075,7 @@ function renderBooksPage(books, options = {}) {
       <td>${escapeHtml(formatDateTime(book.createdAt) || '—')}</td>
       <td>${escapeHtml(formatDateTime(book.updatedAt) || '—')}</td>
       <td class="links">
+        <a class="file-link edit-link" href="${adminBookEditPath(book.jobId)}"><span>edit</span></a>
         ${renderFileLink(book.files.preview, 'preview')}
         ${renderFileLink(book.files.book, 'print')}
         ${renderFileLink(book.files.cover, 'cover')}
@@ -1101,6 +1111,7 @@ function renderBooksPage(books, options = {}) {
     span { display: block; color: #68737d; font-size: 12px; }
     .links { display: flex; flex-wrap: wrap; gap: 8px; min-width: 270px; }
     .file-link { display: inline-flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
+    .edit-link { background: #7a4b1f; }
     .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
     .empty { padding: 32px; color: #56616b; }
     @media (max-width: 760px) {
@@ -1136,6 +1147,442 @@ function renderBooksPage(books, options = {}) {
   </main>
 </body>
 </html>`;
+}
+
+function cleanEditorText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeEditorDialogueDashes(value) {
+  return String(value || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/(^|[\s\n])—(?=\S)/gu, '$1— ')
+    .replace(/[ \t]*[—–][ \t]*(?=$|\n)/gm, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+function normalizeEditorParagraphText(value) {
+  return normalizeEditorDialogueDashes(value)
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').replace(/[ \t]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function splitEditorSentences(value) {
+  const input = cleanEditorText(value);
+  if (!input) return [];
+  const sentences = [];
+  let start = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    if (!'.!?…'.includes(char)) continue;
+    let end = index + 1;
+    while (end < input.length && '»”"'.includes(input[end])) end += 1;
+    if (end < input.length && input[end] !== ' ') continue;
+    sentences.push(input.slice(start, end).trim());
+    start = end;
+  }
+  const tail = input.slice(start).trim();
+  if (tail) sentences.push(tail);
+  return sentences.filter(Boolean);
+}
+
+function inferEditorParagraphs(value) {
+  const dialogueChunks = cleanEditorText(normalizeEditorDialogueDashes(value))
+    .replace(/(^|[.!?…:]\s+)(—\s*(?=[A-ZА-ЯЁ0-9]))/gu, '$1\n\n$2')
+    .split(/\n{2,}/)
+    .map(cleanEditorText)
+    .filter(Boolean);
+  const sourceParagraphs = dialogueChunks.length ? dialogueChunks : [cleanEditorText(value)].filter(Boolean);
+  const paragraphs = [];
+  const targetLength = 260;
+  const maxLength = 390;
+  for (const sourceParagraph of sourceParagraphs) {
+    const sentences = splitEditorSentences(sourceParagraph);
+    if (sentences.length <= 2) {
+      paragraphs.push(sourceParagraph);
+      continue;
+    }
+    let current = '';
+    for (const sentence of sentences) {
+      const candidate = current ? `${current} ${sentence}` : sentence;
+      if (current && (current.length >= targetLength || candidate.length > maxLength)) {
+        paragraphs.push(current);
+        current = sentence;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) paragraphs.push(current);
+  }
+  return paragraphs;
+}
+
+function editorBlockText(value) {
+  const normalized = normalizeEditorParagraphText(value);
+  if (!normalized) return '';
+  const explicitParagraphs = normalized.split(/\n{2,}/).map(cleanEditorText).filter(Boolean);
+  if (explicitParagraphs.length > 1) return explicitParagraphs.join('\n\n');
+  return inferEditorParagraphs(explicitParagraphs[0]).join('\n\n');
+}
+
+function editableChapterBlocks(chapter) {
+  if (Array.isArray(chapter?.textBlocks) && chapter.textBlocks.length) {
+    return chapter.textBlocks.map(editorBlockText);
+  }
+  return String(chapter?.text || '')
+    .split(/\n{2,}/)
+    .map(editorBlockText)
+    .filter(Boolean);
+}
+
+function textareaRows(value, minRows = 4, maxRows = 18) {
+  const text = String(value || '');
+  const lineRows = text.split('\n').length;
+  const lengthRows = Math.ceil(text.length / 95);
+  return Math.max(minRows, Math.min(maxRows, lineRows + lengthRows));
+}
+
+async function getAdminBookText(jobId) {
+  const dir = jobDir(jobId);
+  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  if (!fullText?.text || !Array.isArray(fullText.text.chapters)) {
+    throw httpError(404, 'Full text artifact not found');
+  }
+  const [status, files] = await Promise.all([
+    readJsonFile(join(dir, 'status.json'), {}),
+    getJobPdfFiles(jobId),
+  ]);
+  return { dir, fullText, status, files };
+}
+
+async function getJobPdfFiles(jobId) {
+  const dir = jobDir(jobId);
+  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf'].map(async (fileName) => {
+    const info = await optionalFileInfo(join(dir, 'files', fileName));
+    if (!info) return null;
+    return [
+      fileName.replace(/\.pdf$/i, ''),
+      {
+        fileName,
+        url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+        ...info,
+      },
+    ];
+  }));
+  return Object.fromEntries(filePairs.filter(Boolean));
+}
+
+function renderAdminNotice(message, type = 'notice') {
+  if (!message) return '';
+  return `<div class="${type}">${escapeHtml(message)}</div>`;
+}
+
+function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
+  const text = fullText.text || {};
+  const bible = text.bible || {};
+  const preview = text.preview || {};
+  const chapters = [...(text.chapters || [])].sort((a, b) => Number(a.n) - Number(b.n));
+  const files = options.files || {};
+  const render = status.artifacts?.render || {};
+  const notice = options.notice || '';
+  const error = options.error || '';
+  const lastRender = render.generatedAt || render.requestedAt || status.updatedAt || '';
+
+  const chapterFields = chapters.map((chapter) => {
+    const chapterNumber = Number(chapter.n);
+    const blocks = editableChapterBlocks(chapter);
+    const blockFields = blocks.map((block, index) => `
+      <label for="chapter_${chapterNumber}_block_${index}">Блок ${index + 1}</label>
+      <p class="field-hint">Пустая строка внутри блока станет новым абзацем в PDF.</p>
+      <textarea id="chapter_${chapterNumber}_block_${index}" name="chapter_${chapterNumber}_block_${index}" rows="${textareaRows(block)}">${escapeHtml(block)}</textarea>
+    `).join('');
+
+    return `<section class="chapter">
+      <h2>Глава ${escapeHtml(String(chapter.n || ''))}</h2>
+      <div class="grid two">
+        <div>
+          <label for="chapter_${chapterNumber}_title">Название главы</label>
+          <input id="chapter_${chapterNumber}_title" name="chapter_${chapterNumber}_title" value="${escapeHtml(chapter.title || '')}">
+        </div>
+        <div>
+          <label for="chapter_${chapterNumber}_summary">Краткое описание</label>
+          <input id="chapter_${chapterNumber}_summary" name="chapter_${chapterNumber}_summary" value="${escapeHtml(chapter.summary || '')}">
+        </div>
+      </div>
+      ${blockFields}
+    </section>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Редактор текста · FairyTeller</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, form { max-width: 1180px; margin: 0 auto; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    h2 { margin: 0 0 14px; font-size: 20px; }
+    p { margin: 8px 0 0; color: #56616b; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .field-hint { margin: -2px 0 7px; color: #766b60; font-size: 12px; }
+    input, textarea { width: 100%; border: 1px solid #d2c4b0; border-radius: 6px; padding: 11px 12px; background: #fffdf8; color: #1f2933; font: inherit; line-height: 1.5; }
+    textarea { resize: vertical; min-height: 110px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+    .top-links { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; }
+    .panel, .chapter { margin-bottom: 18px; padding: 18px; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 14px 35px rgba(40, 31, 18, 0.07); }
+    .grid { display: grid; gap: 14px; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chapter textarea + label, .chapter input + label { margin-top: 14px; }
+    .button-row { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin: 22px -28px -28px; padding: 14px 28px; border-top: 1px solid #ded5c5; background: rgba(246, 243, 236, .96); backdrop-filter: blur(10px); }
+    button { min-height: 42px; border: 0; border-radius: 6px; padding: 0 16px; background: #1f5d53; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    button.secondary { background: #7a4b1f; }
+    .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .file-link { display: inline-flex; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
+    .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
+    .notice, .error { max-width: 1180px; margin: 0 auto 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
+    .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
+    .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .top-links { justify-content: flex-start; margin-top: 12px; }
+      .two { grid-template-columns: 1fr; }
+      .button-row { margin-left: -18px; margin-right: -18px; margin-bottom: -18px; padding-left: 18px; padding-right: 18px; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Редактор текста</h1>
+      <p>${escapeHtml(bible.bookTitle || preview.title || jobId)} · ${escapeHtml(jobId)}</p>
+    </div>
+    <div class="top-links">
+      <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+    </div>
+  </header>
+  ${renderAdminNotice(notice)}
+  ${renderAdminNotice(error, 'error')}
+  <form method="post" action="${adminBookEditPath(jobId)}">
+    <section class="panel">
+      <h2>Книга</h2>
+      <div class="grid two">
+        <div>
+          <label for="bookTitle">Название</label>
+          <input id="bookTitle" name="bookTitle" value="${escapeHtml(bible.bookTitle || '')}" required>
+        </div>
+        <div>
+          <label for="subtitle">Подзаголовок</label>
+          <input id="subtitle" name="subtitle" value="${escapeHtml(bible.subtitle || '')}">
+        </div>
+      </div>
+      <label for="coverSummary">Аннотация / summary</label>
+      <textarea id="coverSummary" name="coverSummary" rows="${textareaRows(bible.coverSummary || preview.summary || '', 4, 10)}">${escapeHtml(bible.coverSummary || '')}</textarea>
+      <div class="grid two">
+        <div>
+          <label for="previewTitle">Preview title</label>
+          <input id="previewTitle" name="previewTitle" value="${escapeHtml(preview.title || '')}">
+        </div>
+        <div>
+          <label for="previewSummary">Preview summary</label>
+          <input id="previewSummary" name="previewSummary" value="${escapeHtml(preview.summary || '')}">
+        </div>
+      </div>
+      <p>Последний render: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
+      <div class="file-links">
+        ${renderFileLink(files.preview, 'preview')}
+        ${renderFileLink(files.book, 'print')}
+        ${renderFileLink(files.cover, 'cover')}
+        ${renderFileLink(files.interior, 'interior')}
+      </div>
+    </section>
+    ${chapterFields}
+    <div class="button-row">
+      <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
+      <button type="submit" name="action" value="save_render">Сохранить и пересобрать PDF</button>
+    </div>
+  </form>
+</body>
+</html>`;
+}
+
+function normalizeSingleLine(value, maxLength, label) {
+  const text = String(value || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  if (text.length > maxLength) {
+    throw httpError(400, `${label} is too long`);
+  }
+  return text;
+}
+
+function normalizeMultiLine(value, maxLength, label) {
+  const text = String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  if (text.length > maxLength) {
+    throw httpError(400, `${label} is too long`);
+  }
+  return text;
+}
+
+function requiredEditorField(value, label) {
+  if (!String(value || '').trim()) {
+    throw httpError(400, `${label} is required`);
+  }
+  return value;
+}
+
+function buildEditedFullText(current, params) {
+  const next = JSON.parse(JSON.stringify(current));
+  next.text = next.text || {};
+  next.text.bible = next.text.bible || {};
+  next.text.preview = next.text.preview || {};
+  next.text.chapters = Array.isArray(next.text.chapters) ? next.text.chapters : [];
+
+  const bookTitle = requiredEditorField(normalizeSingleLine(params.get('bookTitle'), 180, 'Book title'), 'Book title');
+  const subtitle = normalizeSingleLine(params.get('subtitle'), 260, 'Subtitle');
+  const coverSummary = normalizeMultiLine(params.get('coverSummary'), 1800, 'Cover summary');
+  const previewTitle = normalizeSingleLine(params.get('previewTitle'), 180, 'Preview title') || bookTitle;
+  const previewSummary = normalizeSingleLine(params.get('previewSummary'), 700, 'Preview summary') || coverSummary;
+
+  next.text.bible.bookTitle = bookTitle;
+  next.text.bible.subtitle = subtitle;
+  next.text.bible.coverSummary = coverSummary;
+  next.text.preview.title = previewTitle;
+  next.text.preview.summary = previewSummary;
+
+  for (const chapter of next.text.chapters) {
+    const chapterNumber = Number(chapter.n);
+    if (!Number.isInteger(chapterNumber) || chapterNumber < 1) {
+      throw httpError(400, 'Invalid chapter number');
+    }
+    const currentBlocks = editableChapterBlocks(chapter);
+    if (currentBlocks.length === 0) {
+      throw httpError(400, `Chapter ${chapterNumber} has no editable text blocks`);
+    }
+    chapter.title = requiredEditorField(
+      normalizeSingleLine(params.get(`chapter_${chapterNumber}_title`), 180, `Chapter ${chapterNumber} title`),
+      `Chapter ${chapterNumber} title`,
+    );
+    chapter.summary = normalizeSingleLine(params.get(`chapter_${chapterNumber}_summary`), 700, `Chapter ${chapterNumber} summary`);
+    const blocks = currentBlocks.map((_, index) => requiredEditorField(
+      normalizeMultiLine(params.get(`chapter_${chapterNumber}_block_${index}`), 7000, `Chapter ${chapterNumber} block ${index + 1}`),
+      `Chapter ${chapterNumber} block ${index + 1}`,
+    ));
+    chapter.textBlocks = blocks;
+    chapter.text = blocks.join('\n\n');
+    chapter.status = chapter.status || 'ready';
+  }
+
+  next.status = next.status || 'ready';
+  next.fullText = {
+    ...(next.fullText || {}),
+    status: next.fullText?.status || 'ready',
+    editedAt: nowIso(),
+  };
+  return next;
+}
+
+async function writeFullTextBackup(dir, fullText) {
+  const backupDir = join(dir, 'artifacts', 'backups');
+  await mkdir(backupDir, { recursive: true, mode: 0o700 });
+  const stamp = nowIso().replace(/[:.]/g, '-');
+  const fileName = `full-text-${stamp}.json`;
+  await writeJsonAtomic(join(backupDir, fileName), fullText);
+  return `artifacts/backups/${fileName}`;
+}
+
+async function updateStatusAfterTextEdit(jobId, editedFullText) {
+  const dir = jobDir(jobId);
+  const [current, files] = await Promise.all([
+    readJsonFile(join(dir, 'status.json'), null),
+    getJobPdfFiles(jobId),
+  ]);
+  if (!current) return null;
+  const bible = editedFullText.text?.bible || {};
+  const preview = editedFullText.text?.preview || {};
+  const editedAt = nowIso();
+  const artifacts = {
+    fullText: {
+      ...(current.artifacts?.fullText || {}),
+      status: current.artifacts?.fullText?.status || 'ready',
+      title: bible.bookTitle || preview.title || current.artifacts?.fullText?.title,
+      editedAt,
+    },
+  };
+  if (current.artifacts?.render) {
+    artifacts.render = {
+      ...current.artifacts.render,
+      editedAfterRenderAt: editedAt,
+    };
+  }
+  if (files.book && !current.artifacts?.bookPdf) {
+    artifacts.bookPdf = files.book;
+  }
+  if (files.preview && !current.artifacts?.previewPdf) {
+    artifacts.previewPdf = files.preview;
+  }
+  return updateJobStatus(jobId, {
+    preview: current.preview
+      ? {
+          ...current.preview,
+          title: preview.title || bible.bookTitle || current.preview.title,
+          summary: preview.summary || bible.coverSummary || current.preview.summary,
+        }
+      : current.preview,
+    artifacts,
+  });
+}
+
+async function saveAdminBookText(jobId, params) {
+  const { dir, fullText } = await getAdminBookText(jobId);
+  const editedFullText = buildEditedFullText(fullText, params);
+  const backupPath = await writeFullTextBackup(dir, fullText);
+  await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), editedFullText);
+  await appendEvent(dir, {
+    type: 'job.fullText.adminEdited',
+    backupPath,
+    title: editedFullText.text?.bible?.bookTitle || '',
+  });
+  await updateStatusAfterTextEdit(jobId, editedFullText);
+  return { editedFullText, backupPath };
+}
+
+function redirectAdmin(res, location) {
+  res.writeHead(303, {
+    'cache-control': 'no-store',
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+    'referrer-policy': 'no-referrer',
+    location,
+  });
+  res.end();
+}
+
+async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
+  const { fullText, status, files } = await getAdminBookText(jobId);
+  const notice = options.notice
+    || (url.searchParams.get('rendered') === '1'
+      ? 'Текст сохранен, PDF пересобран.'
+      : url.searchParams.get('saved') === '1'
+        ? 'Текст сохранен. PDF нужно пересобрать, чтобы изменения попали в файлы.'
+        : '');
+  sendHtml(req, res, options.status || 200, renderBookTextEditorPage(jobId, fullText, status, {
+    ...options,
+    notice,
+    files,
+  }));
 }
 
 function csvCell(value) {
@@ -1730,7 +2177,7 @@ async function sendJobFile(req, res, jobId, fileName) {
   res.end(content);
 }
 
-async function renderJobPdf(jobId) {
+async function renderJobPdf(jobId, options = {}) {
   const dir = jobDir(jobId);
   if (!existsSync(dir)) {
     throw httpError(404, 'Job not found');
@@ -1790,7 +2237,9 @@ async function renderJobPdf(jobId) {
         interiorPdf: render.files?.interior || null,
       },
     });
-    await deliverCustomerCompletionEmail(jobId, nextStatus);
+    if (!options.skipCustomerEmail) {
+      await deliverCustomerCompletionEmail(jobId, nextStatus);
+    }
     return renderArtifact;
   } catch (error) {
     const message = error?.message || 'PDF render failed';
@@ -1920,6 +2369,38 @@ async function route(req, res) {
     const result = update.message ? await handleTelegramChatMessage(update.message) : { ok: true, ignored: true };
     sendJson(req, res, 200, result);
     return;
+  }
+
+  const adminBookEditMatch = url.pathname.match(/^\/api\/fairyteller\/books\/(ft_[a-zA-Z0-9_-]{8,80})\/edit$/);
+  if ((method === 'GET' || method === 'POST') && adminBookEditMatch) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    const jobId = adminBookEditMatch[1];
+    if (method === 'GET') {
+      await sendAdminBookEditor(req, res, jobId, url);
+      return;
+    }
+
+    try {
+      const params = await readFormBody(req);
+      await saveAdminBookText(jobId, params);
+      if (params.get('action') === 'save_render') {
+        await appendEvent(jobDir(jobId), { type: 'job.fullText.adminRenderRequested' });
+        await renderJobPdf(jobId, { skipCustomerEmail: true });
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?rendered=1`);
+        return;
+      }
+      redirectAdmin(res, `${adminBookEditPath(jobId)}?saved=1`);
+      return;
+    } catch (error) {
+      await sendAdminBookEditor(req, res, jobId, url, {
+        status: error.status || 500,
+        error: error.message || 'Не удалось сохранить текст',
+      });
+      return;
+    }
   }
 
   if (method === 'GET' && hasAdminBooksSecretPath(url.pathname)) {

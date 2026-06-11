@@ -17,7 +17,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import logoImage from "@/assets/logo.png";
+import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
 import naiveStyleImage from "@/assets/naive-style.jpg";
@@ -53,6 +53,8 @@ const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAU
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 const PRINT_PAYMENT_URL = "https://fairyteller.ru/pay";
 const GENERATION_ETA_SECONDS = 240;
+const SOCIAL_PREVIEW_IMAGE = "/images/fairyteller-social-preview.jpg";
+const SOCIAL_PREVIEW_IMAGE_URL = "https://fairyteller.ru/images/fairyteller-social-preview.jpg";
 
 const formatGenerationTimer = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -69,35 +71,35 @@ const worlds = [
     id: "romance",
     value: "romantic_story",
     title: "Романтическая история",
-    text: "Знаковые места, общие моменты, нежность и личная память.",
+    text: "Пара отправляется в любовное приключение: любимые места, личные шутки и маленькие знаки помогают героям лучше понять друг друга.",
     detail: "романтическая история",
   },
   {
     id: "adventure",
     value: "adventure_classic",
     title: "Приключения",
-    text: "Путь героя, помощники, испытания и возвращение домой.",
+    text: "Дорога, загадки и неожиданные знакомства: герои отправляются в полное загадок путешествие с неожиданной развязкой в конце.",
     detail: "приключения",
   },
   {
     id: "hogwarts",
     value: "hogwarts_world",
-    title: "Мир Хогварства",
-    text: "Письмо, заклинания, тайная библиотека и личная история внутри волшебного мира.",
-    detail: "мир Хогварства",
+    title: "Мир Хогвартса",
+    text: "Герои оказываются в мире магии и волшебства, где можно раскрыть тайну и погрузиться в атмосферу любимого мира.",
+    detail: "мир Хогвартса",
   },
   {
     id: "fantasy",
     value: "fantasy_epic",
     title: "Фэнтези",
-    text: "Магия, выбор, древняя тайна и герой, который взрослеет по пути.",
+    text: "Мир магии и чудес ищет своих героев — именно им предстоит столкнуться с древним злом и победить его с помощью друзей.",
     detail: "фэнтези",
   },
   {
     id: "cyber",
     value: "cyberpunk_dream",
     title: "Русский киберпанк",
-    text: "Поезд, город, тайна и личная история внутри яркого будущего.",
+    text: "Будущее с панельками и летающими УАЗами наступило. Героям предстоит искать ответы на сложные вопросы в техногенном мире.",
     detail: "русский киберпанк",
   },
 ];
@@ -139,8 +141,8 @@ const process = [
   ["01", "Расскажите о себе", "Имя, возраст, фото, характер и детали, которые сделают историю личной."],
   [
     "02",
-    "Выберите мир",
-    "Романтическая история, приключения, мир Хогварства, фэнтези или русский киберпанк. Выберите атмосферу и стиль изображений, который подходит именно вам.",
+    "Выберите жанр",
+    "Романтическая история, приключения, мир Хогвартса, фэнтези или русский киберпанк. Выберите атмосферу и стиль изображений, который подходит именно вам.",
   ],
   ["03", "Получите превью", "Готовую историю с иллюстрациями вы увидите через 2-3 минуты."],
   [
@@ -162,6 +164,21 @@ const heroImages = [
   { title: "Звездопад над Волгой", image: heroVolgaCoverImage },
   { title: "Подарочная книга", image: heroStillLifeImage },
 ];
+
+const heroImageSize = {
+  width: 1800,
+  height: 1400,
+};
+
+const squareImageSize = {
+  width: 1100,
+  height: 1100,
+};
+
+const logoImageSize = {
+  width: 260,
+  height: 124,
+};
 
 const exampleCarousel = [
   { title: "Книга на столе", label: "Пример", image: exampleGenerated04Image },
@@ -243,7 +260,7 @@ const faqs = [
   },
   {
     question: "Можно ли сделать книгу для взрослого?",
-    answer: "Да. Это может быть романтическая история, приключение, мир Хогварства, фэнтези или русский киберпанк, не только детская сказка.",
+    answer: "Да. Это может быть романтическая история, приключение, мир Хогвартса, фэнтези или русский киберпанк, не только детская сказка.",
   },
   {
     question: "Что происходит после оплаты?",
@@ -271,7 +288,7 @@ const homeJsonLd = [
     description:
       "Персональная бумажная книга о близком человеке с уникальным сюжетом, иллюстрациями по фото, редактурой и доставкой по России.",
     brand: { "@type": "Brand", name: "Fairyteller" },
-    image: "https://fairyteller.ru/images/book-exmpl6.jpg",
+    image: SOCIAL_PREVIEW_IMAGE_URL,
     offers: {
       "@type": "Offer",
       priceCurrency: "RUB",
@@ -321,7 +338,7 @@ const createJsonLd = [
   },
 ];
 
-const constructorTabs = ["Мир", "Герои", "Стиль"];
+const constructorTabs = ["Жанр", "Герои", "Стиль"];
 const heroSlots = ["Главный герой", "Герой 2", "Герой 3", "Герой 4"];
 const ageGroups = [
   { value: "child", label: "Ребенок" },
@@ -451,6 +468,7 @@ const DesignTest = () => {
   const printPaymentUrl = bookPdfUrl
     ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(bookPdfUrl)}`
     : PRINT_PAYMENT_URL;
+  const currentHeroImage = heroImages[heroIndex];
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index > 0 && !visibleHeroes.includes(item.index));
@@ -793,7 +811,7 @@ const DesignTest = () => {
             : "Создайте персональную бумажную книгу о близком человеке: уникальный сюжет, иллюстрации по фото, редактура и доставка по России. Подарок от 3500₽."
         }
         path={isCreatePath ? "/create" : "/"}
-        image="/images/book-exmpl6.jpg"
+        image={isCreatePath ? "/images/book-exmpl6.jpg" : SOCIAL_PREVIEW_IMAGE}
         type="product"
         jsonLd={isCreatePath ? createJsonLd : homeJsonLd}
       />
@@ -892,7 +910,13 @@ const DesignTest = () => {
               <Menu className="h-5 w-5" />
             </button>
             <Link to="/" className="flex items-center gap-3" aria-label="FairyTeller">
-              <img src={logoImage} alt="FairyTeller" className="h-10 w-auto object-contain" />
+              <img
+                src={logoImage}
+                alt="FairyTeller"
+                className="h-10 w-auto object-contain"
+                width={logoImageSize.width}
+                height={logoImageSize.height}
+              />
             </Link>
           </div>
 
@@ -972,16 +996,17 @@ const DesignTest = () => {
               className="absolute inset-0 cursor-pointer"
               aria-label="Показать следующее фото"
             >
-              {heroImages.map((item, index) => (
-                <img
-                  key={item.title}
-                  src={item.image}
-                  alt={item.title}
-                  className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
-                    index === heroIndex ? "opacity-100" : "opacity-0"
-                  }`}
-                />
-              ))}
+              <img
+                key={currentHeroImage.title}
+                src={currentHeroImage.image}
+                alt={currentHeroImage.title}
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                width={heroImageSize.width}
+                height={heroImageSize.height}
+                loading="eager"
+                decoding="async"
+                fetchPriority={heroIndex === 0 ? "high" : "auto"}
+              />
             </button>
             <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center gap-2">
               {heroImages.map((item, index) => (
@@ -1062,14 +1087,14 @@ const DesignTest = () => {
                   <fieldset>
                     <div className="flex items-center justify-between gap-4">
                       <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
-                        Выберите мир
+                        Выберите жанр
                       </legend>
                       <div className="flex shrink-0 border-l border-t border-black">
                         <button
                           type="button"
                           onClick={() => scrollWorlds(-1)}
                           className="inline-flex h-11 w-11 items-center justify-center border-b border-r border-black bg-white transition hover:bg-black hover:text-white"
-                          aria-label="Прокрутить миры влево"
+                          aria-label="Прокрутить жанры влево"
                         >
                           <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -1077,7 +1102,7 @@ const DesignTest = () => {
                           type="button"
                           onClick={() => scrollWorlds(1)}
                           className="inline-flex h-11 w-11 items-center justify-center border-b border-r border-black bg-white transition hover:bg-black hover:text-white"
-                          aria-label="Прокрутить миры вправо"
+                          aria-label="Прокрутить жанры вправо"
                         >
                           <ChevronRight className="h-5 w-5" />
                         </button>
@@ -1326,7 +1351,15 @@ const DesignTest = () => {
                           onClick={() => setStyle(item.id)}
                           className="group w-[220px] shrink-0 snap-start border-b border-r border-black bg-white text-left md:w-[245px]"
                         >
-                          <img src={item.image} alt={item.label} className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0" />
+                          <img
+                            src={item.image}
+                            alt={item.label}
+                            className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0"
+                            width={1100}
+                            height={660}
+                            loading="lazy"
+                            decoding="async"
+                          />
                           <span className={`flex min-h-[72px] items-center justify-between gap-2 px-3 py-3 text-[13px] font-bold uppercase tracking-[0.08em] ${
                             style === item.id ? "bg-black text-white" : "bg-white text-black"
                           }`}>
@@ -1446,7 +1479,7 @@ const DesignTest = () => {
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
-              Выберите мир: романтическая история, приключения, мир Хогварства, фэнтези или русский киберпанк. Одна и та же личная история получит разные оттенки, настроение и визуальный ряд.
+              Выберите жанр: романтическая история, приключения, мир Хогвартса, фэнтези или русский киберпанк. Одна и та же личная история получит разные оттенки, настроение и визуальный ряд.
             </p>
           </div>
         </div>
@@ -1468,6 +1501,8 @@ const DesignTest = () => {
                   src={item.image}
                   alt={item.title}
                   className="aspect-square w-full object-cover"
+                  width={squareImageSize.width}
+                  height={squareImageSize.height}
                   loading="lazy"
                   decoding="async"
                 />
@@ -1564,7 +1599,15 @@ const DesignTest = () => {
         <div className="mx-auto max-w-[1480px]">
           <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <img src={logoImage} alt="FairyTeller" className="h-12 w-auto bg-white px-2 py-1" />
+              <img
+                src={logoImage}
+                alt="FairyTeller"
+                className="h-12 w-auto bg-white px-2 py-1"
+                width={logoImageSize.width}
+                height={logoImageSize.height}
+                loading="lazy"
+                decoding="async"
+              />
               <p className="mt-5 max-w-[620px] text-[15px] leading-7 text-white/60">
                 FairyTeller помогает создавать персональные бумажные книги по фото: для детей, любимых, родителей, друзей и важных событий.
               </p>

@@ -105,7 +105,7 @@ const process = [
   },
   {
     icon: Sparkles,
-    title: "Выберите мир",
+    title: "Выберите жанр",
     text: "Приключение, волшебная школа, фэнтези или русский киберпанк помогают сделать подарок под интересы ребенка.",
   },
   {
@@ -385,8 +385,8 @@ const ChildGiftLanding = () => {
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
             availableWorldIds={["adventure", "hogwarts", "fantasy", "cyber"]}
-            worldTabLabel="Мир"
-            worldLegend="Выберите мир"
+            worldTabLabel="Жанр"
+            worldLegend="Выберите жанр"
             heading="Соберите книгу под ребенка."
             description="Добавьте фото, имя, возраст, характер и важные детали. Конструктор соберет персональную сказку по фото ребёнка: именную книгу, где он главный герой."
             locationLabel="Место истории"
