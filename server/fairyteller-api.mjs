@@ -21,9 +21,15 @@ const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fai
 const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
+const YOOKASSA_SHOP_ID = process.env.FAIRYTELLER_YOOKASSA_SHOP_ID || process.env.YOOKASSA_SHOP_ID || '';
+const YOOKASSA_SECRET_KEY = process.env.FAIRYTELLER_YOOKASSA_SECRET_KEY || process.env.YOOKASSA_SECRET_KEY || '';
+const YOOKASSA_AMOUNT_RUB = process.env.FAIRYTELLER_BOOK_PRICE_RUB || '3500.00';
+const PAID_ACCESS_TTL_DAYS = Math.max(1, Number(process.env.FAIRYTELLER_PAID_ACCESS_TTL_DAYS || 30) || 30);
+const RESEND_LINK_WINDOW_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_RESEND_LINK_WINDOW_MS || 5 * 60_000) || 5 * 60_000);
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
+const ADMIN_MAIL_PATH = `${ADMIN_BOOKS_PATH}/mail`;
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
@@ -486,6 +492,53 @@ function publicUrl(pathOrUrl) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
   return `${PUBLIC_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
+}
+
+function daysFromNowIso(days) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function paymentPath(jobId) {
+  return join(jobDir(jobId), 'payment.json');
+}
+
+async function readPayment(jobId) {
+  return await readJsonFile(paymentPath(jobId), {});
+}
+
+async function writePayment(jobId, payment) {
+  const dir = jobDir(jobId);
+  await writeJsonAtomic(join(dir, 'payment.json'), {
+    updatedAt: nowIso(),
+    ...payment,
+  });
+}
+
+function makeAccessToken() {
+  return randomBytes(32).toString('hex');
+}
+
+function accessTokenIsValid(payment, token) {
+  const expected = String(payment?.accessToken || '');
+  const provided = String(token || '');
+  if (!expected || !provided || !safeEqual(expected, provided)) return false;
+  if (payment.expiresAt && Date.parse(payment.expiresAt) <= Date.now()) return false;
+  return payment.status === 'paid';
+}
+
+function sanitizePublicPayment(payment) {
+  const status = payment?.status || 'unpaid';
+  return {
+    status,
+    paid: status === 'paid',
+    paidAt: payment?.paidAt || null,
+    expiresAt: payment?.expiresAt || null,
+    lastEmailAt: payment?.lastEmailAt || null,
+  };
+}
+
+function yookassaAuthHeader() {
+  return `Basic ${Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString('base64')}`;
 }
 
 function chatRootDir() {
@@ -1128,7 +1181,7 @@ function renderBooksPage(books, options = {}) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
+    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -1663,6 +1716,7 @@ function renderLeadsPage(leads) {
     </div>
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_MAIL_PATH}">Письмо</a>
       <a href="${ADMIN_LEADS_CSV_PATH}">Скачать CSV</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
     </div>
@@ -1682,6 +1736,276 @@ function renderLeadsPage(leads) {
       <tbody>${rows}</tbody>
     </table>` : '<div class="empty">Email еще не сохранились.</div>'}
   </main>
+</body>
+</html>`;
+}
+
+async function readAdminMailSends(limit = 20) {
+  let text;
+  try {
+    text = await readFile(join(DATA_DIR, 'mail-sends.jsonl'), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  return text
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .slice(-limit)
+    .reverse();
+}
+
+async function appendAdminMailSend(entry) {
+  await appendFile(join(DATA_DIR, 'mail-sends.jsonl'), `${JSON.stringify({ at: nowIso(), ...entry })}\n`, { mode: 0o600 });
+}
+
+function normalizeAdminMailUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith('/')) return publicUrl(url);
+  if (/^https?:\/\//i.test(url)) return url;
+  throw httpError(400, 'Ссылка для кнопки должна начинаться с https:// или /');
+}
+
+function adminMailFormValue(form, key, fallback = '') {
+  return escapeHtml(form?.get?.(key) || fallback);
+}
+
+function renderAdminMailParagraphs(text) {
+  return String(text || '')
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+function renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }) {
+  const safeSubject = escapeHtml(subject);
+  const messageHtml = renderAdminMailParagraphs(message);
+  const telegramUrl = 'https://t.me/nikita0shch';
+  const siteUrl = PUBLIC_BASE_URL;
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>${safeSubject}</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f5f5; margin:0; padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:1px solid #000000;">
+            <tr>
+              <td style="padding:24px 28px 22px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
+                <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; letter-spacing:0.18em; text-transform:uppercase; color:#5e6264; font-weight:800;">FairyTeller</div>
+                <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; letter-spacing:0; text-transform:none; color:#000000;">${safeSubject}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 32px 14px;">
+                ${messageHtml || '<p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Здравствуйте!</p>'}
+              </td>
+            </tr>
+            ${ctaUrl ? `<tr>
+              <td style="padding:4px 32px 30px; text-align:center;">
+                ${renderEmailButton(ctaLabel || 'Открыть', ctaUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+              </td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
+                  Остались вопросы? Свяжитесь с нами в <a href="${telegramUrl}" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a> или через <a href="${escapeHtml(siteUrl)}" style="color:#E89C31; text-decoration:underline; font-weight:800;">форму на сайте</a>.
+                </p>
+                <p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#ffffff;">
+                  С любовью,<br>команда FairyTeller
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function adminMailText({ message, ctaLabel, ctaUrl }) {
+  return [
+    String(message || '').trim(),
+    ctaUrl ? `${ctaLabel || 'Открыть'}: ${ctaUrl}` : '',
+    '',
+    `Форма на сайте: ${PUBLIC_BASE_URL}`,
+    'Telegram: https://t.me/nikita0shch',
+  ].filter(Boolean).join('\n');
+}
+
+async function sendAdminMail(params) {
+  const to = normalizeEmail(params.get('to'));
+  const subject = String(params.get('subject') || '').trim();
+  const message = String(params.get('message') || '').trim();
+  const ctaUrl = normalizeAdminMailUrl(params.get('ctaUrl'));
+  const ctaLabel = String(params.get('ctaLabel') || '').trim() || (ctaUrl ? 'Открыть' : '');
+
+  if (!to) throw httpError(400, 'Введите корректный email получателя.');
+  if (!subject) throw httpError(400, 'Введите тему письма.');
+  if (!message) throw httpError(400, 'Введите текст письма.');
+  if (subject.length > 180) throw httpError(400, 'Тема слишком длинная.');
+  if (message.length > 8000) throw httpError(400, 'Текст письма слишком длинный.');
+  if (ctaLabel.length > 80) throw httpError(400, 'Текст кнопки слишком длинный.');
+
+  const payload = {
+    to,
+    subject,
+    text: adminMailText({ message, ctaLabel, ctaUrl }),
+    html: renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }),
+  };
+  const delivery = await sendCustomerEmail(payload);
+  await appendAdminMailSend({
+    to,
+    subject,
+    ctaUrl,
+    ctaLabel,
+    messagePreview: message.slice(0, 240),
+    status: delivery.status,
+    provider: delivery.provider || null,
+    id: delivery.id || null,
+    code: delivery.code || null,
+    reason: delivery.reason || null,
+    error: delivery.error || null,
+  }).catch((error) => {
+    console.warn(`Admin mail log append failed: ${error.message}`);
+  });
+  if (delivery.status !== 'sent') {
+    throw httpError(502, delivery.error || delivery.reason || 'Не удалось отправить письмо.');
+  }
+  return delivery;
+}
+
+function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error = '', sends = [] } = {}) {
+  const rows = sends.map((send) => `<tr>
+    <td><strong>${escapeHtml(send.to || '—')}</strong><span>${escapeHtml(send.id || send.error || send.reason || '—')}</span></td>
+    <td>${escapeHtml(send.subject || '—')}</td>
+    <td>${escapeHtml(send.status || '—')}</td>
+    <td>${escapeHtml(formatDateTime(send.at) || '—')}</td>
+  </tr>`).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller Письмо</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, main, section { max-width: 980px; margin: 0 auto; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    h2 { margin: 0 0 14px; font-size: 20px; line-height: 1.2; }
+    p { margin: 8px 0 0; color: #56616b; line-height: 1.45; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .actions { display: flex; gap: 14px; align-items: center; }
+    main, section { border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.08); }
+    main { padding: 24px; }
+    section { margin-top: 22px; overflow-x: auto; }
+    label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    input, textarea { width: 100%; border: 1px solid #cdbfaaa; border-radius: 6px; padding: 11px 12px; font: inherit; background: #fff; color: #172126; }
+    textarea { min-height: 180px; resize: vertical; line-height: 1.45; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { margin-bottom: 16px; }
+    button { min-height: 46px; padding: 0 18px; border: 1px solid #000; border-radius: 6px; background: #E89C31; color: #000; font: inherit; font-weight: 900; cursor: pointer; }
+    .notice, .error { padding: 12px 14px; margin-bottom: 16px; border-radius: 6px; font-size: 14px; line-height: 1.45; }
+    .notice { color: #14532d; background: #dcfce7; border: 1px solid #86efac; }
+    .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    td { font-size: 14px; }
+    strong { display: block; margin-bottom: 4px; font-size: 15px; color: #172126; }
+    span { display: block; color: #68737d; font-size: 12px; }
+    .empty { padding: 24px; color: #56616b; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .actions { margin-top: 12px; flex-wrap: wrap; }
+      .grid { grid-template-columns: 1fr; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Письмо</h1>
+      <p>Отправитель: ${escapeHtml(MAIL_FROM || 'не настроен')}${MAIL_REPLY_TO ? ` · Reply-To: ${escapeHtml(MAIL_REPLY_TO)}` : ''}</p>
+    </div>
+    <div class="actions">
+      <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_LEADS_PATH}">Email-база</a>
+      <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+    </div>
+  </header>
+  <main>
+    ${notice ? `<div class="notice">${escapeHtml(notice)}</div>` : ''}
+    ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
+    <form method="post" action="${ADMIN_MAIL_PATH}">
+      <div class="grid">
+        <div class="field">
+          <label for="to">Кому</label>
+          <input id="to" name="to" type="email" value="${adminMailFormValue(form, 'to')}" placeholder="client@example.com" required>
+        </div>
+        <div class="field">
+          <label for="subject">Тема</label>
+          <input id="subject" name="subject" value="${adminMailFormValue(form, 'subject')}" placeholder="Ваша книга почти готова" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="message">Текст</label>
+        <textarea id="message" name="message" required>${adminMailFormValue(form, 'message')}</textarea>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="ctaLabel">Текст кнопки</label>
+          <input id="ctaLabel" name="ctaLabel" value="${adminMailFormValue(form, 'ctaLabel', 'Открыть книгу')}">
+        </div>
+        <div class="field">
+          <label for="ctaUrl">Ссылка кнопки</label>
+          <input id="ctaUrl" name="ctaUrl" value="${adminMailFormValue(form, 'ctaUrl')}" placeholder="https://fairyteller.ru/...">
+        </div>
+      </div>
+      <button type="submit">Отправить письмо</button>
+    </form>
+  </main>
+  <section>
+    <h2 style="padding:20px 24px 0;">Последние отправки</h2>
+    ${sends.length ? `<table>
+      <thead>
+        <tr>
+          <th>Кому</th>
+          <th>Тема</th>
+          <th>Статус</th>
+          <th>Когда</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<div class="empty">Ручных отправок пока нет.</div>'}
+  </section>
 </body>
 </html>`;
 }
@@ -1957,6 +2281,266 @@ async function deliverCustomerCompletionEmail(jobId, status) {
   return delivery;
 }
 
+function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
+  const order = orderEnvelope.order || orderEnvelope;
+  const email = normalizeEmail(order.email);
+  if (!email) return null;
+
+  const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
+  const accessUrl = `${PUBLIC_BASE_URL}/book/${status.jobId}?access=${encodeURIComponent(payment.accessToken || '')}`;
+  const subject = 'Ваша сказка готова — открывайте';
+  const text = [
+    'Привет!',
+    '',
+    'Спасибо за покупку. Ваша персональная сказка готова.',
+    '',
+    `Открыть полную сказку: ${accessUrl}`,
+    '',
+    `Ссылка действительна до ${payment.expiresAt ? new Date(payment.expiresAt).toLocaleDateString('ru-RU') : '30 дней'}. Если понадобится, напишите нам — пришлем заново.`,
+    '',
+    'Если что-то в сказке совсем не попало в ожидания — бесплатно пересоберем один раз или вернем оплату до отправки в печать.',
+    '',
+    'Команда FairyTeller',
+  ].join('\n');
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>${escapeHtml(subject)}</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f5f5; margin:0; padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:1px solid #000000;">
+            <tr>
+              <td style="padding:24px 28px 22px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
+                <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; letter-spacing:0.18em; text-transform:uppercase; color:#5e6264; font-weight:800;">FairyTeller</div>
+                <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; color:#000000;">Ваша сказка готова</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 32px 10px;">
+                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Спасибо за покупку. Персональная книга «${escapeHtml(title)}» открыта по ссылке ниже.</p>
+                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Если что-то в сказке совсем не попало в ожидания — бесплатно пересоберем один раз или вернем оплату до отправки в печать.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 26px; text-align:center;">
+                ${renderEmailButton('Открыть полную сказку', accessUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 28px;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#5e6264;">
+                  Ссылка действует 30 дней. Если кнопка не открывается, скопируйте ссылку:<br>
+                  <a href="${escapeHtml(accessUrl)}" style="color:#000000; word-break:break-word;">${escapeHtml(accessUrl)}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
+                  Остались вопросы? Напишите нам в <a href="https://t.me/nikita0shch" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a>.
+                </p>
+                <p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#ffffff;">С любовью,<br>команда FairyTeller</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+  return { to: email, subject, text, html };
+}
+
+async function deliverPurchaseAccessEmail(jobId, status, payment, options = {}) {
+  const dir = jobDir(jobId);
+  const orderEnvelope = await readJsonFile(join(dir, 'order.json'), {});
+  const payload = purchaseAccessEmailPayload(status, orderEnvelope, payment);
+  const delivery = {
+    attemptedAt: nowIso(),
+    to: payload?.to || null,
+    subject: payload?.subject || null,
+    ...(await sendCustomerEmail(payload)),
+  };
+  await appendEvent(dir, { type: options.resend ? 'job.payment.email.resend' : 'job.payment.email.delivery', status: delivery.status, reason: delivery.reason, provider: delivery.provider });
+  return delivery;
+}
+
+async function ensurePaidAccess(jobId, currentPayment = null) {
+  const payment = currentPayment || await readPayment(jobId);
+  if (payment.status !== 'paid') return payment;
+  if (payment.accessToken && payment.expiresAt && Date.parse(payment.expiresAt) > Date.now()) {
+    return payment;
+  }
+  return {
+    ...payment,
+    accessToken: payment.accessToken || makeAccessToken(),
+    expiresAt: daysFromNowIso(PAID_ACCESS_TTL_DAYS),
+  };
+}
+
+async function createCheckout(jobId) {
+  if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+    throw httpError(503, 'YooKassa is not configured');
+  }
+  const dir = jobDir(jobId);
+  const [status, orderEnvelope] = await Promise.all([
+    readJsonFile(join(dir, 'status.json')),
+    readJsonFile(join(dir, 'order.json'), {}),
+  ]);
+  if (!status) throw httpError(404, 'Job not found');
+  if (!hasReadyPdfArtifacts(status.artifacts)) {
+    throw httpError(409, 'Book PDF is not ready yet');
+  }
+
+  const existing = await readPayment(jobId);
+  if (existing.status === 'paid') {
+    return {
+      paid: true,
+      accessUrl: `${PUBLIC_BASE_URL}/book/${jobId}?access=${encodeURIComponent(existing.accessToken || '')}`,
+    };
+  }
+  if (existing.status === 'pending' && existing.confirmationUrl) {
+    return { paymentId: existing.paymentId, confirmationUrl: existing.confirmationUrl };
+  }
+
+  const email = normalizeEmail((orderEnvelope.order || orderEnvelope).email);
+  const idempotenceKey = `fairyteller-checkout-${jobId}`;
+  const body = {
+    amount: { value: Number(YOOKASSA_AMOUNT_RUB).toFixed(2), currency: 'RUB' },
+    confirmation: {
+      type: 'redirect',
+      return_url: `${PUBLIC_BASE_URL}/book/${jobId}?status=pending`,
+    },
+    capture: true,
+    description: `Персональная сказка — ${jobId}`,
+    metadata: { jobId, email },
+  };
+  const response = await fetch('https://api.yookassa.ru/v3/payments', {
+    method: 'POST',
+    headers: {
+      authorization: yookassaAuthHeader(),
+      'content-type': 'application/json',
+      'idempotence-key': idempotenceKey,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw httpError(502, payload.description || payload.message || 'YooKassa checkout failed');
+  }
+  const confirmationUrl = payload.confirmation?.confirmation_url;
+  if (!payload.id || !confirmationUrl) {
+    throw httpError(502, 'YooKassa did not return a confirmation URL');
+  }
+  const payment = {
+    status: 'pending',
+    provider: 'yookassa',
+    paymentId: payload.id,
+    confirmationUrl,
+    amount: body.amount,
+    email,
+    createdAt: nowIso(),
+  };
+  await writePayment(jobId, payment);
+  await appendEvent(dir, { type: 'job.payment.checkout.created', provider: 'yookassa', paymentId: payload.id });
+  return { paymentId: payload.id, confirmationUrl };
+}
+
+async function fetchYookassaPayment(paymentId) {
+  if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+    throw httpError(503, 'YooKassa is not configured');
+  }
+  const response = await fetch(`https://api.yookassa.ru/v3/payments/${encodeURIComponent(paymentId)}`, {
+    headers: { authorization: yookassaAuthHeader() },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw httpError(502, payload.description || payload.message || 'YooKassa payment lookup failed');
+  }
+  return payload;
+}
+
+async function handleYookassaWebhook(req) {
+  const notification = await readJsonBody(req);
+  const object = notification.object || {};
+  const paymentId = object.id;
+  const jobId = object.metadata?.jobId;
+  if (!paymentId || !jobId) return { ignored: true, reason: 'missing_payment_or_job' };
+  assertSafeJobId(jobId);
+
+  const actual = await fetchYookassaPayment(paymentId);
+  if (actual.id !== paymentId || actual.metadata?.jobId !== jobId) {
+    throw httpError(400, 'Payment metadata mismatch');
+  }
+
+  const dir = jobDir(jobId);
+  const current = await readPayment(jobId);
+  if (notification.event === 'payment.succeeded' && actual.status === 'succeeded' && actual.paid === true) {
+    const status = await readJsonFile(join(dir, 'status.json'));
+    if (!status) throw httpError(404, 'Job not found');
+    const paidPayment = await ensurePaidAccess(jobId, {
+      ...current,
+      status: 'paid',
+      provider: 'yookassa',
+      paymentId,
+      paidAt: actual.captured_at || nowIso(),
+      amount: actual.amount || current.amount || null,
+      email: actual.metadata?.email || current.email || '',
+    });
+    const delivery = await deliverPurchaseAccessEmail(jobId, status, paidPayment);
+    await writePayment(jobId, {
+      ...paidPayment,
+      emailDelivery: delivery,
+      lastEmailAt: delivery.attemptedAt,
+    });
+    await appendEvent(dir, { type: 'job.payment.succeeded', provider: 'yookassa', paymentId, emailStatus: delivery.status });
+    return { ok: true, status: 'paid' };
+  }
+
+  if (notification.event === 'payment.canceled' || actual.status === 'canceled') {
+    await writePayment(jobId, {
+      ...current,
+      status: 'canceled',
+      provider: 'yookassa',
+      paymentId,
+      canceledAt: actual.canceled_at || nowIso(),
+      cancellationDetails: actual.cancellation_details || null,
+    });
+    await appendEvent(dir, { type: 'job.payment.canceled', provider: 'yookassa', paymentId });
+    return { ok: true, status: 'canceled' };
+  }
+
+  return { ok: true, ignored: true, event: notification.event, status: actual.status };
+}
+
+async function resendPurchaseLink(jobId) {
+  const dir = jobDir(jobId);
+  const status = await readJsonFile(join(dir, 'status.json'));
+  if (!status) throw httpError(404, 'Job not found');
+  const payment = await ensurePaidAccess(jobId);
+  if (payment.status !== 'paid') {
+    throw httpError(409, 'Book is not paid');
+  }
+  if (payment.lastEmailAt && Date.now() - Date.parse(payment.lastEmailAt) < RESEND_LINK_WINDOW_MS) {
+    throw httpError(429, 'Link was sent recently');
+  }
+  const delivery = await deliverPurchaseAccessEmail(jobId, status, payment, { resend: true });
+  const nextPayment = {
+    ...payment,
+    emailDelivery: delivery,
+    lastEmailAt: delivery.attemptedAt,
+  };
+  await writePayment(jobId, nextPayment);
+  return { email: { status: delivery.status, to: delivery.to }, payment: sanitizePublicPayment(nextPayment) };
+}
+
 async function createJob(body) {
   const order = body.order;
   if (!order || typeof order !== 'object' || Array.isArray(order)) {
@@ -2004,7 +2588,7 @@ async function createJob(body) {
   return status;
 }
 
-function sanitizePublicStatus(status) {
+function sanitizePublicStatus(status, payment = null) {
   return {
     jobId: status.jobId,
     status: status.status,
@@ -2015,6 +2599,8 @@ function sanitizePublicStatus(status) {
     updatedAt: status.updatedAt,
     preview: status.preview,
     artifacts: status.artifacts,
+    payment: sanitizePublicPayment(payment),
+    paid: payment?.status === 'paid',
     error: status.error ? { message: status.error.message || 'Job failed' } : null,
   };
 }
@@ -2120,6 +2706,80 @@ async function getJobJsonArtifact(jobId, fileName) {
   return artifact;
 }
 
+function chapterText(chapter) {
+  if (!chapter) return '';
+  if (typeof chapter.text === 'string') return chapter.text;
+  if (Array.isArray(chapter.textBlocks)) return chapter.textBlocks.filter(Boolean).join('\n\n');
+  return '';
+}
+
+function chapterPreviewText(chapter, sentenceCount = 3) {
+  const text = chapterText(chapter).replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const sentences = text.match(/[^.!?…]+[.!?…]+(?:\s|$)|[^.!?…]+$/g) || [text];
+  return sentences.slice(0, sentenceCount).join(' ').trim();
+}
+
+function publicChapter(chapter, mode = 'full') {
+  if (!chapter) return null;
+  const text = mode === 'teaser' ? chapterPreviewText(chapter) : chapterText(chapter);
+  return {
+    n: Number(chapter.n) || null,
+    title: chapter.title || '',
+    summary: chapter.summary || '',
+    text,
+    textBlocks: mode === 'full' && Array.isArray(chapter.textBlocks) ? chapter.textBlocks : undefined,
+  };
+}
+
+function findChapterImage(status, visuals, chapterNumber) {
+  const slot = `chapter_${chapterNumber}`;
+  const fileUrl = `/api/fairyteller/jobs/${status.jobId}/files/chapter-${chapterNumber}.png`;
+  const candidates = [
+    ...(Array.isArray(status.artifacts?.fullVisuals?.images) ? status.artifacts.fullVisuals.images : []),
+    ...(Array.isArray(visuals?.visuals?.imageJobs) ? visuals.visuals.imageJobs : []),
+    ...(Array.isArray(visuals?.imageJobs) ? visuals.imageJobs : []),
+  ];
+  const image = candidates.find((item) => (
+    item?.chapter === chapterNumber
+    || item?.slot === slot
+    || item?.fileName === `chapter-${chapterNumber}.png`
+  ));
+  return publicUrl(image?.url || image?.absoluteUrl || fileUrl);
+}
+
+async function getJobSample(jobId) {
+  const dir = jobDir(jobId);
+  const status = await readJsonFile(join(dir, 'status.json'));
+  if (!status) throw httpError(404, 'Job not found');
+
+  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  const visuals = await readJsonFile(join(dir, 'artifacts', 'visuals.json'), null);
+  const chapters = (fullText?.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
+  const chapter1 = chapters.find((chapter) => Number(chapter.n) === 1) || chapters[0] || null;
+  const chapter2 = chapters.find((chapter) => Number(chapter.n) === 2) || chapters[1] || null;
+  const chapter3 = chapters.find((chapter) => Number(chapter.n) === 3) || chapters[2] || null;
+  const bible = fullText?.text?.bible || {};
+  const title = bible.bookTitle || fullText?.text?.preview?.title || status.preview?.title || chapter1?.title || 'Ваша сказка';
+
+  return {
+    jobId,
+    status: status.status,
+    stage: status.stage,
+    progress: status.progress,
+    message: status.message,
+    title,
+    subtitle: bible.subtitle || '',
+    summary: bible.coverSummary || fullText?.text?.preview?.summary || status.preview?.summary || '',
+    chapters: [publicChapter(chapter1), publicChapter(chapter2)].filter(Boolean),
+    lockedChapter: chapter3 ? {
+      ...publicChapter(chapter3, 'teaser'),
+      imageUrl: findChapterImage(status, visuals, 3),
+    } : null,
+    payment: sanitizePublicPayment(await readPayment(jobId)),
+  };
+}
+
 async function putJobFile(jobId, fileName, body) {
   requireFileName(fileName);
   const dir = jobDir(jobId);
@@ -2154,6 +2814,18 @@ async function putJobFile(jobId, fileName, body) {
     bytes: content.length,
     url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
   };
+}
+
+function fileRequiresPaidAccess(fileName) {
+  return ['book.pdf', 'preview.pdf', 'interior.pdf', 'cover.pdf'].includes(String(fileName || '').toLowerCase());
+}
+
+async function requirePaidAccessToken(jobId, token) {
+  const payment = await readPayment(jobId);
+  if (!accessTokenIsValid(payment, token)) {
+    throw httpError(403, 'Paid access required');
+  }
+  return payment;
 }
 
 async function sendJobFile(req, res, jobId, fileName) {
@@ -2237,7 +2909,7 @@ async function renderJobPdf(jobId, options = {}) {
         interiorPdf: render.files?.interior || null,
       },
     });
-    if (!options.skipCustomerEmail) {
+    if (!options.skipCustomerEmail && process.env.FAIRYTELLER_SEND_RENDER_READY_EMAIL === '1') {
       await deliverCustomerCompletionEmail(jobId, nextStatus);
     }
     return renderArtifact;
@@ -2419,6 +3091,38 @@ async function route(req, res) {
       return;
     }
     sendHtml(req, res, 200, renderLeadsPage(leads));
+    return;
+  }
+
+  if ((method === 'GET' || method === 'POST') && url.pathname === ADMIN_MAIL_PATH) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+
+    if (method === 'POST') {
+      const params = await readFormBody(req);
+      try {
+        const delivery = await sendAdminMail(params);
+        redirectAdmin(res, `${ADMIN_MAIL_PATH}?sent=1&id=${encodeURIComponent(delivery.id || '')}`);
+        return;
+      } catch (error) {
+        sendHtml(req, res, error.status || 500, renderAdminMailPage({
+          form: params,
+          error: error.message || 'Не удалось отправить письмо.',
+          sends: await readAdminMailSends(),
+        }));
+        return;
+      }
+    }
+
+    const notice = url.searchParams.get('sent') === '1'
+      ? `Письмо отправлено${url.searchParams.get('id') ? `: ${url.searchParams.get('id')}` : ''}.`
+      : '';
+    sendHtml(req, res, 200, renderAdminMailPage({
+      notice,
+      sends: await readAdminMailSends(),
+    }));
     return;
   }
 

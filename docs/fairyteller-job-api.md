@@ -11,7 +11,7 @@ It is intentionally small and dependency-free:
 - public status without email or full order details
 - local lead capture in `leads.jsonl` when an email is provided, plus protected deduplicated email-list and CSV views
 - optional Telegram operations notifications from server-side environment variables
-- optional customer completion email through Resend-compatible environment variables
+- optional customer completion email and protected manual operator mail through Resend-compatible environment variables
 
 ## Run
 
@@ -75,6 +75,8 @@ The customer email template references small public product-example images from 
 - `GET /api/fairyteller/books` lists generated PDF artifacts after operator login.
 - `GET /api/fairyteller/books/leads` shows a protected deduplicated email database built from `leads.jsonl`.
 - `GET /api/fairyteller/books/leads.csv` downloads the same email database as CSV.
+- `GET /api/fairyteller/books/mail` shows the protected manual mail form.
+- `POST /api/fairyteller/books/mail` sends one manual email through the configured Resend sender and appends a local audit row to `mail-sends.jsonl`.
 
 The email database is populated automatically when `POST /api/fairyteller/jobs` receives an order with a valid `email`.
 
