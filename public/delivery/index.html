@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Сроки доставки Fairyteller по России</title>
+    <meta
+      name="description"
+      content="Сроки доставки персональных книг Fairyteller до пунктов выдачи СДЭК, 5Post, Яндекс и Почтой России по России."
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://fairyteller.ru/delivery/" />
+    <meta property="og:title" content="Сроки доставки Fairyteller по России" />
+    <meta
+      property="og:description"
+      content="Доставка персональных книг Fairyteller в ПВЗ по всей России через 5Post, СДЭК, Яндекс и Почту России."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fairyteller.ru/delivery/" />
+    <meta property="og:image" content="https://fairyteller.ru/images/fairyteller-social-preview.jpg" />
+    <meta property="og:site_name" content="Fairyteller" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111111;
+        --muted: #5e6264;
+        --line: #111111;
+        --soft: #f5f5f5;
+        --paper: #ffffff;
+        --blush: #fae7e1;
+        --accent: #e89c31;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif;
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .promo {
+        border-bottom: 1px solid var(--line);
+        background: var(--ink);
+        padding: 6px 20px;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        border-bottom: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .header__inner,
+      .section-inner,
+      .footer__inner {
+        width: calc(100% - 40px);
+        max-width: 1480px;
+        margin: 0 auto;
+      }
+
+      .header__inner {
+        display: flex;
+        min-height: 56px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .logo img {
+        display: block;
+        width: auto;
+        height: 40px;
+        object-fit: contain;
+      }
+
+      .logo span {
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .nav a {
+        text-decoration: none;
+      }
+
+      .nav a:hover {
+        text-decoration: underline;
+      }
+
+      .order-button,
+      .hero-button,
+      .footer-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: background 150ms ease, color 150ms ease;
+        white-space: nowrap;
+      }
+
+      .order-button {
+        min-height: 40px;
+        background: var(--ink);
+        padding: 0 16px;
+        color: #ffffff;
+      }
+
+      .order-button:hover {
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      .hero {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hero__grid {
+        display: grid;
+        max-width: 1480px;
+        margin: 0 auto;
+        grid-template-columns: 0.92fr 1.08fr;
+      }
+
+      .hero__copy {
+        display: flex;
+        min-height: 560px;
+        flex-direction: column;
+        justify-content: center;
+        border-right: 1px solid var(--line);
+        padding: 44px 32px;
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 760px;
+        font-size: 62px;
+        font-weight: 1000;
+        letter-spacing: 0;
+        line-height: 1.04;
+        text-transform: uppercase;
+      }
+
+      h1 span {
+        display: block;
+      }
+
+      .delivery-note {
+        margin: 26px 0 0;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 20px;
+        line-height: 1.48;
+      }
+
+      .delivery-note a {
+        color: var(--ink);
+        font-weight: 900;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
+      .hero__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .hero-button {
+        min-height: 52px;
+        padding: 0 22px;
+      }
+
+      .hero-button--primary {
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .hero-button--primary:hover {
+        background: var(--muted);
+      }
+
+      .hero-button--secondary {
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      .hero-button--secondary:hover {
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .hero__visual {
+        min-height: 560px;
+        background: var(--soft);
+      }
+
+      .hero__visual img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: 560px;
+        object-fit: cover;
+      }
+
+      .table-section {
+        border-bottom: 1px solid var(--line);
+        background: var(--soft);
+        padding: 44px 0;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 30px;
+      }
+
+      h2 {
+        margin: 0;
+        max-width: 920px;
+        font-size: 58px;
+        font-weight: 1000;
+        letter-spacing: 0;
+        line-height: 1.14;
+        text-transform: uppercase;
+      }
+
+      .section-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+
+      th,
+      td {
+        padding: 16px;
+        border-bottom: 1px solid #d6d6d6;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--ink);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      tbody tr:nth-child(even) {
+        background: #f8f8f8;
+      }
+
+      tbody tr:hover {
+        background: var(--blush);
+      }
+
+      td:first-child {
+        font-weight: 900;
+      }
+
+      td:not(:first-child) {
+        white-space: nowrap;
+      }
+
+      .print-strip {
+        border-bottom: 1px solid var(--line);
+        background: var(--blush);
+        padding: 32px 0;
+      }
+
+      .print-strip__box {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 24px;
+        align-items: center;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        padding: 24px;
+      }
+
+      .print-strip h2 {
+        font-size: 40px;
+        line-height: 1.04;
+      }
+
+      .print-strip p {
+        margin: 10px 0 0;
+        max-width: 680px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .footer {
+        border-top: 1px solid var(--line);
+        background: #000000;
+        padding: 48px 0 56px;
+        color: #ffffff;
+      }
+
+      .footer__grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 32px;
+        align-items: end;
+      }
+
+      .footer img {
+        display: block;
+        width: auto;
+        height: 48px;
+        background: #ffffff;
+        padding: 4px 8px;
+      }
+
+      .footer strong {
+        display: block;
+        font-size: 28px;
+        font-weight: 1000;
+        letter-spacing: 0;
+      }
+
+      .footer p {
+        margin: 20px 0 0;
+        max-width: 620px;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .footer nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 24px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .footer nav a,
+      .footer-social a {
+        text-decoration: none;
+      }
+
+      .footer nav a:hover,
+      .footer-social a:hover {
+        color: #ffffff;
+        text-decoration: underline;
+      }
+
+      .footer__right {
+        text-align: right;
+      }
+
+      .footer-social {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      .footer-social a,
+      .footer-button {
+        min-height: 44px;
+        border: 1px solid #ffffff;
+        padding: 0 20px;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .footer-social a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .footer-social a:hover {
+        background: #ffffff;
+        color: #000000;
+        text-decoration: none;
+      }
+
+      .footer-button {
+        background: #ffffff;
+        color: #000000;
+      }
+
+      .footer-button:hover {
+        background: #000000;
+        color: #ffffff;
+      }
+
+      .copyright {
+        margin-top: 24px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .ft-chat {
+        position: fixed;
+        right: max(18px, env(safe-area-inset-right));
+        bottom: max(18px, env(safe-area-inset-bottom));
+        z-index: 80;
+        color: var(--ink);
+        font-family: "Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif;
+      }
+
+      .ft-chat,
+      .ft-chat * {
+        box-sizing: border-box;
+      }
+
+      .ft-chat__launcher {
+        position: relative;
+        display: inline-flex;
+        width: 62px;
+        height: 62px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--ink);
+        border-radius: 6px;
+        background:
+          linear-gradient(135deg, rgba(232, 156, 49, 0.2), transparent 42%),
+          #fffaf0;
+        box-shadow: 7px 7px 0 var(--ink);
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 1000;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .ft-chat__launcher::after {
+        content: "";
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        width: 12px;
+        height: 12px;
+        border: 1px solid var(--ink);
+        border-radius: 999px;
+        background: var(--accent);
+      }
+
+      .ft-chat__launcher:hover {
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .ft-chat__panel {
+        position: absolute;
+        right: 0;
+        bottom: 78px;
+        display: grid;
+        width: min(390px, calc(100vw - 28px));
+        height: min(560px, calc(100vh - 118px));
+        overflow: hidden;
+        grid-template-rows: auto minmax(0, 1fr) auto auto;
+        border: 1px solid var(--ink);
+        border-radius: 6px;
+        background: #fffaf0;
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+
+      .ft-chat__panel[hidden],
+      .ft-chat__launcher[hidden] {
+        display: none;
+      }
+
+      .ft-chat__header {
+        display: flex;
+        min-height: 92px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid var(--ink);
+        background:
+          linear-gradient(90deg, rgba(250, 231, 225, 0.92), rgba(255, 250, 240, 0.92)),
+          repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.04) 0 1px, transparent 1px 8px);
+        padding: 14px 16px;
+      }
+
+      .ft-chat__badge {
+        display: inline-flex;
+        width: fit-content;
+        min-height: 22px;
+        align-items: center;
+        margin-bottom: 8px;
+        border: 1px solid var(--ink);
+        background: var(--accent);
+        padding: 3px 7px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .ft-chat__header strong {
+        display: block;
+        font-size: 19px;
+        font-weight: 1000;
+        line-height: 1.15;
+        text-transform: uppercase;
+      }
+
+      .ft-chat__header span:last-child {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+
+      .ft-chat__close,
+      .ft-chat__send {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--ink);
+        border-radius: 6px;
+        background: #fffaf0;
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+      }
+
+      .ft-chat__close {
+        width: 38px;
+        height: 38px;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .ft-chat__messages {
+        min-height: 0;
+        overflow-y: auto;
+        background:
+          linear-gradient(180deg, rgba(250, 231, 225, 0.68), rgba(255, 250, 240, 0) 38%),
+          repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.035) 0 1px, transparent 1px 28px),
+          #fffaf0;
+        padding: 16px;
+      }
+
+      .ft-chat__empty {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        padding: 20px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+        text-align: center;
+      }
+
+      .ft-chat__empty strong {
+        max-width: 260px;
+        color: var(--ink);
+        font-size: 17px;
+        font-weight: 1000;
+        line-height: 1.12;
+        text-transform: uppercase;
+      }
+
+      .ft-chat__empty a {
+        color: var(--ink);
+        font-weight: 900;
+      }
+
+      .ft-chat__message {
+        display: flex;
+        margin: 0 0 10px;
+      }
+
+      .ft-chat__message--visitor {
+        justify-content: flex-end;
+      }
+
+      .ft-chat__message--operator {
+        justify-content: flex-start;
+      }
+
+      .ft-chat__bubble {
+        width: fit-content;
+        max-width: min(285px, 86%);
+        border: 1px solid var(--ink);
+        border-radius: 6px;
+        background: #ffffff;
+        box-shadow: 4px 4px 0 rgba(17, 17, 17, 0.14);
+        padding: 10px 11px 8px;
+      }
+
+      .ft-chat__message--visitor .ft-chat__bubble {
+        background: var(--ink);
+        box-shadow: 4px 4px 0 var(--accent);
+        color: #ffffff;
+      }
+
+      .ft-chat__message--operator .ft-chat__bubble {
+        background: var(--blush);
+      }
+
+      .ft-chat__bubble p {
+        margin: 0;
+        color: inherit;
+        font-size: 14px;
+        line-height: 1.38;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+
+      .ft-chat__bubble time {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1;
+        text-align: right;
+      }
+
+      .ft-chat__message--visitor .ft-chat__bubble time {
+        color: rgba(255, 250, 240, 0.72);
+      }
+
+      .ft-chat__form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 42px;
+        gap: 8px;
+        border-top: 1px solid var(--ink);
+        background: #f8efe1;
+        padding: 12px;
+      }
+
+      .ft-chat__form textarea {
+        width: 100%;
+        min-height: 42px;
+        max-height: 116px;
+        resize: vertical;
+        border: 1px solid var(--ink);
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 10px 11px;
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .ft-chat__send {
+        width: 42px;
+        height: 42px;
+        align-self: end;
+        background: var(--accent);
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .ft-chat__send:disabled {
+        cursor: not-allowed;
+        opacity: 0.46;
+      }
+
+      .ft-chat__status {
+        padding: 0 12px 12px;
+        background: #f8efe1;
+        color: #9a3428;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      @media (max-width: 980px) {
+        .nav {
+          display: none;
+        }
+
+        .hero__grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero__copy {
+          min-height: auto;
+          border-right: 0;
+          padding: 36px 20px;
+        }
+
+        .hero__visual,
+        .hero__visual img {
+          min-height: 360px;
+        }
+
+        .section-head,
+        .print-strip__box,
+        .footer__grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer__right {
+          text-align: left;
+        }
+
+        .footer-social {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .header__inner,
+        .section-inner,
+        .footer__inner {
+          width: calc(100% - 24px);
+        }
+
+        .order-button {
+          padding: 0 12px;
+          font-size: 12px;
+        }
+
+        h1 {
+          font-size: 39px;
+          line-height: 1.02;
+        }
+
+        h2 {
+          font-size: 36px;
+          line-height: 1.04;
+        }
+
+        .delivery-note {
+          font-size: 17px;
+        }
+
+        .hero__actions {
+          flex-direction: column;
+        }
+
+        .hero-button,
+        .footer-button {
+          width: 100%;
+        }
+
+        .table-section {
+          padding: 36px 0;
+        }
+
+        table {
+          min-width: 760px;
+          font-size: 14px;
+        }
+
+        th,
+        td {
+          padding: 13px 12px;
+        }
+
+        .ft-chat {
+          right: 14px;
+          bottom: 14px;
+        }
+
+        .ft-chat__panel {
+          position: fixed;
+          right: 10px;
+          left: 10px;
+          bottom: 82px;
+          width: auto;
+          height: min(560px, calc(100vh - 104px));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="promo">Персональные книги - история за 3 минуты, печать за 1 день</div>
+
+    <header class="header">
+      <div class="header__inner">
+        <a class="logo" href="/" aria-label="FairyTeller">
+          <img
+            src="/assets/logo-compact-BLU9WrFd.webp"
+            alt="FairyTeller"
+            width="260"
+            height="124"
+            onerror="this.style.display='none';this.nextElementSibling.hidden=false"
+          />
+          <span hidden>FairyTeller</span>
+        </a>
+        <nav class="nav" aria-label="Основная навигация">
+          <a href="/">Главная</a>
+          <a href="/create">Создать</a>
+          <a href="/#examples">Примеры</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/blog">Журнал</a>
+        </nav>
+        <a class="order-button" href="/create">Заказать</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero__grid">
+          <div class="hero__copy">
+            <p class="eyebrow">Доставка Fairyteller</p>
+            <h1>
+              <span>Сроки доставки</span>
+              <span>по России.</span>
+            </h1>
+            <p class="delivery-note">
+              Мы осуществляем доставку в ПВЗ по всей России, работаем через партнеров: 5Post, СДЭК,
+              Яндекс и Почта России. В списке приведены самые популярные направления, если вашего города
+              или населенного пункта нет в списке — свяжитесь с нами по почте:
+              <a href="mailto:books@fairyteller.ru">books@fairyteller.ru</a>, через чат на сайте или
+              <a href="https://t.me/Nikita0shch" target="_blank" rel="noreferrer">Телеграм</a>, и мы уточним
+              точный срок доставки.
+            </p>
+            <div class="hero__actions">
+              <a class="hero-button hero-button--primary" href="/create">Создать книгу</a>
+              <a class="hero-button hero-button--secondary" href="#delivery-table">Смотреть сроки</a>
+            </div>
+          </div>
+          <div class="hero__visual">
+            <img src="/images/book-exmpl6.jpg" alt="Печатная персональная книга Fairyteller" />
+          </div>
+        </div>
+      </section>
+
+      <section class="table-section" id="delivery-table" aria-labelledby="delivery-table-title">
+        <div class="section-inner">
+          <div class="section-head">
+            <h2 id="delivery-table-title">Популярные направления.</h2>
+            <p>
+              В таблице указан ориентир по рабочим дням: общий срок до ПВЗ и вилки по логистическим партнерам.
+            </p>
+          </div>
+
+          <div class="table-wrap" aria-label="Таблица сроков доставки">
+            <table>
+              <thead>
+                <tr>
+                  <th>Город</th>
+                  <th>Доставка до ПВЗ</th>
+                  <th>СДЭК</th>
+                  <th>5Post</th>
+                  <th>Яндекс</th>
+                  <th>Почта России</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Москва</td>
+                  <td>от 1 дня</td>
+                  <td>2 раб. дн.</td>
+                  <td>2-5 раб. дн.</td>
+                  <td>2-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Санкт-Петербург</td>
+                  <td>от 2 дней</td>
+                  <td>3 раб. дн.</td>
+                  <td>2-14 раб. дн.</td>
+                  <td>3-5 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Новосибирск</td>
+                  <td>от 6 дней</td>
+                  <td>6 раб. дн.</td>
+                  <td>6-9 раб. дн.</td>
+                  <td>8-10 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Екатеринбург</td>
+                  <td>от 4 дней</td>
+                  <td>5 раб. дн.</td>
+                  <td>4-10 раб. дн.</td>
+                  <td>4-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Казань</td>
+                  <td>от 2 дней</td>
+                  <td>4-5 раб. дн.</td>
+                  <td>2-5 раб. дн.</td>
+                  <td>3-7 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Нижний Новгород</td>
+                  <td>от 2 дней</td>
+                  <td>3-8 раб. дн.</td>
+                  <td>2-5 раб. дн.</td>
+                  <td>3-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Челябинск</td>
+                  <td>от 4 дней</td>
+                  <td>5 раб. дн.</td>
+                  <td>4-7 раб. дн.</td>
+                  <td>5-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Красноярск</td>
+                  <td>от 5 дней</td>
+                  <td>8 раб. дн.</td>
+                  <td>5-16 раб. дн.</td>
+                  <td>9-10 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Самара</td>
+                  <td>от 3 дней</td>
+                  <td>4-10 раб. дн.</td>
+                  <td>3-5 раб. дн.</td>
+                  <td>3-5 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Уфа</td>
+                  <td>от 3 дней</td>
+                  <td>4-5 раб. дн.</td>
+                  <td>3-7 раб. дн.</td>
+                  <td>4-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Ростов-на-Дону</td>
+                  <td>от 3 дней</td>
+                  <td>4-6 раб. дн.</td>
+                  <td>3-4 раб. дн.</td>
+                  <td>3-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Омск</td>
+                  <td>от 5 дней</td>
+                  <td>6 раб. дн.</td>
+                  <td>5-8 раб. дн.</td>
+                  <td>7-8 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Воронеж</td>
+                  <td>от 2 дней</td>
+                  <td>3 раб. дн.</td>
+                  <td>2-3 раб. дн.</td>
+                  <td>4-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Пермь</td>
+                  <td>от 3 дней</td>
+                  <td>5-10 раб. дн.</td>
+                  <td>3-5 раб. дн.</td>
+                  <td>5-7 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Волгоград</td>
+                  <td>от 3 дней</td>
+                  <td>4 раб. дн.</td>
+                  <td>3-4 раб. дн.</td>
+                  <td>4-10 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Краснодар</td>
+                  <td>от 3 дней</td>
+                  <td>4-7 раб. дн.</td>
+                  <td>3-9 раб. дн.</td>
+                  <td>3-9 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Сочи</td>
+                  <td>от 4 дней</td>
+                  <td>5-7 раб. дн.</td>
+                  <td>4-9 раб. дн.</td>
+                  <td>4-7 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+                <tr>
+                  <td>Энгельс</td>
+                  <td>от 5 дней</td>
+                  <td>5-6 раб. дн.</td>
+                  <td>5-6 раб. дн.</td>
+                  <td>5-6 раб. дн.</td>
+                  <td>от 7 дн</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="print-strip">
+        <div class="section-inner">
+          <div class="print-strip__box">
+            <div>
+              <h2>Книга едет туда, где удобно.</h2>
+              <p>
+                Если нужен точный срок для конкретного адреса, напишите нам в чат: проверим доступные ПВЗ и поможем выбрать лучший вариант.
+              </p>
+            </div>
+            <a class="hero-button hero-button--primary" href="/create">Создать книгу</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div class="footer__grid">
+          <div>
+            <img
+              src="/assets/logo-compact-BLU9WrFd.webp"
+              alt="FairyTeller"
+              width="260"
+              height="124"
+              loading="lazy"
+              decoding="async"
+              onerror="this.style.display='none';this.nextElementSibling.hidden=false"
+            />
+            <strong hidden>FairyTeller</strong>
+            <p>
+              FairyTeller помогает создавать персональные бумажные книги по фото: для детей, любимых, родителей,
+              друзей и важных событий.
+            </p>
+            <nav aria-label="Навигация в подвале">
+              <a href="/#process">Как работает</a>
+              <a href="/create">Создать</a>
+              <a href="/#examples">Примеры</a>
+              <a href="/podarok/dlya-pary">Для пары</a>
+              <a href="/#faq">FAQ</a>
+              <a href="/blog">Журнал</a>
+            </nav>
+          </div>
+          <div class="footer__right">
+            <div class="footer-social">
+              <a href="https://vk.com/fairyteller" target="_blank" rel="noreferrer">VK</a>
+              <a href="https://dzen.ru/fairyteller" target="_blank" rel="noreferrer">Дзен</a>
+              <a class="footer-button" href="/create">Создать книгу</a>
+            </div>
+            <div class="copyright">2026. Fairyteller.ru — персональные бумажные книги в подарок</div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <div class="ft-chat" data-chat>
+      <section class="ft-chat__panel" aria-label="Чат поддержки FairyTeller" hidden>
+        <header class="ft-chat__header">
+          <div>
+            <span class="ft-chat__badge">Живая помощь</span>
+            <strong>FairyTeller</strong>
+            <span>Задайте вопрос, мы ответим здесь</span>
+          </div>
+          <button class="ft-chat__close" type="button" aria-label="Закрыть чат" title="Закрыть чат">x</button>
+        </header>
+        <div class="ft-chat__messages" aria-live="polite">
+          <div class="ft-chat__empty">
+            <strong>Книжная мастерская на связи</strong>
+            <span>Напишите, если нужна помощь с доставкой, заказом или готовой книгой.</span>
+            <span>Еще можно написать в <a href="https://t.me/Nikita0shch" target="_blank" rel="noreferrer">Телеграм</a>.</span>
+          </div>
+        </div>
+        <form class="ft-chat__form">
+          <textarea maxlength="2000" rows="2" placeholder="Ваш вопрос..." aria-label="Сообщение"></textarea>
+          <button class="ft-chat__send" type="submit" disabled aria-label="Отправить">→</button>
+        </form>
+        <div class="ft-chat__status" hidden>Не получилось отправить. Проверьте интернет и попробуйте еще раз.</div>
+      </section>
+      <button class="ft-chat__launcher" type="button" aria-label="Открыть чат" title="Открыть чат">Чат</button>
+    </div>
+
+    <script>
+      (() => {
+        const CHAT_API_BASE = "/api/fairyteller/chat";
+        const SESSION_STORAGE_KEY = "fairyteller-chat-session-v1";
+        const MESSAGES_STORAGE_KEY = "fairyteller-chat-messages-v1";
+        const root = document.querySelector("[data-chat]");
+        if (!root) return;
+
+        const panel = root.querySelector(".ft-chat__panel");
+        const launcher = root.querySelector(".ft-chat__launcher");
+        const closeButton = root.querySelector(".ft-chat__close");
+        const messagesNode = root.querySelector(".ft-chat__messages");
+        const form = root.querySelector(".ft-chat__form");
+        const textarea = root.querySelector("textarea");
+        const sendButton = root.querySelector(".ft-chat__send");
+        const statusNode = root.querySelector(".ft-chat__status");
+        let sessionId = readStorage(SESSION_STORAGE_KEY, "");
+        let messages = readJsonStorage(MESSAGES_STORAGE_KEY, []);
+        let pollTimer = null;
+
+        function readStorage(key, fallback) {
+          try {
+            return window.localStorage.getItem(key) || fallback;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function readJsonStorage(key, fallback) {
+          try {
+            const raw = window.localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function writeStorage(key, value) {
+          try {
+            window.localStorage.setItem(key, value);
+          } catch {
+            // Storage is optional.
+          }
+        }
+
+        function formatMessageTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "";
+          return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(date);
+        }
+
+        function storeMessages(nextMessages) {
+          writeStorage(MESSAGES_STORAGE_KEY, JSON.stringify(nextMessages.slice(-80)));
+        }
+
+        function applyServerChat(data) {
+          if (data.sessionId) {
+            sessionId = data.sessionId;
+            writeStorage(SESSION_STORAGE_KEY, sessionId);
+          }
+          if (Array.isArray(data.messages)) {
+            messages = data.messages;
+            storeMessages(messages);
+            renderMessages();
+          }
+        }
+
+        function renderMessages() {
+          if (!messages.length) {
+            messagesNode.innerHTML = `
+              <div class="ft-chat__empty">
+                <strong>Книжная мастерская на связи</strong>
+                <span>Напишите, если нужна помощь с доставкой, заказом или готовой книгой.</span>
+                <span>Еще можно написать в <a href="https://t.me/Nikita0shch" target="_blank" rel="noreferrer">Телеграм</a>.</span>
+              </div>
+            `;
+            return;
+          }
+
+          messagesNode.innerHTML = messages.map((message) => {
+            const role = message.role === "operator" ? "operator" : "visitor";
+            const text = escapeHtml(message.text || "");
+            const createdAt = escapeHtml(message.createdAt || "");
+            return `
+              <div class="ft-chat__message ft-chat__message--${role}">
+                <div class="ft-chat__bubble">
+                  <p>${text}</p>
+                  <time datetime="${createdAt}">${formatMessageTime(message.createdAt)}</time>
+                </div>
+              </div>
+            `;
+          }).join("");
+          messagesNode.scrollTop = messagesNode.scrollHeight;
+        }
+
+        function escapeHtml(value) {
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
+
+        async function refreshMessages() {
+          if (!sessionId) return;
+          const response = await fetch(`${CHAT_API_BASE}/sessions/${encodeURIComponent(sessionId)}/messages`, {
+            cache: "no-store",
+          });
+          if (!response.ok) return;
+          applyServerChat(await response.json());
+        }
+
+        async function sendMessage(event) {
+          event.preventDefault();
+          const text = textarea.value.trim();
+          if (!text) return;
+          textarea.value = "";
+          sendButton.disabled = true;
+          statusNode.hidden = true;
+
+          messages = [
+            ...messages,
+            {
+              id: `local_${Date.now()}`,
+              role: "visitor",
+              text,
+              createdAt: new Date().toISOString(),
+            },
+          ];
+          storeMessages(messages);
+          renderMessages();
+
+          try {
+            const response = await fetch(`${CHAT_API_BASE}/messages`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                sessionId: sessionId || undefined,
+                message: text,
+                pageUrl: window.location.href,
+              }),
+            });
+            if (!response.ok) throw new Error(`Chat request failed: ${response.status}`);
+            applyServerChat(await response.json());
+          } catch {
+            statusNode.hidden = false;
+          }
+        }
+
+        function openChat() {
+          panel.hidden = false;
+          launcher.hidden = true;
+          renderMessages();
+          textarea.focus();
+          void refreshMessages();
+          pollTimer = window.setInterval(() => {
+            void refreshMessages();
+          }, 4000);
+        }
+
+        function closeChat() {
+          panel.hidden = true;
+          launcher.hidden = false;
+          if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = null;
+          }
+        }
+
+        textarea.addEventListener("input", () => {
+          sendButton.disabled = !textarea.value.trim();
+        });
+        textarea.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            form.requestSubmit();
+          }
+        });
+        form.addEventListener("submit", sendMessage);
+        launcher.addEventListener("click", openChat);
+        closeButton.addEventListener("click", closeChat);
+      })();
+    </script>
+  </body>
+</html>

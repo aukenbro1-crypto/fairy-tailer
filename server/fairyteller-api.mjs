@@ -3,7 +3,10 @@ import { spawn } from 'node:child_process';
 import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 const PORT = Number(process.env.FAIRYTELLER_API_PORT || process.env.PORT || 3099);
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '.data/fairyteller');
@@ -23,6 +26,7 @@ const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
 const YOOKASSA_SHOP_ID = process.env.FAIRYTELLER_YOOKASSA_SHOP_ID || process.env.YOOKASSA_SHOP_ID || '';
 const YOOKASSA_SECRET_KEY = process.env.FAIRYTELLER_YOOKASSA_SECRET_KEY || process.env.YOOKASSA_SECRET_KEY || '';
+const YOOKASSA_SHOP_PASSWORD = process.env.FAIRYTELLER_YOOKASSA_SHOP_PASSWORD || process.env.YOOKASSA_SHOP_PASSWORD || '';
 const YOOKASSA_AMOUNT_RUB = process.env.FAIRYTELLER_BOOK_PRICE_RUB || '3500.00';
 const PAID_ACCESS_TTL_DAYS = Math.max(1, Number(process.env.FAIRYTELLER_PAID_ACCESS_TTL_DAYS || 30) || 30);
 const RESEND_LINK_WINDOW_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_RESEND_LINK_WINDOW_MS || 5 * 60_000) || 5 * 60_000);
@@ -30,10 +34,13 @@ const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
 const ADMIN_MAIL_PATH = `${ADMIN_BOOKS_PATH}/mail`;
+const ADMIN_JOBS_PATH = `${ADMIN_BOOKS_PATH}/jobs`;
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
+const ADMIN_BOOK_IMAGE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_IMAGE_MAX_BYTES || 12 * 1024 * 1024) || 12 * 1024 * 1024);
+const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
 const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSAGE_LIMIT || 2000) || 2000);
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
 const CHAT_RATE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_RATE_LIMIT || 20) || 20);
@@ -157,6 +164,15 @@ function hasAdminBooksAuth(req) {
   return [bearer, apiKey].some(authTokenMatches) || adminBooksCookieMatches(cookieToken);
 }
 
+function hasAdminBooksAccess(req, url) {
+  return hasAdminBooksAuth(req) || (ADMIN_BOOKS_SECRET && secretMatches(ADMIN_BOOKS_SECRET, url.searchParams.get('admin')));
+}
+
+function adminFileUrl(jobId, fileName) {
+  const base = `/api/fairyteller/jobs/${jobId}/files/${fileName}`;
+  return ADMIN_BOOKS_SECRET ? `${base}?admin=${encodeURIComponent(ADMIN_BOOKS_SECRET)}` : base;
+}
+
 function hasAdminBooksSecretPath(pathname) {
   if (!ADMIN_BOOKS_SECRET) return false;
   const prefix = `${ADMIN_BOOKS_PATH}/`;
@@ -199,6 +215,19 @@ async function readTextBody(req, limitBytes = 16 * 1024) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+async function readBufferBody(req, limitBytes) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limitBytes) {
+      throw httpError(413, 'Request body too large');
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 async function readFormCredential(req) {
   const text = await readTextBody(req);
   const params = new URLSearchParams(text);
@@ -208,6 +237,75 @@ async function readFormCredential(req) {
 async function readFormBody(req, limitBytes = 1024 * 1024) {
   const text = await readTextBody(req, limitBytes);
   return new URLSearchParams(text);
+}
+
+function multipartBoundary(req) {
+  const contentType = String(req.headers['content-type'] || '');
+  const match = contentType.match(/(?:^|;)\s*boundary=(?:"([^"]+)"|([^;]+))/i);
+  return match ? (match[1] || match[2] || '').trim() : '';
+}
+
+function parseMultipartHeaders(text) {
+  const headers = {};
+  for (const line of text.split('\r\n')) {
+    const index = line.indexOf(':');
+    if (index <= 0) continue;
+    headers[line.slice(0, index).trim().toLowerCase()] = line.slice(index + 1).trim();
+  }
+  return headers;
+}
+
+function multipartDispositionParam(disposition, name) {
+  const match = String(disposition || '').match(new RegExp(`${name}="([^"]*)"`, 'i'));
+  return match ? match[1] : '';
+}
+
+async function readMultipartForm(req, limitBytes = 80 * 1024 * 1024) {
+  const boundaryValue = multipartBoundary(req);
+  if (!boundaryValue) throw httpError(400, 'Missing multipart boundary');
+  const body = await readBufferBody(req, limitBytes);
+  const boundary = Buffer.from(`--${boundaryValue}`);
+  const nextBoundary = Buffer.from(`\r\n--${boundaryValue}`);
+  const headerEndMarker = Buffer.from('\r\n\r\n');
+  const fields = new URLSearchParams();
+  const files = new Map();
+  let position = body.indexOf(boundary);
+
+  while (position >= 0) {
+    position += boundary.length;
+    if (body[position] === 45 && body[position + 1] === 45) break;
+    if (body[position] === 13 && body[position + 1] === 10) position += 2;
+
+    const headerEnd = body.indexOf(headerEndMarker, position);
+    if (headerEnd < 0) throw httpError(400, 'Invalid multipart payload');
+    const headers = parseMultipartHeaders(body.slice(position, headerEnd).toString('utf8'));
+    const disposition = headers['content-disposition'] || '';
+    const fieldName = multipartDispositionParam(disposition, 'name');
+    const originalName = multipartDispositionParam(disposition, 'filename');
+    if (!fieldName) throw httpError(400, 'Invalid multipart field');
+
+    const contentStart = headerEnd + headerEndMarker.length;
+    const contentEnd = body.indexOf(nextBoundary, contentStart);
+    if (contentEnd < 0) throw httpError(400, 'Invalid multipart boundary');
+    const content = body.slice(contentStart, contentEnd);
+
+    if (originalName) {
+      if (content.length > 0) {
+        files.set(fieldName, {
+          fieldName,
+          originalName: basename(originalName),
+          contentType: headers['content-type'] || '',
+          content,
+        });
+      }
+    } else {
+      fields.set(fieldName, content.toString('utf8'));
+    }
+
+    position = contentEnd + 2;
+  }
+
+  return { fields, files };
 }
 
 async function readJsonFile(path, fallback = null) {
@@ -494,6 +592,12 @@ function publicUrl(pathOrUrl) {
   return `${PUBLIC_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
 }
 
+function withUrlParam(url, name, value) {
+  if (!url || !value) return url || '';
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+}
+
 function daysFromNowIso(days) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -509,8 +613,8 @@ async function readPayment(jobId) {
 async function writePayment(jobId, payment) {
   const dir = jobDir(jobId);
   await writeJsonAtomic(join(dir, 'payment.json'), {
-    updatedAt: nowIso(),
     ...payment,
+    updatedAt: nowIso(),
   });
 }
 
@@ -1023,7 +1127,7 @@ async function listGeneratedBooks() {
           fileName.replace(/\.pdf$/i, ''),
           {
             fileName,
-            url: `/api/fairyteller/jobs/${entry.name}/files/${fileName}`,
+            url: adminFileUrl(entry.name, fileName),
             ...info,
           },
         ];
@@ -1060,6 +1164,78 @@ async function listGeneratedBooks() {
     .slice(0, ADMIN_BOOKS_MAX_ROWS);
 }
 
+async function jobArtifactInfo(dir, fileName) {
+  return optionalFileInfo(join(dir, 'artifacts', fileName));
+}
+
+async function listGenerationJobs() {
+  const root = resolve(DATA_DIR, 'jobs');
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const rows = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      let dir;
+      try {
+        dir = jobDir(entry.name);
+      } catch {
+        return null;
+      }
+
+      const [status, orderEnvelope, payment, files, textArtifact, fullTextArtifact, visualsArtifact, renderArtifact] = await Promise.all([
+        readJsonFile(join(dir, 'status.json'), null),
+        readJsonFile(join(dir, 'order.json'), {}),
+        readPayment(entry.name).catch(() => ({})),
+        getJobPdfFiles(entry.name).catch(() => ({})),
+        jobArtifactInfo(dir, 'text.json'),
+        jobArtifactInfo(dir, 'full-text.json'),
+        jobArtifactInfo(dir, 'visuals.json'),
+        jobArtifactInfo(dir, 'render.json'),
+      ]);
+      if (!status) return null;
+
+      const order = orderEnvelope.order || orderEnvelope || {};
+      const summary = summarizeOrder(order);
+      const title = await bookTitle(dir, status);
+
+      return {
+        jobId: entry.name,
+        title,
+        status: status.status || '',
+        stage: status.stage || '',
+        progress: Number(status.progress || 0),
+        message: status.message || '',
+        createdAt: status.createdAt || orderEnvelope.receivedAt || '',
+        updatedAt: status.updatedAt || '',
+        email: summary.email,
+        world: summary.world,
+        location: summary.location,
+        artifact: summary.artifact,
+        style: summary.style,
+        heroNames: summary.heroNames,
+        artifactLine: artifactStatusLine(status.artifacts),
+        errorMessage: status.error?.message || '',
+        paymentStatus: payment?.status || 'unpaid',
+        files,
+        hasTextArtifact: Boolean(textArtifact),
+        hasFullTextArtifact: Boolean(fullTextArtifact),
+        hasVisualsArtifact: Boolean(visualsArtifact),
+        hasRenderArtifact: Boolean(renderArtifact),
+      };
+    }));
+
+  return rows
+    .filter(Boolean)
+    .sort((left, right) => String(right.updatedAt || right.createdAt).localeCompare(String(left.updatedAt || left.createdAt)))
+    .slice(0, ADMIN_BOOKS_MAX_ROWS);
+}
+
 function renderFileLink(file, label) {
   if (!file) return '';
   const size = formatBytes(file.bytes);
@@ -1073,6 +1249,546 @@ function renderFileLink(file, label) {
 
 function adminBookEditPath(jobId) {
   return `${ADMIN_BOOKS_PATH}/${encodeURIComponent(jobId)}/edit`;
+}
+
+function adminJobPath(jobId) {
+  return `${ADMIN_JOBS_PATH}/${encodeURIComponent(jobId)}`;
+}
+
+function adminJobActionPath(jobId, action) {
+  return `${adminJobPath(jobId)}/${encodeURIComponent(action)}`;
+}
+
+async function getAdminJobDetails(jobId) {
+  const dir = jobDir(jobId);
+  const full = await getFullJob(jobId);
+  const artifactNames = ['text.json', 'full-text.json', 'visuals.json', 'render.json', 'email.json'];
+  const artifactPairs = await Promise.all(artifactNames.map(async (fileName) => {
+    const info = await jobArtifactInfo(dir, fileName);
+    return info ? [fileName, info] : null;
+  }));
+  return {
+    ...full,
+    payment: await readPayment(jobId).catch(() => ({})),
+    files: await getJobPdfFiles(jobId).catch(() => ({})),
+    artifactFiles: Object.fromEntries(artifactPairs.filter(Boolean)),
+  };
+}
+
+function renderAdminTabs(active = 'books') {
+  const links = [
+    ['books', ADMIN_BOOKS_PATH, 'PDF-сказки'],
+    ['jobs', ADMIN_JOBS_PATH, 'Заявки'],
+    ['leads', ADMIN_LEADS_PATH, 'Email-база'],
+    ['mail', ADMIN_MAIL_PATH, 'Письмо'],
+  ];
+  return links.map(([key, href, label]) => (
+    `<a class="logout${active === key ? ' active' : ''}" href="${href}">${label}</a>`
+  )).join('');
+}
+
+function renderJobStatus(job) {
+  const base = [statusLabel(job.status), job.stage].filter(Boolean).join(' · ');
+  const progress = Number.isFinite(job.progress) ? ` · ${job.progress}%` : '';
+  return [
+    escapeHtml(base || '—'),
+    escapeHtml(progress),
+    job.artifactLine ? `<span>${escapeHtml(job.artifactLine)}</span>` : '',
+  ].join('');
+}
+
+function renderArtifactMarker(label, enabled) {
+  return `<span class="artifact-marker${enabled ? ' ready' : ''}">${escapeHtml(label)}</span>`;
+}
+
+function renderJobsPage(jobs, options = {}) {
+  const showLogout = options.showLogout !== false;
+  const rows = jobs.map((job) => {
+    const title = job.title || job.message || 'Без названия';
+    const people = [job.email, ...job.heroNames].filter(Boolean).join(' · ');
+    const entered = [
+      job.world ? `world: ${job.world}` : '',
+      job.location ? `место: ${job.location}` : '',
+      job.artifact ? `артефакт: ${job.artifact}` : '',
+      job.style ? `стиль: ${job.style}` : '',
+    ].filter(Boolean).join('\n');
+    const markers = [
+      renderArtifactMarker('1 глава', job.hasTextArtifact),
+      renderArtifactMarker('5 глав', job.hasFullTextArtifact),
+      renderArtifactMarker('визуал', job.hasVisualsArtifact),
+      renderArtifactMarker('PDF', job.hasRenderArtifact || Boolean(job.files.preview || job.files.book)),
+    ].join('');
+
+    return `<tr>
+      <td>
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(job.jobId)}</span>
+      </td>
+      <td>${escapeHtml(people || '—')}</td>
+      <td><pre>${escapeHtml(entered || '—')}</pre></td>
+      <td>
+        ${renderJobStatus(job)}
+        ${job.errorMessage ? `<span class="error-text">${escapeHtml(job.errorMessage)}</span>` : ''}
+      </td>
+      <td><div class="markers">${markers}</div></td>
+      <td>${escapeHtml(formatDateTime(job.createdAt) || '—')}</td>
+      <td>${escapeHtml(formatDateTime(job.updatedAt) || '—')}</td>
+      <td class="links">
+        <a class="file-link inspect-link" href="${adminJobPath(job.jobId)}"><span>view</span></a>
+        ${job.hasFullTextArtifact ? `<a class="file-link edit-link" href="${adminBookEditPath(job.jobId)}"><span>edit</span></a>` : ''}
+        ${renderFileLink(job.files.preview, 'preview')}
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller заявки</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 0 auto 22px; max-width: 1320px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    p { margin: 8px 0 0; color: #56616b; }
+    .logout { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .logout.active { color: #7a4b1f; }
+    .actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    main { max-width: 1320px; margin: 0 auto; overflow-x: auto; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 18px 45px rgba(40, 31, 18, 0.08); }
+    table { width: 100%; border-collapse: collapse; min-width: 1180px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    strong { display: block; margin-bottom: 4px; font-size: 15px; color: #172126; }
+    span { display: block; color: #68737d; font-size: 12px; }
+    pre { margin: 0; white-space: pre-wrap; color: #39434c; font: inherit; font-size: 13px; line-height: 1.45; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; min-width: 220px; }
+    .file-link { display: inline-flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
+    .inspect-link { background: #172126; }
+    .edit-link { background: #7a4b1f; }
+    .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
+    .markers { display: flex; flex-wrap: wrap; gap: 6px; min-width: 180px; }
+    .artifact-marker { display: inline-flex; padding: 4px 7px; border-radius: 999px; background: #e8ded0; color: #6d6256; font-weight: 800; }
+    .artifact-marker.ready { background: #dff7ec; color: #174d43; }
+    .error-text { margin-top: 6px; color: #8f1d1d; font-weight: 800; }
+    .empty { padding: 32px; color: #56616b; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .actions { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Заявки на генерацию</h1>
+      <p>${jobs.length ? `Найдено заявок: ${jobs.length}` : 'Пока нет заявок'}</p>
+    </div>
+    ${showLogout ? `<div class="actions">${renderAdminTabs('jobs')}<a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
+  </header>
+  <main>
+    ${jobs.length ? `<table>
+      <thead>
+        <tr>
+          <th>Заявка</th>
+          <th>Клиент / герои</th>
+          <th>Что ввели</th>
+          <th>Статус</th>
+          <th>Артефакты</th>
+          <th>Создано</th>
+          <th>Обновлено</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<div class="empty">Заявок пока не нашлось.</div>'}
+  </main>
+</body>
+</html>`;
+}
+
+function jsonPreview(value) {
+  return escapeHtml(JSON.stringify(value ?? null, null, 2));
+}
+
+function renderFieldRows(rows) {
+  return rows
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+    .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(Array.isArray(value) ? value.join(', ') : value)}</dd>`)
+    .join('');
+}
+
+function renderAdminHeroes(order = {}) {
+  const heroes = Array.isArray(order.heroes) ? order.heroes : [];
+  if (!heroes.length) return '<p class="muted">Герои не заполнены.</p>';
+  return heroes.map((hero, index) => `
+    <section class="hero-row">
+      <h3>Герой ${escapeHtml(hero.n || index + 1)}${hero.name ? ` · ${escapeHtml(hero.name)}` : ''}</h3>
+      <dl>
+        ${renderFieldRows([
+          ['Имя', hero.name],
+          ['Возрастная группа', [hero.ageGroup, hero.ageGroupSource].filter(Boolean).join(' · ')],
+          ['Роль/отношение', hero.relation],
+          ['Фото', hero.hasPhoto ? `да${hero.photoFileName ? ` · ${hero.photoFileName}` : ''}` : 'нет'],
+        ])}
+      </dl>
+      ${hero.description ? `<p>${escapeHtml(hero.description)}</p>` : ''}
+    </section>`).join('');
+}
+
+function renderEventRows(events = []) {
+  const rows = events.slice(-100).reverse().map((event) => {
+    const details = { ...event };
+    delete details.at;
+    delete details.type;
+    return `<tr>
+      <td>${escapeHtml(formatDateTime(event.at) || event.at || '—')}</td>
+      <td>${escapeHtml(event.type || 'event')}</td>
+      <td><pre>${escapeHtml(JSON.stringify(details, null, 2))}</pre></td>
+    </tr>`;
+  }).join('');
+  return rows || '<tr><td colspan="3">Событий пока нет.</td></tr>';
+}
+
+function renderArtifactRows(artifactFiles = {}) {
+  const rows = Object.entries(artifactFiles).map(([fileName, info]) => `<tr>
+    <td>${escapeHtml(fileName)}</td>
+    <td>${escapeHtml(formatBytes(info.bytes) || '—')}</td>
+    <td>${escapeHtml(formatDateTime(info.updatedAt) || '—')}</td>
+  </tr>`).join('');
+  return rows || '<tr><td colspan="3">JSON-артефактов пока нет.</td></tr>';
+}
+
+function renderAdminJobDetailPage(details, options = {}) {
+  const { jobId, order: orderEnvelope = {}, status = {}, events = [], payment = {}, files = {}, artifactFiles = {} } = details;
+  const order = orderEnvelope.order || orderEnvelope || {};
+  const summary = summarizeOrder(order);
+  const notice = options.notice || '';
+  const error = options.error || '';
+  const title = status.artifacts?.fullText?.title || status.preview?.title || 'Заявка';
+  const canRestartContinuation = Boolean(artifactFiles['text.json']) && status.status !== 'done';
+  const canRender = Boolean(artifactFiles['full-text.json']);
+  const photoWarning = Array.isArray(order.heroes) && order.heroes.some((hero) => hero.hasPhoto)
+    ? 'В повторной заявке исходные фото не прикрепятся: в job хранятся только метаданные фото, не сами приватные загрузки.'
+    : '';
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>${escapeHtml(jobId)} · FairyTeller заявка</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, main { max-width: 1180px; margin: 0 auto; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    h2 { margin: 0 0 14px; font-size: 20px; }
+    h3 { margin: 0 0 10px; font-size: 15px; }
+    p { margin: 8px 0 0; color: #56616b; line-height: 1.5; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .top-links { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; }
+    .top-links .active { color: #7a4b1f; }
+    .panel, .hero-row { margin-bottom: 18px; padding: 18px; border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 14px 35px rgba(40, 31, 18, 0.07); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 12px; margin: 0; }
+    dt { color: #6d6256; font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    pre { margin: 0; overflow: auto; white-space: pre-wrap; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color: #26323a; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    form { margin: 0; }
+    button { min-height: 40px; border: 0; border-radius: 6px; padding: 0 14px; background: #1f5d53; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    button.secondary { background: #7a4b1f; }
+    button.warning { background: #9f3a2f; }
+    .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .file-link { display: inline-flex; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
+    .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
+    .notice, .error { margin: 0 0 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
+    .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
+    .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    .muted { color: #766b60; }
+    details { margin-top: 12px; }
+    summary { cursor: pointer; font-weight: 900; color: #1f5d53; }
+    @media (max-width: 760px) {
+      body { padding: 18px; }
+      header { display: block; }
+      .top-links { justify-content: flex-start; margin-top: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      dl { grid-template-columns: 1fr; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>${escapeHtml(title)}</h1>
+      <p>${escapeHtml(jobId)} · ${escapeHtml(formatDateTime(status.createdAt) || 'без даты')}</p>
+    </div>
+    <div class="top-links">
+      ${renderAdminTabs('jobs')}
+      <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
+    </div>
+  </header>
+  <main>
+    ${renderAdminNotice(notice)}
+    ${renderAdminNotice(error, 'error')}
+    <section class="panel">
+      <h2>Статус</h2>
+      <div class="grid">
+        <dl>
+          ${renderFieldRows([
+            ['Статус', [statusLabel(status.status), status.stage, `${status.progress ?? 0}%`].filter(Boolean).join(' · ')],
+            ['Сообщение', status.message],
+            ['Артефакты', artifactStatusLine(status.artifacts)],
+            ['Оплата', payment.status || 'unpaid'],
+            ['Обновлено', formatDateTime(status.updatedAt)],
+            ['Ошибка', status.error?.message],
+          ])}
+        </dl>
+        <div>
+          <div class="actions">
+            ${canRestartContinuation ? `<form method="post" action="${adminJobActionPath(jobId, 'restart-continuation')}"><button class="warning" type="submit">Перезапустить продолжение</button></form>` : ''}
+            ${canRender ? `<form method="post" action="${adminJobActionPath(jobId, 'render-pdf')}"><button class="secondary" type="submit">Пересобрать PDF</button></form>` : ''}
+            <form method="post" action="${adminJobActionPath(jobId, 'clone')}"><button type="submit">Создать повторную заявку</button></form>
+          </div>
+          ${photoWarning ? `<p class="muted">${escapeHtml(photoWarning)}</p>` : ''}
+          <div class="file-links">
+            ${canRender ? `<a class="file-link" href="${adminBookEditPath(jobId)}"><span>edit text</span></a>` : ''}
+            ${renderFileLink(files.preview, 'preview')}
+            ${renderFileLink(files.book, 'print')}
+            ${renderFileLink(files.cover, 'cover')}
+            ${renderFileLink(files.interior, 'interior')}
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Что ввели</h2>
+      <dl>
+        ${renderFieldRows([
+          ['Email', summary.email],
+          ['Мир', summary.world],
+          ['Место', summary.location],
+          ['Артефакт', summary.artifact],
+          ['Стиль', summary.style],
+          ['Язык', order.language],
+          ['Глав', order.chapters],
+          ['Длина', order.lengthTarget],
+        ])}
+      </dl>
+    </section>
+    <section class="panel">
+      <h2>Герои</h2>
+      ${renderAdminHeroes(order)}
+    </section>
+    <section class="panel">
+      <h2>JSON-артефакты</h2>
+      <table>
+        <thead><tr><th>Файл</th><th>Размер</th><th>Обновлен</th></tr></thead>
+        <tbody>${renderArtifactRows(artifactFiles)}</tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <h2>События</h2>
+      <table>
+        <thead><tr><th>Когда</th><th>Тип</th><th>Детали</th></tr></thead>
+        <tbody>${renderEventRows(events)}</tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <h2>Raw</h2>
+      <details>
+        <summary>order.json</summary>
+        <pre>${jsonPreview(orderEnvelope)}</pre>
+      </details>
+      <details>
+        <summary>status.json</summary>
+        <pre>${jsonPreview(status)}</pre>
+      </details>
+      <details>
+        <summary>payment.json</summary>
+        <pre>${jsonPreview(payment)}</pre>
+      </details>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
+async function postJsonToWebhook(pathname, body, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${N8N_WEBHOOK_BASE_URL}${pathname}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw httpError(502, payload.message || payload.error || `Webhook failed: ${response.status}`);
+    }
+    return payload;
+  } catch (error) {
+    if (error.name === 'AbortError') throw httpError(504, 'Webhook timed out');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function postFormToWebhook(pathname, params, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${N8N_WEBHOOK_BASE_URL}${pathname}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw httpError(502, payload.message || payload.error || `Webhook failed: ${response.status}`);
+    }
+    return payload;
+  } catch (error) {
+    if (error.name === 'AbortError') throw httpError(504, 'Webhook timed out');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function orderToCreateParams(order = {}) {
+  const params = new URLSearchParams();
+  const fields = [
+    ['world', order.world],
+    ['newyear_mode', order.newyearMode ? 'true' : ''],
+    ['location', order.location],
+    ['artifact', order.artifact],
+    ['email', order.email],
+    ['illustration_style', order.illustrationStyle || order.illustration_style],
+    ['illustration_style_prompt', order.illustrationStylePrompt || order.illustration_style_prompt],
+    ['length_target', order.lengthTarget],
+    ['chapters', order.chapters],
+    ['title_need', order.titleNeed ? 'true' : ''],
+    ['language', order.language],
+  ];
+  for (const [key, value] of fields) {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, String(value));
+    }
+  }
+
+  const heroes = Array.isArray(order.heroes) ? order.heroes : [];
+  for (const hero of heroes) {
+    const n = Number(hero.n || heroes.indexOf(hero) + 1);
+    if (!Number.isInteger(n) || n < 1 || n > 4) continue;
+    if (hero.name) params.set(`hero${n}_name`, String(hero.name));
+    if (hero.description) params.set(`hero${n}_desc`, String(hero.description));
+    if (hero.relation) params.set(`hero${n}_rel`, String(hero.relation));
+    if (hero.ageGroup) params.set(`hero${n}_age_group`, String(hero.ageGroup));
+  }
+  return params;
+}
+
+async function restartJobContinuation(jobId) {
+  const dir = jobDir(jobId);
+  const status = await readJsonFile(join(dir, 'status.json'), null);
+  if (!status) throw httpError(404, 'Job not found');
+  if (status.status === 'done') {
+    throw httpError(409, 'Job is already done; use PDF rebuild or create a repeated request instead');
+  }
+  if (!existsSync(join(dir, 'artifacts', 'text.json'))) {
+    throw httpError(409, 'First chapter artifact is not ready; create a repeated request instead');
+  }
+
+  const requestedAt = nowIso();
+  await updateJobStatus(jobId, {
+    status: 'visuals_ready',
+    stage: 'text',
+    progress: Math.max(45, Math.min(75, Number(status.progress || 55) || 55)),
+    message: 'Перезапускаем продолжение истории',
+    error: null,
+    artifacts: {
+      fullText: { status: 'retry_requested', requestedAt, reason: 'admin_restart' },
+      fullVisuals: { status: 'retry_requested', requestedAt, reason: 'admin_restart' },
+      cover: { status: 'retry_requested', requestedAt, reason: 'admin_restart' },
+      render: { status: 'retry_requested', requestedAt, reason: 'admin_restart' },
+    },
+  });
+  const payload = await postJsonToWebhook('/webhook/fairyteller/continue', { jobId });
+  await appendEvent(dir, { type: 'job.admin.restartContinuation', webhookStatus: payload.status || '', requestedAt });
+  return payload;
+}
+
+async function cloneJobFromOrder(jobId) {
+  const dir = jobDir(jobId);
+  const orderEnvelope = await readJsonFile(join(dir, 'order.json'), null);
+  if (!orderEnvelope) throw httpError(404, 'Order not found');
+  const order = orderEnvelope.order || orderEnvelope || {};
+  const payload = await postFormToWebhook('/webhook/fairyteller/create', orderToCreateParams(order));
+  await appendEvent(dir, { type: 'job.admin.cloneRequested', newJobId: payload.jobId || '', webhookStatus: payload.status || '' });
+  if (typeof payload.jobId === 'string' && /^ft_[a-zA-Z0-9_-]{8,80}$/.test(payload.jobId)) {
+    await appendEvent(jobDir(payload.jobId), { type: 'job.admin.cloneCreated', originalJobId: jobId }).catch(() => {});
+  }
+  return payload;
+}
+
+async function renderAdminJobAction(req, res, jobId, action, url) {
+  try {
+    if (action === 'restart-continuation') {
+      await restartJobContinuation(jobId);
+      redirectAdmin(res, `${adminJobPath(jobId)}?restarted=1`);
+      return;
+    }
+    if (action === 'render-pdf') {
+      if (!existsSync(join(jobDir(jobId), 'artifacts', 'full-text.json'))) {
+        throw httpError(409, 'Full text artifact is not ready');
+      }
+      await appendEvent(jobDir(jobId), { type: 'job.adminRenderRequested' });
+      await renderJobPdf(jobId, { skipCustomerEmail: true });
+      redirectAdmin(res, `${adminJobPath(jobId)}?rendered=1`);
+      return;
+    }
+    if (action === 'clone') {
+      const payload = await cloneJobFromOrder(jobId);
+      redirectAdmin(res, payload.jobId ? `${adminJobPath(payload.jobId)}?clonedFrom=${encodeURIComponent(jobId)}` : `${adminJobPath(jobId)}?cloned=1`);
+      return;
+    }
+    throw httpError(404, 'Unknown admin action');
+  } catch (error) {
+    const details = await getAdminJobDetails(jobId);
+    sendHtml(req, res, error.status || 500, renderAdminJobDetailPage(details, {
+      error: error.message || 'Не удалось выполнить действие',
+      notice: adminJobNotice(url),
+    }));
+  }
+}
+
+function adminJobNotice(url) {
+  if (url.searchParams.get('restarted') === '1') return 'Перезапуск продолжения отправлен в n8n.';
+  if (url.searchParams.get('rendered') === '1') return 'PDF пересобран без повторного письма клиенту.';
+  if (url.searchParams.get('clonedFrom')) return `Создана повторная заявка из ${url.searchParams.get('clonedFrom')}.`;
+  if (url.searchParams.get('cloned') === '1') return 'Повторная заявка отправлена.';
+  return '';
 }
 
 function renderBooksLoginPage(errorMessage = '') {
@@ -1181,7 +1897,7 @@ function renderBooksPage(books, options = {}) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
+    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_JOBS_PATH}">Заявки</a><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -1300,6 +2016,67 @@ function textareaRows(value, minRows = 4, maxRows = 18) {
   return Math.max(minRows, Math.min(maxRows, lineRows + lengthRows));
 }
 
+function adminBookImageSlots() {
+  return [
+    { fieldName: 'image_cover', slot: 'cover', label: 'Обложка', baseName: 'cover-spread', defaultFileName: 'cover-spread.png' },
+    ...[1, 2, 3, 4, 5].map((chapter) => ({
+      fieldName: `image_chapter_${chapter}`,
+      slot: `chapter_${chapter}`,
+      chapter,
+      label: `Глава ${chapter}`,
+      baseName: `chapter-${chapter}`,
+      defaultFileName: `chapter-${chapter}.png`,
+    })),
+  ];
+}
+
+function findVisualImageJob(visualsArtifact, slotDef) {
+  const visualRoot = visualsArtifact?.visuals || visualsArtifact || {};
+  const jobs = Array.isArray(visualRoot.imageJobs) ? visualRoot.imageJobs : [];
+  return jobs.find((image) => (
+    image?.slot === slotDef.slot
+    || (slotDef.chapter && Number(image?.chapter) === slotDef.chapter)
+    || image?.fileName === slotDef.defaultFileName
+  )) || null;
+}
+
+function statusImageForSlot(status, slotDef) {
+  if (slotDef.slot === 'cover') return status.artifacts?.cover || null;
+  if (slotDef.chapter === 1 && status.preview?.imageUrl) {
+    return {
+      fileName: basename(String(status.preview.imageUrl).split('?')[0]),
+      url: status.preview.imageUrl,
+      absoluteUrl: status.preview.imageAbsoluteUrl || '',
+      status: status.preview.imageStatus || '',
+    };
+  }
+  const images = Array.isArray(status.artifacts?.fullVisuals?.images) ? status.artifacts.fullVisuals.images : [];
+  return images.find((image) => (
+    image?.slot === slotDef.slot
+    || Number(image?.chapter) === slotDef.chapter
+    || image?.fileName === slotDef.defaultFileName
+  )) || null;
+}
+
+async function getAdminBookImages(jobId, status = {}) {
+  const dir = jobDir(jobId);
+  const visualsArtifact = await readJsonFile(join(dir, 'artifacts', 'visuals.json'), null);
+  const slots = adminBookImageSlots();
+  return Promise.all(slots.map(async (slotDef) => {
+    const image = findVisualImageJob(visualsArtifact, slotDef) || statusImageForSlot(status, slotDef) || {};
+    const fileName = image.fileName || slotDef.defaultFileName;
+    const info = await optionalFileInfo(join(dir, 'files', fileName));
+    const url = info ? withUrlParam(adminFileUrl(jobId, fileName), 'v', info.updatedAt || String(Date.now())) : '';
+    return {
+      ...slotDef,
+      fileName,
+      url,
+      info,
+      mimeType: image.mimeType || contentTypeFromFileName(fileName),
+    };
+  }));
+}
+
 async function getAdminBookText(jobId) {
   const dir = jobDir(jobId);
   const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
@@ -1310,7 +2087,8 @@ async function getAdminBookText(jobId) {
     readJsonFile(join(dir, 'status.json'), {}),
     getJobPdfFiles(jobId),
   ]);
-  return { dir, fullText, status, files };
+  const images = await getAdminBookImages(jobId, status);
+  return { dir, fullText, status, files, images };
 }
 
 async function getJobPdfFiles(jobId) {
@@ -1322,7 +2100,7 @@ async function getJobPdfFiles(jobId) {
       fileName.replace(/\.pdf$/i, ''),
       {
         fileName,
-        url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+        url: adminFileUrl(jobId, fileName),
         ...info,
       },
     ];
@@ -1335,12 +2113,41 @@ function renderAdminNotice(message, type = 'notice') {
   return `<div class="${type}">${escapeHtml(message)}</div>`;
 }
 
+function renderBookImageEditor(jobId, images = []) {
+  const rows = images.map((image) => `
+    <div class="image-card">
+      <div class="image-preview">
+        ${image.url ? `<img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.label)}">` : '<span>нет файла</span>'}
+      </div>
+      <div class="image-meta">
+        <strong>${escapeHtml(image.label)}</strong>
+        <span>${escapeHtml(image.fileName || image.defaultFileName)}${image.info ? ` · ${escapeHtml(formatBytes(image.info.bytes) || '')}` : ''}</span>
+        <label for="${escapeHtml(image.fieldName)}">Заменить картинку</label>
+        <input id="${escapeHtml(image.fieldName)}" name="${escapeHtml(image.fieldName)}" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg">
+      </div>
+    </div>
+  `).join('');
+
+  return `<form class="image-form" method="post" action="${adminBookEditPath(jobId)}" enctype="multipart/form-data">
+    <section class="panel">
+      <h2>Картинки</h2>
+      <p>Можно заменить обложку и иллюстрации глав. Поддерживаются PNG/JPG до ${escapeHtml(formatBytes(ADMIN_BOOK_IMAGE_MAX_BYTES) || '12 MB')} на файл.</p>
+      <div class="image-grid">${rows}</div>
+      <div class="inline-button-row">
+        <button class="secondary" type="submit" name="action" value="images">Сохранить картинки</button>
+        <button type="submit" name="action" value="images_render">Сохранить картинки и пересобрать PDF</button>
+      </div>
+    </section>
+  </form>`;
+}
+
 function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const text = fullText.text || {};
   const bible = text.bible || {};
   const preview = text.preview || {};
   const chapters = [...(text.chapters || [])].sort((a, b) => Number(a.n) - Number(b.n));
   const files = options.files || {};
+  const images = options.images || [];
   const render = status.artifacts?.render || {};
   const notice = options.notice || '';
   const error = options.error || '';
@@ -1405,6 +2212,14 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .file-link { display: inline-flex; gap: 6px; min-height: 34px; padding: 8px 10px; border-radius: 6px; background: #1f5d53; color: #fff; text-decoration: none; font-weight: 800; }
     .file-link small { color: rgba(255,255,255,.78); font-weight: 600; }
+    .image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+    .image-card { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid #eadfce; border-radius: 8px; background: #fffdf8; }
+    .image-preview { width: 116px; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden; border: 1px solid #d2c4b0; border-radius: 6px; background: #f1e8d8; color: #766b60; font-size: 12px; font-weight: 800; text-align: center; }
+    .image-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .image-meta strong { display: block; margin-bottom: 4px; color: #172126; }
+    .image-meta span { display: block; margin-bottom: 10px; color: #68737d; font-size: 12px; overflow-wrap: anywhere; }
+    .image-meta input { padding: 8px; font-size: 13px; }
+    .inline-button-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 16px; }
     .notice, .error { max-width: 1180px; margin: 0 auto 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
     .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
     .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
@@ -1413,6 +2228,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       header { display: block; }
       .top-links { justify-content: flex-start; margin-top: 12px; }
       .two { grid-template-columns: 1fr; }
+      .image-grid { grid-template-columns: 1fr; }
       .button-row { margin-left: -18px; margin-right: -18px; margin-bottom: -18px; padding-left: 18px; padding-right: 18px; }
       button { width: 100%; }
     }
@@ -1426,11 +2242,13 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     </div>
     <div class="top-links">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
     </div>
   </header>
   ${renderAdminNotice(notice)}
   ${renderAdminNotice(error, 'error')}
+  ${renderBookImageEditor(jobId, images)}
   <form method="post" action="${adminBookEditPath(jobId)}">
     <section class="panel">
       <h2>Книга</h2>
@@ -1613,6 +2431,181 @@ async function saveAdminBookText(jobId, params) {
   return { editedFullText, backupPath };
 }
 
+function detectAdminImageUpload(file) {
+  const content = file?.content;
+  if (!Buffer.isBuffer(content) || content.length === 0) {
+    throw httpError(400, 'Пустой файл изображения');
+  }
+  if (content.length > ADMIN_BOOK_IMAGE_MAX_BYTES) {
+    throw httpError(413, `Файл ${file.originalName || ''} слишком большой`);
+  }
+  if (content.length >= 8 && content[0] === 0x89 && content[1] === 0x50 && content[2] === 0x4e && content[3] === 0x47) {
+    return { ext: 'png', mimeType: 'image/png' };
+  }
+  if (content.length >= 3 && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff) {
+    return { ext: 'jpg', mimeType: 'image/jpeg' };
+  }
+  throw httpError(400, `Файл ${file.originalName || ''} должен быть PNG или JPG`);
+}
+
+function adminImageVersionedFileName(slotDef, ext, stamp) {
+  return `${slotDef.baseName}-admin-${stamp}.${ext}`;
+}
+
+function upsertImageRecord(records, slotDef, replacement) {
+  const list = Array.isArray(records) ? [...records] : [];
+  const index = list.findIndex((image) => (
+    image?.slot === slotDef.slot
+    || (slotDef.chapter && Number(image?.chapter) === slotDef.chapter)
+    || image?.fileName === slotDef.defaultFileName
+  ));
+  const current = index >= 0 ? list[index] : {};
+  const next = {
+    ...current,
+    slot: slotDef.slot,
+    status: 'ready',
+    fileName: replacement.fileName,
+    url: replacement.url,
+    absoluteUrl: replacement.absoluteUrl,
+    mimeType: replacement.mimeType,
+    bytes: replacement.bytes,
+    editedAt: replacement.editedAt,
+    source: 'admin_upload',
+  };
+  if (slotDef.chapter) next.chapter = slotDef.chapter;
+  if (index >= 0) list[index] = next;
+  else list.push(next);
+  return list;
+}
+
+async function updateVisualsAfterImageEdit(jobId, updates) {
+  const dir = jobDir(jobId);
+  const visualsPath = join(dir, 'artifacts', 'visuals.json');
+  const visualsArtifact = await readJsonFile(visualsPath, { visuals: { imageJobs: [] } });
+  const visualRoot = visualsArtifact.visuals && typeof visualsArtifact.visuals === 'object'
+    ? visualsArtifact.visuals
+    : visualsArtifact;
+  let imageJobs = Array.isArray(visualRoot.imageJobs) ? visualRoot.imageJobs : [];
+  for (const update of updates) {
+    imageJobs = upsertImageRecord(imageJobs, update.slotDef, update);
+  }
+  visualRoot.imageJobs = imageJobs;
+  await writeJsonAtomic(visualsPath, visualsArtifact);
+}
+
+async function updateStatusAfterImageEdit(jobId, updates) {
+  const current = await readJsonFile(join(jobDir(jobId), 'status.json'), null);
+  if (!current) throw httpError(404, 'Job not found');
+  const files = await getJobPdfFiles(jobId).catch(() => ({}));
+
+  const editedAt = nowIso();
+  const artifacts = {};
+  let preview = current.preview;
+  let fullVisualsImages = current.artifacts?.fullVisuals?.images;
+  for (const update of updates) {
+    if (update.slotDef.slot === 'cover') {
+      artifacts.cover = {
+        ...(current.artifacts?.cover || {}),
+        slot: 'cover',
+        status: 'ready',
+        fileName: update.fileName,
+        url: update.url,
+        absoluteUrl: update.absoluteUrl,
+        mimeType: update.mimeType,
+        bytes: update.bytes,
+        editedAt,
+        source: 'admin_upload',
+      };
+      continue;
+    }
+
+    if (update.slotDef.chapter === 1) {
+      preview = current.preview ? {
+        ...current.preview,
+        imageStatus: 'ready',
+        imageUrl: update.url,
+        imageAbsoluteUrl: update.absoluteUrl,
+      } : current.preview;
+    } else {
+      fullVisualsImages = upsertImageRecord(fullVisualsImages, update.slotDef, update);
+    }
+  }
+
+  if (fullVisualsImages) {
+    artifacts.fullVisuals = {
+      ...(current.artifacts?.fullVisuals || {}),
+      status: current.artifacts?.fullVisuals?.status || 'ready',
+      images: fullVisualsImages,
+      editedAt,
+    };
+  }
+  if (current.artifacts?.render) {
+    artifacts.render = {
+      ...current.artifacts.render,
+      editedAfterImageAt: editedAt,
+    };
+  }
+  if (files.book && !current.artifacts?.bookPdf) {
+    artifacts.bookPdf = files.book;
+  }
+  if (files.preview && !current.artifacts?.previewPdf) {
+    artifacts.previewPdf = files.preview;
+  }
+  if (files.cover && !current.artifacts?.coverPdf) {
+    artifacts.coverPdf = files.cover;
+  }
+  if (files.interior && !current.artifacts?.interiorPdf) {
+    artifacts.interiorPdf = files.interior;
+  }
+
+  return updateJobStatus(jobId, { preview, artifacts });
+}
+
+async function saveAdminBookImages(jobId, files) {
+  const dir = jobDir(jobId);
+  if (!existsSync(dir)) throw httpError(404, 'Job not found');
+  const filesDir = join(dir, 'files');
+  await mkdir(filesDir, { recursive: true, mode: 0o700 });
+
+  const stamp = nowIso().replace(/\D/g, '').slice(0, 14);
+  const updates = [];
+  for (const slotDef of adminBookImageSlots()) {
+    const file = files.get(slotDef.fieldName);
+    if (!file) continue;
+    const detected = detectAdminImageUpload(file);
+    const fileName = adminImageVersionedFileName(slotDef, detected.ext, stamp);
+    await writeFile(join(filesDir, fileName), file.content, { mode: 0o600 });
+    updates.push({
+      slotDef,
+      fileName,
+      url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+      absoluteUrl: publicUrl(`/api/fairyteller/jobs/${jobId}/files/${fileName}`),
+      mimeType: detected.mimeType,
+      bytes: file.content.length,
+      editedAt: nowIso(),
+      originalName: file.originalName || '',
+    });
+  }
+
+  if (!updates.length) {
+    throw httpError(400, 'Выберите хотя бы одну картинку');
+  }
+
+  await updateVisualsAfterImageEdit(jobId, updates);
+  await updateStatusAfterImageEdit(jobId, updates);
+  await appendEvent(dir, {
+    type: 'job.images.adminEdited',
+    files: updates.map((update) => ({
+      slot: update.slotDef.slot,
+      chapter: update.slotDef.chapter || null,
+      fileName: update.fileName,
+      bytes: update.bytes,
+      mimeType: update.mimeType,
+    })),
+  });
+  return { updates };
+}
+
 function redirectAdmin(res, location) {
   res.writeHead(303, {
     'cache-control': 'no-store',
@@ -1624,17 +2617,22 @@ function redirectAdmin(res, location) {
 }
 
 async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
-  const { fullText, status, files } = await getAdminBookText(jobId);
+  const { fullText, status, files, images } = await getAdminBookText(jobId);
   const notice = options.notice
     || (url.searchParams.get('rendered') === '1'
       ? 'Текст сохранен, PDF пересобран.'
-      : url.searchParams.get('saved') === '1'
-        ? 'Текст сохранен. PDF нужно пересобрать, чтобы изменения попали в файлы.'
-        : '');
+      : url.searchParams.get('imagesRendered') === '1'
+        ? 'Картинки сохранены, PDF пересобран.'
+        : url.searchParams.get('imagesSaved') === '1'
+          ? 'Картинки сохранены. PDF нужно пересобрать, чтобы изменения попали в файлы.'
+          : url.searchParams.get('saved') === '1'
+            ? 'Текст сохранен. PDF нужно пересобрать, чтобы изменения попали в файлы.'
+            : '');
   sendHtml(req, res, options.status || 200, renderBookTextEditorPage(jobId, fullText, status, {
     ...options,
     notice,
     files,
+    images,
   }));
 }
 
@@ -1716,6 +2714,7 @@ function renderLeadsPage(leads) {
     </div>
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_MAIL_PATH}">Письмо</a>
       <a href="${ADMIN_LEADS_CSV_PATH}">Скачать CSV</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
@@ -1957,6 +2956,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
     </div>
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
+      <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_LEADS_PATH}">Email-база</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
     </div>
@@ -2148,7 +3148,7 @@ function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
             </tr>
             <tr>
               <td style="padding:20px 32px 8px; text-align:center;">
-                ${renderEmailButton('Открыть книгу', fallbackUrl, { background: '#ffffff', color: '#000000', border: '#000000' })}
+                ${renderEmailButton('Открыть превью', fallbackUrl, { background: '#ffffff', color: '#000000', border: '#000000' })}
               </td>
             </tr>
             <tr>
@@ -2194,11 +3194,11 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
   const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
-  const buyPrintUrl = `${PUBLIC_BASE_URL}/pay${printUrl ? `?pdf=${encodeURIComponent(printUrl)}` : ''}`;
-  const primaryBookUrl = previewUrl || printUrl;
+  const buyPrintUrl = `${PUBLIC_BASE_URL}/pay?jobId=${encodeURIComponent(status.jobId)}${printUrl ? `&pdf=${encodeURIComponent(printUrl)}` : ''}`;
+  const primaryBookUrl = `${PUBLIC_BASE_URL}/book/${encodeURIComponent(status.jobId)}`;
 
   const links = [
-    primaryBookUrl ? `Открыть книгу: ${primaryBookUrl}` : '',
+    primaryBookUrl ? `Открыть превью книги: ${primaryBookUrl}` : '',
     `Оплатить заказ: ${buyPrintUrl}`,
     'Telegram: https://t.me/nikita0shch',
     `Форма на сайте: ${PUBLIC_BASE_URL}`,
@@ -2211,7 +3211,7 @@ function customerEmailPayload(status, orderEnvelope = {}) {
     '',
     'Здравствуйте!',
     '',
-    `Персональная книга "${title}" уже ждет вас. Откройте книгу, изучите сюжет и иллюстрации, оплатите заказ и мы доставим готовую книгу в ближайшее время.`,
+    `Персональная книга "${title}" уже ждет вас. Откройте превью, изучите начало истории и иллюстрации, оплатите заказ и мы доставим готовую книгу в ближайшее время.`,
     '',
     ...links,
     '',
@@ -2283,22 +3283,32 @@ async function deliverCustomerCompletionEmail(jobId, status) {
 
 function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
   const order = orderEnvelope.order || orderEnvelope;
-  const email = normalizeEmail(order.email);
+  const email = normalizeEmail(payment.email) || normalizeEmail(order.email);
   if (!email) return null;
 
   const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
-  const accessUrl = `${PUBLIC_BASE_URL}/book/${status.jobId}?access=${encodeURIComponent(payment.accessToken || '')}`;
-  const subject = 'Ваша сказка готова — открывайте';
+  const pdfUrl = withUrlParam(publicUrl(
+    status.artifacts?.previewPdf?.url
+      || status.artifacts?.render?.files?.preview?.url
+      || status.artifacts?.bookPdf?.url
+      || status.artifacts?.render?.files?.book?.url,
+  ), 'access', payment.accessToken || '');
+  const fallbackUrl = `${PUBLIC_BASE_URL}/book/${status.jobId}?access=${encodeURIComponent(payment.accessToken || '')}`;
+  const accessUrl = pdfUrl || fallbackUrl;
+  const telegramUrl = 'https://t.me/nikita0shch';
+  const siteUrl = PUBLIC_BASE_URL;
+  const subject = 'Ваша история готова — спасибо за заказ';
   const text = [
-    'Привет!',
+    'Почти готово!',
     '',
-    'Спасибо за покупку. Ваша персональная сказка готова.',
+    `Спасибо за покупку. Персональная книга "${title}" готова — полностью историю вы можете прочитать по ссылке.`,
     '',
-    `Открыть полную сказку: ${accessUrl}`,
+    `Открыть PDF-книгу: ${accessUrl}`,
     '',
-    `Ссылка действительна до ${payment.expiresAt ? new Date(payment.expiresAt).toLocaleDateString('ru-RU') : '30 дней'}. Если понадобится, напишите нам — пришлем заново.`,
+    `Если у вас есть замечания по сюжету или иллюстрациям — свяжитесь с нами в Telegram (${telegramUrl}) или через форму на сайте (${siteUrl}), мы оперативно внесем необходимые правки или пришлем вам новую историю. Если вам не понравится и она — мы вернем оплату за заказ.`,
     '',
-    'Если что-то в сказке совсем не попало в ожидания — бесплатно пересоберем один раз или вернем оплату до отправки в печать.',
+    'Что дальше?',
+    'В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, срок доставки — в зависимости от региона. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.',
     '',
     'Команда FairyTeller',
   ].join('\n');
@@ -2319,32 +3329,35 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
             <tr>
               <td style="padding:24px 28px 22px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;">
                 <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; letter-spacing:0.18em; text-transform:uppercase; color:#5e6264; font-weight:800;">FairyTeller</div>
-                <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; color:#000000;">Ваша сказка готова</h1>
+                <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; color:#000000;">Почти готово!</h1>
               </td>
             </tr>
             <tr>
               <td style="padding:30px 32px 10px;">
-                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Спасибо за покупку. Персональная книга «${escapeHtml(title)}» открыта по ссылке ниже.</p>
-                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Если что-то в сказке совсем не попало в ожидания — бесплатно пересоберем один раз или вернем оплату до отправки в печать.</p>
+                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Спасибо за покупку. Персональная книга «${escapeHtml(title)}» готова — полностью историю вы можете прочитать по ссылке.</p>
               </td>
             </tr>
             <tr>
               <td style="padding:8px 32px 26px; text-align:center;">
-                ${renderEmailButton('Открыть полную сказку', accessUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+                ${renderEmailButton('Открыть PDF-книгу', accessUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
               </td>
             </tr>
             <tr>
-              <td style="padding:0 32px 28px;">
+              <td style="padding:0 32px 18px;">
+                <p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Если у вас есть замечания по сюжету или иллюстрациям — свяжитесь с нами с помощью <a href="${escapeHtml(telegramUrl)}" style="color:#000000; text-decoration:underline; font-weight:800;">Telegram</a> или через <a href="${escapeHtml(siteUrl)}" style="color:#000000; text-decoration:underline; font-weight:800;">форму на сайте</a>, мы оперативно внесем необходимые правки или пришлем вам новую историю. Если вам не понравится и она — мы вернем оплату за заказ.</p>
+                <p style="margin:0 0 8px; font-family:Arial, Helvetica, sans-serif; font-size:18px; line-height:24px; color:#000000; font-weight:900;">Что дальше?</p>
+                <p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, срок доставки — в зависимости от региона. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.</p>
                 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#5e6264;">
-                  Ссылка действует 30 дней. Если кнопка не открывается, скопируйте ссылку:<br>
+                  Если кнопка не открывается, скопируйте ссылку:<br>
                   <a href="${escapeHtml(accessUrl)}" style="color:#000000; word-break:break-word;">${escapeHtml(accessUrl)}</a>
                 </p>
               </td>
             </tr>
+            ${renderCustomerEmailExampleGallery()}
             <tr>
               <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
                 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
-                  Остались вопросы? Напишите нам в <a href="https://t.me/nikita0shch" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a>.
+                  Остались вопросы? Напишите нам в <a href="${escapeHtml(telegramUrl)}" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a>.
                 </p>
                 <p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#ffffff;">С любовью,<br>команда FairyTeller</p>
               </td>
@@ -2385,7 +3398,7 @@ async function ensurePaidAccess(jobId, currentPayment = null) {
   };
 }
 
-async function createCheckout(jobId) {
+async function createCheckout(jobId, checkout = {}) {
   if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
     throw httpError(503, 'YooKassa is not configured');
   }
@@ -2406,21 +3419,28 @@ async function createCheckout(jobId) {
       accessUrl: `${PUBLIC_BASE_URL}/book/${jobId}?access=${encodeURIComponent(existing.accessToken || '')}`,
     };
   }
-  if (existing.status === 'pending' && existing.confirmationUrl) {
-    return { paymentId: existing.paymentId, confirmationUrl: existing.confirmationUrl };
-  }
-
-  const email = normalizeEmail((orderEnvelope.order || orderEnvelope).email);
-  const idempotenceKey = `fairyteller-checkout-${jobId}`;
+  const email = normalizeEmail(checkout.email) || normalizeEmail((orderEnvelope.order || orderEnvelope).email);
+  const phone = normalizeShortText(checkout.phone, 64);
+  const customerName = normalizeShortText(checkout.customerName || checkout.custName, 180);
+  const customerAddress = normalizeShortText(checkout.customerAddress || checkout.custAddr, 320);
+  const pdfUrl = normalizeShortText(checkout.pdfUrl, 500);
+  const idempotenceKey = `ft-checkout-${randomUUID()}`;
   const body = {
     amount: { value: Number(YOOKASSA_AMOUNT_RUB).toFixed(2), currency: 'RUB' },
     confirmation: {
       type: 'redirect',
-      return_url: `${PUBLIC_BASE_URL}/book/${jobId}?status=pending`,
+      return_url: `${PUBLIC_BASE_URL}/pay?status=success&jobId=${encodeURIComponent(jobId)}`,
     },
     capture: true,
     description: `Персональная сказка — ${jobId}`,
-    metadata: { jobId, email },
+    metadata: {
+      jobId,
+      email,
+      phone,
+      customerName,
+      customerAddress,
+      pdfUrl,
+    },
   };
   const response = await fetch('https://api.yookassa.ru/v3/payments', {
     method: 'POST',
@@ -2446,6 +3466,10 @@ async function createCheckout(jobId) {
     confirmationUrl,
     amount: body.amount,
     email,
+    phone,
+    customerName,
+    customerAddress,
+    pdfUrl,
     createdAt: nowIso(),
   };
   await writePayment(jobId, payment);
@@ -2483,6 +3507,9 @@ async function handleYookassaWebhook(req) {
   const dir = jobDir(jobId);
   const current = await readPayment(jobId);
   if (notification.event === 'payment.succeeded' && actual.status === 'succeeded' && actual.paid === true) {
+    if (current.status === 'paid' && current.paymentId === paymentId) {
+      return { ok: true, status: 'paid', duplicate: true };
+    }
     const status = await readJsonFile(join(dir, 'status.json'));
     if (!status) throw httpError(404, 'Job not found');
     const paidPayment = await ensurePaidAccess(jobId, {
@@ -2493,6 +3520,10 @@ async function handleYookassaWebhook(req) {
       paidAt: actual.captured_at || nowIso(),
       amount: actual.amount || current.amount || null,
       email: actual.metadata?.email || current.email || '',
+      phone: actual.metadata?.phone || current.phone || '',
+      customerName: actual.metadata?.customerName || current.customerName || '',
+      customerAddress: actual.metadata?.customerAddress || current.customerAddress || '',
+      pdfUrl: actual.metadata?.pdfUrl || current.pdfUrl || '',
     });
     const delivery = await deliverPurchaseAccessEmail(jobId, status, paidPayment);
     await writePayment(jobId, {
@@ -2518,6 +3549,154 @@ async function handleYookassaWebhook(req) {
   }
 
   return { ok: true, ignored: true, event: notification.event, status: actual.status };
+}
+
+function xmlEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function yookassaFormResponse(action, params, code = 0, message = '') {
+  const tag = action === 'paymentAviso' ? 'paymentAvisoResponse' : 'checkOrderResponse';
+  const attrs = [
+    `performedDatetime="${xmlEscape(nowIso())}"`,
+    `code="${xmlEscape(code)}"`,
+    params.get('invoiceId') ? `invoiceId="${xmlEscape(params.get('invoiceId'))}"` : '',
+    params.get('shopId') ? `shopId="${xmlEscape(params.get('shopId'))}"` : '',
+    message ? `message="${xmlEscape(message)}"` : '',
+  ].filter(Boolean).join(' ');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<${tag} ${attrs}/>`;
+}
+
+function sendXml(req, res, status, xml) {
+  res.writeHead(status, {
+    ...corsHeaders(req),
+    'content-type': 'application/xml; charset=utf-8',
+    'cache-control': 'no-store',
+  });
+  res.end(xml);
+}
+
+function yookassaFormMd5(params) {
+  const source = [
+    params.get('action') || '',
+    params.get('orderSumAmount') || '',
+    params.get('orderSumCurrencyPaycash') || '',
+    params.get('orderSumBankPaycash') || '',
+    params.get('shopId') || '',
+    params.get('invoiceId') || '',
+    params.get('customerNumber') || '',
+    YOOKASSA_SHOP_PASSWORD,
+  ].join(';');
+  return createHash('md5').update(source, 'utf8').digest('hex').toUpperCase();
+}
+
+function yookassaFormMd5Matches(params) {
+  if (!YOOKASSA_SHOP_PASSWORD) return NODE_ENV !== 'production';
+  const expected = yookassaFormMd5(params);
+  const actual = String(params.get('md5') || '').toUpperCase();
+  return safeEqual(expected, actual);
+}
+
+function jobIdFromYookassaForm(params) {
+  const values = [
+    params.get('jobId'),
+    params.get('customerNumber'),
+    params.get('orderNumber'),
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+  const found = values.find((value) => /^ft_[a-zA-Z0-9_-]{8,80}$/.test(value));
+  return found ? assertSafeJobId(found) : '';
+}
+
+async function handleYookassaFormNotification(params) {
+  const action = params.get('action') || '';
+  const jobId = jobIdFromYookassaForm(params);
+  const invoiceId = params.get('invoiceId') || '';
+  const amount = params.get('orderSumAmount') || '';
+  const email = normalizeEmail(params.get('cps_email') || params.get('email'));
+
+  if (!['checkOrder', 'paymentAviso'].includes(action)) {
+    return { code: 200, message: 'Unsupported action' };
+  }
+  if (!yookassaFormMd5Matches(params)) {
+    return { code: 1, message: 'MD5 mismatch' };
+  }
+  if (YOOKASSA_SHOP_ID && String(params.get('shopId') || '') !== String(YOOKASSA_SHOP_ID)) {
+    return { code: 100, message: 'Unknown shopId' };
+  }
+  if (!jobId) {
+    return { code: action === 'checkOrder' ? 100 : 200, message: 'Missing jobId' };
+  }
+
+  const dir = jobDir(jobId);
+  const status = await readJsonFile(join(dir, 'status.json'));
+  if (!status) {
+    return { code: action === 'checkOrder' ? 100 : 200, message: 'Job not found' };
+  }
+  if (!hasReadyPdfArtifacts(status.artifacts)) {
+    return { code: action === 'checkOrder' ? 100 : 200, message: 'Book PDF is not ready' };
+  }
+
+  if (action === 'checkOrder') {
+    await appendEvent(dir, {
+      type: 'job.payment.simplepay.check',
+      provider: 'yookassa-simplepay',
+      invoiceId,
+      amount,
+      email,
+    });
+    return { code: 0 };
+  }
+
+  const current = await readPayment(jobId);
+  if (current.status === 'paid' && current.invoiceId === invoiceId) {
+    await appendEvent(dir, { type: 'job.payment.simplepay.duplicate', provider: 'yookassa-simplepay', invoiceId });
+    return { code: 0 };
+  }
+
+  const paidPayment = await ensurePaidAccess(jobId, {
+    ...current,
+    status: 'paid',
+    provider: 'yookassa-simplepay',
+    invoiceId,
+    paymentId: invoiceId || current.paymentId || '',
+    paidAt: params.get('paymentDatetime') || nowIso(),
+    amount: amount ? { value: amount, currency: 'RUB' } : current.amount || null,
+    email: email || current.email || '',
+    customerNumber: params.get('customerNumber') || '',
+    orderNumber: params.get('orderNumber') || '',
+  });
+  const delivery = await deliverPurchaseAccessEmail(jobId, status, paidPayment);
+  const nextPayment = {
+    ...paidPayment,
+    emailDelivery: delivery,
+    lastEmailAt: delivery.attemptedAt,
+  };
+  await writePayment(jobId, nextPayment);
+  await appendEvent(dir, {
+    type: 'job.payment.simplepay.succeeded',
+    provider: 'yookassa-simplepay',
+    invoiceId,
+    amount,
+    emailStatus: delivery.status,
+  });
+  return { code: 0 };
+}
+
+async function handleYookassaFormWebhook(req, res) {
+  const params = await readFormBody(req);
+  const action = params.get('action') || 'checkOrder';
+  let result;
+  try {
+    result = await handleYookassaFormNotification(params);
+  } catch (error) {
+    console.error(`YooKassa form notification failed: ${error.message}`);
+    result = { code: action === 'checkOrder' ? 100 : 200, message: error.message || 'Notification failed' };
+  }
+  sendXml(req, res, 200, yookassaFormResponse(action, params, result.code, result.message || ''));
 }
 
 async function resendPurchaseLink(jobId) {
@@ -2759,6 +3938,7 @@ async function getJobSample(jobId) {
   const chapter1 = chapters.find((chapter) => Number(chapter.n) === 1) || chapters[0] || null;
   const chapter2 = chapters.find((chapter) => Number(chapter.n) === 2) || chapters[1] || null;
   const chapter3 = chapters.find((chapter) => Number(chapter.n) === 3) || chapters[2] || null;
+  const publicChapters = [publicChapter(chapter1), publicChapter(chapter2)].filter(Boolean);
   const bible = fullText?.text?.bible || {};
   const title = bible.bookTitle || fullText?.text?.preview?.title || status.preview?.title || chapter1?.title || 'Ваша сказка';
 
@@ -2771,7 +3951,9 @@ async function getJobSample(jobId) {
     title,
     subtitle: bible.subtitle || '',
     summary: bible.coverSummary || fullText?.text?.preview?.summary || status.preview?.summary || '',
-    chapters: [publicChapter(chapter1), publicChapter(chapter2)].filter(Boolean),
+    chapters: publicChapters,
+    availableChapters: publicChapters.length,
+    totalChapters: chapters.length || 5,
     lockedChapter: chapter3 ? {
       ...publicChapter(chapter3, 'teaser'),
       imageUrl: findChapterImage(status, visuals, 3),
@@ -2818,6 +4000,200 @@ async function putJobFile(jobId, fileName, body) {
 
 function fileRequiresPaidAccess(fileName) {
   return ['book.pdf', 'preview.pdf', 'interior.pdf', 'cover.pdf'].includes(String(fileName || '').toLowerCase());
+}
+
+const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-end-of-book-v1';
+
+async function loadPdfLib() {
+  try {
+    return await import('pdf-lib');
+  } catch {
+    return require('/opt/fairyteller-render/node_modules/pdf-lib');
+  }
+}
+
+async function buildPaywallSamplePdf(jobId) {
+  const dir = jobDir(jobId);
+  const filesDir = join(dir, 'files');
+  const previewPath = join(filesDir, 'preview.pdf');
+  const samplePath = join(filesDir, 'paywall-preview.pdf');
+  const sampleMetaPath = join(filesDir, 'paywall-preview.meta.json');
+  const [previewInfo, sampleInfo, sampleMeta] = await Promise.all([
+    optionalFileInfo(previewPath),
+    optionalFileInfo(samplePath),
+    readJsonFile(sampleMetaPath, null),
+  ]);
+
+  if (!previewInfo) {
+    throw httpError(404, 'Preview PDF not found');
+  }
+
+  const previewBytes = await readFile(previewPath);
+  const { PDFDocument } = await loadPdfLib();
+  const source = await PDFDocument.load(previewBytes);
+  const totalPages = source.getPageCount();
+  const endPage = Math.max(1, totalPages > 1 ? totalPages - 1 : totalPages);
+
+  if (
+    sampleInfo
+    && sampleMeta?.version === PAYWALL_SAMPLE_CACHE_VERSION
+    && sampleMeta.sourceUpdatedAt === previewInfo.updatedAt
+    && Number(sampleMeta.totalPages || 0) === totalPages
+    && Number(sampleMeta.endPage || 0) === endPage
+  ) {
+    return readFile(samplePath);
+  }
+
+  const target = await PDFDocument.create();
+  const pageIndexes = Array.from({ length: endPage }, (_, index) => index);
+  const pages = await target.copyPages(source, pageIndexes);
+  for (const page of pages) target.addPage(page);
+  const sampleBytes = await target.save();
+
+  await writeFile(samplePath, sampleBytes, { mode: 0o600 });
+  await writeJsonAtomic(sampleMetaPath, {
+    version: PAYWALL_SAMPLE_CACHE_VERSION,
+    sourceUpdatedAt: previewInfo.updatedAt,
+    totalPages,
+    endPage,
+    generatedAt: nowIso(),
+  });
+  return sampleBytes;
+}
+
+async function sendPaywallSamplePdf(req, res, jobId) {
+  const content = await buildPaywallSamplePdf(jobId);
+  res.writeHead(200, {
+    ...corsHeaders(req),
+    'content-type': 'application/pdf',
+    'content-length': content.length,
+    'cache-control': 'no-store',
+  });
+  res.end(content);
+}
+
+async function runCommand(command, args, options = {}) {
+  await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, `${command} timed out`));
+    }, options.timeoutMs || 120_000);
+
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolvePromise(stdout);
+        return;
+      }
+      rejectPromise(httpError(500, `${command} failed: ${stderr || stdout || `exit ${code}`}`));
+    });
+  });
+}
+
+async function listPaywallPreviewPages(jobId) {
+  const dir = jobDir(jobId);
+  const filesDir = join(dir, 'files');
+  const samplePath = join(filesDir, 'paywall-preview.pdf');
+  const pagesDir = join(filesDir, 'paywall-preview-pages');
+  await buildPaywallSamplePdf(jobId);
+  const sampleInfo = await optionalFileInfo(samplePath);
+  const metaPath = join(pagesDir, 'metadata.json');
+  const existingMeta = await readJsonFile(metaPath, null);
+
+  if (!existingMeta || existingMeta.sourceUpdatedAt !== sampleInfo.updatedAt) {
+    await rm(pagesDir, { recursive: true, force: true });
+    await mkdir(pagesDir, { recursive: true, mode: 0o700 });
+    await runCommand('pdftoppm', [
+      '-jpeg',
+      '-r', '96',
+      '-scale-to', '920',
+      '-jpegopt', 'quality=72,optimize=y',
+      samplePath,
+      join(pagesDir, 'page'),
+    ]);
+    await writeJsonAtomic(metaPath, { sourceUpdatedAt: sampleInfo.updatedAt, generatedAt: nowIso() });
+  }
+
+  const entries = await readdir(pagesDir);
+  const pageFiles = entries
+    .filter((fileName) => /^page-\d+\.jpg$/i.test(fileName))
+    .sort((a, b) => Number(a.match(/\d+/)?.[0] || 0) - Number(b.match(/\d+/)?.[0] || 0));
+
+  return pageFiles.map((fileName, index) => ({
+    n: index + 1,
+    fileName,
+    url: `/api/fairyteller/jobs/${jobId}/sample-pages/${fileName}`,
+  }));
+}
+
+async function getPaywallPreviewProgress(jobId, availablePages) {
+  const dir = jobDir(jobId);
+  const filesDir = join(dir, 'files');
+  const previewPath = join(filesDir, 'preview.pdf');
+  const [status, fullText, previewInfo] = await Promise.all([
+    readJsonFile(join(dir, 'status.json'), {}),
+    readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
+    optionalFileInfo(previewPath),
+  ]);
+  const chapters = Array.isArray(fullText?.text?.chapters) ? fullText.text.chapters : [];
+  let totalPages = Number(status.artifacts?.render?.preflight?.previewPages || 0);
+  if (!totalPages && previewInfo) {
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const previewBytes = await readFile(previewPath);
+      const previewPdf = await PDFDocument.load(previewBytes);
+      totalPages = previewPdf.getPageCount();
+    } catch {
+      totalPages = 0;
+    }
+  }
+
+  return {
+    availablePages: Number(availablePages || 0),
+    totalPages,
+    availableChapters: Math.min(5, chapters.length || 5),
+    totalChapters: chapters.length || 5,
+  };
+}
+
+async function sendPaywallPreviewPages(req, res, jobId) {
+  const pages = await listPaywallPreviewPages(jobId);
+  sendJson(req, res, 200, {
+    jobId,
+    pages,
+    progress: await getPaywallPreviewProgress(jobId, pages.length),
+  });
+}
+
+async function sendPaywallPreviewPage(req, res, jobId, fileName) {
+  if (!/^page-\d+\.jpg$/i.test(String(fileName || ''))) {
+    throw httpError(400, 'Invalid page file');
+  }
+  await listPaywallPreviewPages(jobId);
+  const path = join(jobDir(jobId), 'files', 'paywall-preview-pages', basename(fileName));
+  let content;
+  try {
+    content = await readFile(path);
+  } catch (error) {
+    if (error.code === 'ENOENT') throw httpError(404, 'Page not found');
+    throw error;
+  }
+  res.writeHead(200, {
+    ...corsHeaders(req),
+    'content-type': 'image/jpeg',
+    'content-length': content.length,
+    'cache-control': 'public, max-age=86400',
+  });
+  res.end(content);
 }
 
 async function requirePaidAccessToken(jobId, token) {
@@ -3027,6 +4403,16 @@ async function route(req, res) {
     return;
   }
 
+  if (method === 'POST' && url.pathname === '/api/fairyteller/webhook/yookassa') {
+    sendJson(req, res, 200, await handleYookassaWebhook(req));
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/webhook/yookassa-form') {
+    await handleYookassaFormWebhook(req, res);
+    return;
+  }
+
   const chatMessagesMatch = url.pathname.match(/^\/api\/fairyteller\/chat\/sessions\/([^/]+)\/messages$/);
   if (method === 'GET' && chatMessagesMatch) {
     sendJson(req, res, 200, { ok: true, ...(await getChatMessages(chatMessagesMatch[1])) });
@@ -3043,6 +4429,36 @@ async function route(req, res) {
     return;
   }
 
+  if (method === 'GET' && url.pathname === ADMIN_JOBS_PATH) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    sendHtml(req, res, 200, renderJobsPage(await listGenerationJobs()));
+    return;
+  }
+
+  const adminJobMatch = url.pathname.match(/^\/api\/fairyteller\/books\/jobs\/(ft_[a-zA-Z0-9_-]{8,80})(?:\/([a-z-]+))?$/);
+  if ((method === 'GET' || method === 'POST') && adminJobMatch) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    const jobId = adminJobMatch[1];
+    const action = adminJobMatch[2] || '';
+    if (method === 'GET' && !action) {
+      sendHtml(req, res, 200, renderAdminJobDetailPage(await getAdminJobDetails(jobId), {
+        notice: adminJobNotice(url),
+      }));
+      return;
+    }
+    if (method === 'POST' && action) {
+      await renderAdminJobAction(req, res, jobId, action, url);
+      return;
+    }
+    throw httpError(405, 'Method not allowed');
+  }
+
   const adminBookEditMatch = url.pathname.match(/^\/api\/fairyteller\/books\/(ft_[a-zA-Z0-9_-]{8,80})\/edit$/);
   if ((method === 'GET' || method === 'POST') && adminBookEditMatch) {
     if (!hasAdminBooksAuth(req)) {
@@ -3056,6 +4472,23 @@ async function route(req, res) {
     }
 
     try {
+      if (String(req.headers['content-type'] || '').toLowerCase().includes('multipart/form-data')) {
+        const { fields, files } = await readMultipartForm(req);
+        const action = fields.get('action') || 'images';
+        if (action !== 'images' && action !== 'images_render') {
+          throw httpError(400, 'Unknown editor image action');
+        }
+        await saveAdminBookImages(jobId, files);
+        if (action === 'images_render') {
+          await appendEvent(jobDir(jobId), { type: 'job.images.adminRenderRequested' });
+          await renderJobPdf(jobId, { skipCustomerEmail: true });
+          redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesRendered=1`);
+          return;
+        }
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
+        return;
+      }
+
       const params = await readFormBody(req);
       await saveAdminBookText(jobId, params);
       if (params.get('action') === 'save_render') {
@@ -3146,6 +4579,42 @@ async function route(req, res) {
     return;
   }
 
+  const sampleMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample$/);
+  if (method === 'GET' && sampleMatch) {
+    sendJson(req, res, 200, await getJobSample(sampleMatch[1]));
+    return;
+  }
+
+  const samplePdfMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample\.pdf$/);
+  if (method === 'GET' && samplePdfMatch) {
+    await sendPaywallSamplePdf(req, res, samplePdfMatch[1]);
+    return;
+  }
+
+  const samplePagesMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample-pages$/);
+  if (method === 'GET' && samplePagesMatch) {
+    await sendPaywallPreviewPages(req, res, samplePagesMatch[1]);
+    return;
+  }
+
+  const samplePageMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample-pages\/([^/]+)$/);
+  if (method === 'GET' && samplePageMatch) {
+    await sendPaywallPreviewPage(req, res, samplePageMatch[1], samplePageMatch[2]);
+    return;
+  }
+
+  const checkoutMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/checkout$/);
+  if (method === 'POST' && checkoutMatch) {
+    sendJson(req, res, 201, await createCheckout(checkoutMatch[1], await readJsonBody(req)));
+    return;
+  }
+
+  const resendLinkMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/resend-link$/);
+  if (method === 'POST' && resendLinkMatch) {
+    sendJson(req, res, 200, await resendPurchaseLink(resendLinkMatch[1]));
+    return;
+  }
+
   const fullMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/full$/);
   if (method === 'GET' && fullMatch) {
     requireAuth(req);
@@ -3156,7 +4625,7 @@ async function route(req, res) {
   const statusMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)$/);
   if (method === 'GET' && statusMatch) {
     const full = await getFullJob(statusMatch[1]);
-    sendJson(req, res, 200, sanitizePublicStatus(full.status));
+    sendJson(req, res, 200, sanitizePublicStatus(full.status, await readPayment(statusMatch[1])));
     return;
   }
 
@@ -3176,7 +4645,11 @@ async function route(req, res) {
 
   const artifactMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/artifacts\/([^/]+)$/);
   if (method === 'GET' && artifactMatch) {
-    if (artifactMatch[2] !== 'full-text.json') {
+    if (artifactMatch[2] === 'full-text.json') {
+      if (!hasAuth(req)) {
+        await requirePaidAccessToken(artifactMatch[1], url.searchParams.get('access'));
+      }
+    } else {
       requireAuth(req);
     }
     sendJson(req, res, 200, await getJobJsonArtifact(artifactMatch[1], artifactMatch[2]));
@@ -3219,6 +4692,19 @@ async function route(req, res) {
         contentBase64: content.toString('base64'),
       });
       return;
+    }
+    if (fileRequiresPaidAccess(fileMatch[2]) && !hasAuth(req) && !hasAdminBooksAccess(req, url)) {
+      const accessToken = url.searchParams.get('access');
+      if (!accessToken) {
+        res.writeHead(302, {
+          ...corsHeaders(req),
+          location: `/book/${fileMatch[1]}`,
+          'cache-control': 'no-store',
+        });
+        res.end();
+        return;
+      }
+      await requirePaidAccessToken(fileMatch[1], accessToken);
     }
     await sendJobFile(req, res, fileMatch[1], fileMatch[2]);
     return;

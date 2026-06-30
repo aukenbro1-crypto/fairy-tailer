@@ -18,6 +18,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const LoveProportion = lazy(() => import("./pages/LoveProportion"));
 const March8 = lazy(() => import("./pages/March8"));
 const BookPreview = lazy(() => import("./pages/BookPreview"));
+const Book = lazy(() => import("./pages/Book"));
 const NarutoStory = lazy(() => import("./pages/NarutoStory"));
 const Wizard = lazy(() => import("./pages/Wizard"));
 const CoupleGiftLanding = lazy(() => import("./pages/CoupleGiftLanding"));
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/loveproportion" element={<LoveProportion />} />
             <Route path="/8march" element={<March8 />} />
             <Route path="/book-preview" element={<BookPreview />} />
+            <Route path="/book/:jobId" element={<Book />} />
             <Route path="/naruto-story" element={<NarutoStory />} />
             <Route path="/wizard" element={<Wizard />} />
             <Route path="/design-test" element={<DesignTest />} />

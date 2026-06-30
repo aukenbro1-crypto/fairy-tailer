@@ -10,6 +10,7 @@ It is intentionally small and dependency-free:
 - authenticated mutations
 - public status without email or full order details
 - local lead capture in `leads.jsonl` when an email is provided, plus protected deduplicated email-list and CSV views
+- try-before-buy paywall state in `payment.json`
 - optional Telegram operations notifications from server-side environment variables
 - optional customer completion email and protected manual operator mail through Resend-compatible environment variables
 
@@ -40,6 +41,7 @@ Authorization: Bearer <token>
 /data/fairyteller/jobs/ft_.../
   order.json
   status.json
+  payment.json
   events.jsonl
   artifacts/
     text.json
@@ -62,13 +64,15 @@ The API never stores notification secrets in the repo. Configure them on the ser
 - `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID` enable generation progress and failure alerts.
 - `FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN`, `FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID`, `FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET`, and optional `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` enable website chat messages and replies.
 - Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when split role-specific variables are absent.
-- `FAIRYTELLER_RESEND_API_KEY` and `FAIRYTELLER_MAIL_FROM` enable customer completion email after the PDF render is ready.
+- `FAIRYTELLER_YOOKASSA_SHOP_ID`, `FAIRYTELLER_YOOKASSA_SECRET_KEY`, and optional `FAIRYTELLER_BOOK_PRICE_RUB` enable paywall checkout.
+- `FAIRYTELLER_RESEND_API_KEY` and `FAIRYTELLER_MAIL_FROM` enable purchase-access email after YooKassa confirms payment.
 - `FAIRYTELLER_MAIL_REPLY_TO` is optional.
 - `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.
+- `FAIRYTELLER_SEND_RENDER_READY_EMAIL=1` restores the old render-ready email behavior. Leave it unset for the paywall flow.
 
-Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
+Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready for operators. Public PDF downloads require a paid access token; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
 
-The customer email template references small public product-example images from `/images/email/`. If mail is not configured, generation still succeeds and `artifacts/email.json` records `mail_provider_not_configured`.
+The legacy render-ready customer email template references small public product-example images from `/images/email/`. If mail is not configured, generation and payment state still persist; email delivery records `mail_provider_not_configured`.
 
 ## Protected Operator Views
 
@@ -95,6 +99,80 @@ POST /api/fairyteller/jobs
 Authorization: Bearer <token>
 Content-Type: application/json
 ```
+
+### Public Sample
+
+```http
+GET /api/fairyteller/jobs/:jobId/sample
+```
+
+Returns the try-before-buy sample only: title/summary, chapters 1-2, chapter 3 title, chapter 3 illustration URL, and a short chapter 3 teaser. This endpoint does not expose full text or PDF links.
+
+### Public Status
+
+```http
+GET /api/fairyteller/jobs/:jobId
+```
+
+Returns public generation status plus sanitized payment state:
+
+```json
+{
+  "jobId": "ft_...",
+  "status": "done",
+  "paid": false,
+  "payment": { "status": "unpaid", "paid": false }
+}
+```
+
+### Checkout
+
+```http
+POST /api/fairyteller/jobs/:jobId/checkout
+```
+
+Creates or reuses a YooKassa redirect payment and stores `payment.json` with `status=pending`.
+
+```json
+{
+  "paymentId": "2f...",
+  "confirmationUrl": "https://yoomoney.ru/checkout/payments/..."
+}
+```
+
+The return URL is `/book/:jobId?status=pending`; final confirmation comes from the webhook, not from the browser redirect.
+
+### YooKassa Webhook
+
+```http
+POST /api/fairyteller/webhook/yookassa
+```
+
+On `payment.succeeded`, the API fetches the payment from YooKassa server-to-server, verifies `metadata.jobId`, writes `payment.json` with `status=paid`, creates a 30-day access token, and sends the purchase-access email. Duplicate succeeded webhooks are idempotent and do not resend the email.
+
+On `payment.canceled`, the API writes `status=canceled`.
+
+Deployment note: `/book/:jobId` is a React route. Production nginx must include `/book/` in the explicit SPA route list; otherwise direct magic-links from email can 404 under the real-404 static-route config.
+
+### Paid Artifacts
+
+```http
+GET /api/fairyteller/jobs/:jobId/artifacts/full-text.json?access=<token>
+GET /api/fairyteller/jobs/:jobId/files/book.pdf?access=<token>
+GET /api/fairyteller/jobs/:jobId/files/preview.pdf?access=<token>
+```
+
+The same endpoints remain available to internal callers with `Authorization: Bearer <token>`. Public callers without a valid paid access token receive `403`.
+
+Chapter image files remain publicly readable because the sample paywall needs chapter 3 artwork.
+
+### Resend Purchase Link
+
+```http
+POST /api/fairyteller/jobs/:jobId/resend-link
+```
+
+If the job is paid, resends the same magic-link email. The endpoint is rate-limited per job by `FAIRYTELLER_RESEND_LINK_WINDOW_MS`, default 5 minutes.
 
 ```json
 {

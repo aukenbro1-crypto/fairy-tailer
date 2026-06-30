@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import logoImage from "@/assets/logo.png";
 
 const PRINT_VIEW_NOTIFY_URL = "/api/fairyteller/pay/payment-page-view";
+const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 
 const typeStyle = {
   fontFamily:
@@ -23,11 +24,19 @@ const Print = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailModal, setShowFailModal] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const paymentStatus = searchParams.get("status");
+  const jobId = searchParams.get("jobId") || "";
 
   const initialPdfUrl = useMemo(() => {
-    return searchParams.get("pdf") || searchParams.get("pdfUrl") || "";
-  }, [searchParams]);
+    const rawPdfUrl = searchParams.get("pdf") || searchParams.get("pdfUrl") || "";
+    const fallbackPdfUrl = jobId ? `/api/fairyteller/jobs/${jobId}/files/book.pdf` : "";
+    const pdfUrl = rawPdfUrl || fallbackPdfUrl;
+
+    if (pdfUrl.startsWith("/")) return `https://fairyteller.ru${pdfUrl}`;
+    return pdfUrl;
+  }, [jobId, searchParams]);
 
   useEffect(() => {
     if (paymentStatus === "success") {
@@ -41,6 +50,7 @@ const Print = () => {
     if (paymentStatus) return;
 
     const payload = JSON.stringify({
+      jobId,
       pdfUrl: initialPdfUrl,
       referrer: document.referrer,
     });
@@ -56,20 +66,53 @@ const Print = () => {
       body: payload,
       keepalive: true,
     }).catch(() => undefined);
-  }, [initialPdfUrl, paymentStatus]);
+  }, [initialPdfUrl, jobId, paymentStatus]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const form = event.currentTarget;
 
     if (!form.checkValidity()) {
-      event.preventDefault();
       form.reportValidity();
       return;
     }
 
     if (!consentChecked) {
-      event.preventDefault();
       alert("Пожалуйста, подтвердите согласие на обработку персональных данных");
+      return;
+    }
+
+    if (!jobId) {
+      setCheckoutError("Не нашли номер книги. Вернитесь к предпросмотру и попробуйте оплатить еще раз.");
+      return;
+    }
+
+    const formData = new FormData(form);
+    setIsSubmitting(true);
+    setCheckoutError("");
+    try {
+      const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${jobId}/checkout`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: formData.get("cps_email"),
+          phone: formData.get("cps_phone"),
+          customerName: formData.get("custName"),
+          customerAddress: formData.get("custAddr"),
+          pdfUrl: formData.get("pdfUrl"),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Не удалось создать платеж");
+      if (payload.accessUrl) {
+        window.location.href = payload.accessUrl;
+        return;
+      }
+      if (!payload.confirmationUrl) throw new Error("ЮKassa не вернула ссылку на оплату");
+      window.location.href = payload.confirmationUrl;
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Не удалось создать платеж");
+      setIsSubmitting(false);
     }
   };
 
@@ -90,7 +133,7 @@ const Print = () => {
   };
 
   return (
-    <main className="print-page min-h-screen bg-[#fffaf0] px-5 py-8 text-black md:px-8 md:py-10" style={typeStyle}>
+    <main className="print-page min-h-screen bg-[#fffaf0] px-4 py-5 text-black md:px-6 md:py-7" style={typeStyle}>
       <style>{`
         .print-page,
         .print-page * {
@@ -113,34 +156,34 @@ const Print = () => {
 
         .print-payment-card {
           background: #ffffff;
-          box-shadow: 10px 10px 0 #111111;
+          box-shadow: 6px 6px 0 #111111;
         }
 
         .print-page .yoomoney-payment-form {
           display: grid;
-          gap: 24px;
+          gap: 14px;
         }
 
         .print-page .ym-customer-info {
           display: grid !important;
-          gap: 14px !important;
+          gap: 9px !important;
         }
 
         .print-page .ym-block-title {
           color: #111111 !important;
-          font-size: 15px !important;
+          font-size: 11px !important;
           font-weight: 900 !important;
           letter-spacing: 0.14em !important;
           line-height: 1.25 !important;
-          margin-bottom: 8px !important;
+          margin-bottom: 4px !important;
           text-transform: uppercase !important;
         }
 
         .print-field-label {
           display: grid;
-          gap: 8px;
+          gap: 5px;
           color: #5e6264;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 900;
           letter-spacing: 0.14em;
           line-height: 1.2;
@@ -149,14 +192,14 @@ const Print = () => {
 
         .print-page .ym-input {
           width: 100% !important;
-          min-height: 58px !important;
-          padding: 16px 18px !important;
+          min-height: 42px !important;
+          padding: 10px 12px !important;
           border: 2px solid #111111 !important;
-          border-radius: 8px !important;
+          border-radius: 6px !important;
           background: #ffffff !important;
           color: #111111 !important;
           display: block !important;
-          font-size: 18px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           line-height: 1.25 !important;
           margin: 0 !important;
@@ -169,7 +212,7 @@ const Print = () => {
         }
 
         .print-page .ym-input:focus {
-          box-shadow: 4px 4px 0 #e89c31 !important;
+          box-shadow: 3px 3px 0 #e89c31 !important;
         }
 
         .print-page .ym-price-output,
@@ -179,7 +222,7 @@ const Print = () => {
 
         .print-page .ym-payment-btn-block {
           display: grid !important;
-          margin-top: 6px !important;
+          margin-top: 3px !important;
           position: static !important;
         }
 
@@ -187,26 +230,51 @@ const Print = () => {
           align-items: center !important;
           background: #111111 !important;
           border: 1px solid #111111 !important;
-          border-radius: 8px !important;
-          box-shadow: 8px 8px 0 #e89c31 !important;
+          border-radius: 6px !important;
+          box-shadow: 6px 6px 0 #e89c31 !important;
           cursor: pointer !important;
           display: inline-flex !important;
           justify-content: center !important;
-          min-height: 62px !important;
-          padding: 18px 24px !important;
+          min-height: 48px !important;
+          padding: 13px 18px !important;
+          position: relative !important;
           transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
           width: 100% !important;
         }
 
+        .print-page .ym-btn-pay::after {
+          content: "";
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 10px;
+          height: 10px;
+          border: 1px solid #111111;
+          border-radius: 999px;
+          background: #e89c31;
+          animation: print-pay-cta-pulse 2.4s ease-in-out infinite;
+        }
+
         .print-page .ym-btn-pay:hover {
           background: #5e6264 !important;
-          box-shadow: 4px 4px 0 #e89c31 !important;
-          transform: translate(4px, 4px);
+          box-shadow: 3px 3px 0 #e89c31 !important;
+          transform: translate(3px, 3px);
+        }
+
+        @keyframes print-pay-cta-pulse {
+          0%, 100% {
+            transform: scale(.82);
+            opacity: .72;
+          }
+          50% {
+            transform: scale(1.12);
+            opacity: 1;
+          }
         }
 
         .print-page .ym-btn-pay .ym-text-crop {
           color: #ffffff !important;
-          font-size: 15px !important;
+          font-size: 12px !important;
           font-weight: 900 !important;
           letter-spacing: 0.08em !important;
           max-width: none !important;
@@ -218,43 +286,37 @@ const Print = () => {
         }
       `}</style>
 
-      <div className="mx-auto mb-8 flex max-w-[760px] items-center justify-between gap-4">
+      <div className="mx-auto mb-5 flex max-w-[520px] items-center justify-between gap-4">
         <Link to="/" aria-label="Fairyteller">
-          <img src={logoImage} alt="Fairyteller" className="h-11 w-auto object-contain" />
+          <img src={logoImage} alt="Fairyteller" className="h-8 w-auto object-contain" />
         </Link>
         <span className="text-right text-[10px] font-black uppercase tracking-[0.16em] text-[#5e6264]">
           Оплата печати
         </span>
       </div>
 
-      <section className="print-payment-card mx-auto max-w-[760px] border-2 border-black px-5 py-8 md:px-14 md:py-12">
-        <p className="text-[13px] font-black uppercase tracking-[0.22em] text-[#5e6264]">
+      <section className="print-payment-card mx-auto max-w-[520px] border-2 border-black px-4 py-5 md:px-8 md:py-7">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#5e6264]">
           Оплата печати
         </p>
-        <h1 className="mt-5 text-[34px] font-black uppercase leading-none md:text-[52px]">
+        <h1 className="mt-3 text-[24px] font-black uppercase leading-none md:text-[34px]">
           Печатная книга
         </h1>
-        <p className="mt-5 max-w-[560px] text-[20px] leading-8 text-[#5e6264]">
+        <p className="mt-3 max-w-[420px] text-[14px] leading-6 text-[#5e6264]">
           Укажите контактные данные и полный адрес доставки.
         </p>
 
-        <div className="mt-8">
-          <div className="text-[48px] font-black leading-none md:text-[64px]">3 500 ₽</div>
-          <div className="mt-2 text-[13px] font-black uppercase tracking-[0.16em] text-[#5e6264]">
+        <div className="mt-5">
+          <div className="text-[30px] font-black leading-none md:text-[40px]">3 500 ₽</div>
+          <div className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#5e6264]">
             Итоговая цена
           </div>
         </div>
 
-        <div className="my-9 border-t-2 border-black" />
+        <div className="my-5 border-t-2 border-black" />
 
-        <link
-          rel="stylesheet"
-          href="https://yookassa.ru/integration/simplepay/css/yookassa_construct_form.css?v=1.30.0"
-        />
         <form
           className="yoomoney-payment-form"
-          action="https://yookassa.ru/integration/simplepay/payment"
-          method="post"
           acceptCharset="utf-8"
           onSubmit={handleSubmit}
         >
@@ -282,6 +344,17 @@ const Print = () => {
               Адрес доставки
               <input name="custAddr" className="ym-input" placeholder="Город, улица, дом, квартира" required type="text" />
             </label>
+            {jobId && (
+              <label className="print-field-label">
+                Номер книги
+                <input
+                  className="ym-input"
+                  defaultValue={jobId}
+                  readOnly
+                  type="text"
+                />
+              </label>
+            )}
             <label className="print-field-label">
               Ссылка на PDF
               <input
@@ -294,31 +367,35 @@ const Print = () => {
               />
             </label>
 
-            <label className="mt-2 flex cursor-pointer items-start gap-4 border-2 border-black bg-[#fae7e1] p-5">
+            <label className="mt-2 flex cursor-pointer items-start gap-3 border-2 border-black bg-[#fae7e1] p-3">
               <input
                 type="checkbox"
                 checked={consentChecked}
                 onChange={(event) => setConsentChecked(event.target.checked)}
                 required
-                className="mt-1 h-6 w-6 shrink-0 cursor-pointer accent-[#111111]"
+                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[#111111]"
               />
-              <span className="text-[16px] font-black leading-7 text-[#3f4447]">
+              <span className="text-[12px] font-black leading-5 text-[#3f4447]">
                 Даю согласие на обработку персональных данных для оплаты и доставки заказа.
               </span>
             </label>
           </div>
 
           <div className="ym-hidden-inputs">
-            <input name="shopSuccessURL" type="hidden" value="https://fairyteller.ru/pay?status=success" />
-            <input name="shopFailURL" type="hidden" value="https://fairyteller.ru/pay?status=fail" />
+            {jobId && <input name="jobId" type="hidden" value={jobId} />}
           </div>
 
           <input name="sum" type="hidden" value="3500" />
           <input name="shopId" type="hidden" value="1228521" />
+          {checkoutError && (
+            <p className="border-2 border-black bg-[#fee2e2] p-3 text-[12px] font-black leading-5 text-[#8f1d1d]">
+              {checkoutError}
+            </p>
+          )}
 
           <div className="ym-payment-btn-block ym-before-line">
-            <button className="ym-btn-pay" type="submit">
-              <span className="ym-text-crop">Оплатить книгу</span>
+            <button className="ym-btn-pay" type="submit" disabled={isSubmitting}>
+              <span className="ym-text-crop">{isSubmitting ? "Создаем платеж..." : "Оплатить книгу"}</span>
             </button>
             <img
               src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.30.0"
@@ -329,7 +406,6 @@ const Print = () => {
             />
           </div>
         </form>
-        <script src="https://yookassa.ru/integration/simplepay/js/yookassa_construct_form.js?v=1.30.0"></script>
       </section>
 
       <Dialog
@@ -345,7 +421,7 @@ const Print = () => {
               Оплата прошла успешно
             </DialogTitle>
             <DialogDescription className="pt-4 text-[15px] font-semibold leading-7 text-[#5e6264]">
-              Спасибо! Мы получили оплату. В ближайшее время напишем вам на email.
+              Спасибо! Как только ЮKassa подтвердит платеж, мы автоматически отправим на email ссылку на полную сказку.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end pt-4">

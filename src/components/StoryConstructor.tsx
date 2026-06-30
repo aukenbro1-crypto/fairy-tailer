@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Printer, X } from 'lucide-react';
+import { Check, Lock, ShoppingBag, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
@@ -20,7 +20,6 @@ import photorealismStyleImage from '@/assets/photorealism-style.jpeg';
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
-const PRINT_PAYMENT_URL = "https://fairyteller.ru/pay";
 
 interface CreateResponse {
   ok?: boolean;
@@ -82,7 +81,31 @@ interface JobStatus {
     coverPdf?: { url?: string; pageCount?: number };
     interiorPdf?: { url?: string; pageCount?: number };
   };
+  payment?: {
+    status?: string;
+    paid?: boolean;
+    paidAt?: string | null;
+    expiresAt?: string | null;
+  };
+  paid?: boolean;
   error?: string | null;
+}
+
+interface BookSampleChapter {
+  n: number | null;
+  title: string;
+  summary?: string;
+  text: string;
+  textBlocks?: string[];
+}
+
+interface BookSample {
+  jobId: string;
+  title: string;
+  subtitle?: string;
+  summary?: string;
+  chapters: BookSampleChapter[];
+  lockedChapter?: (BookSampleChapter & { imageUrl?: string }) | null;
 }
 
 type HeroAgeGroup = '' | 'child' | 'teen' | 'adult';
@@ -308,49 +331,153 @@ const hasGenerationFailed = (jobStatus: JobStatus | null) => {
   );
 };
 
-const GeneratedPdfPreview: React.FC<{ previewPdfUrl: string; printPdfUrl: string }> = ({
-  previewPdfUrl,
-  printPdfUrl,
-}) => {
-  const [isPdfLoaded, setIsPdfLoaded] = useState(false);
-  const pdfUrl = previewPdfUrl || printPdfUrl;
-  const printPaymentUrl = printPdfUrl || previewPdfUrl
-    ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(printPdfUrl || previewPdfUrl)}`
-    : PRINT_PAYMENT_URL;
+const splitParagraphs = (text: string) => String(text || '').split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+
+const GeneratedBookPaywall: React.FC<{ jobId: string }> = ({ jobId }) => {
+  const { toast } = useToast();
+  const [sample, setSample] = useState<BookSample | null>(null);
+  const [isLoadingSample, setIsLoadingSample] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
-    setIsPdfLoaded(false);
-  }, [pdfUrl]);
+    let cancelled = false;
+    setIsLoadingSample(true);
+    fetch(`${STATUS_ENDPOINT_BASE_URL}/${jobId}/sample`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Не удалось открыть превью книги');
+        return await response.json();
+      })
+      .then((payload: BookSample) => {
+        if (!cancelled) setSample(payload);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          toast({
+            variant: 'destructive',
+            title: 'Превью пока не открылось',
+            description: error.message || 'Попробуйте обновить страницу через минуту.',
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSample(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId, toast]);
+
+  const handleCheckout = async () => {
+    setIsCheckingOut(true);
+    try {
+      const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${jobId}/checkout`, { method: 'POST' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Не удалось начать оплату');
+      }
+      if (payload.accessUrl) {
+        window.location.href = payload.accessUrl;
+        return;
+      }
+      if (!payload.confirmationUrl) {
+        throw new Error('ЮKassa не вернула ссылку на оплату');
+      }
+      window.location.href = payload.confirmationUrl;
+    } catch (error) {
+      setIsCheckingOut(false);
+      toast({
+        variant: 'destructive',
+        title: 'Оплата не открылась',
+        description: error instanceof Error ? error.message : 'Попробуйте еще раз.',
+      });
+    }
+  };
+
+  if (isLoadingSample) {
+    return (
+      <section className="generated-paywall-preview" aria-live="polite">
+        <div className="generated-paywall-loading">
+          <div className="generated-pdf-loader-book" aria-hidden="true"><span /><span /><span /></div>
+          <p>Готовим бесплатный фрагмент книги</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!sample) {
+    return (
+      <section className="generated-paywall-preview">
+        <div className="generated-paywall-card">
+          <h3>Превью еще собирается</h3>
+          <p>Книга готова, но бесплатный фрагмент не успел открыться. Обновите страницу через минуту.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="generated-pdf-preview" aria-label="Предпросмотр готовой книги">
-      <div className="generated-pdf-stage">
-        <div className={`generated-pdf-frame ${isPdfLoaded ? 'generated-pdf-frame-loaded' : ''}`}>
-          {!isPdfLoaded && (
-            <div className="generated-pdf-loading" aria-live="polite">
-              <div className="generated-pdf-loader-book" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-              <p>Открываем предпросмотр</p>
+    <section className="generated-paywall-preview" aria-label="Бесплатный фрагмент готовой книги">
+      <header className="generated-paywall-cover">
+        <div className="generated-book-status">Превью готово</div>
+        <h3>{sample.title || 'Ваша сказка'}</h3>
+        {sample.summary && <p>{sample.summary}</p>}
+      </header>
+
+      <div className="generated-paywall-pages">
+        {sample.chapters.map((chapter, index) => (
+          <article key={`${chapter.n}-${index}`} className="generated-paywall-chapter">
+            <span>Глава {chapter.n || index + 1}</span>
+            <h4>{chapter.title}</h4>
+            {splitParagraphs(chapter.text).map((paragraph, paragraphIndex) => (
+              <p key={paragraphIndex}>{paragraph}</p>
+            ))}
+          </article>
+        ))}
+
+        {sample.lockedChapter && (
+          <article className="generated-paywall-chapter generated-paywall-locked">
+            <span>Глава {sample.lockedChapter.n || 3}</span>
+            <h4>{sample.lockedChapter.title}</h4>
+            {sample.lockedChapter.imageUrl && (
+              <img src={sample.lockedChapter.imageUrl} alt="" loading="lazy" />
+            )}
+            <div className="generated-paywall-fade">
+              {splitParagraphs(sample.lockedChapter.text).map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex}>{paragraph}</p>
+              ))}
+              <p>Дальше герои уже входят в самый важный поворот истории, но полный текст открыт только после оплаты.</p>
             </div>
-          )}
-          <iframe
-            src={`${pdfUrl}#page=1&view=Fit`}
-            title="PDF-предпросмотр книги"
-            loading="lazy"
-            onLoad={() => setIsPdfLoaded(true)}
-          />
-        </div>
+            <div className="generated-paywall-card">
+              <Lock size={22} aria-hidden="true" />
+              <h4>Остальные 3 главы уже написаны</h4>
+              <p>Вы уже видите стиль, героев и начало сюжета. После оплаты откроем полную книгу и подготовим печатную версию.</p>
+              <a className="generated-paywall-preview-link" href={`/book/${jobId}`} target="_blank" rel="noreferrer">
+                Посмотреть превью
+              </a>
+              <button type="button" onClick={handleCheckout} disabled={isCheckingOut}>
+                <ShoppingBag size={18} aria-hidden="true" />
+                {isCheckingOut ? 'Открываем оплату...' : 'Открыть всю книгу и отправить в печать — 3 500 ₽'}
+              </button>
+              <small>Если сказка совсем не попала в ожидания — бесплатно пересоберем один раз или вернем оплату до печати.</small>
+            </div>
+          </article>
+        )}
       </div>
 
-      <div className="generated-pdf-actions">
-        <a href={printPaymentUrl} target="_blank" rel="noreferrer" className="generated-book-print-link generated-pdf-print-link">
-          <Printer size={17} aria-hidden="true" />
-          Оплатить и отправить в печать
-        </a>
-      </div>
+      {!sample.lockedChapter && (
+        <div className="generated-paywall-card">
+          <Lock size={22} aria-hidden="true" />
+          <h4>Полная книга готова</h4>
+          <p>После оплаты пришлем magic-link на весь PDF и страницу полной книги.</p>
+          <a className="generated-paywall-preview-link" href={`/book/${jobId}`} target="_blank" rel="noreferrer">
+            Посмотреть превью
+          </a>
+          <button type="button" onClick={handleCheckout} disabled={isCheckingOut}>
+            <ShoppingBag size={18} aria-hidden="true" />
+            {isCheckingOut ? 'Открываем оплату...' : 'Открыть всю книгу и отправить в печать — 3 500 ₽'}
+          </button>
+        </div>
+      )}
     </section>
   );
 };
@@ -366,6 +493,7 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
 }) => {
   const [nowMs, setNowMs] = useState(Date.now());
   const fullVisuals = jobStatus?.artifacts?.fullVisuals || null;
+  const jobId = jobStatus?.jobId || '';
   const jobCompleted = jobStatus?.status === 'done' || jobStatus?.stage === 'complete';
   const isReady = Boolean(previewPdfUrl || printPdfUrl) && (renderStatus === 'ready' || jobCompleted);
   const isFailed = hasGenerationFailed(jobStatus);
@@ -401,7 +529,7 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
   const steps = ['Детали', 'Жанр и герои', 'Текст', 'Картинки', 'Обложка', 'PDF', 'Готово'];
 
   if (isReady) {
-    return <GeneratedPdfPreview previewPdfUrl={previewPdfUrl} printPdfUrl={printPdfUrl} />;
+    return <GeneratedBookPaywall jobId={jobId} />;
   }
 
   return (

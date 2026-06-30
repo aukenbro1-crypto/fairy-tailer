@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script>if(location.pathname==='/loveproportion'){document.write('<style>#root>main{display:none!important}<\/style>');}</script>
+  <script>
+    if(location.pathname==='/loveproportion'){document.write('<style>#root>main{display:none!important}<\/style>');}
+    if(location.pathname.indexOf('/book/')===0){document.documentElement.setAttribute('data-fairyteller-route','book');}
+  </script>
+  <style>
+    html[data-fairyteller-route="book"],
+    html[data-fairyteller-route="book"] body,
+    html[data-fairyteller-route="book"] #root {
+      background: #fffaf0 !important;
+      color: #111111;
+      color-scheme: light;
+    }
+  </style>
     <meta http-equiv="Content-Language" content="ru" />
     <link rel="alternate" href="https://fairyteller.ru/" hreflang="ru" />
     <link rel="canonical" href="https://fairyteller.ru/">

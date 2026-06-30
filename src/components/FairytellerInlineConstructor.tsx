@@ -23,7 +23,6 @@ import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
-const PRINT_PAYMENT_URL = "https://fairyteller.ru/pay";
 const GENERATION_ETA_SECONDS = 240;
 
 const formatGenerationTimer = (seconds: number) => {
@@ -272,9 +271,21 @@ const FairytellerInlineConstructor = ({
     : generationRemainingSeconds > 0
       ? `примерно ${formatGenerationTimer(generationRemainingSeconds)}`
       : "финальная проверка";
-  const printPaymentUrl = bookPdfUrl
-    ? `${PRINT_PAYMENT_URL}?pdf=${encodeURIComponent(bookPdfUrl)}`
-    : PRINT_PAYMENT_URL;
+  const startCheckout = async () => {
+    if (!submittedJobId) return;
+    try {
+      const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}/checkout`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Не удалось открыть оплату");
+      window.location.href = payload.accessUrl || payload.confirmationUrl;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Оплата не открылась",
+        description: error instanceof Error ? error.message : "Попробуйте еще раз.",
+      });
+    }
+  };
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index >= requiredHeroCount && !visibleHeroes.includes(item.index));
@@ -932,22 +943,21 @@ const FairytellerInlineConstructor = ({
               {isGenerationReady && (
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <a
-                    href={bookPdfUrl}
+                    href={`/book/${submittedJobId}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-[52px] items-center justify-center border border-black bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white hover:text-black"
+                    className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-white px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
                   >
-                    Открыть превью
+                    Посмотреть превью
                   </a>
-                  <a
-                    href={printPaymentUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={startCheckout}
                     className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-[#E89C31] px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
                   >
                     <ShoppingBag className="h-5 w-5" />
-                    ОПЛАТИТЬ И ОТПРАВИТЬ В ПЕЧАТЬ
-                  </a>
+                    ОТКРЫТЬ ВСЮ КНИГУ И ОТПРАВИТЬ В ПЕЧАТЬ
+                  </button>
                 </div>
               )}
             </div>
