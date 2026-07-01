@@ -3297,6 +3297,7 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
   const accessUrl = pdfUrl || fallbackUrl;
   const telegramUrl = 'https://t.me/nikita0shch';
   const siteUrl = PUBLIC_BASE_URL;
+  const deliveryUrl = `${PUBLIC_BASE_URL}/delivery/`;
   const subject = 'Ваша история готова — спасибо за заказ';
   const text = [
     'Почти готово!',
@@ -3308,7 +3309,7 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
     `Если у вас есть замечания по сюжету или иллюстрациям — свяжитесь с нами в Telegram (${telegramUrl}) или через форму на сайте (${siteUrl}), мы оперативно внесем необходимые правки или пришлем вам новую историю. Если вам не понравится и она — мы вернем оплату за заказ.`,
     '',
     'Что дальше?',
-    'В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, срок доставки — в зависимости от региона. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.',
+    `В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, сроки доставки зависят от города назначения: ${deliveryUrl}. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.`,
     '',
     'Команда FairyTeller',
   ].join('\n');
@@ -3346,7 +3347,7 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
               <td style="padding:0 32px 18px;">
                 <p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Если у вас есть замечания по сюжету или иллюстрациям — свяжитесь с нами с помощью <a href="${escapeHtml(telegramUrl)}" style="color:#000000; text-decoration:underline; font-weight:800;">Telegram</a> или через <a href="${escapeHtml(siteUrl)}" style="color:#000000; text-decoration:underline; font-weight:800;">форму на сайте</a>, мы оперативно внесем необходимые правки или пришлем вам новую историю. Если вам не понравится и она — мы вернем оплату за заказ.</p>
                 <p style="margin:0 0 8px; font-family:Arial, Helvetica, sans-serif; font-size:18px; line-height:24px; color:#000000; font-weight:900;">Что дальше?</p>
-                <p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, срок доставки — в зависимости от региона. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.</p>
+                <p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">В течение рабочего дня наша команда вычитает макет и свяжется с вами, чтобы уточнить возможные правки и ближайший удобный для вас ПВЗ. Срок печати книги — 1-2 рабочих дня, <a href="${escapeHtml(deliveryUrl)}" style="color:#000000; text-decoration:underline; font-weight:800;">сроки доставки зависят от города назначения</a>. Наша типография располагается в Москве, основные логистические партнеры: 5Post, Яндекс Доставка и СДЭК.</p>
                 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#5e6264;">
                   Если кнопка не открывается, скопируйте ссылку:<br>
                   <a href="${escapeHtml(accessUrl)}" style="color:#000000; word-break:break-word;">${escapeHtml(accessUrl)}</a>
