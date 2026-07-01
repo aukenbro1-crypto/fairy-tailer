@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import ConstructorHint from "@/components/ConstructorHint";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
+import { trackCheckoutStart } from "@/lib/metrika";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
@@ -464,22 +465,18 @@ const DesignTest = () => {
   const generationTimerText = isGenerationReady
     ? "готово"
     : generationRemainingSeconds > 0
-      ? `примерно ${formatGenerationTimer(generationRemainingSeconds)}`
+      ? `осталось ${formatGenerationTimer(generationRemainingSeconds)}`
       : "финальная проверка";
-  const startCheckout = async () => {
+  const startCheckout = () => {
     if (!submittedJobId) return;
-    try {
-      const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}/checkout`, { method: "POST" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Не удалось открыть оплату");
-      window.location.href = payload.accessUrl || payload.confirmationUrl;
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Оплата не открылась",
-        description: error instanceof Error ? error.message : "Попробуйте еще раз.",
-      });
+
+    const params = new URLSearchParams({ jobId: submittedJobId });
+    if (bookPdfUrl) {
+      params.set("pdf", bookPdfUrl);
     }
+
+    trackCheckoutStart(submittedJobId);
+    window.location.href = `/pay?${params.toString()}`;
   };
   const currentHeroImage = heroImages[heroIndex];
   const hiddenHeroes = heroSlots
@@ -1465,24 +1462,29 @@ const DesignTest = () => {
                     {jobStatus?.message || "Готовим сюжет, иллюстрации, обложку и печатный макет."}
                   </p>
                   {isGenerationReady && (
-                    <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                      <a
-                        href={`/book/${submittedJobId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-white px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
-                      >
-                        Посмотреть превью
-                      </a>
-                      <button
-                        type="button"
-                        onClick={startCheckout}
-                        className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-[#E89C31] px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
-                      >
-                        <ShoppingBag className="h-5 w-5" />
-                        ОТКРЫТЬ ВСЮ КНИГУ И ОТПРАВИТЬ В ПЕЧАТЬ
-                      </button>
-                    </div>
+                    <>
+                      <p className="mx-auto mt-3 max-w-[560px] text-[16px] leading-7 text-[#5e6264]">
+                        Оплатите заказ, чтобы получить бумажную версию с доставкой по РФ.
+                      </p>
+                      <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                        <a
+                          href={`/book/${submittedJobId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-white px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+                        >
+                          Посмотреть превью
+                        </a>
+                        <button
+                          type="button"
+                          onClick={startCheckout}
+                          className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-[#E89C31] px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+                        >
+                          <ShoppingBag className="h-5 w-5" />
+                          Оплатить
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               )}

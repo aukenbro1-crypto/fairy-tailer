@@ -373,32 +373,10 @@ const GeneratedBookPaywall: React.FC<{ jobId: string }> = ({ jobId }) => {
     };
   }, [jobId, toast]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     setIsCheckingOut(true);
-    try {
-      const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${jobId}/checkout`, { method: 'POST' });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error || 'Не удалось начать оплату');
-      }
-      if (payload.accessUrl) {
-        trackCheckoutStart(jobId);
-        window.location.href = payload.accessUrl;
-        return;
-      }
-      if (!payload.confirmationUrl) {
-        throw new Error('ЮKassa не вернула ссылку на оплату');
-      }
-      trackCheckoutStart(jobId);
-      window.location.href = payload.confirmationUrl;
-    } catch (error) {
-      setIsCheckingOut(false);
-      toast({
-        variant: 'destructive',
-        title: 'Оплата не открылась',
-        description: error instanceof Error ? error.message : 'Попробуйте еще раз.',
-      });
-    }
+    trackCheckoutStart(jobId);
+    window.location.href = `/pay?jobId=${encodeURIComponent(jobId)}`;
   };
 
   if (isLoadingSample) {
@@ -464,7 +442,7 @@ const GeneratedBookPaywall: React.FC<{ jobId: string }> = ({ jobId }) => {
               </a>
               <button type="button" onClick={handleCheckout} disabled={isCheckingOut}>
                 <ShoppingBag size={18} aria-hidden="true" />
-                {isCheckingOut ? 'Открываем оплату...' : 'Открыть всю книгу и отправить в печать — 3 500 ₽'}
+                {isCheckingOut ? 'Открываем оплату...' : 'Оплатить'}
               </button>
               <small>Если сказка совсем не попала в ожидания — бесплатно пересоберем один раз или вернем оплату до печати.</small>
             </div>
@@ -482,7 +460,7 @@ const GeneratedBookPaywall: React.FC<{ jobId: string }> = ({ jobId }) => {
           </a>
           <button type="button" onClick={handleCheckout} disabled={isCheckingOut}>
             <ShoppingBag size={18} aria-hidden="true" />
-            {isCheckingOut ? 'Открываем оплату...' : 'Открыть всю книгу и отправить в печать — 3 500 ₽'}
+            {isCheckingOut ? 'Открываем оплату...' : 'Оплатить'}
           </button>
         </div>
       )}
@@ -552,7 +530,7 @@ const GenerationStatusPanel: React.FC<GenerationStatusPanelProps> = ({
         </div>
         <div className="generation-status-timer" aria-label="Примерное время до готовности">
           <span>{timerText}</span>
-          {!isReady && <small>примерно осталось</small>}
+          {!isReady && <small>осталось</small>}
         </div>
       </div>
 
