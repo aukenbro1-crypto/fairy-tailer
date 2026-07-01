@@ -453,9 +453,9 @@ const AnniversaryGiftLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={exampleCactusCityImage} alt="Пример персональной книги в руках" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={exampleMapTableImage} alt="Разворот персональной книги на столе" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={exampleCactusFlatlayImage} alt="Подарочная книга на годовщину" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={exampleCactusCityImage} alt="Пример персональной книги в руках" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={exampleMapTableImage} alt="Разворот персональной книги на столе" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={exampleCactusFlatlayImage} alt="Подарочная книга на годовщину" className="h-[260px] w-full object-cover md:h-full md:min-h-[260px]" />
               </div>
             </div>
           </div>

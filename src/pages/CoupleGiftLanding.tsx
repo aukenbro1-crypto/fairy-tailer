@@ -419,9 +419,9 @@ const CoupleGiftLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={maroccoOpenHeaderImage} alt="Печатная книга для пары с открытым разворотом" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={maroccoCoverShelfImage} alt="Обложка персональной книги для пары" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={maroccoBackDoorwayImage} alt="Задняя обложка персональной книги для пары" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={maroccoOpenHeaderImage} alt="Печатная книга для пары с открытым разворотом" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={maroccoCoverShelfImage} alt="Обложка персональной книги для пары" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={maroccoBackDoorwayImage} alt="Задняя обложка персональной книги для пары" className="h-[260px] w-full object-cover md:h-full md:min-h-[260px]" />
               </div>
             </div>
           </div>

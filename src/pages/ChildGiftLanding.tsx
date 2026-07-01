@@ -440,9 +440,9 @@ const ChildGiftLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={drevogradHandsImage} alt="Обложка детской книги Лист над Древоградом" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={drevogradSpreadImage} alt="Разворот детской персональной книги" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={drevogradBackImage} alt="Задняя обложка детской персональной книги" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={drevogradHandsImage} alt="Обложка детской книги Лист над Древоградом" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={drevogradSpreadImage} alt="Разворот детской персональной книги" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={drevogradBackImage} alt="Задняя обложка детской персональной книги" className="h-[260px] w-full object-cover md:h-full md:min-h-[260px]" />
               </div>
             </div>
           </div>

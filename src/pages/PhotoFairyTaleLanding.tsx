@@ -395,9 +395,9 @@ const PhotoFairyTaleLanding = () => {
                 ))}
               </div>
               <div className="grid border-b border-r border-black bg-white md:grid-cols-3">
-                <img src={zagadkaSpreadImage} alt="Разворот персональной сказки с иллюстрациями" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={zagadkaFrontImage} alt="Фронтальная обложка именной книги с фото" className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r" />
-                <img src={zagadkaBackImage} alt="Задняя обложка персональной сказки" className="h-full min-h-[260px] w-full object-cover" />
+                <img src={zagadkaSpreadImage} alt="Разворот персональной сказки с иллюстрациями" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={zagadkaFrontImage} alt="Фронтальная обложка именной книги с фото" className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r" />
+                <img src={zagadkaBackImage} alt="Задняя обложка персональной сказки" className="h-[260px] w-full object-cover md:h-full md:min-h-[260px]" />
               </div>
             </div>
           </div>

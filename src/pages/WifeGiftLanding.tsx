@@ -390,7 +390,7 @@ const WifeGiftLanding = () => {
                     key={item.title}
                     src={item.image}
                     alt={item.title}
-                    className="h-full min-h-[260px] w-full border-b border-black object-cover md:border-b-0 md:border-r md:last:border-r-0"
+                    className="h-[260px] w-full border-b border-black object-cover md:h-full md:min-h-[260px] md:border-b-0 md:border-r md:last:border-r-0"
                   />
                 ))}
               </div>
