@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 
 // Background images for sections
 import heroBackground from "@/assets/indian/screen1-hero.png";
@@ -402,6 +403,10 @@ const Indian = () => {
         <p className="text-amber-100/80 font-serif text-sm">
           © 2026 FairyTeller. Все права защищены.
         </p>
+        <LegalFooterLinks
+          className="mt-4 flex flex-wrap justify-center gap-4 px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-100/70"
+          linkClassName="hover:text-amber-50 hover:underline"
+        />
       </footer>
     </div>
   );

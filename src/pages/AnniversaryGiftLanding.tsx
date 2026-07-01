@@ -15,6 +15,7 @@ import {
 import SEO from "@/components/SEO";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import LandingHeader from "@/components/LandingHeader";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo.png";
 import anniversaryZvezdopadSpreadImage from "@/assets/landing-photos/anniversary-zvezdopad-spread.jpg";
 import anniversaryZvezdopadBackImage from "@/assets/landing-photos/anniversary-zvezdopad-back.jpg";
@@ -513,6 +514,7 @@ const AnniversaryGiftLanding = () => {
                   <a href="#faq" className="hover:text-white hover:underline">FAQ</a>
                   <Link to="/blog" className="hover:text-white hover:underline">Журнал</Link>
                 </nav>
+                <LegalFooterLinks className="mt-4 flex flex-wrap gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-white/50" />
               </div>
               <div className="md:text-right">
                 <div className="flex flex-wrap gap-3 md:justify-end">

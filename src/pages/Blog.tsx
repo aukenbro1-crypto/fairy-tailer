@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, ChevronRight, Home, Search } from "lucide-react";
 import { blogPosts } from "@/data/blogPosts";
 import BlogSEO from "@/components/BlogSEO";
 import BlogImage from "@/components/BlogImage";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo.png";
 
 const visiblePosts = blogPosts.filter((post) => !post.hidden);
@@ -295,9 +296,12 @@ const Blog = () => {
 
       <footer className="border-t border-black bg-black px-5 py-10 text-white md:px-8">
         <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-5 md:flex-row md:items-center">
-          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">
-            © 2026 FairyTeller. Журнал персональных книг.
-          </p>
+          <div>
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">
+              © 2026 FairyTeller. Журнал персональных книг.
+            </p>
+            <LegalFooterLinks className="mt-3 flex flex-wrap gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-white/50" />
+          </div>
           <Link
             to="/create"
             className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"

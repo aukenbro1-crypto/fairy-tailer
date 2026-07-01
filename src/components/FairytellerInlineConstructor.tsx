@@ -902,7 +902,13 @@ const FairytellerInlineConstructor = ({
                     onChange={(event) => setConsentChecked(event.currentTarget.checked)}
                     className="mt-1 h-4 w-4 accent-black"
                   />
-                  <span>Я согласен на обработку персональных данных.</span>
+                  <span>
+                    Я согласен на обработку персональных данных в соответствии с{" "}
+                    <a href="/policy" target="_blank" rel="noreferrer" className="font-bold text-black underline">
+                      политикой
+                    </a>
+                    .
+                  </span>
                 </label>
               </div>
 

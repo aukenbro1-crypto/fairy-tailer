@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown, Newspaper, Flower2, HeartHandshake } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import StoryConstructor from "@/components/StoryConstructor";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 
 // Critical above-the-fold images - load immediately
 import mascotImage from "@/assets/mascot-2.png";
@@ -496,6 +497,10 @@ const Landing = () => {
       <footer className="bg-[#031B28] border-t border-[#E89C31]/20 py-10">
         <div className="container mx-auto px-4 text-center text-[#DBA858]">
           <p className="text-lg">© 2026 FairyTeller. Создаем персональные истории с любовью.</p>
+          <LegalFooterLinks
+            className="mt-5 flex flex-wrap justify-center gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-[#DBA858]/80"
+            linkClassName="hover:text-[#E89C31] hover:underline"
+          />
         </div>
       </footer>
     </div>;

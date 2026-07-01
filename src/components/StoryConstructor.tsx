@@ -1494,7 +1494,10 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                   required
                 />
                 <label htmlFor="consent-checkbox" className="text-sm text-accent cursor-pointer leading-tight">
-                  Согласие на обработку персональных данных
+                  Согласие на обработку персональных данных в соответствии с{" "}
+                  <a href="/policy" target="_blank" rel="noreferrer" className="font-bold underline">
+                    политикой
+                  </a>
                 </label>
               </div>
             </div>

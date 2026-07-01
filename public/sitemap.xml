@@ -67,6 +67,24 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://fairyteller.ru/oferta</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://fairyteller.ru/agreement</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://fairyteller.ru/policy</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://fairyteller.ru/blog/chto-podarit-mame-na-yubilej</loc>
     <lastmod>2026-05-20</lastmod>
     <changefreq>monthly</changefreq>

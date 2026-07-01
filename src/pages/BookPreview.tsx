@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoImage from "@/assets/logo.png";
 import { ArrowLeft, BookOpen } from "lucide-react";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 
 const CHAPTERS = [
   {
@@ -216,6 +217,7 @@ const BookPreview = () => {
         <p className="bp-footer-credit">
           Создано в соавторстве с <Link to="/" className="bp-footer-link">fairyteller.ru</Link>
         </p>
+        <LegalFooterLinks className="bp-footer-legal" linkClassName="bp-footer-link" />
         <Link to="/8march" className="bp-footer-cta">
           Создать свою историю →
         </Link>
@@ -458,6 +460,18 @@ const BookPreview = () => {
           text-decoration: none;
         }
         .bp-footer-link:hover { text-decoration: underline; }
+        .bp-footer-legal {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 14px;
+          margin-bottom: 24px;
+          font-family: sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
         .bp-footer-cta {
           display: inline-block;
           padding: 14px 36px;

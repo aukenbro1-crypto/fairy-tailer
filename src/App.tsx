@@ -27,6 +27,7 @@ const PhotoFairyTaleLanding = lazy(() => import("./pages/PhotoFairyTaleLanding")
 const ChildGiftLanding = lazy(() => import("./pages/ChildGiftLanding"));
 const WifeGiftLanding = lazy(() => import("./pages/WifeGiftLanding"));
 const MomGiftLanding = lazy(() => import("./pages/MomGiftLanding"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
 const FairytellerChat = lazy(() => import("./components/FairytellerChat"));
 
 const queryClient = new QueryClient();
@@ -85,6 +86,9 @@ const App = () => (
             <Route path="/podarok/skazka-po-foto" element={<PhotoFairyTaleLanding />} />
             <Route path="/podarok/zhene" element={<WifeGiftLanding />} />
             <Route path="/podarok/mame" element={<MomGiftLanding />} />
+            <Route path="/oferta" element={<LegalPage pageId="oferta" />} />
+            <Route path="/agreement" element={<LegalPage pageId="agreement" />} />
+            <Route path="/policy" element={<LegalPage pageId="policy" />} />
             <Route path="/print" element={<Print />} />
             <Route path="/pay" element={<Print />} />
             <Route path="/romantic" element={<Romantic />} />

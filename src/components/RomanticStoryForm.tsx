@@ -584,7 +584,12 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
                   checked={formData.consent}
                   onChange={e => setFormData(prev => ({ ...prev, consent: e.target.checked }))}
                 />
-                <span>Согласие на обработку персональных данных</span>
+                <span>
+                  Согласие на обработку персональных данных в соответствии с{" "}
+                  <a href="/policy" target="_blank" rel="noreferrer" className="font-bold underline">
+                    политикой
+                  </a>
+                </span>
               </label>
             </div>
           </div>

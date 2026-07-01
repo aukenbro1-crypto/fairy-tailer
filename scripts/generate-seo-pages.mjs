@@ -327,6 +327,50 @@ const pages = [
       </main>`,
   },
   {
+    path: "/oferta",
+    title: "Договор публичной оферты | Fairyteller",
+    description:
+      "Публичная оферта fairyteller.ru: условия создания, оплаты, печати и доставки персональной бумажной книги.",
+    type: "website",
+    jsonLd: [organizationJsonLd(), webPageJsonLd("Договор публичной оферты", "/oferta")],
+    fallback: `
+      <main>
+        <h1>Договор публичной оферты</h1>
+        <p>Оферта fairyteller.ru описывает условия создания персональной истории, подготовки макета, оплаты, печати и доставки бумажной книги.</p>
+        <p>Продавец: самозанятый Щуренков Никита Анатольевич, ИНН 504311104973.</p>
+        <p><a href="/policy">Политика в отношении обработки персональных данных</a></p>
+      </main>`,
+  },
+  {
+    path: "/agreement",
+    title: "Пользовательское соглашение | Fairyteller",
+    description:
+      "Пользовательское соглашение fairyteller.ru: правила использования сайта, конструктора, материалов и пользовательского контента.",
+    type: "website",
+    jsonLd: [organizationJsonLd(), webPageJsonLd("Пользовательское соглашение", "/agreement")],
+    fallback: `
+      <main>
+        <h1>Пользовательское соглашение</h1>
+        <p>Соглашение регулирует использование сайта fairyteller.ru, конструктора персональных книг, страниц просмотра, блога, чата и других публичных разделов.</p>
+        <p><a href="/oferta">Договор публичной оферты</a></p>
+      </main>`,
+  },
+  {
+    path: "/policy",
+    title: "Политика в отношении обработки персональных данных | Fairyteller",
+    description:
+      "Политика fairyteller.ru в отношении обработки персональных данных: какие данные собираются, зачем, как защищаются и как отозвать согласие.",
+    type: "website",
+    jsonLd: [organizationJsonLd(), webPageJsonLd("Политика в отношении обработки персональных данных", "/policy")],
+    fallback: `
+      <main>
+        <h1>Политика в отношении обработки персональных данных</h1>
+        <p>Политика объясняет, какие персональные данные обрабатывает fairyteller.ru при создании персональных книг, оплате, доставке, поддержке и работе сайта.</p>
+        <p>Оператор: самозанятый Щуренков Никита Анатольевич, ИНН 504311104973.</p>
+        <p>Контакт для запросов: books@fairyteller.ru.</p>
+      </main>`,
+  },
+  {
     path: "/blog",
     title: "Журнал Fairyteller — идеи персональных подарков и книг",
     description:
@@ -471,6 +515,20 @@ function productJsonLd(name, description, pagePath) {
       price: "3500",
       availability: "https://schema.org/InStock",
       url: `${siteUrl}${pagePath}`,
+    },
+  };
+}
+
+function webPageJsonLd(name, pagePath) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name,
+    url: `${siteUrl}${pagePath}`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Fairyteller",
+      url: siteUrl,
     },
   };
 }

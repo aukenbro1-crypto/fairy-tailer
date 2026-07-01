@@ -17,6 +17,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
@@ -1400,7 +1401,13 @@ const DesignTest = () => {
                         onChange={(event) => setConsentChecked(event.currentTarget.checked)}
                         className="mt-1 h-4 w-4 accent-black"
                       />
-                      <span>Я согласен на обработку персональных данных.</span>
+                      <span>
+                        Я согласен на обработку персональных данных в соответствии с{" "}
+                        <a href="/policy" target="_blank" rel="noreferrer" className="font-bold text-black underline">
+                          политикой
+                        </a>
+                        .
+                      </span>
                     </label>
                   </div>
 
@@ -1629,6 +1636,7 @@ const DesignTest = () => {
                 <a href="#faq" className="hover:text-white hover:underline">FAQ</a>
                 <Link to="/blog" className="hover:text-white hover:underline">Журнал</Link>
               </nav>
+              <LegalFooterLinks className="mt-4 flex flex-wrap gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-white/50" />
             </div>
             <div className="md:text-right">
               <div className="flex flex-wrap gap-3 md:justify-end">
