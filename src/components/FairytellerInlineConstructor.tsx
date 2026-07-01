@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import ConstructorHint from "@/components/ConstructorHint";
 import {
   trackCheckoutStart,
   trackConstructorStart,
@@ -581,9 +582,12 @@ const FairytellerInlineConstructor = ({
               <fieldset>
                 {isWorldLocked ? (
                   <div>
-                    <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
-                      Романтическая история
-                    </legend>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
+                        Романтическая история
+                      </legend>
+                      <ConstructorHint />
+                    </div>
                     <div className="mt-5 border border-black bg-[#f5f5f5] p-5 md:grid md:grid-cols-[260px_1fr] md:gap-8">
                       <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#5e6264]">
                         {selectedWorld.title}
@@ -594,9 +598,12 @@ const FairytellerInlineConstructor = ({
                 ) : (
                   <div>
                     <div className="flex items-center justify-between gap-4">
-                      <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
-                        {worldLegend}
-                      </legend>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
+                          {worldLegend}
+                        </legend>
+                        <ConstructorHint />
+                      </div>
                       <div className="flex shrink-0 border-l border-t border-black">
                         <button
                           type="button"

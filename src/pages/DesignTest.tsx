@@ -17,6 +17,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import ConstructorHint from "@/components/ConstructorHint";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
@@ -1098,9 +1099,12 @@ const DesignTest = () => {
                 <div>
                   <fieldset>
                     <div className="flex items-center justify-between gap-4">
-                      <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
-                        Выберите жанр
-                      </legend>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
+                          Выберите жанр
+                        </legend>
+                        <ConstructorHint />
+                      </div>
                       <div className="flex shrink-0 border-l border-t border-black">
                         <button
                           type="button"
