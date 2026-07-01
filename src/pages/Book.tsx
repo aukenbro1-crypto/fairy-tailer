@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Check, Lock, Mail, ShoppingBag } from "lucide-react";
 
+import { trackCheckoutStart, trackPreviewReady } from "@/lib/metrika";
 import logoImage from "@/assets/logo.png";
 
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
@@ -126,6 +127,12 @@ const Book = () => {
   }, [jobId, status]);
 
   const isPaid = Boolean(status?.paid || status?.payment?.status === "paid");
+
+  useEffect(() => {
+    if (jobId && status && !access) {
+      trackPreviewReady(jobId);
+    }
+  }, [access, jobId, status]);
 
   useEffect(() => {
     if (!jobId) return undefined;
@@ -636,7 +643,7 @@ const Book = () => {
           {paywallCollapsed ? (
             <div className="book-paywall-strip">
               <button type="button" onClick={() => setPaywallCollapsed(false)}>Почти готово</button>
-              <a href={payUrl}>Оплатить — 3 500 ₽</a>
+              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>Оплатить — 3 500 ₽</a>
             </div>
           ) : (
             <div className="book-paywall-lock-card">
@@ -651,7 +658,7 @@ const Book = () => {
               <Lock size={22} aria-hidden="true" className="mx-auto" />
               <h1>А дальше?</h1>
               <p>Перед вами — почти готовая книга. Оплатите заказ, чтобы получить бумажную версию с бесплатной доставкой по РФ.</p>
-              <a href={payUrl}>
+              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
                 <ShoppingBag size={18} aria-hidden="true" />
                 Оплатить — 3 500 ₽
               </a>
@@ -906,7 +913,7 @@ const Book = () => {
                   <Lock size={22} aria-hidden="true" />
                     <h3>Остальные 3 главы уже написаны</h3>
                     <p>Вы уже видите стиль, героев и начало сюжета. После оплаты откроем полную книгу и подготовим печатную версию.</p>
-                    <a href={payUrl}>
+                    <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
                       <ShoppingBag size={18} aria-hidden="true" />
                       Перейти к оплате и доставке — 3 500 ₽
                     </a>

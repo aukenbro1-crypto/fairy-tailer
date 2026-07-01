@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Lock, ShoppingBag, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  trackCheckoutStart,
+  trackConstructorStart,
+  trackGenerateSubmit,
+  trackPreviewReady,
+} from '@/lib/metrika';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
@@ -376,12 +382,14 @@ const GeneratedBookPaywall: React.FC<{ jobId: string }> = ({ jobId }) => {
         throw new Error(payload.error || 'Не удалось начать оплату');
       }
       if (payload.accessUrl) {
+        trackCheckoutStart(jobId);
         window.location.href = payload.accessUrl;
         return;
       }
       if (!payload.confirmationUrl) {
         throw new Error('ЮKassa не вернула ссылку на оплату');
       }
+      trackCheckoutStart(jobId);
       window.location.href = payload.confirmationUrl;
     } catch (error) {
       setIsCheckingOut(false);
@@ -687,6 +695,12 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     || 'Ваша сказка';
   const jobCompleted = jobStatus?.status === 'done' || jobStatus?.stage === 'complete';
   const hasReadyPdfPreview = Boolean(bookPdfUrl) && (renderStatus === 'ready' || jobCompleted);
+  useEffect(() => {
+    if (submittedJobId && hasReadyPdfPreview) {
+      trackPreviewReady(submittedJobId);
+    }
+  }, [submittedJobId, hasReadyPdfPreview]);
+
   const heroHasContent = (heroNum: 1 | 2 | 3 | 4) => {
     const name = formData[`hero${heroNum}_name` as keyof FormData] as string;
     const desc = formData[`hero${heroNum}_desc` as keyof FormData] as string;
@@ -859,7 +873,9 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     
     setShowLoader(false);
     if (ok) {
-      setSubmittedJobId(createResult?.jobId || null);
+      const nextJobId = createResult?.jobId || null;
+      trackGenerateSubmit(nextJobId);
+      setSubmittedJobId(nextJobId);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setJobStatus(null);
       showSuccessScreen();
@@ -917,7 +933,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   };
 
   return (
-    <div className="max-w-6xl mx-auto mixer-chassis">
+    <div className="max-w-6xl mx-auto mixer-chassis" onChange={trackConstructorStart} onClick={trackConstructorStart} onInput={trackConstructorStart}>
       {showHeader && (
         <div className="text-center mb-8 mixer-panel constellation-header cursor-pointer" onClick={resetForm}>
           <div className="hero-constellations" aria-hidden="true">

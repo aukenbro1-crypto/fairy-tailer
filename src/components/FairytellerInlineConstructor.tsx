@@ -10,6 +10,12 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import {
+  trackCheckoutStart,
+  trackConstructorStart,
+  trackGenerateSubmit,
+  trackPreviewReady,
+} from "@/lib/metrika";
 import claymotionStyleImage from "@/assets/claymotion-style.png";
 import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import disneyStyleImage from "@/assets/disney-style.jpg";
@@ -277,6 +283,7 @@ const FairytellerInlineConstructor = ({
       const response = await fetch(`${STATUS_ENDPOINT_BASE_URL}/${submittedJobId}/checkout`, { method: "POST" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Не удалось открыть оплату");
+      trackCheckoutStart(submittedJobId);
       window.location.href = payload.accessUrl || payload.confirmationUrl;
     } catch (error) {
       toast({
@@ -453,7 +460,9 @@ const FairytellerInlineConstructor = ({
         throw new Error(createResult?.message || "Create request failed");
       }
 
-      setSubmittedJobId(createResult?.jobId || null);
+      const nextJobId = createResult?.jobId || null;
+      trackGenerateSubmit(nextJobId);
+      setSubmittedJobId(nextJobId);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setGenerationStartedAt(Date.now());
       toast({
@@ -523,6 +532,12 @@ const FairytellerInlineConstructor = ({
   }, [submittedJobId, isGenerationReady, isGenerationFailed]);
 
   useEffect(() => {
+    if (submittedJobId && isGenerationReady) {
+      trackPreviewReady(submittedJobId);
+    }
+  }, [submittedJobId, isGenerationReady]);
+
+  useEffect(() => {
     if (!submittedJobId) {
       return;
     }
@@ -544,7 +559,7 @@ const FairytellerInlineConstructor = ({
       </div>
 
       <div className="border border-black bg-white">
-        <form className="bg-white p-5 md:p-8">
+        <form className="bg-white p-5 md:p-8" onChange={trackConstructorStart} onClick={trackConstructorStart} onInput={trackConstructorStart}>
           <div className="mb-8 grid grid-cols-3 border-l border-t border-black sm:inline-flex sm:flex-wrap">
             {constructorTabs.map((step, index) => (
               <button

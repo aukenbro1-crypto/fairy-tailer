@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -8,12 +9,18 @@ const distDir = path.join(rootDir, "dist");
 const indexPath = path.join(distDir, "index.html");
 const siteUrl = "https://fairyteller.ru";
 const defaultImage = `${siteUrl}/images/fairyteller-social-preview.jpg`;
+const blogPostsForFallback = await loadBlogPostsForFallback();
+const deliveryFaq = [
+  "Какие сроки доставки?",
+  "Сроки доставки зависят от города. Список популярных направлений доставки и сроков смотрите здесь: https://fairyteller.ru/delivery/.",
+];
 
 const commonFaq = [
   ["Сколько стоит книга?", "Персональная бумажная книга стоит от 3500₽. В стоимость входит подготовка макета, редактура, печать и доставка по России."],
   ["Когда появится первое превью?", "Готовую историю с иллюстрациями можно увидеть через несколько минут после заполнения конструктора."],
   ["Можно ли добавить фотографии?", "Да. Фото помогают сделать героев похожими на вас и ваших близких, сохраняя книжный стиль иллюстраций."],
   ["Можно ли сделать книгу для взрослого?", "Да. Это может быть романтическая история, приключение, фэнтези или другая персональная история для взрослого человека."],
+  deliveryFaq,
 ];
 
 const pages = [
@@ -77,6 +84,7 @@ const pages = [
         ["Что добавить, чтобы подарок был личным?", "Лучше всего работают место знакомства, первое путешествие, общая фраза, питомец, маленькая привычка, любимый маршрут или предмет-символ."],
         ["Сколько стоит печатная книга?", "Персональная бумажная книга стоит от 3500₽. В стоимость входит подготовка макета, редактура, печать и доставка по России."],
         ["Как быстро можно получить результат?", "Первое превью создается за несколько минут. После оплаты печатная книга готовится к печати за один день и отправляется в доставку."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -115,6 +123,7 @@ const pages = [
         ["Насколько героиня будет похожа на фото?", "Фото помогает сохранить узнаваемые черты, прическу, образ и настроение. Это художественная иллюстрация, а не фотокопия."],
         ["Это физическая книга или PDF?", "Главный формат Fairyteller - печатная бумажная книга. Электронная версия может прийти быстрее, если день рождения уже скоро."],
         ["Сколько стоит книга?", "От 3500₽: персональный сюжет, иллюстрации по фото, редактура и печатная книга с доставкой по России."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -145,6 +154,7 @@ const pages = [
         ["Насколько героиня будет похожа на фото?", "Фото помогает сохранить узнаваемые черты, прическу, образ и настроение. Это художественная иллюстрация, а не фотокопия."],
         ["Это физическая книга или PDF?", "Главный формат Fairyteller - печатная бумажная книга с качественной печатью и доставкой по России."],
         ["Сколько стоит книга?", "От 3500₽: персональный сюжет, иллюстрации по фото, редактура и печатная книга с доставкой по России."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -176,6 +186,7 @@ const pages = [
         ["Это подойдет для годовщины свадьбы?", "Да. Можно сделать книгу для супругов, для себя и партнера или подарок паре от друзей и семьи."],
         ["Сколько стоит печатная книга?", "Персональная бумажная книга стоит от 3500₽. В стоимость входит подготовка макета, редактура, печать и доставка по России."],
         ["Как быстро появится превью?", "Первое превью создается за несколько минут. После оплаты печатная книга готовится к печати за один день и отправляется в доставку."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -212,6 +223,7 @@ const pages = [
         ["Насколько герой похож на ребенка?", "Фото помогает сохранить узнаваемые черты: прическу, выражение, одежду и общую пластику. Это художественная иллюстрация, а не фотокопия."],
         ["Можно подарить без повода?", "Да. Такая книга хорошо работает не только на день рождения или Новый год, но и как поддержка: когда хочется показать ребенку, что его видят и ценят."],
         ["Сколько стоит и как быстро делается?", "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты книга готовится к печати за один день и отправляется доставкой по России."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -256,6 +268,7 @@ const pages = [
         ["Это только персональная сказка для ребёнка?", "Чаще всего такую книгу заказывают детям, но формат можно адаптировать для взрослого, пары или семьи. На этой странице основной сценарий — сказка где ваш ребенок главный герой."],
         ["Чем это отличается от мультфильма или PDF?", "Если хочется создать персонализированную сказку или мультфильм, важно понять формат подарка. Fairyteller делает именно бумажную книгу: её можно читать, хранить, дарить и пересматривать без экрана."],
         ["Сколько стоит и как быстро делается?", "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты книга готовится к печати за один день и отправляется доставкой по России."],
+        deliveryFaq,
       ]),
       breadcrumbJsonLd([
         ["Главная", "/"],
@@ -328,16 +341,7 @@ const pages = [
         url: `${siteUrl}/blog`,
       },
     ],
-    fallback: `
-      <main>
-        <h1>Журнал Fairyteller</h1>
-        <p>Идеи подарков, советы по созданию персональных книг и разборы поводов.</p>
-        <ul>
-          <li><a href="/blog/imennaya-skazka-na-den-rozhdeniya-rebenku">Именная сказка на день рождения ребенку</a></li>
-          <li><a href="/blog/imennaya-kniga-dlya-rebenka">Именная книга для ребенка на заказ</a></li>
-          <li><a href="/blog/nejroskazki-na-zakaz-personalnaya-kniga">Нейросказки на заказ</a></li>
-        </ul>
-      </main>`,
+    fallback: blogIndexFallback(blogPostsForFallback),
   },
   blogPage("chto-podarit-na-svadbu", "Что подарить на свадьбу: не деньги и не сервиз — Fairyteller", "На свадьбу дарят либо деньги, либо что-то из списка. Как подарить по-настоящему личное — и почему это запоминается больше.", "2026-05-30"),
   blogPage("chto-podarit-na-rozhdenie-rebenka", "Что подарить на рождение ребёнка — Fairyteller", "Подарок на рождение ребёнка: родители уже всё купили сами, а стандартное не запоминается. Что подарить чтобы не мимо.", "2026-05-29"),
@@ -397,7 +401,14 @@ function buildHtml(template, page) {
   html = setMeta(html, "name", "twitter:image", page.image || defaultImage);
   html = setCanonical(html, canonicalUrl);
   html = setJsonLd(html, page.jsonLd || []);
-  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root"></div>`);
+  html = html.replace(/\s*<noscript data-fairyteller-seo-fallback>[\s\S]*?<\/noscript>/gi, "");
+
+  const fallback = String(page.fallback || "").trim();
+  const fallbackHtml = fallback
+    ? `\n    <noscript data-fairyteller-seo-fallback>\n      ${fallback}\n    </noscript>`
+    : "";
+
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root"></div>${fallbackHtml}`);
 
   return html;
 }
@@ -491,6 +502,8 @@ function breadcrumbJsonLd(items) {
 
 function blogPage(slug, title, description, datePublished) {
   const pagePath = `/blog/${slug}`;
+  const articleTitle = title.replace(" — Fairyteller", "");
+  const fallbackPost = blogPostsForFallback.find((post) => post.slug === slug);
 
   return {
     path: pagePath,
@@ -501,7 +514,7 @@ function blogPage(slug, title, description, datePublished) {
       {
         "@context": "https://schema.org",
         "@type": "Article",
-        headline: title.replace(" — Fairyteller", ""),
+        headline: articleTitle,
         description,
         datePublished,
         image: `${siteUrl}/images/book-exmpl6.jpg`,
@@ -512,17 +525,201 @@ function blogPage(slug, title, description, datePublished) {
       breadcrumbJsonLd([
         ["Главная", "/"],
         ["Журнал", "/blog"],
-        [title.replace(" — Fairyteller", ""), pagePath],
+        [articleTitle, pagePath],
       ]),
     ],
-    fallback: `
-      <main>
-        <h1>${escapeHtml(title.replace(" — Fairyteller", ""))}</h1>
-        <p>${escapeHtml(description)}</p>
-        <p><a href="/blog">Все статьи журнала</a></p>
-        <p><a href="/create">Создать персональную книгу</a></p>
-      </main>`,
+    fallback: blogArticleFallback(articleTitle, description, fallbackPost?.contentMarkdown),
   };
+}
+
+async function loadBlogPostsForFallback() {
+  const dataPath = path.join(rootDir, "src", "data", "blogPosts.ts");
+
+  try {
+    const sourceText = await fs.readFile(dataPath, "utf8");
+    const sourceFile = ts.createSourceFile(dataPath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const postsArray = findVariableArray(sourceFile, "blogPosts");
+
+    if (!postsArray) {
+      return [];
+    }
+
+    return postsArray.elements
+      .filter(ts.isObjectLiteralExpression)
+      .map((postNode) => ({
+        slug: readObjectProperty(postNode, "slug", sourceFile),
+        title: readObjectProperty(postNode, "title", sourceFile),
+        description: readObjectProperty(postNode, "description", sourceFile),
+        contentMarkdown: readObjectProperty(postNode, "contentMarkdown", sourceFile),
+        hidden: readObjectProperty(postNode, "hidden", sourceFile),
+      }))
+      .filter((post) => post.slug && post.title && post.description && !post.hidden);
+  } catch (error) {
+    console.warn(`Could not load blog fallback content: ${error.message}`);
+    return [];
+  }
+}
+
+function findVariableArray(sourceFile, variableName) {
+  let result;
+
+  function visit(node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === variableName &&
+      node.initializer &&
+      ts.isArrayLiteralExpression(node.initializer)
+    ) {
+      result = node.initializer;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return result;
+}
+
+function readObjectProperty(objectNode, propertyName, sourceFile) {
+  for (const property of objectNode.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+
+    if (propertyNameToText(property.name) !== propertyName) {
+      continue;
+    }
+
+    return literalValue(property.initializer, sourceFile);
+  }
+
+  return undefined;
+}
+
+function propertyNameToText(name) {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+
+  return undefined;
+}
+
+function literalValue(node, sourceFile) {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+
+  if (node.kind === ts.SyntaxKind.TrueKeyword) {
+    return true;
+  }
+
+  if (node.kind === ts.SyntaxKind.FalseKeyword) {
+    return false;
+  }
+
+  return node.getText(sourceFile);
+}
+
+function blogIndexFallback(posts) {
+  const items = posts
+    .map((post) => `
+          <li>
+            <a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a>
+            <p>${escapeHtml(post.description)}</p>
+          </li>`)
+    .join("");
+
+  return `
+      <main>
+        <h1>Журнал Fairyteller</h1>
+        <p>Идеи подарков, советы по созданию персональных книг и разборы поводов: как выбрать сюжет, какие детали добавить и почему хороший подарок начинается с внимания.</p>
+        <ul>${items}</ul>
+        <p><a href="/create">Создать персональную книгу</a></p>
+      </main>`;
+}
+
+function blogArticleFallback(title, description, contentMarkdown) {
+  const articleHtml = markdownToSeoHtml(contentMarkdown || description);
+
+  return `
+      <main>
+        <article>
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(description)}</p>
+          ${articleHtml}
+          <p><a href="/blog">Все статьи журнала</a></p>
+          <p><a href="/create">Создать персональную книгу</a></p>
+        </article>
+      </main>`;
+}
+
+function markdownToSeoHtml(markdown) {
+  return String(markdown || "")
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map(markdownBlockToHtml)
+    .filter(Boolean)
+    .join("\n");
+}
+
+function markdownBlockToHtml(block) {
+  if (/^-{3,}$/.test(block)) {
+    return "";
+  }
+
+  const lines = block
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return "";
+  }
+
+  if (/^###\s+/.test(lines[0])) {
+    return `<h3>${markdownInlineToHtml(lines[0].replace(/^###\s+/, ""))}</h3>`;
+  }
+
+  if (/^##\s+/.test(lines[0])) {
+    return `<h2>${markdownInlineToHtml(lines[0].replace(/^##\s+/, ""))}</h2>`;
+  }
+
+  if (lines.every((line) => /^[-*]\s+/.test(line))) {
+    return `<ul>${lines.map((line) => `<li>${markdownInlineToHtml(line.replace(/^[-*]\s+/, ""))}</li>`).join("")}</ul>`;
+  }
+
+  if (lines.every((line) => /^\d+\.\s+/.test(line))) {
+    return `<ol>${lines.map((line) => `<li>${markdownInlineToHtml(line.replace(/^\d+\.\s+/, ""))}</li>`).join("")}</ol>`;
+  }
+
+  if (lines.every((line) => /^>\s?/.test(line))) {
+    return `<blockquote><p>${markdownInlineToHtml(lines.map((line) => line.replace(/^>\s?/, "")).join(" "))}</p></blockquote>`;
+  }
+
+  if (lines.every((line) => /^\|/.test(line))) {
+    return lines
+      .filter((line) => !/^\|\s*-/.test(line))
+      .map((line) => line.split("|").map((cell) => cell.trim()).filter(Boolean).join(" — "))
+      .filter(Boolean)
+      .map((row) => `<p>${markdownInlineToHtml(row)}</p>`)
+      .join("\n");
+  }
+
+  return `<p>${markdownInlineToHtml(lines.join(" "))}</p>`;
+}
+
+function markdownInlineToHtml(value) {
+  const text = String(value)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+  return escapeHtml(text)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 function escapeHtml(value) {

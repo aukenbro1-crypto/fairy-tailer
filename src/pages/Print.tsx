@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { trackCheckoutStart, trackPaymentSuccess } from "@/lib/metrika";
 import logoImage from "@/assets/logo.png";
 
 const PRINT_VIEW_NOTIFY_URL = "/api/fairyteller/pay/payment-page-view";
@@ -40,11 +41,12 @@ const Print = () => {
 
   useEffect(() => {
     if (paymentStatus === "success") {
+      trackPaymentSuccess(jobId);
       setShowSuccessModal(true);
     } else if (paymentStatus === "fail") {
       setShowFailModal(true);
     }
-  }, [paymentStatus]);
+  }, [jobId, paymentStatus]);
 
   useEffect(() => {
     if (paymentStatus) return;
@@ -105,10 +107,12 @@ const Print = () => {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Не удалось создать платеж");
       if (payload.accessUrl) {
+        trackCheckoutStart(jobId);
         window.location.href = payload.accessUrl;
         return;
       }
       if (!payload.confirmationUrl) throw new Error("ЮKassa не вернула ссылку на оплату");
+      trackCheckoutStart(jobId);
       window.location.href = payload.confirmationUrl;
     } catch (error) {
       setCheckoutError(error instanceof Error ? error.message : "Не удалось создать платеж");
