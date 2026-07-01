@@ -1367,7 +1367,7 @@ const DesignTest = () => {
                           <img
                             src={item.image}
                             alt={item.label}
-                            className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0"
+                            className="aspect-[5/3] w-full object-cover"
                             width={1100}
                             height={660}
                             loading="lazy"

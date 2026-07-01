@@ -871,7 +871,7 @@ const FairytellerInlineConstructor = ({
                       <img
                         src={item.image}
                         alt={item.label}
-                        className="aspect-[5/3] w-full object-cover grayscale transition group-hover:grayscale-0"
+                        className="aspect-[5/3] w-full object-cover"
                       />
                       <span
                         className={`flex min-h-[72px] items-center justify-between gap-2 px-3 py-3 text-[13px] font-bold uppercase tracking-[0.08em] ${

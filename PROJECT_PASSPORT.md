@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-01 14:05 UTC
+Last updated: 2026-07-01 14:14 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260701-constructor-status-copy-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260701-style-previews-color-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -252,6 +252,7 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260701-legal-pages-codex` with three public legal pages: `/oferta`, `/agreement`, and `/policy`. The pages are React routes with generated static SEO HTML so nginx can serve the direct URLs through the existing `$uri/index.html` rule. Footer links were added across the homepage/create page, gift landings, blog pages, legacy footers, `/book-preview`, and static `/delivery/`; personal-data consent text in all constructors now links to `/policy`. The legal copy uses seller/operator details `Самозанятый Щуренков Никита Анатольевич`, ИНН `504311104973`, and contact `books@fairyteller.ru`; it intentionally avoids publishing the residential address and instead uses an email-first correspondence note pending legal review. Smoke verified `npm run build`, generated `dist/{oferta,agreement,policy}/index.html`, production `200` for all three legal URLs, sitemap inclusion, active frontend assets `index-DHtJbX8j.js` / `index-DZ0LF3tk.css`, and active `fairyteller-api.service`.
 - Added the constructor hint bulb in source commit `b460cb4` and verified it in the active production frontend release `/var/www/fairyteller/releases/20260701-mobile-gallery-fix-codex`. The shared `ConstructorHint` component renders a gently breathing lightbulb next to the genre/plot legend, opens on hover/focus/click, and explains that more personal details produce a stronger story; it is wired into the homepage constructor, reusable inline constructors, and locked romantic constructor variants. Production smoke verified the active `index-DjPjXley.js` contains the new short hint copy.
 - Deployed frontend release `/var/www/fairyteller/releases/20260701-constructor-status-copy-codex` for constructor status copy. The homepage/create constructor and shared inline constructor now show `осталось MM:SS` instead of `примерно MM:SS` during generation, and the ready state adds `Оплатите заказ, чтобы получить бумажную версию с доставкой по РФ.` above the payment CTA. The same checkout surface keeps the short `Оплатить` CTA and routes payment through `/pay?jobId=...`. Smoke verified `npm run build`, production `/` returns `200`, active assets `index-D50Fnq4K.js` / `index-nT5dKdLZ.css`, both new phrases exist in the active JS bundle, and stray Finder-copy artifacts such as `* 2.*` / `* 3.*` were removed from the deployed release after transfer.
+- Deployed frontend release `/var/www/fairyteller/releases/20260701-style-previews-color-codex` for the constructor style selector. The homepage/create constructor and shared inline constructor no longer apply the grayscale hover mask to illustration-style thumbnails, so all style previews render in color immediately. Smoke verified `npm run build`, `/create` returns `200`, the active JS no longer contains the old `grayscale transition group-hover:grayscale-0` class for `aspect-[5/3]` style cards, and stray Finder-copy artifacts were removed from `dist` and the deployed release.
 
 ### 2026-06-03
 
