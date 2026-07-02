@@ -10,7 +10,8 @@
     "build:dev": "vite build --mode development && node scripts/generate-seo-pages.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:api": "NODE_ENV=production node server/fairyteller-api.mjs"
+    "start:api": "NODE_ENV=production node server/fairyteller-api.mjs",
+    "wordstat": "node scripts/wordstat.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
