@@ -401,7 +401,7 @@ const Wizard = () => {
                 Как быстро будет готова книга?
               </AccordionTrigger>
               <AccordionContent className="wizard-faq-content text-base pb-4">
-                PDF — через несколько минут. Печатная книга — за 1 день в типографии (Москва) + 2-5 рабочих дней доставка. Мы используем 5Post и Почту России.
+                PDF — через несколько минут. Печатная книга — за 1 день в типографии (Москва). Сроки доставки зависят от города. Список популярных направлений доставки и сроков смотрите <a href="/delivery/" className="underline hover:opacity-80">здесь</a>. Мы используем 5Post и Почту России.
               </AccordionContent>
             </AccordionItem>
 

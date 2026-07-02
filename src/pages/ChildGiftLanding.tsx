@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 import SEO from "@/components/SEO";
+import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
+import { DELIVERY_FAQ } from "@/components/deliveryFaq";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import LandingHeader from "@/components/LandingHeader";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
@@ -147,6 +149,7 @@ const faqs = [
     answer:
       "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты книга готовится к печати за один день и отправляется доставкой по России.",
   },
+  DELIVERY_FAQ,
 ];
 
 const childHeroSlots = ["Ребёнок", "Друг", "Родитель", "Герой 4"];
@@ -174,7 +177,7 @@ const jsonLd = [
     mainEntity: faqs.map((item) => ({
       "@type": "Question",
       name: item.question,
-      acceptedAnswer: { "@type": "Answer", text: item.answer },
+      acceptedAnswer: { "@type": "Answer", text: item.structuredAnswer ?? item.answer },
     })),
   },
   {
@@ -477,7 +480,9 @@ const ChildGiftLanding = () => {
               {faqs.map((item) => (
                 <article key={item.question} className="grid border-b border-r border-black bg-white p-5 md:grid-cols-[0.48fr_0.52fr] md:gap-8">
                   <h3 className="text-[24px] font-black uppercase leading-[0.98]">{item.question}</h3>
-                  <p className="mt-4 text-[16px] leading-7 text-[#5e6264] md:mt-0">{item.answer}</p>
+                  <p className="mt-4 text-[16px] leading-7 text-[#5e6264] md:mt-0">
+                    <DeliveryFaqAnswer answer={item.answer} deliveryHref={item.deliveryHref} />
+                  </p>
                 </article>
               ))}
             </div>

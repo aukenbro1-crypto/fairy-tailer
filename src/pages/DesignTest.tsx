@@ -17,6 +17,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
 import ConstructorHint from "@/components/ConstructorHint";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
 import { trackCheckoutStart } from "@/lib/metrika";
@@ -270,7 +271,11 @@ const faqs = [
   },
   {
     question: "Как я получу печатную книгу?",
-    answer: "Мы печатаем книгу за один день после оплаты и отправляем из Москвы по всей РФ. Сроки доставки зависят от города.",
+    answer:
+      "Мы печатаем книгу за один день после оплаты и отправляем из Москвы по всей РФ. Сроки доставки зависят от города. Список популярных направлений доставки и сроков смотрите здесь.",
+    structuredAnswer:
+      "Мы печатаем книгу за один день после оплаты и отправляем из Москвы по всей РФ. Сроки доставки зависят от города. Список популярных направлений доставки и сроков смотрите здесь: https://fairyteller.ru/delivery/.",
+    deliveryHref: "/delivery/",
   },
 ];
 
@@ -307,7 +312,7 @@ const homeJsonLd = [
       name: item.question,
       acceptedAnswer: {
         "@type": "Answer",
-        text: item.answer,
+        text: item.structuredAnswer ?? item.answer,
       },
     })),
   },
@@ -1610,7 +1615,7 @@ const DesignTest = () => {
                   {item.question}
                 </h3>
                 <p className="mt-4 text-[16px] leading-7 text-[#5e6264] md:mt-0">
-                  {item.answer}
+                  <DeliveryFaqAnswer answer={item.answer} deliveryHref={item.deliveryHref} />
                 </p>
               </article>
             ))}

@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Sparkles, BookOpen, Mail, Gift, Heart, Cake, Snowflake, User, Users, Home, Scroll, ChevronLeft, ChevronRight, ChevronDown, Newspaper, Flower2, HeartHandshake } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import StoryConstructor from "@/components/StoryConstructor";
+import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
+import { DELIVERY_FAQ } from "@/components/deliveryFaq";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
 
 // Critical above-the-fold images - load immediately
@@ -91,6 +93,7 @@ const FAQ_ITEMS = [
   { q: "Насколько персональной будет история?", a: "На 100%. Даже при одинаковых параметрах истории получаются разными. Привычки, страхи, профессии и особенности героев органично вплетаются в сюжет." },
   { q: "Можно указать абстрактные локации — «улица детства», «летний ветер», «желтый город»?", a: "Да. Конструктор одинаково хорошо работает с реальными адресами, районами и полностью абстрактными пространствами." },
   { q: "Можно ли создавать истории для взрослых?", a: "Да. Вы сами выбираете жанр и тон — это могут быть романтические, философские, приключенческие или даже футуристические истории." },
+  { q: DELIVERY_FAQ.question, a: DELIVERY_FAQ.answer, deliveryHref: DELIVERY_FAQ.deliveryHref },
   { q: "Письмо не пришло — что делать?", a: "Проверьте папки «Спам» и «Промоакции». Если письма все же нет — напишите через форму обратной связи, и мы отправим PDF вручную." },
   { q: "У меня оставались вопросы, с кем я могу связаться?", a: "Пишите в Telegram: @nikita0shch" },
 ];
@@ -131,7 +134,11 @@ const FaqAccordion = () => {
               }}
             >
               <div className="pb-4 text-[#DBA858]/80 text-base text-left">
-                {item.a}
+                <DeliveryFaqAnswer
+                  answer={item.a}
+                  deliveryHref={item.deliveryHref}
+                  linkClassName="underline hover:text-[#E89C31]"
+                />
               </div>
             </div>
           </div>

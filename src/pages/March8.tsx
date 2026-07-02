@@ -486,7 +486,7 @@ const March8 = () => {
                 Доставка: куда и сколько стоит?
               </AccordionTrigger>
               <AccordionContent className="romantic-faq-content text-base pb-4">
-                Стоимость готовой книги — 2 500₽, с учетом доставки. Срок изготовления книги — 1 день, наша типография располагается в Москве. В течение 2-5 рабочих дней, в зависимости от региона, книга будет доставлена в ближайший пункт выдачи 5Post (обычно это магазины «Пятерочка»). Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
+                Стоимость готовой книги — 2 500₽, с учетом доставки. Срок изготовления книги — 1 день, наша типография располагается в Москве. Сроки доставки зависят от города. Список популярных направлений доставки и сроков смотрите <a href="/delivery/" className="underline hover:opacity-80">здесь</a>. Точнее вы можете уточнить в <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">чате поддержки</a>.
               </AccordionContent>
             </AccordionItem>
 
