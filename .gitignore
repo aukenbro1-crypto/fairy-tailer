@@ -14,6 +14,7 @@ dist-ssr
 .data
 data
 uploads
+outputs
 
 # Editor directories and files
 .vscode/*
