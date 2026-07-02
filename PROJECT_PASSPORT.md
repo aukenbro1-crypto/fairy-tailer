@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-02 06:48 UTC
+Last updated: 2026-07-02 07:09 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260702-anchor-cta-delivery-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260702-promo-free-delivery-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -248,6 +248,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-02
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260702-promo-free-delivery-codex` with the top promo strip updated across the shared landing header, homepage/create header, and static `/delivery/` page to include `бесплатная доставка`. Verified `npm run build`, targeted `npx eslint src/components/LandingHeader.tsx src/pages/DesignTest.tsx`, nginx config, active production symlink, production `/` `200`, `/delivery/` containing the new promo copy, and the active JS bundle containing the updated banner text.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260702-anchor-cta-delivery-codex` from the current dirty workbench state that matched the restored production `/podarok/skazka-po-foto` landing, avoiding the earlier clean-HEAD rollback issue. The release fixes React hash-anchor navigation globally through `HashAnchorScroll`, updates `/podarok/skazka-po-foto` process copy, adds the black `Создать свою книгу` CTA strip between `Как создать книгу` and `Вопросы и ответы`, and changes `/delivery/` intro copy to `Мы осуществляем бесплатную доставку...`. Verified `npm run build`, targeted `npx eslint src/App.tsx src/pages/PhotoFairyTaleLanding.tsx`, local preview anchor smoke across `/`, `/create`, gift landings, `/delivery/`, desktop/mobile CTA layout, nginx config, production assets `index-DuxUeRki.js` / `index-JpSJBBia.js` / `index-nT5dKdLZ.css`, production `/podarok/skazka-po-foto#process` and `#create` landing at ~96px offset, CTA/process texts, and `/delivery/#delivery-table` with the new free-delivery copy. The only console error during terminal Playwright smoke was `mc.yandex.ru` DNS resolution in the test environment.
 

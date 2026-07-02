@@ -6,7 +6,7 @@ import logoImage from "@/assets/logo.png";
 const LandingHeader = () => (
   <>
     <div className="border-b border-black bg-black px-5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-white md:px-8">
-      Персональные книги - история за 3 минуты, печать за 1 день
+      Персональные книги - история за 3 минуты, печать за 1 день, бесплатная доставка
     </div>
 
     <header className="sticky inset-x-0 top-0 z-40 border-b border-black bg-white">
