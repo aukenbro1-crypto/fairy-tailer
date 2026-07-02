@@ -3,6 +3,7 @@ const PRODUCT_PRICE = 3500;
 const PRODUCT_CURRENCY = "RUB";
 const PRODUCT_ID = "fairyteller_printed_book";
 const PRODUCT_NAME = "Печатная персональная книга Fairyteller";
+const STORAGE_PREFIX = "fairyteller:metrika:v2";
 
 type MetrikaGoal =
   | "ft_constructor_start"
@@ -13,6 +14,16 @@ type MetrikaGoal =
 
 type GoalParams = Record<string, string | number | boolean | undefined | null>;
 type OnceStorage = "local" | "session";
+type PendingGoal = {
+  goal: MetrikaGoal;
+  params: GoalParams;
+  storageKey?: string;
+  storageType?: OnceStorage;
+  expiresAt: number;
+};
+
+const pendingGoals: PendingGoal[] = [];
+let pendingFlushTimer: number | null = null;
 
 declare global {
   interface Window {
@@ -80,6 +91,7 @@ export function trackPaymentSuccess(jobId?: string | null) {
 
 function trackGoal(goal: MetrikaGoal, params: GoalParams = {}) {
   if (typeof window === "undefined" || typeof window.ym !== "function") {
+    queueGoal(goal, params);
     return false;
   }
 
@@ -89,15 +101,85 @@ function trackGoal(goal: MetrikaGoal, params: GoalParams = {}) {
 
 function trackGoalOnce(goal: MetrikaGoal, params: GoalParams, key: string, storageType: OnceStorage = "local") {
   const storage = getStorage(storageType);
-  const storageKey = `fairyteller:metrika:${key}`;
+  const storageKey = `${STORAGE_PREFIX}:${key}`;
 
   if (storage?.getItem(storageKey)) {
     return false;
   }
 
-  const sent = trackGoal(goal, params);
-  storage?.setItem(storageKey, "1");
-  return sent;
+  if (sendGoal(goal, params)) {
+    storage?.setItem(storageKey, "1");
+    return true;
+  }
+
+  queueGoal(goal, params, storageKey, storageType);
+  return false;
+}
+
+function sendGoal(goal: MetrikaGoal, params: GoalParams = {}) {
+  if (typeof window === "undefined" || typeof window.ym !== "function") {
+    return false;
+  }
+
+  window.ym(METRIKA_COUNTER_ID, "reachGoal", goal, cleanParams(params));
+  return true;
+}
+
+function queueGoal(goal: MetrikaGoal, params: GoalParams = {}, storageKey?: string, storageType?: OnceStorage) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const duplicate = pendingGoals.some((pendingGoal) => pendingGoal.goal === goal && pendingGoal.storageKey === storageKey);
+  if (duplicate) {
+    return;
+  }
+
+  pendingGoals.push({
+    goal,
+    params,
+    storageKey,
+    storageType,
+    expiresAt: Date.now() + 15000,
+  });
+  schedulePendingFlush();
+}
+
+function schedulePendingFlush() {
+  if (typeof window === "undefined" || pendingFlushTimer !== null) {
+    return;
+  }
+
+  pendingFlushTimer = window.setTimeout(flushPendingGoals, 500);
+}
+
+function flushPendingGoals() {
+  pendingFlushTimer = null;
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const now = Date.now();
+  for (let index = pendingGoals.length - 1; index >= 0; index -= 1) {
+    const pendingGoal = pendingGoals[index];
+
+    if (pendingGoal.expiresAt < now) {
+      pendingGoals.splice(index, 1);
+      continue;
+    }
+
+    if (sendGoal(pendingGoal.goal, pendingGoal.params)) {
+      if (pendingGoal.storageKey && pendingGoal.storageType) {
+        getStorage(pendingGoal.storageType)?.setItem(pendingGoal.storageKey, "1");
+      }
+      pendingGoals.splice(index, 1);
+    }
+  }
+
+  if (pendingGoals.length > 0) {
+    schedulePendingFlush();
+  }
 }
 
 function pushEcommercePurchaseOnce(orderId: string) {
@@ -106,7 +188,7 @@ function pushEcommercePurchaseOnce(orderId: string) {
   }
 
   const storage = getStorage("local");
-  const storageKey = `fairyteller:metrika:ecommerce_purchase:${orderId}`;
+  const storageKey = `${STORAGE_PREFIX}:ecommerce_purchase:${orderId}`;
 
   if (storage?.getItem(storageKey)) {
     return;

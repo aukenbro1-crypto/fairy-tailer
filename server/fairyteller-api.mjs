@@ -3107,11 +3107,11 @@ function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>Ваша книга почти готова</title>
+    <title>Ваша книга готова</title>
   </head>
   <body style="margin:0; padding:0; background:#f5f5f5;">
     <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-      Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.
+      Мы собрали историю в аккуратный файл для чтения и дальнейшей печати
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f5f5; margin:0; padding:0;">
       <tr>
@@ -3126,10 +3126,10 @@ function renderCustomerEmailHtml({ title, primaryBookUrl, buyPrintUrl }) {
                         FairyTeller
                       </div>
                       <h1 style="margin:10px auto 0; max-width:520px; font-family:Arial, Helvetica, sans-serif; font-size:31px; line-height:35px; font-weight:900; letter-spacing:0; text-transform:none; color:#000000;">
-                        Ваша книга почти готова
+                        Ваша книга готова
                       </h1>
                       <p style="margin:10px auto 0; max-width:500px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#5e6264;">
-                        Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.
+                        Мы собрали историю в аккуратный файл для чтения и дальнейшей печати
                       </p>
                     </td>
                   </tr>
@@ -3204,10 +3204,10 @@ function customerEmailPayload(status, orderEnvelope = {}) {
     `Форма на сайте: ${PUBLIC_BASE_URL}`,
   ].filter(Boolean);
 
-  const subject = 'Ваша книга почти готова';
+  const subject = 'Ваша книга готова';
   const text = [
-    'Ваша книга почти готова',
-    'Мы собрали историю в аккуратный файл для чтения и дальнейшей печати.',
+    'Ваша книга готова',
+    'Мы собрали историю в аккуратный файл для чтения и дальнейшей печати',
     '',
     'Здравствуйте!',
     '',
