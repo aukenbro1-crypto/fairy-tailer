@@ -13,13 +13,18 @@ import {
 } from "lucide-react";
 
 import SEO from "@/components/SEO";
+import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
+import { DELIVERY_FAQ } from "@/components/deliveryFaq";
 import FairytellerInlineConstructor from "@/components/FairytellerInlineConstructor";
 import LandingHeader from "@/components/LandingHeader";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo.png";
-import mechanicFrontImage from "@/assets/landing-photos/skazka-photo-mechanic-front.jpg";
-import mechanicBackImage from "@/assets/landing-photos/skazka-photo-mechanic-back.jpg";
-import mechanicSpreadImage from "@/assets/landing-photos/skazka-photo-mechanic-spread.jpg";
+import gorodCoverImage from "@/assets/landing-photos/photo-tale-universal/gorod-vlyublennyh-serdec-cover.webp";
+import cyberCoverStackImage from "@/assets/landing-photos/photo-tale-universal/ischezayushchiy-express-cover-stack.webp";
+import cactusOpenBookImage from "@/assets/landing-photos/photo-tale-universal/tainy-kaktusovoy-planety-open-book.webp";
+import zagadkaOpenSpreadImage from "@/assets/landing-photos/photo-tale-universal/zagadka-ovsyannikovskogo-leta-open-spread.webp";
+import zvezdopadBackCoverImage from "@/assets/landing-photos/photo-tale-universal/zvezdopad-nad-volgoy-back-cover.webp";
+import zvezdopadBookshelfImage from "@/assets/landing-photos/photo-tale-universal/zvezdopad-nad-volgoy-bookshelf.webp";
 import zagadkaFrontImage from "@/assets/landing-photos/skazka-photo-zagadka-front.webp";
 import zagadkaBackImage from "@/assets/landing-photos/skazka-photo-zagadka-back.webp";
 import zagadkaSpreadImage from "@/assets/landing-photos/skazka-photo-zagadka-spread.webp";
@@ -34,66 +39,66 @@ const sectionTitleClass =
 
 const metrics = [
   ["От 3500₽", "Печатная книга"],
+  ["От 3-х дней", "Доставка по РФ"],
   ["40 страниц", "Полная история"],
-  ["5 глав", "С иллюстрациями"],
 ];
 
 const occasions = [
   {
     title: "День рождения",
-    text: "Персональная сказка, где ребёнок узнаёт себя, свои привычки, любимые вещи и маленькие победы.",
+    text: "Персональная сказка по фото, где ребёнок, друг или близкий становится героем приключения, комедии или тёплой семейной истории.",
   },
   {
     title: "Новый год",
-    text: "История с зимним приключением, подарком, семейным теплом и героем, который сам участвует в чуде.",
+    text: "Зимняя книга с подарками, семейным теплом и героем, который проходит свой путь в мире новогодних чудес.",
   },
   {
     title: "Выпускной",
     text: "Книга про взросление, смелость, друзей и новый этап: для детского сада, школы или важного перехода.",
   },
   {
-    title: "Первое чтение",
-    text: "Когда хочется, чтобы ребёнок сам потянулся к книге: знакомый герой помогает дочитать историю до конца.",
+    title: "Шутливый подарок",
+    text: "Добрая история, где друг, коллега или близкий попадает в комедийное приключение и выходит из него победителем.",
   },
   {
-    title: "Подарок от бабушки",
-    text: "Тёплая книга на заказ, где ты главный герой, с семейными деталями, питомцем, домом или любимой игрушкой.",
+    title: "Подарок бабушке",
+    text: "Тёплая книга, где можно вернуться в детство, семейные места и важные воспоминания вместе с родителями или бабушкой.",
   },
   {
-    title: "Просто так",
-    text: "Для момента, когда хочется показать ребёнку: я вижу тебя, помню твои детали и хочу сохранить их в истории.",
+    title: "Коллеге",
+    text: "Игровая история про человека из команды: рабочие подвиги, волшебные задачи и победа над условным вселенским злом.",
   },
 ];
 
 const ingredients = [
-  "чёткое фото лица ребёнка",
-  "имя, возраст и характер",
-  "любимое место или мир сказки",
-  "игрушка, питомец или талисман",
+  "чёткое фото лица и комплекции",
+  "имя, возраст и характер героев",
+  "любимое место или мир истории",
   "стиль иллюстраций",
+  "игрушка, питомец или талисман",
   "важная деталь для сюжета",
 ];
 
 const process = [
   {
     icon: ImagePlus,
-    title: "Загрузите фото",
-    text: "Добавьте снимок ребёнка и пару слов о характере, любимых деталях и настроении будущей книги.",
+    title: "Выберите жанр",
+    text: "Приключение, фэнтези, магический мир, киберпанк или романтическая история задают настроение и сюжет будущей сказки.",
   },
   {
     icon: Sparkles,
-    title: "Соберите сюжет",
-    text: "Выберите приключение, мир Хогвартса, фэнтези или русский киберпанк, добавьте место действия, талисман и важных героев.",
+    title: "Заполните поля",
+    text: "Чтобы сделать сюжет более личным, добавьте фото, имя, возраст, характер, место действия и важную деталь: талисман, питомца, воспоминание или предмет.",
   },
   {
     icon: Camera,
-    title: "Получите превью",
-    text: "Первые страницы покажут, как работает сказка по фотографии ребёнка и насколько узнаваемым получается герой.",
+    title: "Выберите стиль",
+    text: "Фотореализм, акварель, пластилин, вязанный стиль, аниме и другие варианты помогают задать визуальный характер книги.",
   },
   {
     icon: PackageCheck,
-    title: "Подарите книгу",
-    text: "После проверки мы готовим макет, редактуру и настоящую печатную книгу с доставкой по России.",
+    title: "Получите книгу",
+    text: "Через несколько минут появится превью. После оплаты мы вычитаем текст, соберём макет и отправим книгу в печать с бесплатной доставкой по России.",
   },
 ];
 
@@ -104,37 +109,51 @@ const faqs = [
       "Фото помогает сохранить узнаваемые черты: причёску, форму лица, общее выражение, одежду или важные детали. Это не фотокопия, а художественная иллюстрация в стиле книги.",
   },
   {
-    question: "Это только персональная сказка для ребёнка?",
+    question: "Для кого подойдут эти истории?",
     answer:
-      "Чаще всего такую книгу заказывают детям, но формат можно адаптировать для взрослого, пары или семьи. На этой странице основной сценарий — сказка где ваш ребенок главный герой.",
+      "Для детей, взрослых, пар, друзей, родителей и коллег. Формат адаптируется под героя: это может быть сказка, приключение, романтическая история, шутливый подарок или семейная книга.",
   },
   {
-    question: "Чем это отличается от мультфильма или PDF?",
+    question: "Что значит бумажная книга?",
     answer:
-      "Если хочется создать персонализированную сказку или мультфильм, важно понять формат подарка. Fairyteller делает именно бумажную книгу: её можно читать, хранить, дарить и пересматривать без экрана.",
+      "Fairyteller печатает небольшие бумажные книги. Сейчас доступна версия в мягком переплёте 13 × 13 см: 5 глав, около 40 страниц и отдельные иллюстрации к сюжету.",
   },
   {
     question: "Сколько стоит и как быстро делается?",
     answer:
-      "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты книга готовится к печати за один день и отправляется доставкой по России.",
+      "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты команда Fairyteller вычитывает текст, собирает макет и передаёт книгу в печать.",
   },
+  DELIVERY_FAQ,
 ];
 
-const childHeroSlots = ["Ребёнок", "Друг", "Родитель", "Герой 4"];
+const photoHeroSlots = ["Главный герой", "Герой 2", "Герой 3", "Герой 4"];
+
+const CtaStrip = () => (
+  <a
+    href="#create"
+    className="group flex min-h-[62px] items-center justify-center border-b border-black bg-black px-5 text-center text-[15px] font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#E89C31] hover:text-black md:text-[20px]"
+  >
+    Создать свою книгу
+    <ArrowRight className="ml-4 h-6 w-6 transition group-hover:translate-x-1" />
+  </a>
+);
 
 const heroImages = [
-  { title: "Разворот книги Пустынный механик и забытый голос", image: mechanicSpreadImage },
-  { title: "Обложка книги Пустынный механик и забытый голос", image: mechanicFrontImage },
-  { title: "Задняя обложка книги Пустынный механик и забытый голос", image: mechanicBackImage },
+  { title: "Персональная книга Город влюбленных сердец в руках", image: gorodCoverImage },
+  { title: "Персональная книга Исчезающий экспресс на стопке книг", image: cyberCoverStackImage },
+  { title: "Открытая персональная книга Загадка овсянниковского лета", image: zagadkaOpenSpreadImage },
+  { title: "Книга Тайны кактусовой планеты с открытым разворотом", image: cactusOpenBookImage },
+  { title: "Персональная книга Звездопад над Волгой на полке", image: zvezdopadBookshelfImage },
+  { title: "Задняя обложка книги Звездопад над Волгой", image: zvezdopadBackCoverImage },
 ];
 
 const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "Персональная сказка по фото — книга с иллюстрациями",
+    name: "Персональная сказка по фото — бумажная книга на заказ",
     description:
-      "Создайте персональную сказку по фото: бумажная книга, где ваш ребенок главный герой, с иллюстрациями, редактурой и доставкой по России.",
+      "Создайте персональную сказку по фото для ребёнка, пары, друга или близкого: узнаваемый герой, сюжет, иллюстрации, редактура, печать и бесплатная доставка по России.",
     brand: { "@type": "Brand", name: "Fairyteller" },
     image: "https://fairyteller.ru/images/book-exmpl6.jpg",
     offers: {
@@ -151,7 +170,7 @@ const jsonLd = [
     mainEntity: faqs.map((item) => ({
       "@type": "Question",
       name: item.question,
-      acceptedAnswer: { "@type": "Answer", text: item.answer },
+      acceptedAnswer: { "@type": "Answer", text: item.structuredAnswer ?? item.answer },
     })),
   },
   {
@@ -178,8 +197,8 @@ const PhotoFairyTaleLanding = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
-        title="Персональная сказка по фото — ребёнок главный герой | Fairyteller"
-        description="Создайте персональную сказку по фото: книга на заказ, где ваш ребенок главный герой. Иллюстрации с узнаваемыми чертами, редактура, печать от 3500₽ и доставка по России."
+        title="Персональная сказка по фото — бумажная книга на заказ | Fairyteller"
+        description="Создайте персональную сказку по фото для ребёнка, пары, друга или близкого: узнаваемый герой, сюжет, иллюстрации, печать от 3500₽ и бесплатная доставка по России."
         path="/podarok/skazka-po-foto"
         image="/images/book-exmpl6.jpg"
         type="product"
@@ -238,16 +257,13 @@ const PhotoFairyTaleLanding = () => {
         <section className="mx-auto grid w-full max-w-[1480px] min-w-0 overflow-hidden border-black lg:min-h-[640px] lg:grid-cols-[1.08fr_0.92fr]">
           <div className="flex min-w-0 flex-col justify-between border-black px-5 py-9 md:px-8 md:py-11 lg:border-r lg:pb-16">
             <div className="w-full max-w-[360px] md:max-w-none">
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#5e6264]">
-                Персональная сказка по фото
-              </p>
-              <h1 className="mt-5 w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[34px] md:max-w-[760px] md:text-[34px] lg:text-[34px] 2xl:text-[42px]">
-                <span className="block">Персональная сказка:</span>
-                <span className="block">ребёнок главный герой</span>
+              <h1 className="w-full max-w-full break-normal text-[26px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[30px] sm:text-[34px] md:max-w-[760px] md:text-[34px] lg:text-[34px] 2xl:text-[42px]">
+                <span className="block">Персональная сказка по фото:</span>
+                <span className="block">станьте героем книги</span>
               </h1>
               <p className="mt-5 w-full max-w-[340px] text-[16px] leading-[1.42] md:max-w-[680px] md:text-[21px] md:leading-[1.35]">
-                Создайте сказку по фото: ребёнок узнаёт себя в сюжете, иллюстрациях и деталях.
-                Это книга на заказ, где ты главный герой, а результат приходит не файлом, а настоящей печатной книгой.
+                Создайте историю по фото: узнайте себя и своих близких в сюжете, иллюстрациях и деталях.
+                Это стильная бумажная книга на заказ, где главные герои — вы, ваши близкие и друзья. Доставка по России бесплатная.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <a
@@ -290,6 +306,9 @@ const PhotoFairyTaleLanding = () => {
                     key={item.title}
                     src={item.image}
                     alt={item.title}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={index === 0 ? "high" : "auto"}
                     className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
                       index === heroIndex ? "opacity-100" : "opacity-0"
                     }`}
@@ -316,23 +335,23 @@ const PhotoFairyTaleLanding = () => {
         <section id="meaning" className="scroll-mt-24 border-y border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Не шаблон. История про него.</h2>
+              <h2 className={sectionTitleClass}>Не шаблон. Личная история.</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
                 <Heart className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">На основе ребёнка</h3>
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">На основе героя</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
                   Добавьте фото, имя, возраст, характер, любимые места и маленькие привычки.
-                  Так персональная сказка становится не абстрактной историей, а книгой про конкретного ребёнка.
+                  Так персональная сказка становится не абстрактной историей, а книгой про конкретного человека.
                 </p>
               </article>
               <article className="border-b border-r border-black bg-white p-5">
                 <BookOpen className="h-7 w-7" />
                 <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Хочется читать</h3>
                 <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Это не PDF и не одноразовая картинка. Ребёнок получает бумажную книгу,
-                  где его черты, выбор и детали превращаются в приключение с иллюстрациями.
+                  Персонализированный сюжет, знакомые места и красивые иллюстрации превращают подарок
+                  в книгу, которую хочется перелистывать и рассматривать.
                 </p>
               </article>
             </div>
@@ -345,16 +364,15 @@ const PhotoFairyTaleLanding = () => {
             worldTabLabel="Жанр"
             worldLegend="Выберите жанр"
             heading="Создайте сказку по фото."
-            description="Добавьте фото ребёнка, имя, характер, место действия и важную деталь. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
-            locationLabel="Место сказки"
-            locationPlaceholder="Лес, город, дом, школа, волшебная страна"
+            description="Добавьте фото, имя, характер, место действия и важную деталь героя. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
+            locationLabel="Место истории"
+            locationPlaceholder="Лес, город, дом, школа, волшебная страна, деревня у бабушки"
             artifactLabel="Важная деталь"
-            artifactPlaceholder="Игрушка, рюкзак, питомец, любимая книга, талисман"
-            heroIntro="Добавьте ребёнка как главного героя. Фото поможет сохранить узнаваемые черты в иллюстрациях."
+            artifactPlaceholder="Игрушка, рюкзак, питомец, любимая книга, талисман, шутка"
+            heroIntro="Добавьте главного героя. Фото поможет сохранить узнаваемые черты в иллюстрациях; героем может быть ребёнок, взрослый, пара, друг, коллега или даже питомец."
             defaultVisibleHeroIndexes={[0]}
-            defaultHeroAgeGroup="child"
             requiredHeroCount={1}
-            heroSlots={childHeroSlots}
+            heroSlots={photoHeroSlots}
             submitLabel="Создать сказку по фото"
           />
         </section>
@@ -362,7 +380,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="occasions" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Для каких поводов.</h2>
+              <h2 className={sectionTitleClass}>Повод для необычного подарка.</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-3">
               {occasions.map((item) => (
@@ -380,8 +398,8 @@ const PhotoFairyTaleLanding = () => {
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
               <h2 className={sectionTitleClass}>Что добавить в сказку.</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
-                Фото помогает сохранить узнаваемые черты, а детали делают сюжет личным:
-                так сказка где ваш ребенок главный герой превращается в настоящую подарочную книгу.
+                Фото помогает сохранить узнаваемые черты, а детали делают сюжет более личным:
+                так сказка по фото превращается в настоящую подарочную книгу.
               </p>
             </div>
 
@@ -423,6 +441,8 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
+        <CtaStrip />
+
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
@@ -432,7 +452,9 @@ const PhotoFairyTaleLanding = () => {
               {faqs.map((item) => (
                 <article key={item.question} className="grid border-b border-r border-black bg-white p-5 md:grid-cols-[0.48fr_0.52fr] md:gap-8">
                   <h3 className="text-[24px] font-black uppercase leading-[0.98]">{item.question}</h3>
-                  <p className="mt-4 text-[16px] leading-7 text-[#5e6264] md:mt-0">{item.answer}</p>
+                  <p className="mt-4 text-[16px] leading-7 text-[#5e6264] md:mt-0">
+                    <DeliveryFaqAnswer answer={item.answer} deliveryHref={item.deliveryHref} />
+                  </p>
                 </article>
               ))}
             </div>

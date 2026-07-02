@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState } from "react";
 import DesignTest from "./pages/DesignTest";
 
@@ -48,6 +48,62 @@ const PageLoader = () => (
   </div>
 );
 
+const HashAnchorScroll = () => {
+  const { hash, pathname } = useLocation();
+
+  useEffect(() => {
+    if (!hash) {
+      return undefined;
+    }
+
+    let targetId = hash.slice(1);
+
+    try {
+      targetId = decodeURIComponent(targetId);
+    } catch {
+      // Keep the raw hash if it is not URI-encoded cleanly.
+    }
+
+    if (!targetId) {
+      return undefined;
+    }
+
+    let frameId = 0;
+    let retryId = 0;
+    let attempt = 0;
+    const maxAttempts = 50;
+
+    const scrollToTarget = () => {
+      const target = document.getElementById(targetId);
+
+      if (target) {
+        target.scrollIntoView({ block: "start" });
+        frameId = window.requestAnimationFrame(() => {
+          target.scrollIntoView({ block: "start" });
+        });
+        return;
+      }
+
+      attempt += 1;
+
+      if (attempt < maxAttempts) {
+        retryId = window.setTimeout(() => {
+          frameId = window.requestAnimationFrame(scrollToTarget);
+        }, 100);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(scrollToTarget);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(retryId);
+    };
+  }, [hash, pathname]);
+
+  return null;
+};
+
 const DeferredFairytellerChat = () => {
   const [shouldLoad, setShouldLoad] = useState(false);
 
@@ -76,6 +132,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <HashAnchorScroll />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<DesignTest />} />
