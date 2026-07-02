@@ -360,7 +360,7 @@ const PhotoFairyTaleLanding = () => {
 
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
-            availableWorldIds={["adventure", "hogwarts", "fantasy", "cyber"]}
+            availableWorldIds={["romance", "adventure", "hogwarts", "fantasy", "cyber"]}
             worldTabLabel="Жанр"
             worldLegend="Выберите жанр"
             heading="Создайте сказку по фото."

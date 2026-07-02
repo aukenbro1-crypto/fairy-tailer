@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-02 07:09 UTC
+Last updated: 2026-07-02 11:41 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260702-promo-free-delivery-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260702-photo-romance-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -248,6 +248,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-02
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260702-photo-romance-codex` to restore the `Романтическая история` option in the `/podarok/skazka-po-foto` inline constructor. The page now passes `romance` alongside `adventure`, `hogwarts`, `fantasy`, and `cyber` to `FairytellerInlineConstructor`. Verified `npx eslint src/pages/PhotoFairyTaleLanding.tsx`, `npm run build`, generated `PhotoFairyTaleLanding` chunk containing `availableWorldIds:["romance","adventure","hogwarts","fantasy","cyber"]`, nginx config, production `/podarok/skazka-po-foto` `200`, active production symlink, and no stray Finder-copy `* 2.*` / `* 3.*` artifacts in the active release.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260702-promo-free-delivery-codex` with the top promo strip updated across the shared landing header, homepage/create header, and static `/delivery/` page to include `бесплатная доставка`. Verified `npm run build`, targeted `npx eslint src/components/LandingHeader.tsx src/pages/DesignTest.tsx`, nginx config, active production symlink, production `/` `200`, `/delivery/` containing the new promo copy, and the active JS bundle containing the updated banner text.
 
