@@ -179,7 +179,7 @@ Message flow:
 5. Telegram calls `POST /api/fairyteller/telegram/webhook`; the API appends the operator reply to the matching session.
 6. The widget polls `GET /api/fairyteller/chat/sessions/:sessionId/messages` while open and shows new replies.
 
-If the latest visitor message remains unanswered for the configured delay, the API appends one automatic operator-style fallback reply to the chat session. Production default is two minutes and asks the visitor to leave WhatsApp or Telegram for a follow-up.
+If the latest visitor message remains unanswered for the configured delay, the API appends one automatic operator-style fallback reply to the chat session. Production default is two seconds and asks the visitor to leave WhatsApp or Telegram for a follow-up.
 
 If Telegram cannot register a public webhook for the domain, set `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` on the API service. In that mode the same server reads bot updates with Telegram `getUpdates` and uses the same reply handling logic.
 

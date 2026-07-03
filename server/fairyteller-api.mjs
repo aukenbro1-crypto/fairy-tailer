@@ -45,7 +45,7 @@ const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSA
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
 const CHAT_RATE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_RATE_LIMIT || 20) || 20);
 const CHAT_RATE_WINDOW_MS = Math.max(1000, Number(process.env.FAIRYTELLER_CHAT_RATE_WINDOW_MS || 60_000) || 60_000);
-const CHAT_AUTO_REPLY_DELAY_MS = Math.max(10_000, Number(process.env.FAIRYTELLER_CHAT_AUTO_REPLY_DELAY_MS || 2 * 60_000) || 2 * 60_000);
+const CHAT_AUTO_REPLY_DELAY_MS = Math.max(1000, Number(process.env.FAIRYTELLER_CHAT_AUTO_REPLY_DELAY_MS || 2000) || 2000);
 const CHAT_AUTO_REPLY_TEXT = (process.env.FAIRYTELLER_CHAT_AUTO_REPLY_TEXT || 'Кажется, все операторы заняты. Оставьте, пожалуйста, ваш WhatsApp или Telegram, и мы с вами свяжемся в ближайшее время.').trim();
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')

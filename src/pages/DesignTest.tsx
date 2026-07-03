@@ -412,13 +412,14 @@ const DesignTest = () => {
   const [style, setStyle] = useState(styles[0].id);
   const [heroIndex, setHeroIndex] = useState(0);
   const [constructorStep, setConstructorStep] = useState(0);
-  const [visibleHeroes, setVisibleHeroes] = useState([0]);
+  const [visibleHeroes, setVisibleHeroes] = useState([0, 1]);
   const [location, setLocation] = useState("");
   const [artifact, setArtifact] = useState("");
   const [email, setEmail] = useState("");
   const [consentChecked, setConsentChecked] = useState(false);
   const [heroes, setHeroes] = useState<Record<number, HeroDraft>>({
     0: { name: "", desc: "", photo: null },
+    1: { name: "", desc: "", photo: null },
   });
   const [heroAgeGroups, setHeroAgeGroups] = useState<Record<number, string>>({});
   const [isHeroMenuOpen, setIsHeroMenuOpen] = useState(false);

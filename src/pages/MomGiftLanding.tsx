@@ -334,7 +334,7 @@ const MomGiftLanding = () => {
           <FairytellerInlineConstructor
             heading="Соберите книгу маме."
             description="Добавьте ее имя, фото, характер, важное место, личную деталь или воспоминание из вашей жизни вместе. История будет строиться вокруг нее."
-            defaultVisibleHeroIndexes={[0]}
+            defaultVisibleHeroIndexes={[0, 1]}
             defaultHeroAgeGroup="adult"
             requiredHeroCount={1}
             heroSlots={momHeroSlots}

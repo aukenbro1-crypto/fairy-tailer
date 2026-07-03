@@ -398,7 +398,7 @@ const ChildGiftLanding = () => {
             artifactLabel="Важная деталь"
             artifactPlaceholder="Игрушка, питомец, рюкзак, талисман, любимая книга"
             heroIntro="Добавьте ребенка как главного героя. Фото поможет сделать иллюстрации узнаваемыми, но сохранить книжный стиль."
-            defaultVisibleHeroIndexes={[0]}
+            defaultVisibleHeroIndexes={[0, 1]}
             defaultHeroAgeGroup="child"
             requiredHeroCount={1}
             heroSlots={childHeroSlots}

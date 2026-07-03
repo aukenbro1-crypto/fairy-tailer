@@ -205,7 +205,7 @@ const FairytellerInlineConstructor = ({
   artifactLabel = "Символ пары",
   artifactPlaceholder = "Кулон, билет, песня, питомец, фраза",
   heroIntro = "Добавьте двух героев пары. Фото помогут сделать иллюстрации узнаваемыми.",
-  defaultVisibleHeroIndexes = [0],
+  defaultVisibleHeroIndexes = [0, 1],
   defaultHeroAgeGroup,
   requiredHeroCount = 1,
   heroSlots = defaultHeroSlots,
@@ -213,7 +213,7 @@ const FairytellerInlineConstructor = ({
 }: FairytellerInlineConstructorProps) => {
   const { toast } = useToast();
   const inputPrefix = useId();
-  const initialVisibleHeroes = defaultVisibleHeroIndexes.length > 0 ? defaultVisibleHeroIndexes : [0];
+  const initialVisibleHeroes = defaultVisibleHeroIndexes.length > 0 ? defaultVisibleHeroIndexes : [0, 1];
   const isWorldLocked = Boolean(lockedWorld);
   const constructorTabs = isWorldLocked ? ["Детали", "Герои", "Стиль"] : [worldTabLabel, "Герои", "Стиль"];
   const selectableWorlds = availableWorldIds
