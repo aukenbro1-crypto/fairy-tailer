@@ -179,6 +179,8 @@ Message flow:
 5. Telegram calls `POST /api/fairyteller/telegram/webhook`; the API appends the operator reply to the matching session.
 6. The widget polls `GET /api/fairyteller/chat/sessions/:sessionId/messages` while open and shows new replies.
 
+If the latest visitor message remains unanswered for the configured delay, the API appends one automatic operator-style fallback reply to the chat session. Production default is two minutes and asks the visitor to leave WhatsApp or Telegram for a follow-up.
+
 If Telegram cannot register a public webhook for the domain, set `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` on the API service. In that mode the same server reads bot updates with Telegram `getUpdates` and uses the same reply handling logic.
 
 Required production env for two-way chat:
@@ -187,6 +189,7 @@ Required production env for two-way chat:
 - `FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID`
 - `FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET`
 - optional fallback: `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1`
+- optional auto-reply tuning: `FAIRYTELLER_CHAT_AUTO_REPLY_DELAY_MS` and `FAIRYTELLER_CHAT_AUTO_REPLY_TEXT`
 
 Generation progress and failure alerts use a separate Telegram bot identity:
 

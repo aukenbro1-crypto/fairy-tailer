@@ -45,6 +45,8 @@ const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSA
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
 const CHAT_RATE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_RATE_LIMIT || 20) || 20);
 const CHAT_RATE_WINDOW_MS = Math.max(1000, Number(process.env.FAIRYTELLER_CHAT_RATE_WINDOW_MS || 60_000) || 60_000);
+const CHAT_AUTO_REPLY_DELAY_MS = Math.max(10_000, Number(process.env.FAIRYTELLER_CHAT_AUTO_REPLY_DELAY_MS || 2 * 60_000) || 2 * 60_000);
+const CHAT_AUTO_REPLY_TEXT = (process.env.FAIRYTELLER_CHAT_AUTO_REPLY_TEXT || 'Кажется, все операторы заняты. Оставьте, пожалуйста, ваш WhatsApp или Telegram, и мы с вами свяжемся в ближайшее время.').trim();
 const ALLOWED_ORIGINS = (process.env.FAIRYTELLER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -811,6 +813,49 @@ async function appendChatMessage(sessionId, message) {
   return { session: nextSession, message: nextMessage };
 }
 
+async function maybeAppendChatAutoReply(session) {
+  if (!CHAT_AUTO_REPLY_TEXT) return session;
+  const messages = Array.isArray(session.messages) ? session.messages : [];
+  if (messages.some((message) => message.autoReply === 'busy_contact_v1')) {
+    return session;
+  }
+
+  let lastVisitorIndex = -1;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === 'visitor') {
+      lastVisitorIndex = index;
+      break;
+    }
+  }
+  if (lastVisitorIndex < 0) return session;
+
+  const hasOperatorAfterVisitor = messages
+    .slice(lastVisitorIndex + 1)
+    .some((message) => message?.role === 'operator');
+  if (hasOperatorAfterVisitor) return session;
+
+  const lastVisitorTime = Date.parse(messages[lastVisitorIndex]?.createdAt || '');
+  if (!Number.isFinite(lastVisitorTime) || Date.now() - lastVisitorTime < CHAT_AUTO_REPLY_DELAY_MS) {
+    return session;
+  }
+
+  const now = nowIso();
+  const autoReply = {
+    id: makeChatMessageId(),
+    role: 'operator',
+    text: CHAT_AUTO_REPLY_TEXT,
+    createdAt: now,
+    autoReply: 'busy_contact_v1',
+  };
+  const nextSession = {
+    ...session,
+    messages: [...messages, autoReply].slice(-CHAT_MAX_MESSAGES),
+    updatedAt: now,
+  };
+  await writeJsonAtomic(chatSessionPath(session.sessionId), nextSession);
+  return nextSession;
+}
+
 function telegramMessageMapPath() {
   return join(chatRootDir(), 'telegram-message-map.json');
 }
@@ -1023,7 +1068,7 @@ async function notifyPrintPaymentPageView(req) {
 }
 
 async function getChatMessages(sessionId) {
-  return sanitizePublicChatSession(await readChatSession(sessionId));
+  return sanitizePublicChatSession(await maybeAppendChatAutoReply(await readChatSession(sessionId)));
 }
 
 function escapeHtml(value) {

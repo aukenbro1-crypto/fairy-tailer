@@ -63,6 +63,7 @@ The API never stores notification secrets in the repo. Configure them on the ser
 
 - `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID` enable generation progress and failure alerts.
 - `FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN`, `FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID`, `FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET`, and optional `FAIRYTELLER_CHAT_TELEGRAM_POLLING=1` enable website chat messages and replies.
+- `FAIRYTELLER_CHAT_AUTO_REPLY_DELAY_MS` and `FAIRYTELLER_CHAT_AUTO_REPLY_TEXT` configure the support chat fallback reply shown when no operator has answered a visitor message yet.
 - Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when split role-specific variables are absent.
 - `FAIRYTELLER_YOOKASSA_SHOP_ID`, `FAIRYTELLER_YOOKASSA_SECRET_KEY`, and optional `FAIRYTELLER_BOOK_PRICE_RUB` enable paywall checkout.
 - `FAIRYTELLER_RESEND_API_KEY` and `FAIRYTELLER_MAIL_FROM` enable purchase-access email after YooKassa confirms payment.
