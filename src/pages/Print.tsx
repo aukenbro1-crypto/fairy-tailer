@@ -345,7 +345,7 @@ const Print = () => {
               <input name="custName" className="ym-input" placeholder="ФИО получателя" required type="text" />
             </label>
             <label className="print-field-label">
-              Адрес доставки
+              Адрес доставки (подберем ближайший ПВЗ)
               <input name="custAddr" className="ym-input" placeholder="Город, улица, дом, квартира" required type="text" />
             </label>
             {jobId && (

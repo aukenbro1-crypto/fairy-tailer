@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-04 07:25 UTC
+Last updated: 2026-07-04 07:34 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260704-collapsed-paywall-expand-only-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260704-pay-address-pvz-copy-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -267,6 +267,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260704-paywall-print-check-copy-codex` to update the unpaid `/book/:jobId` floating paywall small print. The old refund/rebuild line was replaced with `Перед печатью наша команда проверит макет и свяжется с вами, чтобы согласовать финальную версию.` while preserving the sticky card behavior and lightweight preview image window from the prior release. Verified `npx eslint src/pages/Book.tsx`, `npm run build`, nginx config/reload, production `/book/ft_1783125327969_54mlzm` `200`, and production `Book` chunk contains the new small print with no old `Если вам не понравится результат` copy.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260704-collapsed-paywall-expand-only-codex` so the collapsed unpaid `/book/:jobId` paywall strip has exactly one behavior: any click/tap on the strip expands the full card and never starts checkout directly. The collapsed visual still shows `Почти готово` and `Оплатить — 3 500 ₽`, but it is rendered as a single button instead of a button plus payment link. Verified `npx eslint src/pages/Book.tsx`, `npm run build`, nginx config/reload, production `/book/ft_1783125327969_54mlzm` `200`, production `Book` chunk has no collapsed-strip payment anchor, and Playwright confirmed the collapsed strip expands without navigation.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260704-pay-address-pvz-copy-codex` to update the `/pay` delivery form label from `Адрес доставки` to `Адрес доставки (подберем ближайший ПВЗ)`. Verified `npx eslint src/pages/Print.tsx`, `npm run build`, nginx config/reload, production `/pay` `200`, and production `Print` chunk contains the new label.
 
 ### 2026-07-02
 
