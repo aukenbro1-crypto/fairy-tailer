@@ -96,10 +96,15 @@ const Book = () => {
   const [previewPages, setPreviewPages] = useState<PreviewPage[]>([]);
   const [previewProgress, setPreviewProgress] = useState<PreviewProgress | null>(null);
   const [currentPreviewPage, setCurrentPreviewPage] = useState(1);
+  const [showPaywallLock, setShowPaywallLock] = useState(false);
+  const [paywallCollapsed, setPaywallCollapsed] = useState(false);
+  const [activePaywallChapter, setActivePaywallChapter] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const previewPageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const chapterBreakRefs = useRef(new Map<number, HTMLDivElement | null>());
+  const previousPaywallChapterRef = useRef<number | null>(null);
 
   const bookTitle = useMemo(() => {
     return fullText?.text?.bible?.bookTitle
@@ -178,6 +183,9 @@ const Book = () => {
 
     setIsLoading(true);
     setError("");
+    setShowPaywallLock(false);
+    setPaywallCollapsed(false);
+    setActivePaywallChapter(null);
     Promise.all([loadStatus(), loadFullText(), loadSample(), loadPreviewPages()])
       .catch((loadError) => {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Не удалось открыть книгу");
@@ -190,6 +198,55 @@ const Book = () => {
       cancelled = true;
     };
   }, [access, jobId]);
+
+  useEffect(() => {
+    if (isLoading || access || isPendingReturn || isPaid || !sample || previewPages.length === 0 || !previewProgress?.chapterEndPages?.length) {
+      setShowPaywallLock(false);
+      setActivePaywallChapter(null);
+      return undefined;
+    }
+
+    const sentinels = [...chapterBreakRefs.current.entries()]
+      .map(([chapter, element]) => ({ chapter, element }))
+      .filter((entry): entry is { chapter: number; element: HTMLDivElement } => Boolean(entry.element));
+    if (!sentinels.length) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => ({
+            chapter: Number((entry.target as HTMLElement).dataset.chapter || 0),
+            top: entry.boundingClientRect.top,
+          }))
+          .filter((entry) => entry.chapter > 0)
+          .sort((a, b) => Math.abs(a.top) - Math.abs(b.top));
+
+        if (!visible.length) {
+          setShowPaywallLock(false);
+          setActivePaywallChapter(null);
+          return;
+        }
+
+        setActivePaywallChapter(visible[0].chapter);
+        setShowPaywallLock(true);
+      },
+      { root: null, threshold: 0, rootMargin: "-18% 0px -42% 0px" },
+    );
+
+    sentinels.forEach(({ element }) => observer.observe(element));
+    return () => {
+      observer.disconnect();
+    };
+  }, [access, isLoading, isPaid, isPendingReturn, previewPages.length, previewProgress?.chapterEndPages, sample]);
+
+  useEffect(() => {
+    if (!activePaywallChapter) return;
+    if (previousPaywallChapterRef.current !== activePaywallChapter) {
+      previousPaywallChapterRef.current = activePaywallChapter;
+      setPaywallCollapsed(false);
+    }
+  }, [activePaywallChapter]);
 
   useEffect(() => {
     if (isLoading || access || isPendingReturn || isPaid || previewPages.length === 0) {
@@ -410,59 +467,6 @@ const Book = () => {
             width: 1px;
             height: 1px;
           }
-          .book-chapter-paywall-note {
-            display: grid;
-            gap: 12px;
-            justify-items: center;
-            width: min(100%, 640px);
-            margin: 6px auto 16px;
-            border: 2px solid #111111;
-            border-radius: 10px;
-            background: #fae7e1;
-            box-shadow: 6px 6px 0 #111111;
-            padding: clamp(18px, 3vw, 26px);
-            text-align: center;
-          }
-          .book-chapter-paywall-note h2 {
-            margin: 0;
-            color: #111111;
-            font-size: clamp(20px, 3vw, 30px);
-            font-weight: 950;
-            line-height: 1;
-            text-transform: uppercase;
-          }
-          .book-chapter-paywall-note p {
-            max-width: 520px;
-            margin: 0;
-            color: #3f4447;
-            font-size: 15px;
-            font-weight: 700;
-            line-height: 1.5;
-          }
-          .book-chapter-paywall-note a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            min-height: 50px;
-            border: 2px solid #111111;
-            border-radius: 8px;
-            background: #111111;
-            color: #ffffff;
-            box-shadow: 4px 4px 0 #e89c31;
-            padding: 13px 16px;
-            font-size: 12px;
-            font-weight: 950;
-            letter-spacing: .08em;
-            line-height: 1.25;
-            text-transform: uppercase;
-            transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
-          }
-          .book-chapter-paywall-note a:hover {
-            background: #5e6264;
-            box-shadow: 2px 2px 0 #e89c31;
-            transform: translate(2px, 2px);
-          }
           .book-preview-empty {
             display: grid;
             min-height: 70vh;
@@ -489,7 +493,7 @@ const Book = () => {
           }
           .book-paywall-lock.is-visible {
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: none;
             transform: translateY(0);
           }
           .book-paywall-lock-card {
@@ -503,6 +507,7 @@ const Book = () => {
             box-shadow: 8px 8px 0 #111111;
             padding: clamp(20px, 3vw, 30px);
             text-align: center;
+            pointer-events: auto;
           }
           .book-paywall-close {
             position: absolute;
@@ -602,6 +607,7 @@ const Book = () => {
             color: #ffffff;
             box-shadow: 0 -6px 22px rgba(17, 17, 17, .16);
             padding: 14px 16px;
+            pointer-events: auto;
           }
           .book-paywall-strip button,
           .book-paywall-strip a {
@@ -679,19 +685,48 @@ const Book = () => {
                 />
               </div>
               {chapterBreaksByPage.has(page.n) && (
-                <aside className="book-chapter-paywall-note" aria-label={`Оплата после главы ${chapterBreaksByPage.get(page.n)?.chapter || ""}`}>
-                  <Lock size={20} aria-hidden="true" />
-                  <h2>Глава {chapterBreaksByPage.get(page.n)?.chapter} дочитана</h2>
-                  <p>Можно читать дальше без паузы. Бумажная версия с бесплатной доставкой по РФ будет доступна после оплаты.</p>
-                  <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
-                    <ShoppingBag size={17} aria-hidden="true" />
-                    Оплатить — 3 500 ₽
-                  </a>
-                </aside>
+                <div
+                  ref={(element) => {
+                    const chapter = chapterBreaksByPage.get(page.n)?.chapter;
+                    if (!chapter) return;
+                    if (element) chapterBreakRefs.current.set(chapter, element);
+                    else chapterBreakRefs.current.delete(chapter);
+                  }}
+                  className="book-paywall-sentinel"
+                  data-chapter={chapterBreaksByPage.get(page.n)?.chapter}
+                  aria-hidden="true"
+                />
               )}
             </div>
           )) : (
             <div className="book-preview-empty">Готовим PDF-превью...</div>
+          )}
+        </div>
+        <div className={`book-paywall-lock${showPaywallLock ? " is-visible" : ""}`} aria-label="Оплата полной книги">
+          {paywallCollapsed ? (
+            <div className="book-paywall-strip">
+              <button type="button" onClick={() => setPaywallCollapsed(false)}>Почти готово</button>
+              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>Оплатить — 3 500 ₽</a>
+            </div>
+          ) : (
+            <div className="book-paywall-lock-card">
+              <button
+                type="button"
+                className="book-paywall-close"
+                aria-label="Свернуть оплату"
+                onClick={() => setPaywallCollapsed(true)}
+              >
+                ×
+              </button>
+              <Lock size={22} aria-hidden="true" className="mx-auto" />
+              <h1>А дальше?</h1>
+              <p>Перед вами — почти готовая книга. Оплатите заказ, чтобы получить бумажную версию с бесплатной доставкой по РФ.</p>
+              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
+                <ShoppingBag size={18} aria-hidden="true" />
+                Оплатить — 3 500 ₽
+              </a>
+              <small>Если вам не понравится результат — мы вернем деньги или предложим еще несколько вариантов вашей истории.</small>
+            </div>
           )}
         </div>
       </main>
