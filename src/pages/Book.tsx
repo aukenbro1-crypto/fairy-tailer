@@ -668,24 +668,21 @@ const Book = () => {
             border-radius: 10px 10px 0 0;
             background: #111111;
             color: #ffffff;
-            box-shadow: 0 -6px 22px rgba(17, 17, 17, .16);
-            padding: 14px 16px;
-            pointer-events: none;
-            touch-action: pan-y;
-          }
-          .book-paywall-strip button,
-          .book-paywall-strip a {
-            border: 0;
-            background: transparent;
-            color: inherit;
             cursor: pointer;
             font: inherit;
+            box-shadow: 0 -6px 22px rgba(17, 17, 17, .16);
+            padding: 14px 16px;
+            pointer-events: auto;
+            text-align: left;
+            touch-action: pan-y;
+          }
+          .book-paywall-strip span {
+            color: inherit;
             font-weight: 950;
             letter-spacing: .06em;
             text-transform: uppercase;
-            pointer-events: auto;
           }
-          .book-paywall-strip a {
+          .book-paywall-strip span:last-child {
             color: #e89c31;
             text-decoration: none;
             white-space: nowrap;
@@ -800,10 +797,10 @@ const Book = () => {
           onTouchCancelCapture={handlePaywallTouchEnd}
         >
           {paywallCollapsed ? (
-            <div className="book-paywall-strip">
-              <button type="button" onClick={() => setPaywallCollapsed(false)}>Почти готово</button>
-              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>Оплатить — 3 500 ₽</a>
-            </div>
+            <button type="button" className="book-paywall-strip" onClick={() => setPaywallCollapsed(false)}>
+              <span>Почти готово</span>
+              <span>Оплатить — 3 500 ₽</span>
+            </button>
           ) : (
             <div className="book-paywall-lock-card">
               <button
