@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 
@@ -35,11 +35,14 @@ const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
 const ADMIN_MAIL_PATH = `${ADMIN_BOOKS_PATH}/mail`;
 const ADMIN_JOBS_PATH = `${ADMIN_BOOKS_PATH}/jobs`;
+const ADMIN_STORAGE_PATH = `${ADMIN_BOOKS_PATH}/storage`;
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
 const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').trim();
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
 const ADMIN_BOOK_IMAGE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_IMAGE_MAX_BYTES || 12 * 1024 * 1024) || 12 * 1024 * 1024);
+const ADMIN_STORAGE_FILE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_FILE_MAX_BYTES || 50 * 1024 * 1024) || 50 * 1024 * 1024);
+const ADMIN_STORAGE_UPLOAD_MAX_BYTES = Math.max(ADMIN_STORAGE_FILE_MAX_BYTES, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_UPLOAD_MAX_BYTES || 512 * 1024 * 1024) || 512 * 1024 * 1024);
 const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
 const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSAGE_LIMIT || 2000) || 2000);
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
@@ -271,6 +274,7 @@ async function readMultipartForm(req, limitBytes = 80 * 1024 * 1024) {
   const headerEndMarker = Buffer.from('\r\n\r\n');
   const fields = new URLSearchParams();
   const files = new Map();
+  const fileList = [];
   let position = body.indexOf(boundary);
 
   while (position >= 0) {
@@ -293,12 +297,16 @@ async function readMultipartForm(req, limitBytes = 80 * 1024 * 1024) {
 
     if (originalName) {
       if (content.length > 0) {
-        files.set(fieldName, {
+        const normalizedName = originalName.replace(/\\/g, '/');
+        const file = {
           fieldName,
-          originalName: basename(originalName),
+          originalName: basename(normalizedName),
+          relativeName: normalizedName,
           contentType: headers['content-type'] || '',
           content,
-        });
+        };
+        files.set(fieldName, file);
+        fileList.push(file);
       }
     } else {
       fields.set(fieldName, content.toString('utf8'));
@@ -307,7 +315,7 @@ async function readMultipartForm(req, limitBytes = 80 * 1024 * 1024) {
     position = contentEnd + 2;
   }
 
-  return { fields, files };
+  return { fields, files, fileList };
 }
 
 async function readJsonFile(path, fallback = null) {
@@ -1324,6 +1332,7 @@ function renderAdminTabs(active = 'books') {
   const links = [
     ['books', ADMIN_BOOKS_PATH, 'PDF-сказки'],
     ['jobs', ADMIN_JOBS_PATH, 'Заявки'],
+    ['storage', ADMIN_STORAGE_PATH, 'Файлы'],
     ['leads', ADMIN_LEADS_PATH, 'Email-база'],
     ['mail', ADMIN_MAIL_PATH, 'Письмо'],
   ];
@@ -1942,7 +1951,7 @@ function renderBooksPage(books, options = {}) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_JOBS_PATH}">Заявки</a><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
+    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_JOBS_PATH}">Заявки</a><a class="logout" href="${ADMIN_STORAGE_PATH}">Файлы</a><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -2288,6 +2297,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     <div class="top-links">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
+      <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
     </div>
   </header>
@@ -2760,6 +2770,7 @@ function renderLeadsPage(leads) {
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
+      <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
       <a href="${ADMIN_MAIL_PATH}">Письмо</a>
       <a href="${ADMIN_LEADS_CSV_PATH}">Скачать CSV</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
@@ -3002,6 +3013,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
+      <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
       <a href="${ADMIN_LEADS_PATH}">Email-база</a>
       <a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a>
     </div>
@@ -3051,6 +3063,626 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
       <tbody>${rows}</tbody>
     </table>` : '<div class="empty">Ручных отправок пока нет.</div>'}
   </section>
+</body>
+</html>`;
+}
+
+function storageRootDir() {
+  return resolve(DATA_DIR, 'book-photo-storage');
+}
+
+function makeStorageFolderId() {
+  return `sf_${Date.now()}_${randomBytes(4).toString('hex')}`;
+}
+
+function makeStorageShareToken() {
+  return randomBytes(24).toString('hex');
+}
+
+function assertStorageFolderId(folderId) {
+  if (!/^sf_[a-zA-Z0-9_-]{8,80}$/.test(folderId)) {
+    throw httpError(400, 'Invalid storage folder');
+  }
+  return folderId;
+}
+
+function storageFolderDir(folderId) {
+  assertStorageFolderId(folderId);
+  const root = storageRootDir();
+  const dir = resolve(root, folderId);
+  if (!dir.startsWith(`${root}/`)) {
+    throw httpError(400, 'Invalid storage path');
+  }
+  return dir;
+}
+
+function storageMetadataPath(folderId) {
+  return join(storageFolderDir(folderId), '.folder.json');
+}
+
+function storageShareUrl(folderId, token) {
+  return `${PUBLIC_BASE_URL}${ADMIN_STORAGE_PATH}/share/${encodeURIComponent(folderId)}/${encodeURIComponent(token)}`;
+}
+
+function storageAdminFolderPath(folderId) {
+  return `${ADMIN_STORAGE_PATH}/${encodeURIComponent(folderId)}`;
+}
+
+function storagePathUrl(basePath, relativePath) {
+  return `${basePath}/${String(relativePath || '').split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function sanitizeStorageSegment(segment) {
+  const value = String(segment || '')
+    .replace(/[\x00-\x1f<>:"|?*]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 140);
+  if (!value || value === '.' || value === '..') return '_';
+  return value.startsWith('.') ? `_${value.slice(1) || 'file'}` : value;
+}
+
+function safeStorageRelativePath(value) {
+  const parts = String(value || '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((part) => part && part !== '.' && part !== '..')
+    .map(sanitizeStorageSegment)
+    .filter(Boolean);
+  if (!parts.length) return '';
+  return parts.join('/');
+}
+
+function storageFilePath(folderId, relativePath) {
+  const dir = storageFolderDir(folderId);
+  const safeRelative = safeStorageRelativePath(relativePath);
+  if (!safeRelative) throw httpError(400, 'Invalid file path');
+  const path = resolve(dir, safeRelative);
+  if (!path.startsWith(`${dir}/`)) {
+    throw httpError(400, 'Invalid file path');
+  }
+  return { path, relativePath: safeRelative };
+}
+
+function storageTitleFromUpload(fields, fileList) {
+  const explicit = normalizeSingleLine(fields.get('title') || '', 160, 'Folder title');
+  if (explicit) return explicit;
+  const firstPath = safeStorageRelativePath(fileList.find((file) => file.fieldName === 'files')?.relativeName || '');
+  const firstSegment = firstPath.split('/').find(Boolean);
+  if (firstSegment && firstPath.includes('/')) return firstSegment;
+  return `Фотографии ${formatDateTime(nowIso()) || nowIso()}`;
+}
+
+async function readStorageMetadata(folderId) {
+  const metadata = await readJsonFile(storageMetadataPath(folderId), null);
+  if (!metadata) throw httpError(404, 'Папка не найдена');
+  return {
+    folderId,
+    title: metadata.title || folderId,
+    createdAt: metadata.createdAt || '',
+    updatedAt: metadata.updatedAt || metadata.createdAt || '',
+    shareToken: metadata.shareToken || '',
+  };
+}
+
+async function writeStorageMetadata(folderId, metadata) {
+  await mkdir(storageFolderDir(folderId), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(storageMetadataPath(folderId), {
+    folderId,
+    title: metadata.title || folderId,
+    createdAt: metadata.createdAt || nowIso(),
+    updatedAt: metadata.updatedAt || nowIso(),
+    shareToken: metadata.shareToken || makeStorageShareToken(),
+  });
+}
+
+async function appendStorageEvent(event) {
+  await appendFile(join(DATA_DIR, 'book-photo-storage-events.jsonl'), `${JSON.stringify({ at: nowIso(), ...event })}\n`, { mode: 0o600 }).catch(() => {});
+}
+
+function storageFileAllowed(fileName) {
+  return /\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(String(fileName || ''));
+}
+
+function contentTypeFromStorageFileName(fileName) {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.heic')) return 'image/heic';
+  if (lower.endsWith('.heif')) return 'image/heif';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.avif')) return 'image/avif';
+  return contentTypeFromFileName(fileName);
+}
+
+function storageFileIsImage(fileName) {
+  return /^image\//.test(contentTypeFromStorageFileName(fileName));
+}
+
+async function listStorageFiles(folderId, subdir = '') {
+  const dir = storageFolderDir(folderId);
+  const currentDir = resolve(dir, subdir);
+  if (!currentDir.startsWith(dir)) throw httpError(400, 'Invalid storage path');
+  let entries;
+  try {
+    entries = await readdir(currentDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const rows = [];
+  for (const entry of entries) {
+    if (entry.name === '.folder.json' || entry.name.startsWith('.')) continue;
+    const relativePath = [subdir, entry.name].filter(Boolean).join('/');
+    if (entry.isDirectory()) {
+      rows.push(...await listStorageFiles(folderId, relativePath));
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const info = await stat(join(currentDir, entry.name));
+    rows.push({
+      name: entry.name,
+      relativePath,
+      bytes: info.size,
+      updatedAt: info.mtime.toISOString(),
+      contentType: contentTypeFromStorageFileName(entry.name),
+      isImage: storageFileIsImage(entry.name),
+    });
+  }
+  return rows.sort((left, right) => left.relativePath.localeCompare(right.relativePath, 'ru'));
+}
+
+async function listStorageFolders() {
+  let entries;
+  try {
+    entries = await readdir(storageRootDir(), { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const folders = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      let metadata;
+      try {
+        metadata = await readStorageMetadata(entry.name);
+      } catch {
+        return null;
+      }
+      const files = await listStorageFiles(entry.name);
+      return {
+        ...metadata,
+        fileCount: files.length,
+        bytes: files.reduce((sum, file) => sum + file.bytes, 0),
+        cover: files.find((file) => file.isImage) || null,
+      };
+    }));
+
+  return folders
+    .filter(Boolean)
+    .sort((left, right) => String(right.updatedAt || right.createdAt).localeCompare(String(left.updatedAt || left.createdAt)));
+}
+
+async function ensureStorageFolder(fields, fileList) {
+  const existingFolderId = String(fields.get('folderId') || '').trim();
+  if (existingFolderId) {
+    const folderId = assertStorageFolderId(existingFolderId);
+    const metadata = await readStorageMetadata(folderId);
+    return { ...metadata, isNew: false };
+  }
+  const folderId = makeStorageFolderId();
+  const metadata = {
+    folderId,
+    title: storageTitleFromUpload(fields, fileList),
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+    shareToken: makeStorageShareToken(),
+  };
+  await writeStorageMetadata(folderId, metadata);
+  return { ...metadata, isNew: true };
+}
+
+async function uniqueStorageRelativePath(folderId, relativePath) {
+  const parsedExt = extname(relativePath);
+  const withoutExt = parsedExt ? relativePath.slice(0, -parsedExt.length) : relativePath;
+  let candidate = relativePath;
+  let index = 2;
+  while (existsSync(storageFilePath(folderId, candidate).path)) {
+    candidate = `${withoutExt}-${index}${parsedExt}`;
+    index += 1;
+  }
+  return candidate;
+}
+
+async function saveStorageUpload(fields, fileList) {
+  const uploadFiles = fileList.filter((file) => file.fieldName === 'files');
+  if (!uploadFiles.length) throw httpError(400, 'Выберите файлы для загрузки');
+  const folder = await ensureStorageFolder(fields, uploadFiles);
+  const saved = [];
+  const skipped = [];
+
+  for (const file of uploadFiles) {
+    if (file.content.length > ADMIN_STORAGE_FILE_MAX_BYTES) {
+      throw httpError(413, `${file.originalName || 'Файл'} слишком большой`);
+    }
+    const safeRelative = safeStorageRelativePath(file.relativeName || file.originalName);
+    if (!safeRelative || !storageFileAllowed(safeRelative)) {
+      skipped.push(file.originalName || 'unknown');
+      continue;
+    }
+    const relativePath = await uniqueStorageRelativePath(folder.folderId, safeRelative);
+    const { path } = storageFilePath(folder.folderId, relativePath);
+    await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+    await writeFile(path, file.content, { mode: 0o600 });
+    saved.push({ relativePath, bytes: file.content.length, contentType: contentTypeFromStorageFileName(relativePath) });
+  }
+
+  if (!saved.length) {
+    if (folder.isNew) {
+      await rm(storageFolderDir(folder.folderId), { recursive: true, force: true });
+    }
+    throw httpError(400, 'В выбранных файлах не нашлось изображений');
+  }
+
+  await writeStorageMetadata(folder.folderId, {
+    ...folder,
+    updatedAt: nowIso(),
+  });
+  await appendStorageEvent({ type: 'storage.uploaded', folderId: folder.folderId, count: saved.length, skipped: skipped.length, bytes: saved.reduce((sum, file) => sum + file.bytes, 0) });
+  return { folderId: folder.folderId, saved, skipped };
+}
+
+async function deleteStorageFile(folderId, relativePath) {
+  const file = storageFilePath(folderId, relativePath);
+  await rm(file.path, { force: true });
+  const metadata = await readStorageMetadata(folderId);
+  await writeStorageMetadata(folderId, { ...metadata, updatedAt: nowIso() });
+  await appendStorageEvent({ type: 'storage.file.deleted', folderId, relativePath: file.relativePath });
+  return file.relativePath;
+}
+
+async function deleteStorageFolder(folderId) {
+  const dir = storageFolderDir(folderId);
+  await readStorageMetadata(folderId);
+  await rm(dir, { recursive: true, force: true });
+  await appendStorageEvent({ type: 'storage.folder.deleted', folderId });
+}
+
+async function requireStorageShare(folderId, token) {
+  const folder = await readStorageMetadata(folderId);
+  if (!folder.shareToken || !safeEqual(String(token || ''), folder.shareToken)) {
+    throw httpError(404, 'Папка не найдена');
+  }
+  return folder;
+}
+
+async function sendStorageFile(req, res, folderId, relativePath, options = {}) {
+  if (options.shareToken) await requireStorageShare(folderId, options.shareToken);
+  else if (!hasAdminBooksAuth(req)) throw httpError(401, 'Unauthorized');
+  const file = storageFilePath(folderId, decodeURIComponent(relativePath));
+  const content = await readFile(file.path).catch((error) => {
+    if (error.code === 'ENOENT') throw httpError(404, 'Файл не найден');
+    throw error;
+  });
+  res.writeHead(200, {
+    ...corsHeaders(req),
+    'content-type': contentTypeFromStorageFileName(file.relativePath),
+    'cache-control': options.shareToken ? 'private, max-age=3600' : 'no-store',
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+  });
+  res.end(content);
+}
+
+function renderStorageUploadScript() {
+  return `<script>
+(() => {
+  for (const form of document.querySelectorAll('[data-folder-upload]')) {
+    const status = form.querySelector('[data-upload-status]');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const defaultSubmitText = submitButton ? submitButton.textContent : '';
+    const setStatus = (message, isError = false) => {
+      if (!status) return;
+      status.textContent = message || '';
+      status.classList.toggle('error-text', Boolean(isError));
+    };
+    const collectFiles = () => Array.from(form.querySelectorAll('input[type="file"]'))
+      .flatMap((input) => Array.from(input.files || []));
+    for (const input of form.querySelectorAll('input[type="file"]')) {
+      input.addEventListener('change', () => {
+        const selectedFiles = collectFiles();
+        setStatus(selectedFiles.length ? 'Выбрано файлов: ' + selectedFiles.length + '.' : '');
+      });
+    }
+    form.addEventListener('submit', async (event) => {
+      if (!window.FormData || !window.fetch) return;
+      event.preventDefault();
+      const selectedFiles = collectFiles();
+      if (!selectedFiles.length) {
+        setStatus('Выберите папку или фотографии для загрузки.', true);
+        return;
+      }
+      const buttons = Array.from(form.querySelectorAll('button'));
+      for (const button of buttons) button.disabled = true;
+      if (submitButton) submitButton.textContent = 'Загружаю...';
+      setStatus('Загружаю файлов: ' + selectedFiles.length + '. Не закрывайте страницу.');
+      try {
+        const data = new FormData();
+        for (const field of form.querySelectorAll('input:not([type="file"]), textarea, select')) {
+          if (!field.name || field.disabled) continue;
+          data.append(field.name, field.value || '');
+        }
+        for (const file of selectedFiles) {
+          data.append('files', file, file.webkitRelativePath || file.name || 'image');
+        }
+        const target = form.getAttribute('action') || window.location.href;
+        const response = await fetch(target, { method: 'POST', body: data, credentials: 'same-origin' });
+        if (response.redirected) {
+          window.location.href = response.url;
+          return;
+        }
+        const html = await response.text();
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        setStatus('Не удалось загрузить файлы. Попробуйте еще раз.', true);
+        for (const button of buttons) button.disabled = false;
+        if (submitButton) submitButton.textContent = defaultSubmitText;
+      }
+    });
+  }
+})();
+</script>`;
+}
+
+function renderStoragePage(folders, options = {}) {
+  const notice = options.notice || '';
+  const error = options.error || '';
+  const rows = folders.map((folder) => {
+    const coverUrl = folder.cover ? storagePathUrl(`${storageAdminFolderPath(folder.folderId)}/files`, folder.cover.relativePath) : '';
+    return `<article class="folder-card">
+      <a class="thumb" href="${storageAdminFolderPath(folder.folderId)}">${coverUrl ? `<img src="${escapeHtml(coverUrl)}" alt="">` : '<span>папка</span>'}</a>
+      <div>
+        <h2><a href="${storageAdminFolderPath(folder.folderId)}">${escapeHtml(folder.title)}</a></h2>
+        <p>${escapeHtml(folder.fileCount)} файлов · ${escapeHtml(formatBytes(folder.bytes) || '0 B')} · ${escapeHtml(formatDateTime(folder.updatedAt) || '—')}</p>
+        <input readonly value="${escapeHtml(storageShareUrl(folder.folderId, folder.shareToken))}" onclick="this.select()">
+      </div>
+    </article>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>FairyTeller файлы</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, main { max-width: 1180px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    h2 { margin: 0 0 8px; font-size: 19px; }
+    p { margin: 8px 0 0; color: #56616b; line-height: 1.45; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+    .panel, .folder-card { border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 14px 35px rgba(40, 31, 18, 0.07); }
+    .panel { padding: 20px; margin-bottom: 18px; }
+    label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    input { width: 100%; border: 1px solid #cdbfaaa; border-radius: 6px; padding: 11px 12px; font: inherit; background: #fff; color: #172126; }
+    input[type=file] { padding: 9px; }
+    button { min-height: 44px; margin-top: 14px; padding: 0 16px; border: 0; border-radius: 6px; background: #1f5d53; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .72; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .folder-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .folder-card { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 14px; padding: 14px; }
+    .thumb { width: 132px; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden; border-radius: 6px; border: 1px solid #d2c4b0; background: #f1e8d8; color: #766b60; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .notice, .error { margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
+    .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
+    .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    .upload-status { min-height: 20px; margin-top: 10px; color: #56616b; font-weight: 700; }
+    .upload-status.error-text { color: #8f1d1d; }
+    .empty { padding: 24px; color: #56616b; }
+    @media (max-width: 760px) { body { padding: 18px; } header { display: block; } .actions { justify-content: flex-start; margin-top: 12px; } .grid, .folder-grid, .folder-card { grid-template-columns: 1fr; } .thumb { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Файлы</h1>
+      <p>Фотографии книг и папки для отправки клиентам или партнерам.</p>
+    </div>
+    <div class="actions">${renderAdminTabs('storage')}<a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>
+  </header>
+  <main>
+    ${renderAdminNotice(notice)}
+    ${renderAdminNotice(error, 'error')}
+    <section class="panel">
+      <h2>Загрузить папку</h2>
+      <form method="post" action="${ADMIN_STORAGE_PATH}" enctype="multipart/form-data" data-folder-upload>
+        <input type="hidden" name="action" value="upload">
+        <div class="grid">
+          <div>
+            <label for="files">Фотографии</label>
+            <input id="files" name="files" type="file" accept="image/*" multiple>
+          </div>
+          <div>
+            <label for="folderFiles">Папка</label>
+            <input id="folderFiles" name="files" type="file" multiple webkitdirectory directory>
+          </div>
+        </div>
+        <button type="submit">Загрузить</button>
+        <p class="upload-status" data-upload-status aria-live="polite"></p>
+      </form>
+    </section>
+    ${folders.length ? `<section class="folder-grid">${rows}</section>` : '<section class="panel empty">Папок пока нет.</section>'}
+  </main>
+  ${renderStorageUploadScript()}
+</body>
+</html>`;
+}
+
+function renderStorageFolderPage(folder, files, options = {}) {
+  const notice = options.notice || '';
+  const error = options.error || '';
+  const shareUrl = storageShareUrl(folder.folderId, folder.shareToken);
+  const rows = files.map((file) => {
+    const adminUrl = storagePathUrl(`${storageAdminFolderPath(folder.folderId)}/files`, file.relativePath);
+    return `<tr>
+      <td>${file.isImage ? `<a href="${escapeHtml(adminUrl)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(adminUrl)}" alt=""></a>` : ''}</td>
+      <td><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.relativePath)}</span></td>
+      <td>${escapeHtml(formatBytes(file.bytes) || '—')}</td>
+      <td>${escapeHtml(formatDateTime(file.updatedAt) || '—')}</td>
+      <td>
+        <a href="${escapeHtml(adminUrl)}" target="_blank" rel="noopener noreferrer">open</a>
+        <form method="post" action="${storageAdminFolderPath(folder.folderId)}" onsubmit="return confirm('Удалить файл?')">
+          <input type="hidden" name="action" value="delete_file">
+          <input type="hidden" name="filePath" value="${escapeHtml(file.relativePath)}">
+          <button class="danger" type="submit">Удалить</button>
+        </form>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>${escapeHtml(folder.title)} · FairyTeller файлы</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2933; background: #f6f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, main { max-width: 1180px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+    h2 { margin: 0 0 14px; font-size: 20px; }
+    p { margin: 8px 0 0; color: #56616b; }
+    a { color: #1f5d53; font-weight: 800; text-decoration: none; }
+    .actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+    .panel, table { border: 1px solid #ded5c5; border-radius: 8px; background: #fffaf0; box-shadow: 0 14px 35px rgba(40, 31, 18, 0.07); }
+    .panel { padding: 20px; margin-bottom: 18px; }
+    label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    input { width: 100%; border: 1px solid #cdbfaaa; border-radius: 6px; padding: 11px 12px; font: inherit; background: #fff; color: #172126; }
+    input[type=file] { padding: 9px; }
+    button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: #1f5d53; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .72; }
+    button.danger { background: #8f1d1d; margin-top: 8px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: end; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #eadfce; text-align: left; vertical-align: top; }
+    th { color: #6d6256; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #f1e8d8; }
+    tr:last-child td { border-bottom: 0; }
+    td img { width: 86px; height: 86px; object-fit: cover; border-radius: 6px; border: 1px solid #d2c4b0; }
+    strong { display: block; margin-bottom: 4px; color: #172126; }
+    span { display: block; color: #68737d; font-size: 12px; overflow-wrap: anywhere; }
+    .notice, .error { margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
+    .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
+    .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    .upload-status { min-height: 20px; margin-top: 10px; color: #56616b; font-weight: 700; }
+    .upload-status.error-text { color: #8f1d1d; }
+    .danger-zone { display: flex; justify-content: flex-end; }
+    @media (max-width: 760px) { body { padding: 18px; } header { display: block; } .actions { justify-content: flex-start; margin-top: 12px; } .grid { grid-template-columns: 1fr; } table { min-width: 760px; } main { overflow-x: auto; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>${escapeHtml(folder.title)}</h1>
+      <p>${escapeHtml(files.length)} файлов · ${escapeHtml(formatBytes(files.reduce((sum, file) => sum + file.bytes, 0)) || '0 B')}</p>
+    </div>
+    <div class="actions">${renderAdminTabs('storage')}<a href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>
+  </header>
+  <main>
+    ${renderAdminNotice(notice)}
+    ${renderAdminNotice(error, 'error')}
+    <section class="panel">
+      <h2>Ссылка на папку</h2>
+      <input readonly value="${escapeHtml(shareUrl)}" onclick="this.select()">
+    </section>
+    <section class="panel">
+      <h2>Докинуть файлы</h2>
+      <form method="post" action="${storageAdminFolderPath(folder.folderId)}" enctype="multipart/form-data" data-folder-upload>
+        <input type="hidden" name="action" value="upload">
+        <input type="hidden" name="folderId" value="${escapeHtml(folder.folderId)}">
+        <div class="grid">
+          <div>
+            <label for="files">Фотографии</label>
+            <input id="files" name="files" type="file" accept="image/*" multiple>
+          </div>
+          <div>
+            <label for="folderFiles">Папка</label>
+            <input id="folderFiles" name="files" type="file" multiple webkitdirectory directory>
+          </div>
+          <button type="submit">Загрузить</button>
+          <p class="upload-status" data-upload-status aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+    ${files.length ? `<table>
+      <thead><tr><th></th><th>Файл</th><th>Размер</th><th>Обновлен</th><th>Действия</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<section class="panel">В этой папке пока нет файлов.</section>'}
+    <section class="panel danger-zone">
+      <form method="post" action="${storageAdminFolderPath(folder.folderId)}" onsubmit="return confirm('Удалить всю папку?')">
+        <input type="hidden" name="action" value="delete_folder">
+        <button class="danger" type="submit">Удалить папку</button>
+      </form>
+    </section>
+  </main>
+  ${renderStorageUploadScript()}
+</body>
+</html>`;
+}
+
+function renderStorageSharePage(folder, files, token) {
+  const cards = files.map((file) => {
+    const url = storagePathUrl(`${ADMIN_STORAGE_PATH}/share/${encodeURIComponent(folder.folderId)}/${encodeURIComponent(token)}/files`, file.relativePath);
+    return `<a class="card" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+      ${file.isImage ? `<img src="${escapeHtml(url)}" alt="">` : '<span>file</span>'}
+      <strong>${escapeHtml(file.name)}</strong>
+    </a>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>${escapeHtml(folder.title)} · FairyTeller</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111; background: #fffaf0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; }
+    header, main { max-width: 1180px; margin: 0 auto; }
+    header { margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 32px; line-height: 1.1; }
+    p { margin: 8px 0 0; color: #56616b; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .card { display: block; padding: 10px; border: 1px solid #ded5c5; border-radius: 8px; background: #fff; color: #111; text-decoration: none; }
+    .card img, .card span { width: 100%; aspect-ratio: 1 / 1; display: grid; place-items: center; object-fit: cover; border-radius: 6px; background: #f1e8d8; color: #766b60; }
+    .card strong { display: block; margin-top: 8px; font-size: 13px; overflow-wrap: anywhere; }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { body { padding: 18px; } .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(folder.title)}</h1>
+    <p>${escapeHtml(files.length)} файлов</p>
+  </header>
+  <main>
+    ${files.length ? `<section class="grid">${cards}</section>` : '<p>В этой папке пока нет файлов.</p>'}
+  </main>
 </body>
 </html>`;
 }
@@ -4048,7 +4680,10 @@ function fileRequiresPaidAccess(fileName) {
   return ['book.pdf', 'preview.pdf', 'interior.pdf', 'cover.pdf'].includes(String(fileName || '').toLowerCase());
 }
 
-const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-end-of-book-v1';
+const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-chapter-breaks-v1';
+const PAYWALL_FRONT_COVER_PAGES = 1;
+const PAYWALL_INTERIOR_FRONT_MATTER_PAGES = 3;
+const PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES = [4, 4, 6, 6, 5];
 
 async function loadPdfLib() {
   try {
@@ -4078,7 +4713,7 @@ async function buildPaywallSamplePdf(jobId) {
   const { PDFDocument } = await loadPdfLib();
   const source = await PDFDocument.load(previewBytes);
   const totalPages = source.getPageCount();
-  const endPage = Math.max(1, totalPages > 1 ? totalPages - 1 : totalPages);
+  const endPage = totalPages;
 
   if (
     sampleInfo
@@ -4181,6 +4816,31 @@ async function listPaywallPreviewPages(jobId) {
   }));
 }
 
+function paywallChapterTextPageCount(chapter, index) {
+  if (Array.isArray(chapter?.textBlocks) && chapter.textBlocks.length) {
+    return chapter.textBlocks.length;
+  }
+  const text = chapterText(chapter);
+  if (text) {
+    const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+    if (blocks.length) return blocks.length;
+  }
+  return PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES[index] || PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES[PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES.length - 1] || 5;
+}
+
+function getPaywallChapterEndPages(chapters, totalPages) {
+  const sortedChapters = Array.isArray(chapters)
+    ? [...chapters].sort((a, b) => Number(a?.n || 0) - Number(b?.n || 0))
+    : [];
+  let interiorPage = PAYWALL_INTERIOR_FRONT_MATTER_PAGES;
+  return sortedChapters.map((chapter, index) => {
+    const chapterNumber = Number(chapter?.n) || index + 1;
+    interiorPage += 2 + paywallChapterTextPageCount(chapter, index);
+    const page = PAYWALL_FRONT_COVER_PAGES + interiorPage;
+    return { chapter: chapterNumber, page };
+  }).filter((breakpoint) => breakpoint.page > 0 && (!totalPages || breakpoint.page <= totalPages));
+}
+
 async function getPaywallPreviewProgress(jobId, availablePages) {
   const dir = jobDir(jobId);
   const filesDir = join(dir, 'files');
@@ -4208,6 +4868,7 @@ async function getPaywallPreviewProgress(jobId, availablePages) {
     totalPages,
     availableChapters: Math.min(5, chapters.length || 5),
     totalChapters: chapters.length || 5,
+    chapterEndPages: getPaywallChapterEndPages(chapters, totalPages),
   };
 }
 
@@ -4475,6 +5136,21 @@ async function route(req, res) {
     return;
   }
 
+  const storageShareFileMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/share\/(sf_[a-zA-Z0-9_-]{8,80})\/([a-f0-9]{32,80})\/files\/(.+)$/);
+  if (method === 'GET' && storageShareFileMatch) {
+    await sendStorageFile(req, res, storageShareFileMatch[1], storageShareFileMatch[3], {
+      shareToken: storageShareFileMatch[2],
+    });
+    return;
+  }
+
+  const storageShareMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/share\/(sf_[a-zA-Z0-9_-]{8,80})\/([a-f0-9]{32,80})$/);
+  if (method === 'GET' && storageShareMatch) {
+    const folder = await requireStorageShare(storageShareMatch[1], storageShareMatch[2]);
+    sendHtml(req, res, 200, renderStorageSharePage(folder, await listStorageFiles(folder.folderId), storageShareMatch[2]));
+    return;
+  }
+
   if (method === 'GET' && url.pathname === ADMIN_JOBS_PATH) {
     if (!hasAdminBooksAuth(req)) {
       sendHtml(req, res, 401, renderBooksLoginPage());
@@ -4503,6 +5179,82 @@ async function route(req, res) {
       return;
     }
     throw httpError(405, 'Method not allowed');
+  }
+
+  if ((method === 'GET' || method === 'POST') && url.pathname === ADMIN_STORAGE_PATH) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    if (method === 'POST') {
+      try {
+        const { fields, fileList } = await readMultipartForm(req, ADMIN_STORAGE_UPLOAD_MAX_BYTES);
+        const result = await saveStorageUpload(fields, fileList);
+        redirectAdmin(res, `${storageAdminFolderPath(result.folderId)}?uploaded=${result.saved.length}`);
+        return;
+      } catch (error) {
+        sendHtml(req, res, error.status || 500, renderStoragePage(await listStorageFolders(), {
+          error: error.message || 'Не удалось загрузить файлы',
+        }));
+        return;
+      }
+    }
+    const notice = url.searchParams.get('folderDeleted') === '1' ? 'Папка удалена.' : '';
+    sendHtml(req, res, 200, renderStoragePage(await listStorageFolders(), { notice }));
+    return;
+  }
+
+  const storageAdminFileMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/(sf_[a-zA-Z0-9_-]{8,80})\/files\/(.+)$/);
+  if (method === 'GET' && storageAdminFileMatch) {
+    await sendStorageFile(req, res, storageAdminFileMatch[1], storageAdminFileMatch[2]);
+    return;
+  }
+
+  const storageAdminFolderMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/(sf_[a-zA-Z0-9_-]{8,80})$/);
+  if ((method === 'GET' || method === 'POST') && storageAdminFolderMatch) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    const folderId = storageAdminFolderMatch[1];
+    if (method === 'POST') {
+      try {
+        if (String(req.headers['content-type'] || '').toLowerCase().includes('multipart/form-data')) {
+          const { fields, fileList } = await readMultipartForm(req, ADMIN_STORAGE_UPLOAD_MAX_BYTES);
+          fields.set('folderId', folderId);
+          const result = await saveStorageUpload(fields, fileList);
+          redirectAdmin(res, `${storageAdminFolderPath(folderId)}?uploaded=${result.saved.length}`);
+          return;
+        }
+        const params = await readFormBody(req);
+        const action = params.get('action') || '';
+        if (action === 'delete_file') {
+          await deleteStorageFile(folderId, params.get('filePath') || '');
+          redirectAdmin(res, `${storageAdminFolderPath(folderId)}?deleted=1`);
+          return;
+        }
+        if (action === 'delete_folder') {
+          await deleteStorageFolder(folderId);
+          redirectAdmin(res, `${ADMIN_STORAGE_PATH}?folderDeleted=1`);
+          return;
+        }
+        throw httpError(400, 'Unknown storage action');
+      } catch (error) {
+        const folder = await readStorageMetadata(folderId).catch(() => ({ folderId, title: folderId, shareToken: '' }));
+        sendHtml(req, res, error.status || 500, renderStorageFolderPage(folder, await listStorageFiles(folderId).catch(() => []), {
+          error: error.message || 'Не удалось выполнить действие',
+        }));
+        return;
+      }
+    }
+    const folder = await readStorageMetadata(folderId);
+    const notice = url.searchParams.get('uploaded')
+      ? `Файлы загружены: ${url.searchParams.get('uploaded')}.`
+      : url.searchParams.get('deleted') === '1'
+        ? 'Файл удален.'
+        : '';
+    sendHtml(req, res, 200, renderStorageFolderPage(folder, await listStorageFiles(folderId), { notice }));
+    return;
   }
 
   const adminBookEditMatch = url.pathname.match(/^\/api\/fairyteller\/books\/(ft_[a-zA-Z0-9_-]{8,80})\/edit$/);

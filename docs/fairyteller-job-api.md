@@ -78,6 +78,9 @@ The legacy render-ready customer email template references small public product-
 ## Protected Operator Views
 
 - `GET /api/fairyteller/books` lists generated PDF artifacts after operator login.
+- `GET /api/fairyteller/books/storage` shows the protected book-photo file storage. Operators can create folders, upload individual images or browser-selected folders, copy a public share link, and delete folders.
+- `GET /api/fairyteller/books/storage/:folderId` shows one protected storage folder, supports adding more files/folders, and deleting individual files.
+- `GET /api/fairyteller/books/storage/share/:folderId/:token` is a noindex public read-only gallery link for sharing a folder without admin login.
 - `GET /api/fairyteller/books/leads` shows a protected deduplicated email database built from `leads.jsonl`.
 - `GET /api/fairyteller/books/leads.csv` downloads the same email database as CSV.
 - `GET /api/fairyteller/books/mail` shows the protected manual mail form.
@@ -108,6 +111,26 @@ GET /api/fairyteller/jobs/:jobId/sample
 ```
 
 Returns the try-before-buy sample only: title/summary, chapters 1-2, chapter 3 title, chapter 3 illustration URL, and a short chapter 3 teaser. This endpoint does not expose full text or PDF links.
+
+```http
+GET /api/fairyteller/jobs/:jobId/sample-pages
+GET /api/fairyteller/jobs/:jobId/sample-pages/:fileName
+```
+
+Returns the current unpaid `/book/:jobId` preview surface: JPEG page renders from `paywall-preview.pdf` plus progress metadata. The preview now exposes the full 42-page browser preview and uses `progress.chapterEndPages` to place non-blocking payment prompts after each chapter instead of locking the last page.
+
+```json
+{
+  "pages": [{ "n": 1, "fileName": "page-01.jpg", "url": "/api/fairyteller/jobs/ft_.../sample-pages/page-01.jpg" }],
+  "progress": {
+    "availablePages": 42,
+    "totalPages": 42,
+    "availableChapters": 5,
+    "totalChapters": 5,
+    "chapterEndPages": [{ "chapter": 1, "page": 10 }]
+  }
+}
+```
 
 ### Public Status
 

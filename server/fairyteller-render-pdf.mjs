@@ -589,6 +589,17 @@ function imageCoverBox(image, box) {
   return { x: box.x, y: box.y - (height - box.height) / 2, width: box.width, height };
 }
 
+function imageContainBox(image, box) {
+  const imageRatio = image.width / image.height;
+  const boxRatio = box.width / box.height;
+  if (imageRatio > boxRatio) {
+    const height = box.width / imageRatio;
+    return { x: box.x, y: box.y + (box.height - height) / 2, width: box.width, height };
+  }
+  const width = box.height * imageRatio;
+  return { x: box.x + (box.width - width) / 2, y: box.y, width, height: box.height };
+}
+
 function drawClippedCoverImage(page, image, box) {
   page.pushOperators(
     pushGraphicsState(),
@@ -598,6 +609,17 @@ function drawClippedCoverImage(page, image, box) {
   );
   page.drawImage(image, imageCoverBox(image, box));
   page.pushOperators(popGraphicsState());
+}
+
+function drawContainedCoverImage(page, image, box) {
+  page.drawRectangle({
+    x: box.x,
+    y: box.y,
+    width: box.width,
+    height: box.height,
+    color: hexColor('#F7F2EA'),
+  });
+  page.drawImage(image, imageContainBox(image, box));
 }
 
 function drawPptImage(page, image, box) {
@@ -733,12 +755,12 @@ async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   const bible = fullText.text?.bible || {};
   const title = bible.bookTitle || fullText.text?.preview?.title || 'Fairyteller';
   const subtitle = bible.subtitle || '';
-  const summary = bible.coverSummary || fullText.text?.preview?.summary || '';
+  const summary = bible.readerBlurb || bible.coverSummary || fullText.text?.preview?.summary || '';
 
   page.drawImage(assets.coverBackground, { x: 0, y: 0, width, height });
 
   if (coverImage) {
-    drawClippedCoverImage(page, coverImage, topLeftBox(page, pptBox(418.01, 145.37, 311.06, 216.64)));
+    drawContainedCoverImage(page, coverImage, topLeftBox(page, pptBox(418.01, 145.37, 311.06, 216.64)));
   }
 
   drawTextBox(page, title, {
@@ -824,7 +846,7 @@ function addInteriorTitlePage(pdf, fonts, fullText, layout) {
 function addDedicationPage(pdf, fonts, fullText, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
-  const summary = fullText.text?.bible?.coverSummary || 'Эта история создана специально для своих героев.';
+  const summary = fullText.text?.bible?.readerBlurb || fullText.text?.bible?.coverSummary || 'Эта история создана специально для своих героев.';
   const textLayout = drawTextBox(page, summary, layout.interior.dedicationPage.body, {
     font: fonts.fontRegular,
     color: rgbColor(layout.colors.paperHeading),
@@ -1248,7 +1270,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       color: hexColor('#292929'),
     });
   }
-  drawPptText(page, bible.coverSummary || fullText.text?.preview?.summary || '', pptBox(39.5, 134, 306.5, 128), {
+  drawPptText(page, bible.readerBlurb || bible.coverSummary || fullText.text?.preview?.summary || '', pptBox(39.5, 134, 306.5, 128), {
     font: fonts.fontInterBody,
     size: 11,
     minSize: 7,

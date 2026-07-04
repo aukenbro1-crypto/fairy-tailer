@@ -1098,7 +1098,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
               </div>
             </div>
 
-            {/* Right Column - Location & Artifact */}
+            {/* Right Column - Location & Important Detail */}
             <div className="space-y-8">
               <div className="mixer-control-section">
                 <div className="space-y-4">
@@ -1113,7 +1113,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
                     />
                   </div>
                   <div>
-                    <label className="mixer-control-label">Артефакт</label>
+                    <label className="mixer-control-label">Важная деталь</label>
                     <input
                       type="text"
                       className="mixer-input"

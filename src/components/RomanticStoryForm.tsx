@@ -372,7 +372,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
                   />
                 </div>
                 <div>
-                  <label className="romantic-form-label">Артефакт — особенный предмет</label>
+                  <label className="romantic-form-label">Важная деталь — особенный предмет</label>
                   <textarea
                     className="romantic-form-input romantic-form-textarea"
                     value={formData.artifact}
