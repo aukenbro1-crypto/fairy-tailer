@@ -4681,6 +4681,7 @@ function fileRequiresPaidAccess(fileName) {
 }
 
 const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-chapter-breaks-v1';
+const PAYWALL_PREVIEW_PAGES_CACHE_VERSION = 'paywall-preview-pages-light-v1';
 const PAYWALL_FRONT_COVER_PAGES = 1;
 const PAYWALL_INTERIOR_FRONT_MATTER_PAGES = 3;
 const PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES = [4, 4, 6, 6, 5];
@@ -4790,18 +4791,22 @@ async function listPaywallPreviewPages(jobId) {
   const metaPath = join(pagesDir, 'metadata.json');
   const existingMeta = await readJsonFile(metaPath, null);
 
-  if (!existingMeta || existingMeta.sourceUpdatedAt !== sampleInfo.updatedAt) {
+  if (!existingMeta || existingMeta.version !== PAYWALL_PREVIEW_PAGES_CACHE_VERSION || existingMeta.sourceUpdatedAt !== sampleInfo.updatedAt) {
     await rm(pagesDir, { recursive: true, force: true });
     await mkdir(pagesDir, { recursive: true, mode: 0o700 });
     await runCommand('pdftoppm', [
       '-jpeg',
-      '-r', '96',
-      '-scale-to', '920',
-      '-jpegopt', 'quality=72,optimize=y',
+      '-r', '72',
+      '-scale-to', '760',
+      '-jpegopt', 'quality=62,optimize=y',
       samplePath,
       join(pagesDir, 'page'),
     ]);
-    await writeJsonAtomic(metaPath, { sourceUpdatedAt: sampleInfo.updatedAt, generatedAt: nowIso() });
+    await writeJsonAtomic(metaPath, {
+      version: PAYWALL_PREVIEW_PAGES_CACHE_VERSION,
+      sourceUpdatedAt: sampleInfo.updatedAt,
+      generatedAt: nowIso(),
+    });
   }
 
   const entries = await readdir(pagesDir);
@@ -4812,7 +4817,7 @@ async function listPaywallPreviewPages(jobId) {
   return pageFiles.map((fileName, index) => ({
     n: index + 1,
     fileName,
-    url: `/api/fairyteller/jobs/${jobId}/sample-pages/${fileName}`,
+    url: `/api/fairyteller/jobs/${jobId}/sample-pages/${fileName}?v=${PAYWALL_PREVIEW_PAGES_CACHE_VERSION}`,
   }));
 }
 

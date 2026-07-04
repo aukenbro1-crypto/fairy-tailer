@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Check, Lock, Mail, ShoppingBag } from "lucide-react";
 
@@ -71,6 +71,9 @@ type PreviewProgress = {
   chapterEndPages?: PreviewChapterBreak[];
 };
 
+const PREVIEW_PAGE_PRELOAD_BEFORE = 2;
+const PREVIEW_PAGE_PRELOAD_AFTER = 4;
+
 const splitParagraphs = (text: string) => String(text || "").split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
 
 const chapterText = (chapter: FullTextChapter | SampleChapter) => {
@@ -105,6 +108,7 @@ const Book = () => {
   const previewPageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const chapterBreakRefs = useRef(new Map<number, HTMLDivElement | null>());
   const previousPaywallChapterRef = useRef<number | null>(null);
+  const paywallTouchYRef = useRef<number | null>(null);
 
   const bookTitle = useMemo(() => {
     return fullText?.text?.bible?.bookTitle
@@ -222,11 +226,7 @@ const Book = () => {
           .filter((entry) => entry.chapter > 0)
           .sort((a, b) => Math.abs(a.top) - Math.abs(b.top));
 
-        if (!visible.length) {
-          setShowPaywallLock(false);
-          setActivePaywallChapter(null);
-          return;
-        }
+        if (!visible.length) return;
 
         setActivePaywallChapter(visible[0].chapter);
         setShowPaywallLock(true);
@@ -355,6 +355,49 @@ const Book = () => {
     });
     return breaks;
   }, [previewProgress]);
+  const loadedPreviewPageNumbers = useMemo(() => {
+    const pages = new Set<number>();
+    const activePage = Math.max(1, currentPreviewPage || 1);
+    const firstPage = Math.max(1, activePage - PREVIEW_PAGE_PRELOAD_BEFORE);
+    const lastPage = Math.min(availablePages || previewPages.length, activePage + PREVIEW_PAGE_PRELOAD_AFTER);
+
+    for (let pageNumber = firstPage; pageNumber <= lastPage; pageNumber += 1) {
+      pages.add(pageNumber);
+    }
+    for (let pageNumber = 1; pageNumber <= Math.min(3, previewPages.length); pageNumber += 1) {
+      pages.add(pageNumber);
+    }
+
+    return pages;
+  }, [availablePages, currentPreviewPage, previewPages.length]);
+  const scrollPreviewBy = (deltaY: number) => {
+    if (!Number.isFinite(deltaY) || Math.abs(deltaY) < 1) return;
+    const documentElement = document.documentElement;
+    const body = document.body;
+    const scrollTarget = body.scrollHeight > documentElement.scrollHeight
+      ? body
+      : (document.scrollingElement || documentElement);
+    scrollTarget.scrollTop += deltaY;
+  };
+  const handlePaywallWheel = (event: WheelEvent<HTMLDivElement>) => {
+    if (!showPaywallLock || Math.abs(event.deltaY) < 1) return;
+    scrollPreviewBy(event.deltaY);
+  };
+  const handlePaywallTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    paywallTouchYRef.current = event.touches[0]?.clientY ?? null;
+  };
+  const handlePaywallTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const previousY = paywallTouchYRef.current;
+    const nextY = event.touches[0]?.clientY ?? null;
+    if (previousY === null || nextY === null) return;
+    const deltaY = previousY - nextY;
+    if (Math.abs(deltaY) < 1) return;
+    scrollPreviewBy(deltaY);
+    paywallTouchYRef.current = nextY;
+  };
+  const handlePaywallTouchEnd = () => {
+    paywallTouchYRef.current = null;
+  };
 
   if (!isLoading && !access && !isPendingReturn && !isPaid && sample) {
     return (
@@ -446,6 +489,9 @@ const Book = () => {
             aspect-ratio: 1 / 1;
             background: #ffffff;
             border: 1px solid rgba(17, 17, 17, .08);
+            contain: layout paint;
+            content-visibility: auto;
+            contain-intrinsic-size: 640px 640px;
             box-shadow:
               0 1px 2px rgba(17, 17, 17, .08),
               0 10px 28px rgba(17, 17, 17, .16),
@@ -462,6 +508,20 @@ const Book = () => {
             height: 100%;
             object-fit: contain;
             background: #ffffff;
+          }
+          .book-preview-page-placeholder {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            place-items: center;
+            background:
+              linear-gradient(135deg, rgba(17, 17, 17, .035), rgba(255, 255, 255, 0) 42%),
+              #ffffff;
+            color: rgba(17, 17, 17, .42);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
           }
           .book-paywall-sentinel {
             width: 1px;
@@ -507,7 +567,8 @@ const Book = () => {
             box-shadow: 8px 8px 0 #111111;
             padding: clamp(20px, 3vw, 30px);
             text-align: center;
-            pointer-events: auto;
+            pointer-events: none;
+            touch-action: pan-y;
           }
           .book-paywall-close {
             position: absolute;
@@ -526,6 +587,7 @@ const Book = () => {
             font-size: 22px;
             font-weight: 900;
             line-height: 1;
+            pointer-events: auto;
           }
           .book-paywall-lock-card h1 {
             margin: 0;
@@ -561,6 +623,7 @@ const Book = () => {
             line-height: 1.25;
             text-transform: uppercase;
             transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+            pointer-events: auto;
           }
           .book-paywall-lock-card a::after {
             content: "";
@@ -607,7 +670,8 @@ const Book = () => {
             color: #ffffff;
             box-shadow: 0 -6px 22px rgba(17, 17, 17, .16);
             padding: 14px 16px;
-            pointer-events: auto;
+            pointer-events: none;
+            touch-action: pan-y;
           }
           .book-paywall-strip button,
           .book-paywall-strip a {
@@ -619,6 +683,7 @@ const Book = () => {
             font-weight: 950;
             letter-spacing: .06em;
             text-transform: uppercase;
+            pointer-events: auto;
           }
           .book-paywall-strip a {
             color: #e89c31;
@@ -646,9 +711,26 @@ const Book = () => {
             }
             .book-preview-page-shell {
               width: min(100%, 620px);
+              contain-intrinsic-size: 360px 360px;
             }
             .book-paywall-lock {
               padding: 58px 12px 22px;
+            }
+            .book-paywall-lock-card {
+              gap: 10px;
+              padding: 18px 16px 20px;
+            }
+            .book-paywall-lock-card h1 {
+              font-size: 24px;
+            }
+            .book-paywall-lock-card p {
+              font-size: 14px;
+              line-height: 1.42;
+            }
+            .book-paywall-lock-card a {
+              min-height: 52px;
+              padding: 14px 16px;
+              font-size: 12px;
             }
             .book-paywall-strip {
               align-items: flex-start;
@@ -676,13 +758,19 @@ const Book = () => {
                 className="book-preview-page-shell"
                 data-page-number={page.n}
               >
-                <img
-                  className="book-preview-page"
-                  src={page.url}
-                  alt={`Страница ${page.n}`}
-                  loading={index < 2 ? "eager" : "lazy"}
-                  decoding="async"
-                />
+                {loadedPreviewPageNumbers.has(page.n) ? (
+                  <img
+                    className="book-preview-page"
+                    src={page.url}
+                    alt={`Страница ${page.n}`}
+                    loading={index < 2 ? "eager" : "lazy"}
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="book-preview-page-placeholder" aria-label={`Страница ${page.n}`}>
+                    Страница {page.n}
+                  </div>
+                )}
               </div>
               {chapterBreaksByPage.has(page.n) && (
                 <div
@@ -702,7 +790,15 @@ const Book = () => {
             <div className="book-preview-empty">Готовим PDF-превью...</div>
           )}
         </div>
-        <div className={`book-paywall-lock${showPaywallLock ? " is-visible" : ""}`} aria-label="Оплата полной книги">
+        <div
+          className={`book-paywall-lock${showPaywallLock ? " is-visible" : ""}`}
+          aria-label="Оплата полной книги"
+          onWheelCapture={handlePaywallWheel}
+          onTouchStartCapture={handlePaywallTouchStart}
+          onTouchMoveCapture={handlePaywallTouchMove}
+          onTouchEndCapture={handlePaywallTouchEnd}
+          onTouchCancelCapture={handlePaywallTouchEnd}
+        >
           {paywallCollapsed ? (
             <div className="book-paywall-strip">
               <button type="button" onClick={() => setPaywallCollapsed(false)}>Почти готово</button>
@@ -719,8 +815,8 @@ const Book = () => {
                 ×
               </button>
               <Lock size={22} aria-hidden="true" className="mx-auto" />
-              <h1>А дальше?</h1>
-              <p>Перед вами — почти готовая книга. Оплатите заказ, чтобы получить бумажную версию с бесплатной доставкой по РФ.</p>
+              <h1>Нравится история?</h1>
+              <p>Перед вами — готовый макет. Оплатите заказ, чтобы получить бумажную версию книги с бесплатной доставкой по РФ.</p>
               <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
                 <ShoppingBag size={18} aria-hidden="true" />
                 Оплатить — 3 500 ₽

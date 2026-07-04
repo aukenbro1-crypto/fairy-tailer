@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Menu, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 import logoImage from "@/assets/logo.png";
 
@@ -12,13 +12,6 @@ const LandingHeader = () => (
     <header className="sticky inset-x-0 top-0 z-40 border-b border-black bg-white">
       <div className="mx-auto flex h-14 max-w-[1480px] items-center justify-between px-5 md:px-8">
         <div className="flex items-center gap-5">
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-black bg-white text-black transition hover:bg-black hover:text-white md:hidden"
-            aria-label="Открыть меню"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
           <Link to="/" className="flex items-center gap-3" aria-label="FairyTeller">
             <img src={logoImage} alt="FairyTeller" className="h-10 w-auto object-contain" />
           </Link>

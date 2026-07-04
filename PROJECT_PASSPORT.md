@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-02 11:41 UTC
+Last updated: 2026-07-04 06:18 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260704-mobile-header-floating-paywall-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260704-light-preview-sticky-paywall-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -261,6 +261,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260704-mobile-header-menu-codex` to remove the inert mobile hamburger button from the homepage/create header and shared gift-landing header. The release was built from clean `HEAD` with only `src/pages/DesignTest.tsx` and `src/components/LandingHeader.tsx` patched, avoiding unrelated local `/book/:jobId` changes. Verified targeted `npx eslint src/pages/DesignTest.tsx src/components/LandingHeader.tsx`, `npm run build`, nginx config, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, active JS `open-menu=0`, and Playwright mobile checks on `/` and `/podarok/skazka-po-foto` with `menuButtons: 0`. The only console error was local DNS resolution for `mc.yandex.ru` in the test environment.
 
 - Adjusted the unpaid `/book/:jobId` chapter-paywall UI after review: removed the inline chapter cards and restored the previous floating paywall card/strip with the original copy (`А дальше?`, `Перед вами — почти готовая книга...`, refund/rebuild small print). The same `progress.chapterEndPages` sentinels now trigger that floating card after each chapter while all 42 preview pages remain scrollable. Final production release is `/var/www/fairyteller/releases/20260704-mobile-header-floating-paywall-codex`, rebuilt after the active production symlink advanced to `/var/www/fairyteller/releases/20260704-mobile-header-menu-codex` so the active header state was preserved while the source change stayed scoped to `src/pages/Book.tsx`. Verified `npx eslint src/pages/Book.tsx`, `npm run build`, nginx config/reload, production `/book/ft_1783125327969_54mlzm` `200`, `/sample-pages` returns `42/42` pages with chapter end pages `[10,16,24,32,39]`, production `Book` chunk contains the restored floating copy and no `book-chapter-paywall-note`/`дочитана`, and Playwright showed the card hidden at page 1, visible after chapter 1, and mouse-wheel scrolling continuing to subsequent pages.
+
+- Deployed frontend/API release `/var/www/fairyteller/releases/20260704-light-preview-sticky-paywall-codex` to smooth the mobile unpaid `/book/:jobId` PDF preview. `src/pages/Book.tsx` now virtualizes preview images by loading only a small window around the current page, uses lightweight placeholders for the remaining 42-page layout, keeps the floating payment card visible after it first appears, proxies wheel/touch scroll from the card/CTA to the page underneath, and updates the copy to `Нравится история?` / `Перед вами — готовый макет...`. `server/fairyteller-api.mjs` now uses preview page cache version `paywall-preview-pages-light-v1` with `pdftoppm -r 72 -scale-to 760 -jpegopt quality=62,optimize=y`, so existing jobs regenerate lighter JPEGs and page URLs include the cache-busting `?v=paywall-preview-pages-light-v1`. API backup before deploy: `/opt/fairyteller-api/fairyteller-api.mjs.20260704-0600Z-light-preview-paywall.bak`. Verified `npx eslint src/pages/Book.tsx`, `node --check server/fairyteller-api.mjs`, `npm run build`, production API health, nginx config/reload, active symlink, production `/book/ft_1783125327969_54mlzm` `200`, `/sample-pages` returns `42/42` pages with cache-busted URLs and chapter end pages `[10,16,24,32,39]`, regenerated page images dropped from `3.5M` to `2.3M`, and Playwright mobile `390x844` loaded only 5 initial images/37 placeholders, showed the sticky card after chapter 1, kept it visible while scrolling over the card from `bodyTop 3534` to `4934`, and reported only the known `mc.yandex.ru` DNS error.
 
 ### 2026-07-02
 
