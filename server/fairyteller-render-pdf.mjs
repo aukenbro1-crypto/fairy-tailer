@@ -109,6 +109,11 @@ function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function bookSummary(fullText, fallback = '') {
+  const bible = fullText.text?.bible || {};
+  return bible.coverSummary || bible.readerBlurb || fullText.text?.preview?.summary || fallback;
+}
+
 function normalizeDialogueDashes(value) {
   return String(value || '')
     .replace(/\r\n/g, '\n')
@@ -755,7 +760,7 @@ async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   const bible = fullText.text?.bible || {};
   const title = bible.bookTitle || fullText.text?.preview?.title || 'Fairyteller';
   const subtitle = bible.subtitle || '';
-  const summary = bible.readerBlurb || bible.coverSummary || fullText.text?.preview?.summary || '';
+  const summary = bookSummary(fullText);
 
   page.drawImage(assets.coverBackground, { x: 0, y: 0, width, height });
 
@@ -793,12 +798,12 @@ async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   }
   if (summary) {
     const summaryLayout = drawTextBox(page, summary, {
-      ...topLeftBox(page, pptBox(217.1, 87, 150.43, 151.5)),
+      ...topLeftBox(page, pptBox(217.1, 87, 184, 178)),
       paddingX: 6,
       paddingY: 0,
-      startSize: 6.6,
-      minSize: 4.8,
-      lineHeightRatio: 1.34,
+      startSize: 7.3,
+      minSize: 5.4,
+      lineHeightRatio: 1.25,
       align: 'left',
       valign: 'top',
     }, {
@@ -846,7 +851,7 @@ function addInteriorTitlePage(pdf, fonts, fullText, layout) {
 function addDedicationPage(pdf, fonts, fullText, layout) {
   const page = pdf.addPage(INTERIOR_SIZE_MM.map(mmToPt));
   addSoftBackground(page, fonts.bookTemplate);
-  const summary = fullText.text?.bible?.readerBlurb || fullText.text?.bible?.coverSummary || 'Эта история создана специально для своих героев.';
+  const summary = bookSummary(fullText, 'Эта история создана специально для своих героев.');
   const textLayout = drawTextBox(page, summary, layout.interior.dedicationPage.body, {
     font: fonts.fontRegular,
     color: rgbColor(layout.colors.paperHeading),
@@ -1269,7 +1274,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       color: hexColor('#292929'),
     });
   }
-  drawPptText(page, bible.readerBlurb || bible.coverSummary || fullText.text?.preview?.summary || '', pptBox(39.5, 134, 306.5, 128), {
+  drawPptText(page, bookSummary(fullText), pptBox(39.5, 134, 306.5, 128), {
     font: fonts.fontInterBody,
     size: 11,
     minSize: 7,

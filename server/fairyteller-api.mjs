@@ -2250,6 +2250,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const text = fullText.text || {};
   const bible = text.bible || {};
   const preview = text.preview || {};
+  const editorCoverSummary = bible.coverSummary || bible.readerBlurb || preview.summary || '';
   const chapters = [...(text.chapters || [])].sort((a, b) => Number(a.n) - Number(b.n));
   const files = options.files || {};
   const images = options.images || [];
@@ -2369,7 +2370,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
         </div>
       </div>
       <label for="coverSummary">Аннотация / summary</label>
-      <textarea id="coverSummary" name="coverSummary" rows="${textareaRows(bible.coverSummary || preview.summary || '', 4, 10)}">${escapeHtml(bible.coverSummary || '')}</textarea>
+      <textarea id="coverSummary" name="coverSummary" rows="${textareaRows(editorCoverSummary, 4, 10)}">${escapeHtml(editorCoverSummary)}</textarea>
       <div class="grid two">
         <div>
           <label for="previewTitle">Preview title</label>
@@ -2437,6 +2438,7 @@ function buildEditedFullText(current, params) {
   next.text.bible.bookTitle = bookTitle;
   next.text.bible.subtitle = subtitle;
   next.text.bible.coverSummary = coverSummary;
+  next.text.bible.readerBlurb = coverSummary;
   next.text.preview.title = previewTitle;
   next.text.preview.summary = previewSummary;
 
