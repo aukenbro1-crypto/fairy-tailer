@@ -1210,7 +1210,6 @@ function addPptDecorativeOutroPage(pdf, fonts, assets) {
     valign: 'center',
     color: hexColor('#292929'),
   });
-  drawPptPageNumber(page, 39, fonts, pptBox(177.52, 329.59, 30.47, 27.59));
 }
 
 function addPptQrPage(pdf, fonts, assets) {
