@@ -18,6 +18,8 @@ const ALERT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKE
 const ALERT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
 const SUPPORT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
 const SUPPORT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || '';
+const PAYMENT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_PAYMENT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_CHAT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || ALERT_TELEGRAM_BOT_TOKEN;
+const PAYMENT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_CHAT_TELEGRAM_CHAT_ID || process.env.FAIRYTELLER_TELEGRAM_CHAT_ID || ALERT_TELEGRAM_CHAT_ID;
 const SUPPORT_TELEGRAM_WEBHOOK_SECRET = (process.env.FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET || process.env.FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET || '').trim();
 const SUPPORT_TELEGRAM_POLLING_ENABLED = (process.env.FAIRYTELLER_CHAT_TELEGRAM_POLLING || process.env.FAIRYTELLER_TELEGRAM_POLLING) === '1';
 const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fairyteller.ru').replace(/\/+$/, '');
@@ -591,8 +593,59 @@ async function sendSupportTelegramMessage(text, options = {}) {
   );
 }
 
+async function sendPaymentTelegramMessage(text, options = {}) {
+  return sendTelegramMessage(
+    PAYMENT_TELEGRAM_BOT_TOKEN,
+    PAYMENT_TELEGRAM_CHAT_ID,
+    text,
+    options,
+    'Telegram payment notification',
+  );
+}
+
 function notifyJob(eventType, status, orderEnvelope) {
   void sendAlertTelegramMessage(telegramMessageForJob(eventType, status, orderEnvelope));
+}
+
+function paymentAmountLine(amount) {
+  if (!amount) return '';
+  if (typeof amount === 'string') return amount;
+  const value = amount.value || amount.amount || '';
+  const currency = amount.currency || '';
+  return [value, currency].filter(Boolean).join(' ');
+}
+
+function paymentSuccessTelegramMessage(jobId, status = {}, payment = {}, delivery = {}) {
+  const title = status.artifacts?.fullText?.title || status.preview?.title || '';
+  const paidAt = payment.paidAt || nowIso();
+  const bookUrl = `${PUBLIC_BASE_URL}/book/${encodeURIComponent(jobId)}`;
+  const lines = [
+    'Fairyteller: успешная оплата',
+    `job: ${jobId}`,
+  ];
+  const amount = paymentAmountLine(payment.amount);
+  if (amount) lines.push(`amount: ${amount}`);
+  lines.push(`paidAt: ${paidAt}`);
+  if (payment.provider) lines.push(`provider: ${payment.provider}`);
+  if (payment.paymentId) lines.push(`paymentId: ${payment.paymentId}`);
+  if (payment.invoiceId) lines.push(`invoiceId: ${payment.invoiceId}`);
+  if (title) lines.push(`title: ${title}`);
+  lines.push('');
+  lines.push('Данные заказа:');
+  lines.push(`email: ${normalizeShortText(payment.email, 180) || '-'}`);
+  lines.push(`phone: ${normalizeShortText(payment.phone, 80) || '-'}`);
+  lines.push(`recipient: ${normalizeShortText(payment.customerName, 180) || '-'}`);
+  lines.push(`address: ${normalizeShortText(payment.customerAddress, 360) || '-'}`);
+  lines.push('');
+  lines.push(`customer email: ${delivery.status || '-'}`);
+  if (delivery.id) lines.push(`resendId: ${delivery.id}`);
+  lines.push(`book: ${bookUrl}`);
+  return lines.join('\n');
+}
+
+async function notifyPaymentSucceeded(jobId, status, payment, delivery) {
+  const response = await sendPaymentTelegramMessage(paymentSuccessTelegramMessage(jobId, status, payment, delivery));
+  return response?.ok ? 'sent' : 'failed';
 }
 
 function publicUrl(pathOrUrl) {
@@ -4204,12 +4257,15 @@ async function handleYookassaWebhook(req) {
       pdfUrl: actual.metadata?.pdfUrl || current.pdfUrl || '',
     });
     const delivery = await deliverPurchaseAccessEmail(jobId, status, paidPayment);
-    await writePayment(jobId, {
+    const nextPayment = {
       ...paidPayment,
       emailDelivery: delivery,
       lastEmailAt: delivery.attemptedAt,
-    });
+    };
+    await writePayment(jobId, nextPayment);
+    const telegramStatus = await notifyPaymentSucceeded(jobId, status, nextPayment, delivery);
     await appendEvent(dir, { type: 'job.payment.succeeded', provider: 'yookassa', paymentId, emailStatus: delivery.status });
+    await appendEvent(dir, { type: 'job.payment.telegram.delivery', provider: 'telegram', status: telegramStatus });
     return { ok: true, status: 'paid' };
   }
 
@@ -4354,6 +4410,7 @@ async function handleYookassaFormNotification(params) {
     lastEmailAt: delivery.attemptedAt,
   };
   await writePayment(jobId, nextPayment);
+  const telegramStatus = await notifyPaymentSucceeded(jobId, status, nextPayment, delivery);
   await appendEvent(dir, {
     type: 'job.payment.simplepay.succeeded',
     provider: 'yookassa-simplepay',
@@ -4361,6 +4418,7 @@ async function handleYookassaFormNotification(params) {
     amount,
     emailStatus: delivery.status,
   });
+  await appendEvent(dir, { type: 'job.payment.telegram.delivery', provider: 'telegram', status: telegramStatus });
   return { code: 0 };
 }
 

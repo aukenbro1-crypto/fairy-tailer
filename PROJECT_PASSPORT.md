@@ -196,6 +196,8 @@ Generation progress and failure alerts use a separate Telegram bot identity:
 - `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN`
 - `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID`
 
+Successful payment alerts use `FAIRYTELLER_PAYMENT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_ID`, falling back to the site chat bot (`@fairysender_bot` in production) when dedicated payment variables are absent. The alert includes job/payment IDs, amount, customer email, phone, recipient name, delivery address, customer-email delivery status, and the public book URL.
+
 Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when the split role-specific variables are absent. Production should keep the site support chat on the support bot and generation alerts on the operations bot.
 
 The webhook should be registered with Telegram using `secret_token` and URL `https://fairyteller.ru/api/fairyteller/telegram/webhook`. Do not store bot tokens or webhook secrets in git.
