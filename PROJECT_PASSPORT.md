@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-04 07:34 UTC
+Last updated: 2026-07-05 06:45 UTC
 
 ## Project Context
 
@@ -249,6 +249,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-05
+
+- Deployed Fairyteller text-quality model and style update to production n8n. Updated `fairyteller_text` and `fairyteller_full_text` so text generation uses `gemini-2.5-pro` instead of `gemini-2.5-flash`; visual workflows remain on `gemini-2.5-flash-image`. Added text prompt guardrails for Russian direct-speech punctuation, no indirect speech disguised as quotations, no action-only dialogue lines, dialogue capped at 30% of chapter/page block text, and less decorative atmospheric/sensory filler. Verified `gemini-2.5-pro` is available and returns `200` through the production n8n `GEMINI_API_KEY`. Production backup before import: `/root/fairyteller-n8n-exports/20260705-064030Z-text-pro-style-before`; import: `/root/fairyteller-n8n-imports/20260705-064030Z-text-pro-style`; after-export: `/root/fairyteller-n8n-exports/20260705-064030Z-text-pro-style-after`. Reactivated both workflows after import, restarted `baku-n8n-docker`, and verified post-restart exports show `active: true`, `gemini-2.5-pro`, no `gemini-2.5-flash` in the text workflows, n8n `/healthz` returned ok, local API `/healthz` returned ok, and production `/` returned `200`.
 
 ### 2026-07-04
 
