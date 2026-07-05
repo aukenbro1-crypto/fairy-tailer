@@ -1168,7 +1168,9 @@ async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pa
 function addPptTextPage(pdf, fonts, assets, text, pageNumber, isLastTextPage = false) {
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber) ? 'image9' : 'image8');
-  const textBox = CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)
+  const textBox = isLastTextPage
+    ? pptBox(29.69, 28.35, 327.52, 260)
+    : CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)
     ? pptBox(29.69, 28.35, 327.52, pageNumber === 9 ? 284.5 : pageNumber === 15 ? 292.7 : pageNumber === 23 ? 294.5 : 300.35)
     : TEXT_PAGE_BOX;
   const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);

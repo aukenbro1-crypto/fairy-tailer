@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-05 12:43 UTC
+Last updated: 2026-07-05 13:36 UTC
 
 ## Project Context
 
@@ -164,6 +164,8 @@ Generated job files are mutable operational artifacts, not static assets. Admin 
 The admin book editor uses one multipart form for text and image edits. Its save-and-rebuild action persists the submitted text plus any selected replacement images, then queues the PDF rebuild in the API process and redirects immediately with `renderQueued=1`; the background render updates the normal job status and versioned PDF links when it finishes.
 
 The editor-facing book description is `text.bible.coverSummary`. Older generated books may also have `text.bible.readerBlurb`; the renderer must prefer `coverSummary`, and editor saves sync `readerBlurb` to the same value so stale generation text cannot override manual edits.
+
+The last story text page has a decorative footer below the text block. Its text layout must reserve vertical space above that footer instead of using the normal full-height chapter-final text box, otherwise longer edited endings can overlap the underline and page number.
 
 Mutating/internal endpoints require:
 
