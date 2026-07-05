@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-05 06:45 UTC
+Last updated: 2026-07-05 09:29 UTC
 
 ## Project Context
 
@@ -85,10 +85,11 @@ Text generation note:
 
 - `fairyteller_text` calls Gemini through `https://generativelanguage.googleapis.com/v1beta/models/:generateContent`.
 - The request uses `$env.GEMINI_API_KEY`; do not store the literal key value in the workflow JSON.
-- Model configured for first-chapter generation: `gemini-2.5-flash` with JSON response mode and `responseSchema`.
+- Model configured for first-chapter and full-text generation: `gemini-2.5-pro` with JSON response mode. Visual workflows remain on `gemini-2.5-flash-image`.
 - The first-chapter Gemini call is wrapped in a code node with controlled transient retries/backoff (`10s`, `20s`, `35s`, `55s`). If Gemini still returns provider errors, the workflow patches the Job API to `failed` before throwing so the frontend and Telegram do not hang silently.
 - The first-chapter normalizer extracts fenced/embedded JSON and repairs raw control characters inside strings before `JSON.parse`.
 - The first-chapter normalizer also patches the Job API to `failed` before throwing if Gemini returns unrecoverable JSON or an invalid print-ready block shape.
+- The first-chapter and full-text normalizers remove generated quotation marks from `textBlocks`, avoid direct-speech examples wrapped in guillemets in prompts, and insert paragraph breaks before inline Russian dialogue turns so direct speech stays visually separate from narration. Recalled phrases, thoughts, messages, and labels should be paraphrased without quote marks rather than treated as dialogue.
 - The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
 - `fairyteller_text` starts the full book automatically after chapter 1 is normalized. It fans out to `fairyteller_visuals` for the portrait sheet/chapter 1 image and to `fairyteller_full_text` for chapters 2-5. `fairyteller_continue` remains available only for old jobs or manual recovery.
@@ -253,6 +254,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-05
+
+- Deployed Fairyteller dialogue normalization hotfix to production n8n after reviewing test job `ft_1783235006070_982sij`, where generated prose still mixed Russian dash dialogue with quoted thoughts, remembered phrases, labels, and indirect speech. Updated `fairyteller_text` and `fairyteller_full_text` prompts to remove guillemet-wrapped direct-speech examples and forbid quote marks inside `textBlocks`; added normalizer cleanup before artifact writes to strip generated `«»`/double quotes from story text, paraphrase common `сказали друг другу "люблю"` cases, and insert paragraph breaks before inline dialogue turns. Production backup before import: `/root/fairyteller-n8n-exports/20260705-092523Z-dialogue-normalizer-before`; import: `/root/fairyteller-n8n-imports/20260705-092550Z-dialogue-normalizer`; after-export: `/root/fairyteller-n8n-exports/20260705-092842Z-dialogue-normalizer-after`. Reactivated and published both workflows, restarted `baku-n8n-docker`, and verified post-restart exports show `active: true`, `gemini-2.5-pro`, `function normalizeGeneratedStoryText`, no old `«— Реплика` examples, n8n `/healthz` ok, and Job API `/healthz` ok.
 
 - Deployed Fairyteller text-quality model and style update to production n8n. Updated `fairyteller_text` and `fairyteller_full_text` so text generation uses `gemini-2.5-pro` instead of `gemini-2.5-flash`; visual workflows remain on `gemini-2.5-flash-image`. Added text prompt guardrails for Russian direct-speech punctuation, no indirect speech disguised as quotations, no action-only dialogue lines, dialogue capped at 30% of chapter/page block text, and less decorative atmospheric/sensory filler. Verified `gemini-2.5-pro` is available and returns `200` through the production n8n `GEMINI_API_KEY`. Production backup before import: `/root/fairyteller-n8n-exports/20260705-064030Z-text-pro-style-before`; import: `/root/fairyteller-n8n-imports/20260705-064030Z-text-pro-style`; after-export: `/root/fairyteller-n8n-exports/20260705-064030Z-text-pro-style-after`. Reactivated both workflows after import, restarted `baku-n8n-docker`, and verified post-restart exports show `active: true`, `gemini-2.5-pro`, no `gemini-2.5-flash` in the text workflows, n8n `/healthz` returned ok, local API `/healthz` returned ok, and production `/` returned `200`.
 
