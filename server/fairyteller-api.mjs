@@ -661,6 +661,10 @@ function withUrlParam(url, name, value) {
   return `${url}${separator}${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
 }
 
+function adminFileUrlWithVersion(jobId, fileName, info) {
+  return withUrlParam(adminFileUrl(jobId, fileName), 'v', info?.updatedAt || '');
+}
+
 function daysFromNowIso(days) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -1233,7 +1237,7 @@ async function listGeneratedBooks() {
           fileName.replace(/\.pdf$/i, ''),
           {
             fileName,
-            url: adminFileUrl(entry.name, fileName),
+            url: adminFileUrlWithVersion(entry.name, fileName, info),
             ...info,
           },
         ];
@@ -2207,7 +2211,7 @@ async function getJobPdfFiles(jobId) {
       fileName.replace(/\.pdf$/i, ''),
       {
         fileName,
-        url: adminFileUrl(jobId, fileName),
+        url: adminFileUrlWithVersion(jobId, fileName, info),
         ...info,
       },
     ];
@@ -4738,6 +4742,31 @@ function fileRequiresPaidAccess(fileName) {
   return ['book.pdf', 'preview.pdf', 'interior.pdf', 'cover.pdf'].includes(String(fileName || '').toLowerCase());
 }
 
+async function renderWithCurrentFileInfo(jobId, render) {
+  const files = render?.files && typeof render.files === 'object' ? render.files : {};
+  const next = {
+    ...(render || {}),
+    files: { ...files },
+  };
+
+  const dir = jobDir(jobId);
+  await Promise.all(Object.entries(files).map(async ([key, file]) => {
+    const fileName = file?.fileName;
+    if (!fileName) return;
+    const info = await optionalFileInfo(join(dir, 'files', fileName));
+    if (!info) return;
+    const url = file.url || `/api/fairyteller/jobs/${jobId}/files/${fileName}`;
+    next.files[key] = {
+      ...file,
+      url: withUrlParam(url, 'v', info.updatedAt),
+      bytes: info.bytes,
+      updatedAt: info.updatedAt,
+    };
+  }));
+
+  return next;
+}
+
 const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-chapter-breaks-v1';
 const PAYWALL_PREVIEW_PAGES_CACHE_VERSION = 'paywall-preview-pages-light-v1';
 const PAYWALL_FRONT_COVER_PAGES = 1;
@@ -4990,7 +5019,7 @@ async function sendJobFile(req, res, jobId, fileName) {
   res.writeHead(200, {
     ...corsHeaders(req),
     'content-type': contentTypeFromFileName(fileName),
-    'cache-control': 'public, max-age=31536000, immutable',
+    'cache-control': 'no-store',
   });
   res.end(content);
 }
@@ -5040,7 +5069,7 @@ async function renderJobPdf(jobId, options = {}) {
     });
 
     const renderArtifact = await getJobJsonArtifact(jobId, 'render.json');
-    const render = renderArtifact.render || renderArtifact;
+    const render = await renderWithCurrentFileInfo(jobId, renderArtifact.render || renderArtifact);
     const nextStatus = await updateJobStatus(jobId, {
       status: 'done',
       stage: 'complete',

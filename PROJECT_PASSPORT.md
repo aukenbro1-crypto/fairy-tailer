@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-05 09:29 UTC
+Last updated: 2026-07-05 11:31 UTC
 
 ## Project Context
 
@@ -158,6 +158,8 @@ Core endpoints:
 - `GET /api/fairyteller/jobs/:jobId/files/:fileName`
 - `GET /api/fairyteller/jobs/:jobId/files/:fileName?base64=1` returns authenticated JSON/base64 for internal workflow reuse of generated files.
 - `POST /api/fairyteller/jobs/:jobId/render-pdf` starts the authenticated PDF render step and writes `cover.pdf`, `interior.pdf`, and `render.json`.
+
+Generated job files are mutable operational artifacts, not static assets. Admin rebuilds overwrite `book.pdf`, `preview.pdf`, `cover.pdf`, and `interior.pdf` in place, so file responses use `Cache-Control: no-store`; admin/status PDF links include a `v=<file updatedAt>` query value to bypass any older browser cache entries.
 
 Mutating/internal endpoints require:
 
