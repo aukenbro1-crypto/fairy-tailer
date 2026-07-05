@@ -1874,9 +1874,8 @@ async function renderAdminJobAction(req, res, jobId, action, url) {
       if (!existsSync(join(jobDir(jobId), 'artifacts', 'full-text.json'))) {
         throw httpError(409, 'Full text artifact is not ready');
       }
-      await appendEvent(jobDir(jobId), { type: 'job.adminRenderRequested' });
-      await renderJobPdf(jobId, { skipCustomerEmail: true });
-      redirectAdmin(res, `${adminJobPath(jobId)}?rendered=1`);
+      await queueAdminRenderJob(jobId, 'job.adminRenderRequested');
+      redirectAdmin(res, `${adminJobPath(jobId)}?renderQueued=1`);
       return;
     }
     if (action === 'clone') {
@@ -1896,6 +1895,7 @@ async function renderAdminJobAction(req, res, jobId, action, url) {
 
 function adminJobNotice(url) {
   if (url.searchParams.get('restarted') === '1') return 'Перезапуск продолжения отправлен в n8n.';
+  if (url.searchParams.get('renderQueued') === '1') return 'Пересборка PDF запущена. Файлы обновятся примерно через минуту.';
   if (url.searchParams.get('rendered') === '1') return 'PDF пересобран без повторного письма клиенту.';
   if (url.searchParams.get('clonedFrom')) return `Создана повторная заявка из ${url.searchParams.get('clonedFrom')}.`;
   if (url.searchParams.get('cloned') === '1') return 'Повторная заявка отправлена.';
@@ -2224,7 +2224,7 @@ function renderAdminNotice(message, type = 'notice') {
   return `<div class="${type}">${escapeHtml(message)}</div>`;
 }
 
-function renderBookImageEditor(jobId, images = []) {
+function renderBookImageEditor(images = []) {
   const rows = images.map((image) => `
     <div class="image-card">
       <div class="image-preview">
@@ -2239,17 +2239,11 @@ function renderBookImageEditor(jobId, images = []) {
     </div>
   `).join('');
 
-  return `<form class="image-form" method="post" action="${adminBookEditPath(jobId)}" enctype="multipart/form-data">
-    <section class="panel">
+  return `<section class="panel">
       <h2>Картинки</h2>
       <p>Можно заменить обложку и иллюстрации глав. Поддерживаются PNG/JPG до ${escapeHtml(formatBytes(ADMIN_BOOK_IMAGE_MAX_BYTES) || '12 MB')} на файл.</p>
       <div class="image-grid">${rows}</div>
-      <div class="inline-button-row">
-        <button class="secondary" type="submit" name="action" value="images">Сохранить картинки</button>
-        <button type="submit" name="action" value="images_render">Сохранить картинки и пересобрать PDF</button>
-      </div>
-    </section>
-  </form>`;
+    </section>`;
 }
 
 function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
@@ -2360,8 +2354,8 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   </header>
   ${renderAdminNotice(notice)}
   ${renderAdminNotice(error, 'error')}
-  ${renderBookImageEditor(jobId, images)}
-  <form method="post" action="${adminBookEditPath(jobId)}">
+  <form method="post" action="${adminBookEditPath(jobId)}" enctype="multipart/form-data">
+    ${renderBookImageEditor(images)}
     <section class="panel">
       <h2>Книга</h2>
       <div class="grid two">
@@ -2730,16 +2724,22 @@ function redirectAdmin(res, location) {
 
 async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
   const { fullText, status, files, images } = await getAdminBookText(jobId);
-  const notice = options.notice
-    || (url.searchParams.get('rendered') === '1'
-      ? 'Текст сохранен, PDF пересобран.'
-      : url.searchParams.get('imagesRendered') === '1'
-        ? 'Картинки сохранены, PDF пересобран.'
-        : url.searchParams.get('imagesSaved') === '1'
-          ? 'Картинки сохранены. PDF нужно пересобрать, чтобы изменения попали в файлы.'
-          : url.searchParams.get('saved') === '1'
-            ? 'Текст сохранен. PDF нужно пересобрать, чтобы изменения попали в файлы.'
-            : '');
+  let notice = options.notice || '';
+  if (!notice && url.searchParams.get('renderQueued') === '1') {
+    notice = 'Изменения сохранены. Пересборка PDF запущена, файлы обновятся примерно через минуту.';
+  }
+  if (!notice && url.searchParams.get('rendered') === '1') {
+    notice = 'Текст сохранен, PDF пересобран.';
+  }
+  if (!notice && url.searchParams.get('imagesRendered') === '1') {
+    notice = 'Картинки сохранены, PDF пересобран.';
+  }
+  if (!notice && url.searchParams.get('imagesSaved') === '1') {
+    notice = 'Картинки сохранены. PDF нужно пересобрать, чтобы изменения попали в файлы.';
+  }
+  if (!notice && url.searchParams.get('saved') === '1') {
+    notice = 'Текст сохранен. PDF нужно пересобрать, чтобы изменения попали в файлы.';
+  }
   sendHtml(req, res, options.status || 200, renderBookTextEditorPage(jobId, fullText, status, {
     ...options,
     notice,
@@ -5107,6 +5107,35 @@ async function renderJobPdf(jobId, options = {}) {
   }
 }
 
+const ADMIN_RENDER_QUEUE = new Set();
+
+async function queueAdminRenderJob(jobId, eventType = 'job.adminRenderRequested') {
+  const dir = jobDir(jobId);
+  const queuedAt = nowIso();
+  if (ADMIN_RENDER_QUEUE.has(jobId)) {
+    await appendEvent(dir, { type: 'job.adminRenderAlreadyQueued', requestedAt: queuedAt, eventType });
+    return false;
+  }
+  ADMIN_RENDER_QUEUE.add(jobId);
+  await appendEvent(dir, { type: eventType, queuedAt, background: true });
+  setImmediate(() => {
+    renderJobPdf(jobId, { skipCustomerEmail: true }).catch(async (error) => {
+      const message = error?.message || 'PDF render failed';
+      console.error(`Background admin PDF render failed for ${jobId}: ${message}`);
+      await appendEvent(dir, {
+        type: 'job.adminRenderFailed',
+        failedAt: nowIso(),
+        message,
+      }).catch((appendError) => {
+        console.error(`Failed to append admin render failure event for ${jobId}: ${appendError.message}`);
+      });
+    }).finally(() => {
+      ADMIN_RENDER_QUEUE.delete(jobId);
+    });
+  });
+  return true;
+}
+
 function requireJsonArtifactName(fileName) {
   const safeName = basename(fileName);
   if (safeName !== fileName || !/^[a-zA-Z0-9_.-]+\.json$/.test(fileName)) {
@@ -5364,27 +5393,38 @@ async function route(req, res) {
     try {
       if (String(req.headers['content-type'] || '').toLowerCase().includes('multipart/form-data')) {
         const { fields, files } = await readMultipartForm(req);
-        const action = fields.get('action') || 'images';
-        if (action !== 'images' && action !== 'images_render') {
-          throw httpError(400, 'Unknown editor image action');
-        }
-        await saveAdminBookImages(jobId, files);
-        if (action === 'images_render') {
-          await appendEvent(jobDir(jobId), { type: 'job.images.adminRenderRequested' });
-          await renderJobPdf(jobId, { skipCustomerEmail: true });
-          redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesRendered=1`);
+        const action = fields.get('action') || 'save';
+        if (action === 'images' || action === 'images_render') {
+          await saveAdminBookImages(jobId, files);
+          if (action === 'images_render') {
+            await queueAdminRenderJob(jobId, 'job.images.adminRenderRequested');
+            redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
+            return;
+          }
+          redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
           return;
         }
-        redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
+        if (action !== 'save' && action !== 'save_render') {
+          throw httpError(400, 'Unknown editor action');
+        }
+        await saveAdminBookText(jobId, fields);
+        if (files.size > 0) {
+          await saveAdminBookImages(jobId, files);
+        }
+        if (action === 'save_render') {
+          await queueAdminRenderJob(jobId, 'job.adminEditorRenderRequested');
+          redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
+          return;
+        }
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?saved=1`);
         return;
       }
 
       const params = await readFormBody(req);
       await saveAdminBookText(jobId, params);
       if (params.get('action') === 'save_render') {
-        await appendEvent(jobDir(jobId), { type: 'job.fullText.adminRenderRequested' });
-        await renderJobPdf(jobId, { skipCustomerEmail: true });
-        redirectAdmin(res, `${adminBookEditPath(jobId)}?rendered=1`);
+        await queueAdminRenderJob(jobId, 'job.fullText.adminRenderRequested');
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
         return;
       }
       redirectAdmin(res, `${adminBookEditPath(jobId)}?saved=1`);

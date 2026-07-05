@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-05 11:31 UTC
+Last updated: 2026-07-05 12:15 UTC
 
 ## Project Context
 
@@ -160,6 +160,8 @@ Core endpoints:
 - `POST /api/fairyteller/jobs/:jobId/render-pdf` starts the authenticated PDF render step and writes `cover.pdf`, `interior.pdf`, and `render.json`.
 
 Generated job files are mutable operational artifacts, not static assets. Admin rebuilds overwrite `book.pdf`, `preview.pdf`, `cover.pdf`, and `interior.pdf` in place, so file responses use `Cache-Control: no-store`; admin/status PDF links include a `v=<file updatedAt>` query value to bypass any older browser cache entries.
+
+The admin book editor uses one multipart form for text and image edits. Its save-and-rebuild action persists the submitted text plus any selected replacement images, then queues the PDF rebuild in the API process and redirects immediately with `renderQueued=1`; the background render updates the normal job status and versioned PDF links when it finishes.
 
 Mutating/internal endpoints require:
 
