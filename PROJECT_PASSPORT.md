@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 00:53 UTC
+Last updated: 2026-07-06 01:31 UTC
 
 ## Project Context
 
@@ -113,8 +113,9 @@ Visual generation note:
 - Portraitizer, chapter, and cover prompts treat hero age group as mandatory visual canon: children, teenagers, adults, and seniors must keep distinct proportions, maturity, and relative height/scale instead of being averaged into the main hero's apparent age.
 - `fairyteller_visuals` persists `visuals.visualBible` as the reusable visual canon for the book: selected style prompt, world visual direction, hero descriptions, per-hero reference card URLs/statuses, optional portrait sheet URL/status, and consistency rules. Future cover and chapter 2-5 image jobs must reuse this `visualBible` and the same per-hero reference cards instead of regenerating character identity from scratch.
 - Chapter illustration prompts must target the actual interior image page: `136 x 136 mm`, square `1:1`, full-bleed, roughly `1606 x 1606 px` at 300 DPI. Key faces, hands, silhouettes, and the important object must stay away from the left 15% gutter/spine area and outer 3 mm trim edge.
+- Gemini image requests now set `generationConfig.imageConfig.aspectRatio` explicitly for book art: `1:1` for chapter 1 and chapter 2-5 illustrations, and `3:2` for cover art because it is the closest supported ratio to the front-cover frame's `about 1.46:1` target.
 - Chapter illustration prompts must explicitly forbid rendered typography: no chapter numbers, titles, captions, signs, labels, fake letters, posters, banners, UI, white margins, blank paper backgrounds, or decorative borders. If a scene contains papers/books/signs, they must be abstract unreadable texture only; the PDF renderer owns all visible text.
-- Cover-art prompts target the front-cover image frame in the PPTX-derived cover template, not the whole wraparound spread: about `1.46:1` landscape artwork placed into the white front-cover frame. The final PDF page remains `268.5 x 136 mm`.
+- Cover-art prompts target the front-cover image frame in the PPTX-derived cover template, not the whole wraparound spread: about `1.46:1` landscape artwork placed into the white front-cover frame. The final PDF page remains `268.5 x 136 mm`. The cover workflow parses generated PNG/JPEG dimensions and rejects non-landscape outputs outside the safe ratio band before the renderer can contain-fit a vertical portrait with white side fields.
 - First chapter image generation uses `gemini-2.5-flash-image` through `generateContent`.
 - The `minibrick` style is explicitly mapped to brick-built minifigure/toy diorama prompts; do not rely on fallback style mapping for it.
 - The generated file is stored through the Job API under `/api/fairyteller/jobs/:jobId/files/chapter-1.png`.
@@ -262,6 +263,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-06
+
+- Deployed Fairyteller image aspect-ratio controls to production n8n. Updated `fairyteller_visuals` and `fairyteller_full_visuals` so chapter image Gemini requests include `imageConfig.aspectRatio="1:1"`, and updated `fairyteller_cover` so cover Gemini requests include `imageConfig.aspectRatio="3:2"` plus generated PNG/JPEG dimension validation before accepting the cover image. This should prevent portrait cover art from being contain-fitted into the wide front-cover frame with empty side fields while keeping the renderer's no-head-crop `contain` behavior. Production backup before import: `/root/fairyteller-n8n-exports/20260706-011931Z-image-aspect-before`; import: `/root/fairyteller-n8n-imports/20260706-012452Z-image-aspect`; after-export: `/root/fairyteller-n8n-exports/20260706-012715Z-image-aspect-after`. Verified `gemini-2.5-flash-image` accepts `imageConfig.aspectRatio="3:2"` and returns `1248x832`, parsed all updated n8n code nodes, published/restarted `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`, confirmed all three remain `active: true`, and checked n8n/API health endpoints.
 
 ### 2026-07-05
 
