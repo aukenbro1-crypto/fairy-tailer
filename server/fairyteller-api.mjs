@@ -45,6 +45,15 @@ const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BO
 const ADMIN_BOOK_IMAGE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_IMAGE_MAX_BYTES || 12 * 1024 * 1024) || 12 * 1024 * 1024);
 const ADMIN_STORAGE_FILE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_FILE_MAX_BYTES || 50 * 1024 * 1024) || 50 * 1024 * 1024);
 const ADMIN_STORAGE_UPLOAD_MAX_BYTES = Math.max(ADMIN_STORAGE_FILE_MAX_BYTES, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_UPLOAD_MAX_BYTES || 512 * 1024 * 1024) || 512 * 1024 * 1024);
+const STORY_FONT_MODE_OPTIONS = [
+  { value: 'auto', label: 'Авто по страницам' },
+  { value: 'balanced', label: 'Выровнять автоматически' },
+  { value: 'large', label: 'Крупный · 11 pt' },
+  { value: 'regular', label: 'Обычный · 10.5 pt' },
+  { value: 'compact', label: 'Компактный · 10 pt' },
+  { value: 'small', label: 'Мелкий · 9.5 pt' },
+];
+const STORY_FONT_MODE_VALUES = new Set(STORY_FONT_MODE_OPTIONS.map((option) => option.value));
 const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
 const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSAGE_LIMIT || 2000) || 2000);
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
@@ -2224,6 +2233,23 @@ function renderAdminNotice(message, type = 'notice') {
   return `<div class="${type}">${escapeHtml(message)}</div>`;
 }
 
+function normalizeStoryFontMode(value, label = 'Story font mode') {
+  const mode = String(value || 'auto').trim();
+  if (STORY_FONT_MODE_VALUES.has(mode)) return mode;
+  throw httpError(400, `${label} is invalid`);
+}
+
+function currentStoryFontMode(fullText) {
+  const mode = String(fullText?.text?.printLayout?.storyFontMode || 'auto').trim();
+  return STORY_FONT_MODE_VALUES.has(mode) ? mode : 'auto';
+}
+
+function renderStoryFontModeOptions(selectedMode) {
+  return STORY_FONT_MODE_OPTIONS.map((option) => (
+    `<option value="${escapeHtml(option.value)}"${option.value === selectedMode ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
+  )).join('');
+}
+
 function renderBookImageEditor(images = []) {
   const rows = images.map((image) => `
     <div class="image-card">
@@ -2258,6 +2284,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const notice = options.notice || '';
   const error = options.error || '';
   const lastRender = render.generatedAt || render.requestedAt || status.updatedAt || '';
+  const storyFontMode = currentStoryFontMode(fullText);
 
   const chapterFields = chapters.map((chapter) => {
     const chapterNumber = Number(chapter.n);
@@ -2304,7 +2331,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     a { color: #1f5d53; font-weight: 800; text-decoration: none; }
     label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     .field-hint { margin: -2px 0 7px; color: #766b60; font-size: 12px; }
-    input, textarea { width: 100%; border: 1px solid #d2c4b0; border-radius: 6px; padding: 11px 12px; background: #fffdf8; color: #1f2933; font: inherit; line-height: 1.5; }
+    input, textarea, select { width: 100%; border: 1px solid #d2c4b0; border-radius: 6px; padding: 11px 12px; background: #fffdf8; color: #1f2933; font: inherit; line-height: 1.5; }
     textarea { resize: vertical; min-height: 110px; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
     .top-links { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; }
@@ -2381,6 +2408,12 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
           <input id="previewSummary" name="previewSummary" value="${escapeHtml(preview.summary || '')}">
         </div>
       </div>
+      <div class="grid two">
+        <div>
+          <label for="storyFontMode">Размер текста в PDF</label>
+          <select id="storyFontMode" name="storyFontMode">${renderStoryFontModeOptions(storyFontMode)}</select>
+        </div>
+      </div>
       <p>Последний render: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
       <div class="file-links">
         ${renderFileLink(files.preview, 'preview')}
@@ -2392,6 +2425,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     ${chapterFields}
     <div class="button-row">
       <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
+      <button class="secondary" type="submit" name="action" value="balance_font_render">Выровнять шрифт и пересобрать PDF</button>
       <button type="submit" name="action" value="save_render">Сохранить и пересобрать PDF</button>
     </div>
   </form>
@@ -2434,6 +2468,9 @@ function buildEditedFullText(current, params) {
   const coverSummary = normalizeMultiLine(params.get('coverSummary'), 1800, 'Cover summary');
   const previewTitle = normalizeSingleLine(params.get('previewTitle'), 180, 'Preview title') || bookTitle;
   const previewSummary = normalizeSingleLine(params.get('previewSummary'), 700, 'Preview summary') || coverSummary;
+  const storyFontMode = params.get('action') === 'balance_font_render'
+    ? 'balanced'
+    : normalizeStoryFontMode(params.has('storyFontMode') ? params.get('storyFontMode') : next.text.printLayout?.storyFontMode);
 
   next.text.bible.bookTitle = bookTitle;
   next.text.bible.subtitle = subtitle;
@@ -2441,6 +2478,10 @@ function buildEditedFullText(current, params) {
   next.text.bible.readerBlurb = coverSummary;
   next.text.preview.title = previewTitle;
   next.text.preview.summary = previewSummary;
+  next.text.printLayout = {
+    ...(next.text.printLayout || {}),
+    storyFontMode,
+  };
 
   for (const chapter of next.text.chapters) {
     const chapterNumber = Number(chapter.n);
@@ -5406,14 +5447,14 @@ async function route(req, res) {
           redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
           return;
         }
-        if (action !== 'save' && action !== 'save_render') {
+        if (!['save', 'save_render', 'balance_font_render'].includes(action)) {
           throw httpError(400, 'Unknown editor action');
         }
         await saveAdminBookText(jobId, fields);
         if (files.size > 0) {
           await saveAdminBookImages(jobId, files);
         }
-        if (action === 'save_render') {
+        if (action === 'save_render' || action === 'balance_font_render') {
           await queueAdminRenderJob(jobId, 'job.adminEditorRenderRequested');
           redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
           return;
@@ -5424,7 +5465,7 @@ async function route(req, res) {
 
       const params = await readFormBody(req);
       await saveAdminBookText(jobId, params);
-      if (params.get('action') === 'save_render') {
+      if (params.get('action') === 'save_render' || params.get('action') === 'balance_font_render') {
         await queueAdminRenderJob(jobId, 'job.fullText.adminRenderRequested');
         redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
         return;

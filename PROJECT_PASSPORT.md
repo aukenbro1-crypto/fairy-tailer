@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-05 13:36 UTC
+Last updated: 2026-07-06 00:53 UTC
 
 ## Project Context
 
@@ -166,6 +166,8 @@ The admin book editor uses one multipart form for text and image edits. Its save
 The editor-facing book description is `text.bible.coverSummary`. Older generated books may also have `text.bible.readerBlurb`; the renderer must prefer `coverSummary`, and editor saves sync `readerBlurb` to the same value so stale generation text cannot override manual edits.
 
 The last story text page has a decorative footer below the text block. Its text layout must reserve vertical space above that footer instead of using the normal full-height chapter-final text box, otherwise longer edited endings can overlap the underline and page number.
+
+The admin book editor stores the story text size mode in `text.printLayout.storyFontMode`. Supported modes are per-page auto sizing, automatic balanced sizing across all story text pages, and fixed manual sizes; the renderer records the applied mode/point size in `render.preflight.storyFont`.
 
 Mutating/internal endpoints require:
 

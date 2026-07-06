@@ -1037,6 +1037,14 @@ const CHAPTER_START_PAGES = [4, 10, 16, 24, 32];
 const CHAPTER_FIRST_TEXT_PAGES = [6, 12, 18, 26, 34];
 const CHAPTER_FINAL_TEXT_PAGES = [9, 15, 23, 31, 38];
 const TEXT_PAGE_BOX = pptBox(29.69, 28.35, 327.52, 300.35);
+const STORY_FONT_MODE_CONFIGS = new Map([
+  ['auto', { kind: 'auto' }],
+  ['balanced', { kind: 'balanced' }],
+  ['large', { kind: 'fixed', size: 11 }],
+  ['regular', { kind: 'fixed', size: 10.5 }],
+  ['compact', { kind: 'fixed', size: 10 }],
+  ['small', { kind: 'fixed', size: 9.5 }],
+]);
 const TEXT_PAGE_NUM_BOXES = {
   9: pptBox(178.9, 328.9, 27.6, 28.3),
   10: pptBox(178.9, 328.9, 27.6, 28.3),
@@ -1064,6 +1072,105 @@ const TEXT_PAGE_NUM_BOXES = {
   36: pptBox(176.1, 329.7, 33.2, 27.5),
   37: pptBox(177.7, 329.6, 30.1, 27.6),
 };
+
+function storyFontMode(fullText) {
+  const mode = String(fullText?.text?.printLayout?.storyFontMode || 'auto').trim();
+  return STORY_FONT_MODE_CONFIGS.has(mode) ? mode : 'auto';
+}
+
+function pptStoryTextBox(pageNumber, isLastTextPage = false) {
+  if (isLastTextPage) return pptBox(29.69, 28.35, 327.52, 260);
+  if (CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)) {
+    return pptBox(29.69, 28.35, 327.52, pageNumber === 9 ? 284.5 : pageNumber === 15 ? 292.7 : pageNumber === 23 ? 294.5 : 300.35);
+  }
+  return TEXT_PAGE_BOX;
+}
+
+function pptStoryTextOptions(fonts, pageNumber, fixedSize = null) {
+  const hasFixedSize = Number.isFinite(fixedSize);
+  const size = hasFixedSize ? fixedSize : 11;
+  const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);
+  return {
+    font: fonts.fontInterBody,
+    size,
+    minSize: hasFixedSize ? size : 7,
+    lineHeightRatio: 1.25,
+    firstLineIndent: 15,
+    paragraphGapRatio: 0.54,
+    maxParagraphGapRatio: 1.45,
+    inferParagraphs: true,
+    dropCap: hasDropCap ? {
+      enabled: true,
+      font: fonts.fontSerifBold,
+      color: hexColor('#9B1C1C'),
+      lineSpan: 3,
+      sizeRatio: 3.2,
+      gap: 6,
+      baselineRatio: 0.82,
+    } : null,
+    color: hexColor('#292929'),
+  };
+}
+
+function fitPptStoryTextLayout(text, fonts, pageNumber, isLastTextPage = false) {
+  const textBox = pptStoryTextBox(pageNumber, isLastTextPage);
+  const options = pptStoryTextOptions(fonts, pageNumber);
+  return fitParagraphTextLayout(text, options.font, {
+    maxWidth: textBox.width,
+    maxHeight: textBox.height,
+    startSize: options.size,
+    minSize: options.minSize,
+    lineHeightRatio: options.lineHeightRatio,
+    firstLineIndent: options.firstLineIndent,
+    paragraphGapRatio: options.paragraphGapRatio,
+    maxParagraphGapRatio: options.maxParagraphGapRatio,
+    inferParagraphs: options.inferParagraphs,
+    dropCap: options.dropCap,
+  });
+}
+
+function collectPptStoryTextPages(chapters, layout) {
+  const entries = [];
+  let pageNumber = layout.pagePlan.frontMatterPages || 3;
+  for (const chapter of chapters) {
+    const chapterIndex = Number(chapter.n);
+    const blocks = getChapterTextBlocks(chapter);
+    const expectedTextPages = layout.pagePlan.chapterTextPages[chapterIndex - 1] || CHAPTER_TEXT_PAGE_COUNTS[chapterIndex - 1];
+    if (blocks.length !== expectedTextPages) {
+      throw new Error(`Expected ${expectedTextPages} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
+    }
+    pageNumber += layout.pagePlan.chapterTitlePagesPerChapter || 1;
+    pageNumber += layout.pagePlan.chapterImagePagesPerChapter || 1;
+    for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+      pageNumber += 1;
+      entries.push({
+        chapter,
+        chapterIndex,
+        blockIndex,
+        text: blocks[blockIndex],
+        pageNumber,
+        isLastTextPage: false,
+      });
+    }
+  }
+  if (entries.length) entries[entries.length - 1].isLastTextPage = true;
+  return entries;
+}
+
+function resolvePptStoryFontControl(fullText, fonts, textPages) {
+  const mode = storyFontMode(fullText);
+  const config = STORY_FONT_MODE_CONFIGS.get(mode) || STORY_FONT_MODE_CONFIGS.get('auto');
+  if (config.kind === 'fixed') {
+    return { mode, fixedSize: config.size };
+  }
+  if (config.kind === 'balanced') {
+    const fittedSizes = textPages.map((entry) => (
+      fitPptStoryTextLayout(entry.text, fonts, entry.pageNumber, entry.isLastTextPage).size
+    ));
+    return { mode, fixedSize: fittedSizes.length ? Math.min(...fittedSizes) : null };
+  }
+  return { mode, fixedSize: null };
+}
 
 function drawBookPaper(page, assets, variant = 'image8') {
   const image = assets.book[variant] || assets.book.image8;
@@ -1165,35 +1272,11 @@ async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pa
   });
 }
 
-function addPptTextPage(pdf, fonts, assets, text, pageNumber, isLastTextPage = false) {
+function addPptTextPage(pdf, fonts, assets, text, pageNumber, isLastTextPage = false, storyFontControl = null) {
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber) ? 'image9' : 'image8');
-  const textBox = isLastTextPage
-    ? pptBox(29.69, 28.35, 327.52, 260)
-    : CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)
-    ? pptBox(29.69, 28.35, 327.52, pageNumber === 9 ? 284.5 : pageNumber === 15 ? 292.7 : pageNumber === 23 ? 294.5 : 300.35)
-    : TEXT_PAGE_BOX;
-  const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);
-  const textLayout = drawPptParagraphText(page, text, textBox, {
-    font: fonts.fontInterBody,
-    size: 11,
-    minSize: 7,
-    lineHeightRatio: 1.25,
-    firstLineIndent: 15,
-    paragraphGapRatio: 0.54,
-    maxParagraphGapRatio: 1.45,
-    inferParagraphs: true,
-    dropCap: hasDropCap ? {
-      enabled: true,
-      font: fonts.fontSerifBold,
-      color: hexColor('#9B1C1C'),
-      lineSpan: 3,
-      sizeRatio: 3.2,
-      gap: 6,
-      baselineRatio: 0.82,
-    } : null,
-    color: hexColor('#292929'),
-  });
+  const textBox = pptStoryTextBox(pageNumber, isLastTextPage);
+  const textLayout = drawPptParagraphText(page, text, textBox, pptStoryTextOptions(fonts, pageNumber, storyFontControl?.fixedSize));
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
   if ([9, 15, 23, 31].includes(pageNumber)) {
     drawPptImage(page, assets.book.image15, pptBox(146.1, 324.7, 94.8, 8.0));
@@ -1240,6 +1323,8 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   if (chapters.length !== layout.pagePlan.chapters) {
     throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${chapters.length}`);
   }
+  const storyTextPages = collectPptStoryTextPages(chapters, layout);
+  const storyFontControl = resolvePptStoryFontControl(fullText, fonts, storyTextPages);
 
   const bible = fullText.text?.bible || {};
 
@@ -1301,7 +1386,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
       const block = blocks[blockIndex];
       const isLastTextPage = chapterIndex === chapters.length && blockIndex === blocks.length - 1;
-      const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1, isLastTextPage);
+      const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1, isLastTextPage, storyFontControl);
       if (textLayout.truncated) {
         throw new Error(`Text block does not fit on page without truncation: chapter ${chapter.n}`);
       }
@@ -1314,7 +1399,13 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   if (pdf.getPageCount() !== TARGET_INTERIOR_PAGES) {
     throw new Error(`Interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${pdf.getPageCount()}`);
   }
-  return pdf.save({ useObjectStreams: false });
+  return {
+    bytes: await pdf.save({ useObjectStreams: false }),
+    storyFont: {
+      mode: storyFontControl.mode,
+      appliedSizePt: Number.isFinite(storyFontControl.fixedSize) ? storyFontControl.fixedSize : null,
+    },
+  };
 }
 
 async function renderCombinedBookPdf({ coverPdf, interiorPdf }) {
@@ -1383,7 +1474,8 @@ async function main() {
   const layout = validateLayout(await readJson(LAYOUT_PATH));
 
   const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
-  const interiorPdf = await renderInteriorPdf({ dir, fullText, visuals, layout });
+  const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout });
+  const interiorPdf = interiorResult.bytes;
   const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf });
   const previewPdf = await renderPreviewPdf({ coverPdf, interiorPdf });
 
@@ -1453,6 +1545,7 @@ async function main() {
       previewPageSizeMm: INTERIOR_SIZE_MM,
       expectedTextBlocksByChapter: layout.pagePlan.chapterTextPages,
       chapterStartPages: layout.pagePlan.chapterStartPages || CHAPTER_START_PAGES,
+      storyFont: interiorResult.storyFont,
     },
   };
   await writeFile(join(artifactsDir, 'render.json'), `${JSON.stringify({ jobId: JOB_ID, render }, null, 2)}\n`, { mode: 0o600 });
