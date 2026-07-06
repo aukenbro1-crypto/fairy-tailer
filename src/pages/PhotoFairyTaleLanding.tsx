@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -215,6 +215,14 @@ const exampleCarouselItems = [
   },
 ];
 
+const exampleMarqueeItems = [
+  ...exampleCarouselItems,
+  ...exampleCarouselItems,
+  ...exampleCarouselItems,
+];
+
+const PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED = 0.004;
+
 const jsonLd = [
   {
     "@context": "https://schema.org",
@@ -253,6 +261,62 @@ const jsonLd = [
 
 const PhotoFairyTaleLanding = () => {
   const [heroIndex, setHeroIndex] = useState(0);
+  const exampleStripRef = useRef<HTMLDivElement>(null);
+  const exampleDragRef = useRef<{ x: number; scrollLeft: number } | null>(null);
+  const exampleAnimationRef = useRef<number | null>(null);
+  const exampleLastFrameRef = useRef<number | null>(null);
+  const exampleScrollPositionRef = useRef<number | null>(null);
+  const exampleDraggingRef = useRef(false);
+
+  const normalizeExampleScroll = useCallback(() => {
+    const strip = exampleStripRef.current;
+    if (!strip) {
+      return;
+    }
+
+    const cycleWidth = strip.scrollWidth / 3;
+    if (!cycleWidth) {
+      return;
+    }
+
+    if (strip.scrollLeft < cycleWidth * 0.5) {
+      strip.scrollLeft += cycleWidth;
+      exampleScrollPositionRef.current = strip.scrollLeft;
+    } else if (strip.scrollLeft > cycleWidth * 1.5) {
+      strip.scrollLeft -= cycleWidth;
+      exampleScrollPositionRef.current = strip.scrollLeft;
+    }
+  }, []);
+
+  const startExampleDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!exampleStripRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    exampleStripRef.current.setPointerCapture(event.pointerId);
+    exampleDraggingRef.current = true;
+    exampleScrollPositionRef.current = exampleStripRef.current.scrollLeft;
+    exampleDragRef.current = {
+      x: event.clientX,
+      scrollLeft: exampleStripRef.current.scrollLeft,
+    };
+  };
+
+  const moveExampleDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!exampleStripRef.current || !exampleDragRef.current) {
+      return;
+    }
+
+    exampleStripRef.current.scrollLeft = exampleDragRef.current.scrollLeft - (event.clientX - exampleDragRef.current.x);
+    exampleScrollPositionRef.current = exampleStripRef.current.scrollLeft;
+  };
+
+  const stopExampleDrag = () => {
+    exampleDragRef.current = null;
+    exampleDraggingRef.current = false;
+    normalizeExampleScroll();
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -261,6 +325,54 @@ const PhotoFairyTaleLanding = () => {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const strip = exampleStripRef.current;
+    if (!strip) {
+      return undefined;
+    }
+
+    const resetToMiddleCycle = () => {
+      const cycleWidth = strip.scrollWidth / 3;
+      if (cycleWidth) {
+        strip.scrollLeft = cycleWidth;
+        exampleScrollPositionRef.current = cycleWidth;
+      }
+    };
+
+    resetToMiddleCycle();
+
+    const animate = (timestamp: number) => {
+      if (exampleLastFrameRef.current === null) {
+        exampleLastFrameRef.current = timestamp;
+      }
+
+      const elapsed = timestamp - exampleLastFrameRef.current;
+      exampleLastFrameRef.current = timestamp;
+
+      if (!exampleDraggingRef.current && exampleStripRef.current) {
+        const nextPosition = (exampleScrollPositionRef.current ?? exampleStripRef.current.scrollLeft) + elapsed * PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED;
+        exampleScrollPositionRef.current = nextPosition;
+        exampleStripRef.current.scrollLeft = nextPosition;
+        normalizeExampleScroll();
+      }
+
+      exampleAnimationRef.current = window.requestAnimationFrame(animate);
+    };
+
+    exampleAnimationRef.current = window.requestAnimationFrame(animate);
+    window.addEventListener("resize", resetToMiddleCycle);
+
+    return () => {
+      if (exampleAnimationRef.current !== null) {
+        window.cancelAnimationFrame(exampleAnimationRef.current);
+      }
+
+      exampleLastFrameRef.current = null;
+      exampleScrollPositionRef.current = null;
+      window.removeEventListener("resize", resetToMiddleCycle);
+    };
+  }, [normalizeExampleScroll]);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
@@ -422,33 +534,31 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
-        <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
-          <div className="mx-auto max-w-[1480px]">
-            <div className="mb-9 grid gap-5 md:grid-cols-[1fr_480px] md:items-end">
-              <h2 className={sectionTitleClass}>Примеры книг.</h2>
-              <p className="text-[18px] leading-7 text-[#5e6264]">
-                Посмотрите, как персональная книга выглядит в руках, на столе, на полке и в развороте.
-              </p>
-            </div>
-          </div>
-
-          <div className="photo-tale-example-strip -mx-5 overflow-x-auto border-y border-black bg-white snap-x snap-mandatory md:-mx-8">
+        <section id="examples" className="scroll-mt-24 border-b border-black bg-white">
+          <div
+            ref={exampleStripRef}
+            onPointerDown={startExampleDrag}
+            onPointerMove={moveExampleDrag}
+            onPointerUp={stopExampleDrag}
+            onPointerCancel={stopExampleDrag}
+            onPointerLeave={stopExampleDrag}
+            onScroll={normalizeExampleScroll}
+            className="photo-tale-example-strip cursor-grab select-none touch-pan-x overflow-x-auto overflow-y-hidden border-y border-black bg-[#f5f5f5] active:cursor-grabbing"
+          >
             <div className="flex w-max">
-              {exampleCarouselItems.map((item) => (
+              {exampleMarqueeItems.map((item, index) => (
                 <article
-                  key={item.title}
-                  className="w-[292px] shrink-0 snap-start border-r border-black bg-white min-[420px]:w-[340px] md:w-[460px] xl:w-[520px]"
+                  key={`${item.title}-${index}`}
+                  className="w-[260px] shrink-0 border-r border-black bg-white md:w-[340px]"
                 >
                   <img
                     src={item.image}
                     alt={item.alt}
                     loading="lazy"
                     decoding="async"
-                    className="aspect-[4/3] w-full object-cover"
+                    draggable={false}
+                    className="aspect-square w-full object-cover"
                   />
-                  <div className="border-t border-black px-4 py-3 text-[13px] font-black uppercase tracking-[0.08em]">
-                    {item.title}
-                  </div>
                 </article>
               ))}
             </div>

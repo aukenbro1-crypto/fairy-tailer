@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 14:00 UTC
+Last updated: 2026-07-06 14:22 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260706-photo-landing-examples-carousel-clean-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260706-photo-examples-marquee-drag-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -277,6 +277,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-landing-process-order-codex` for the `/podarok/skazka-po-foto` landing order update. The `Как создать книгу.` process block was moved above the constructor and renamed `Как это работает.`, while `Не шаблон. Личная история.` moved down to the former process-block position before the CTA strip. Verified `npm run build`, targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, Playwright desktop/mobile section-order checks, nginx config/reload, production `/podarok/skazka-po-foto`, `/podarok/skazka-po-foto#process`, and `/` `200`, and the active `PhotoFairyTaleLanding` chunk contains `Как это работает` and no `Как создать книгу`.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-landing-examples-carousel-clean-codex` for the `/podarok/skazka-po-foto` examples update. Added a 10-image optimized WebP carousel directly after `Как это работает.`, moved the `#examples` anchor to this carousel so the `Смотреть примеры` CTA lands on it, renamed the former examples/details block anchor to `#details`, and added the FAQ item `Как создается история?` to both the photo landing and the homepage FAQ plus generated static SEO HTML. Verified targeted ESLint for `PhotoFairyTaleLanding`, `DesignTest`, and `generate-seo-pages`, `git diff --check`, `npm run build` from a clean `dist`, Playwright desktop/mobile section-order and no-overflow checks, nginx config/reload, production `/`, `/podarok/skazka-po-foto`, and `/create` `200`, static HTML FAQ presence on `/` and `/podarok/skazka-po-foto`, active JS contains `Примеры книг`, and active production assets contain no ` 2` duplicate files.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-examples-marquee-drag-codex` for the `/podarok/skazka-po-foto` examples carousel follow-up. Removed all visible heading/body/card-caption text from the `#examples` block, converted it into a long 10-photo marquee using three repeated cycles for seamless scrolling, added slow requestAnimationFrame auto-scroll with fractional position accumulation, and enabled pointer drag so visitors can grab the carousel and scroll it manually in either direction. Verified targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, `npm run build`, Playwright desktop/mobile checks for 30 rendered cards, no visible section text, slow auto-scroll, manual drag movement, and no horizontal page overflow, nginx config/reload, production `/`, `/podarok/skazka-po-foto`, and `/create` `200`, active JS contains the drag carousel classes, active JS no longer contains `Примеры книг`, and active production assets contain no ` 2` duplicate files.
 
 ### 2026-07-05
 
