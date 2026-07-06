@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 07:46 UTC
+Last updated: 2026-07-06 13:03 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260706-photo-landing-process-order-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260706-photo-landing-examples-carousel-clean-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -273,6 +273,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-focus-dim-codex` for the constructor focus/copy follow-up. The constructor section now uses the shorter title `Конструктор`, the first genre legend is `Выберите жанр и добавьте детали` without `Шаг 1 из 3`, the first-step detail helper is `Укажите место действия и важную деталь, чтобы создать историю`, and the breathing hint bulb is click-toggleable without layout movement. Interacting with the constructor now dims the rest of the page; clicking outside the constructor clears the dimming and active hint focus. Verified `npm run build`, targeted ESLint for `ConstructorHint`, `FairytellerInlineConstructor`, and `DesignTest`, `git diff --check`, Playwright `/create` text/hint/dimming/outside-click behavior, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, active JS contains the new legend/detail/dim layer strings, and active JS contains zero `Шаг 1 из 3` matches.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-landing-process-order-codex` for the `/podarok/skazka-po-foto` landing order update. The `Как создать книгу.` process block was moved above the constructor and renamed `Как это работает.`, while `Не шаблон. Личная история.` moved down to the former process-block position before the CTA strip. Verified `npm run build`, targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, Playwright desktop/mobile section-order checks, nginx config/reload, production `/podarok/skazka-po-foto`, `/podarok/skazka-po-foto#process`, and `/` `200`, and the active `PhotoFairyTaleLanding` chunk contains `Как это работает` and no `Как создать книгу`.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-landing-examples-carousel-clean-codex` for the `/podarok/skazka-po-foto` examples update. Added a 10-image optimized WebP carousel directly after `Как это работает.`, moved the `#examples` anchor to this carousel so the `Смотреть примеры` CTA lands on it, renamed the former examples/details block anchor to `#details`, and added the FAQ item `Как создается история?` to both the photo landing and the homepage FAQ plus generated static SEO HTML. Verified targeted ESLint for `PhotoFairyTaleLanding`, `DesignTest`, and `generate-seo-pages`, `git diff --check`, `npm run build` from a clean `dist`, Playwright desktop/mobile section-order and no-overflow checks, nginx config/reload, production `/`, `/podarok/skazka-po-foto`, and `/create` `200`, static HTML FAQ presence on `/` and `/podarok/skazka-po-foto`, active JS contains `Примеры книг`, and active production assets contain no ` 2` duplicate files.
 
 ### 2026-07-05
 

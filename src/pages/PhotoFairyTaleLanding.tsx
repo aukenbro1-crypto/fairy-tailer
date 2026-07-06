@@ -28,6 +28,16 @@ import zvezdopadBookshelfImage from "@/assets/landing-photos/photo-tale-universa
 import zagadkaFrontImage from "@/assets/landing-photos/skazka-photo-zagadka-front.webp";
 import zagadkaBackImage from "@/assets/landing-photos/skazka-photo-zagadka-back.webp";
 import zagadkaSpreadImage from "@/assets/landing-photos/skazka-photo-zagadka-spread.webp";
+import zvezdopadCoverWarmTableImage from "@/assets/landing-photos/photo-tale-examples/zvezdopad-cover-warm-table.webp";
+import zvezdopadHandsClosedBookImage from "@/assets/landing-photos/photo-tale-examples/zvezdopad-hands-closed-book.webp";
+import zvezdopadOpenBookTableImage from "@/assets/landing-photos/photo-tale-examples/zvezdopad-open-book-table.webp";
+import zvezdopadBackCoverExampleImage from "@/assets/landing-photos/photo-tale-examples/zvezdopad-back-cover.webp";
+import maroccoZelligeShelfImage from "@/assets/landing-photos/photo-tale-examples/marocco-zellige-shelf-spine.webp";
+import maroccoReaderByArchImage from "@/assets/landing-photos/photo-tale-examples/marocco-reader-by-arch.webp";
+import maroccoBackCoverDoorwayImage from "@/assets/landing-photos/photo-tale-examples/marocco-back-cover-doorway.webp";
+import fantasyFrontCoverTableImage from "@/assets/landing-photos/photo-tale-examples/fantasy-front-cover-table.webp";
+import fantasyBookshelfDisplayImage from "@/assets/landing-photos/photo-tale-examples/fantasy-bookshelf-display.webp";
+import fantasyOpenSpreadLecternImage from "@/assets/landing-photos/photo-tale-examples/fantasy-open-spread-lectern.webp";
 
 const typeStyle = {
   fontFamily:
@@ -119,6 +129,11 @@ const faqs = [
       "Fairyteller печатает небольшие бумажные книги. Сейчас доступна версия в мягком переплёте 13 × 13 см: 5 глав, около 40 страниц и отдельные иллюстрации к сюжету.",
   },
   {
+    question: "Как создается история?",
+    answer:
+      "Историю и иллюстрации создает искусственный интеллект, время генерации макета занимает около трех минут. Перед печатью тексты вычитывает команда опытных редакторов.",
+  },
+  {
     question: "Сколько стоит и как быстро делается?",
     answer:
       "Печатная книга стоит от 3500₽. Первое превью появляется за несколько минут, после оплаты команда Fairyteller вычитывает текст, собирает макет и передаёт книгу в печать.",
@@ -145,6 +160,59 @@ const heroImages = [
   { title: "Книга Тайны кактусовой планеты с открытым разворотом", image: cactusOpenBookImage },
   { title: "Персональная книга Звездопад над Волгой на полке", image: zvezdopadBookshelfImage },
   { title: "Задняя обложка книги Звездопад над Волгой", image: zvezdopadBackCoverImage },
+];
+
+const exampleCarouselItems = [
+  {
+    title: "Книга на столе",
+    alt: "Персональная книга Звездопад над Волгой на теплой деревянной поверхности",
+    image: zvezdopadCoverWarmTableImage,
+  },
+  {
+    title: "Книга в руках",
+    alt: "Персональная книга Звездопад над Волгой в руках читателя",
+    image: zvezdopadHandsClosedBookImage,
+  },
+  {
+    title: "Открытый разворот",
+    alt: "Разворот персональной книги Звездопад над Волгой с иллюстрацией и текстом",
+    image: zvezdopadOpenBookTableImage,
+  },
+  {
+    title: "Задняя обложка",
+    alt: "Задняя обложка персональной книги Звездопад над Волгой",
+    image: zvezdopadBackCoverExampleImage,
+  },
+  {
+    title: "Обложка в интерьере",
+    alt: "Персональная книга Когда чудо ждет у марокканской плитки",
+    image: maroccoZelligeShelfImage,
+  },
+  {
+    title: "Книга для чтения",
+    alt: "Человек читает персональную книгу Когда чудо ждет во дворе",
+    image: maroccoReaderByArchImage,
+  },
+  {
+    title: "История на обороте",
+    alt: "Задняя обложка персональной книги Когда чудо ждет в теплом интерьере",
+    image: maroccoBackCoverDoorwayImage,
+  },
+  {
+    title: "Фэнтези-обложка",
+    alt: "Персональная книга Книга пересказов на деревянном столе",
+    image: fantasyFrontCoverTableImage,
+  },
+  {
+    title: "Книга на полке",
+    alt: "Персональная книга Книга пересказов на книжной полке",
+    image: fantasyBookshelfDisplayImage,
+  },
+  {
+    title: "Фэнтези-разворот",
+    alt: "Открытый разворот персональной книги Книга пересказов на деревянной подставке",
+    image: fantasyOpenSpreadLecternImage,
+  },
 ];
 
 const jsonLd = [
@@ -240,12 +308,14 @@ const PhotoFairyTaleLanding = () => {
             font-family: inherit;
           }
 
-          .photo-tale-page .fairyteller-choice-strip {
+          .photo-tale-page .fairyteller-choice-strip,
+          .photo-tale-page .photo-tale-example-strip {
             overscroll-behavior-x: contain;
             scrollbar-width: none;
           }
 
-          .photo-tale-page .fairyteller-choice-strip::-webkit-scrollbar {
+          .photo-tale-page .fairyteller-choice-strip::-webkit-scrollbar,
+          .photo-tale-page .photo-tale-example-strip::-webkit-scrollbar {
             display: none;
           }
         `}
@@ -352,6 +422,39 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
+        <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
+          <div className="mx-auto max-w-[1480px]">
+            <div className="mb-9 grid gap-5 md:grid-cols-[1fr_480px] md:items-end">
+              <h2 className={sectionTitleClass}>Примеры книг.</h2>
+              <p className="text-[18px] leading-7 text-[#5e6264]">
+                Посмотрите, как персональная книга выглядит в руках, на столе, на полке и в развороте.
+              </p>
+            </div>
+          </div>
+
+          <div className="photo-tale-example-strip -mx-5 overflow-x-auto border-y border-black bg-white snap-x snap-mandatory md:-mx-8">
+            <div className="flex w-max">
+              {exampleCarouselItems.map((item) => (
+                <article
+                  key={item.title}
+                  className="w-[292px] shrink-0 snap-start border-r border-black bg-white min-[420px]:w-[340px] md:w-[460px] xl:w-[520px]"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.alt}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  <div className="border-t border-black px-4 py-3 text-[13px] font-black uppercase tracking-[0.08em]">
+                    {item.title}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
             availableWorldIds={["romance", "adventure", "hogwarts", "fantasy", "cyber"]}
@@ -387,7 +490,7 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
-        <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
+        <section id="details" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
               <h2 className={sectionTitleClass}>Что добавить в сказку.</h2>
