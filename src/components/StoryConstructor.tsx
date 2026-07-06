@@ -213,7 +213,7 @@ const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
   'photorealistic': 'Фотореализм',
   'disney': 'Дисней',
   'toonflat': 'Мультяшный',
-  'minibrick': 'Лего',
+  'minibrick': 'Блоки',
   'naive': 'Наивный',
   'watercolor': 'Акварель',
   'claymotion': 'Пластилин',

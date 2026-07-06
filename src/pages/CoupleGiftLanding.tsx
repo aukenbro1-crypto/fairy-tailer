@@ -378,7 +378,7 @@ const CoupleGiftLanding = () => {
             lockedWorld={romanticLockedWorld}
             heading="Соберите книгу про вашу пару."
             description="Добавьте информацию про героев, место, где будет происходить история, личную деталь или важный символ и выберите стиль иллюстраций."
-            defaultVisibleHeroIndexes={[0, 1]}
+            defaultVisibleHeroIndexes={[0]}
             defaultHeroAgeGroup="adult"
             requiredHeroCount={2}
             heroSlots={coupleHeroSlots}

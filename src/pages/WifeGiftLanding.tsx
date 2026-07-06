@@ -341,7 +341,7 @@ const WifeGiftLanding = () => {
             lockedWorld={romanticLockedWorld}
             heading="Соберите книгу для жены."
             description="Добавьте ее имя, фото, характер, важное место, личную деталь или символ вашей жизни вместе. История будет строиться вокруг нее."
-            defaultVisibleHeroIndexes={[0, 1]}
+            defaultVisibleHeroIndexes={[0]}
             defaultHeroAgeGroup="adult"
             requiredHeroCount={1}
             heroSlots={wifeHeroSlots}

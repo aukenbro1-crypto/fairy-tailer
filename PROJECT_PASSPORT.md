@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 01:31 UTC
+Last updated: 2026-07-06 06:16 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260704-pay-address-pvz-copy-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260706-constructor-quick-wins-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -267,6 +267,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ### 2026-07-06
 
 - Deployed Fairyteller image aspect-ratio controls to production n8n. Updated `fairyteller_visuals` and `fairyteller_full_visuals` so chapter image Gemini requests include `imageConfig.aspectRatio="1:1"`, and updated `fairyteller_cover` so cover Gemini requests include `imageConfig.aspectRatio="3:2"` plus generated PNG/JPEG dimension validation before accepting the cover image. This should prevent portrait cover art from being contain-fitted into the wide front-cover frame with empty side fields while keeping the renderer's no-head-crop `contain` behavior. Production backup before import: `/root/fairyteller-n8n-exports/20260706-011931Z-image-aspect-before`; import: `/root/fairyteller-n8n-imports/20260706-012452Z-image-aspect`; after-export: `/root/fairyteller-n8n-exports/20260706-012715Z-image-aspect-after`. Verified `gemini-2.5-flash-image` accepts `imageConfig.aspectRatio="3:2"` and returns `1248x832`, parsed all updated n8n code nodes, published/restarted `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`, confirmed all three remain `active: true`, and checked n8n/API health endpoints.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-quick-wins-codex` for constructor quick wins. The homepage process block now follows the real flow (`Выберите жанр` -> hero/details -> preview -> print), the constructor section title is `Конструктор книги`, step 1 is `Шаг 1 из 3. Выберите жанр и добавьте детали`, location/detail fields are visually tied to the first step, hero step defaults to one required `Главный герой` with an optional `Хотите добавить ещё героя?` block, hero-name validation blocks the style step with an inline error, final submit shows a full missing-action list, the `minibrick` public style label is now `Блоки`, and the new funnel goals are emitted in addition to existing `ft_*` goals: `constructor_cta_clicked`, `constructor_first_field_started`, `genre_selected`, `hero_required_completed`, `style_step_reached`, `preview_submit_clicked`, and `preview_submit_success`. Verified `npm run build`, Playwright desktop constructor flow, Playwright mobile `/create` viewport, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, and active JS contains the new constructor copy/errors/style label. `npm run lint` still fails on pre-existing unrelated issues in shadcn UI files, `useScrollReveal.ts`, `BlogAdmin.tsx`, `NarutoStory.tsx`, and `tailwind.config.ts`.
 
 ### 2026-07-05
 

@@ -391,8 +391,8 @@ const AnniversaryGiftLanding = () => {
             locationPlaceholder="Город знакомства, первое путешествие, дом, любимое кафе"
             artifactLabel="Символ годовщины"
             artifactPlaceholder="Билет, кольцо, песня, питомец, обещание, фраза"
-            heroIntro="Добавьте двух героев пары. Фото помогут сделать иллюстрации похожими и сохранить узнаваемость."
-            defaultVisibleHeroIndexes={[0, 1]}
+            heroIntro="Добавьте главного героя пары. Второго героя можно добавить отдельно, фото помогут сделать иллюстрации похожими и сохранить узнаваемость."
+            defaultVisibleHeroIndexes={[0]}
             defaultHeroAgeGroup="adult"
             requiredHeroCount={2}
             heroSlots={coupleHeroSlots}

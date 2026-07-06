@@ -13,9 +13,15 @@ import { useToast } from "@/hooks/use-toast";
 import ConstructorHint from "@/components/ConstructorHint";
 import {
   trackCheckoutStart,
+  trackConstructorFirstFieldStarted,
   trackConstructorStart,
   trackGenerateSubmit,
+  trackGenreSelected,
+  trackHeroRequiredCompleted,
+  trackPreviewSubmitClicked,
+  trackPreviewSubmitSuccess,
   trackPreviewReady,
+  trackStyleStepReached,
 } from "@/lib/metrika";
 import claymotionStyleImage from "@/assets/claymotion-style.png";
 import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
@@ -76,7 +82,7 @@ const styles = [
   { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: photorealismStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
-  { id: "minibrick", title: "Лего", label: "Лего", image: minibrickStyleImage },
+  { id: "minibrick", title: "Блоки", label: "Блоки", image: minibrickStyleImage },
   { id: "naive", title: "Наивный", label: "Наивный", image: naiveStyleImage },
   { id: "watercolor", title: "Акварель", label: "Акварель", image: watercolorStyleImage },
   { id: "claymotion", title: "Пластилин", label: "Пластилин", image: claymotionStyleImage },
@@ -155,6 +161,15 @@ type LockedWorld = {
   text: string;
 };
 
+type ConstructorErrorKey = "heroName" | "heroAge" | "email" | "consent";
+type ConstructorErrors = Partial<Record<ConstructorErrorKey, string>>;
+type MissingAction = {
+  key: ConstructorErrorKey;
+  label: string;
+  step: number;
+  message: string;
+};
+
 type FairytellerInlineConstructorProps = {
   lockedWorld?: LockedWorld;
   availableWorldIds?: string[];
@@ -197,15 +212,15 @@ const FairytellerInlineConstructor = ({
   lockedWorld,
   availableWorldIds,
   worldTabLabel = "Жанр",
-  worldLegend = "Выберите жанр",
-  heading = "Соберите свою книгу.",
-  description = "Добавьте место действия, героев, фото, стиль иллюстраций и email для готового превью.",
+  worldLegend = "Шаг 1 из 3. Выберите жанр и добавьте детали",
+  heading = "Конструктор книги",
+  description = "Заполните 5 коротких пунктов и оставьте email — через 2–3 минуты покажем превью истории. Чем больше живых деталей вы добавите, тем интереснее получится история.",
   locationLabel = "Место действия",
   locationPlaceholder = "Город знакомства, дом, поездка, любимое место",
   artifactLabel = "Важная деталь",
   artifactPlaceholder = "Кулон, билет, песня, питомец, фраза",
-  heroIntro = "Добавьте двух героев пары. Фото помогут сделать иллюстрации узнаваемыми.",
-  defaultVisibleHeroIndexes = [0, 1],
+  heroIntro = "Заполните главного героя: имя нужно обязательно, фото и детали помогут сделать историю личной.",
+  defaultVisibleHeroIndexes = [0],
   defaultHeroAgeGroup,
   requiredHeroCount = 1,
   heroSlots = defaultHeroSlots,
@@ -213,7 +228,7 @@ const FairytellerInlineConstructor = ({
 }: FairytellerInlineConstructorProps) => {
   const { toast } = useToast();
   const inputPrefix = useId();
-  const initialVisibleHeroes = defaultVisibleHeroIndexes.length > 0 ? defaultVisibleHeroIndexes : [0, 1];
+  const initialVisibleHeroes = defaultVisibleHeroIndexes.length > 0 ? defaultVisibleHeroIndexes : [0];
   const isWorldLocked = Boolean(lockedWorld);
   const constructorTabs = isWorldLocked ? ["Детали", "Герои", "Стиль"] : [worldTabLabel, "Герои", "Стиль"];
   const selectableWorlds = availableWorldIds
@@ -234,7 +249,8 @@ const FairytellerInlineConstructor = ({
   const [heroAgeGroups, setHeroAgeGroups] = useState<Record<number, string>>(() =>
     buildInitialAgeGroups(initialVisibleHeroes, defaultHeroAgeGroup),
   );
-  const [isHeroMenuOpen, setIsHeroMenuOpen] = useState(false);
+  const [constructorErrors, setConstructorErrors] = useState<ConstructorErrors>({});
+  const [missingActions, setMissingActions] = useState<MissingAction[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
@@ -292,6 +308,18 @@ const FairytellerInlineConstructor = ({
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index >= requiredHeroCount && !visibleHeroes.includes(item.index));
+  const trackConstructorInteraction = () => {
+    trackConstructorStart();
+    trackConstructorFirstFieldStarted();
+  };
+  const clearConstructorError = (key: ConstructorErrorKey) => {
+    setConstructorErrors((items) => {
+      const next = { ...items };
+      delete next[key];
+      return next;
+    });
+    setMissingActions((items) => items.filter((item) => item.key !== key));
+  };
 
   const addHero = (index: number) => {
     setVisibleHeroes((items) => [...items, index].sort((a, b) => a - b));
@@ -305,7 +333,12 @@ const FairytellerInlineConstructor = ({
         [index]: items[index] || defaultHeroAgeGroup,
       }));
     }
-    setIsHeroMenuOpen(false);
+  };
+  const addNextHero = () => {
+    const nextHero = hiddenHeroes[0];
+    if (nextHero) {
+      addHero(nextHero.index);
+    }
   };
 
   const removeHero = (index: number) => {
@@ -357,56 +390,136 @@ const FairytellerInlineConstructor = ({
     const hero = heroes[index];
     return Boolean(hero?.name.trim() || hero?.desc.trim() || hero?.photo);
   };
+  const buildMissingActions = () => {
+    const actions: MissingAction[] = [];
+    const missingRequiredHero = visibleHeroes
+      .filter((index) => index < requiredHeroCount)
+      .find((index) => !heroes[index]?.name.trim());
+    const missingAgeHero = visibleHeroes.find((index) => heroHasContent(index) && !heroAgeGroups[index]);
+
+    if (missingRequiredHero !== undefined) {
+      actions.push({
+        key: "heroName",
+        label: "Добавить имя главного героя",
+        step: 1,
+        message: "Добавьте имя главного героя, чтобы история была про него.",
+      });
+    }
+
+    if (missingAgeHero !== undefined) {
+      actions.push({
+        key: "heroAge",
+        label: `Выбрать возраст для поля «${heroSlots[missingAgeHero]}»`,
+        step: 1,
+        message: `Выберите возраст для поля «${heroSlots[missingAgeHero]}».`,
+      });
+    }
+
+    if (!validateEmail(email)) {
+      actions.push({
+        key: "email",
+        label: "Указать email",
+        step: 2,
+        message: "Укажите email, чтобы мы отправили превью.",
+      });
+    }
+
+    if (!consentChecked) {
+      actions.push({
+        key: "consent",
+        label: "Подтвердить согласие",
+        step: 2,
+        message: "Подтвердите согласие, чтобы создать превью.",
+      });
+    }
+
+    return actions;
+  };
+  const applyMissingActions = (actions: MissingAction[]) => {
+    const nextErrors = actions.reduce<ConstructorErrors>((acc, action) => {
+      acc[action.key] = action.message;
+      return acc;
+    }, {});
+
+    setConstructorErrors(nextErrors);
+    setMissingActions(actions);
+  };
+  const validateHeroStep = (shouldOpenHeroStep = false) => {
+    const missingRequiredHero = visibleHeroes
+      .filter((index) => index < requiredHeroCount)
+      .find((index) => !heroes[index]?.name.trim());
+
+    if (missingRequiredHero === undefined) {
+      clearConstructorError("heroName");
+      return true;
+    }
+
+    applyMissingActions([
+      {
+        key: "heroName",
+        label: "Добавить имя главного героя",
+        step: 1,
+        message: "Добавьте имя главного героя, чтобы история была про него.",
+      },
+    ]);
+
+    if (shouldOpenHeroStep) {
+      setConstructorStep(1);
+    }
+
+    return false;
+  };
+  const handleConstructorTabClick = (index: number) => {
+    if (index === 2 && !validateHeroStep(true)) {
+      return;
+    }
+
+    if (index === 2) {
+      trackStyleStepReached();
+    }
+
+    setConstructorStep(index);
+  };
+  const handleHeroNameChange = (index: number, value: string) => {
+    updateHero(index, { name: value });
+
+    if (index < requiredHeroCount && value.trim()) {
+      clearConstructorError("heroName");
+      trackHeroRequiredCompleted();
+    }
+  };
+  const handleGoToStyle = () => {
+    if (!validateHeroStep()) {
+      return;
+    }
+
+    trackStyleStepReached();
+    setConstructorStep(2);
+  };
+  const handleMissingActionClick = (action: MissingAction) => {
+    setConstructorStep(action.step);
+  };
 
   const handleSubmitBook = async () => {
     if (isSubmitting) {
       return;
     }
 
-    const missingRequiredHero = visibleHeroes
-      .filter((index) => index < requiredHeroCount)
-      .find((index) => !heroes[index]?.name.trim());
+    trackPreviewSubmitClicked();
 
-    if (missingRequiredHero !== undefined) {
+    const missing = buildMissingActions();
+    if (missing.length > 0) {
+      applyMissingActions(missing);
       toast({
         variant: "destructive",
-        title: "Имя героя",
-        description: `Добавьте имя в поле «${heroSlots[missingRequiredHero]}».`,
+        title: "Не хватает данных",
+        description: "Проверьте список недостающих действий под формой.",
       });
-      setConstructorStep(1);
       return;
     }
 
-    const missingAgeHero = visibleHeroes.find((index) => heroHasContent(index) && !heroAgeGroups[index]);
-    if (missingAgeHero !== undefined) {
-      toast({
-        variant: "destructive",
-        title: "Возраст героя",
-        description: `Выберите возраст для поля «${heroSlots[missingAgeHero]}».`,
-      });
-      setConstructorStep(1);
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      toast({
-        variant: "destructive",
-        title: "Почта",
-        description: "Введите корректный email для превью.",
-      });
-      setConstructorStep(2);
-      return;
-    }
-
-    if (!consentChecked) {
-      toast({
-        variant: "destructive",
-        title: "Нужно согласие",
-        description: "Подтвердите согласие на обработку персональных данных.",
-      });
-      setConstructorStep(2);
-      return;
-    }
+    setConstructorErrors({});
+    setMissingActions([]);
 
     const multipartData = new FormData();
     multipartData.append("world", selectedWorld.value);
@@ -458,6 +571,7 @@ const FairytellerInlineConstructor = ({
 
       const nextJobId = createResult?.jobId || null;
       trackGenerateSubmit(nextJobId);
+      trackPreviewSubmitSuccess(nextJobId);
       setSubmittedJobId(nextJobId);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setGenerationStartedAt(Date.now());
@@ -555,13 +669,13 @@ const FairytellerInlineConstructor = ({
       </div>
 
       <div className="border border-black bg-white">
-        <form className="bg-white p-5 md:p-8" onChange={trackConstructorStart} onClick={trackConstructorStart} onInput={trackConstructorStart}>
+        <form className="bg-white p-5 md:p-8" onChange={trackConstructorInteraction} onClick={trackConstructorStart} onInput={trackConstructorInteraction}>
           <div className="mb-8 grid grid-cols-3 border-l border-t border-black sm:inline-flex sm:flex-wrap">
             {constructorTabs.map((step, index) => (
               <button
                 type="button"
                 key={step}
-                onClick={() => setConstructorStep(index)}
+                onClick={() => handleConstructorTabClick(index)}
                 className={`inline-flex h-11 min-w-0 items-center justify-center gap-1 border-b border-r border-black px-2 text-[10px] font-bold uppercase tracking-[0.06em] sm:gap-2 sm:px-4 sm:text-[12px] sm:tracking-[0.12em] ${
                   index === constructorStep ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                 }`}
@@ -592,9 +706,9 @@ const FairytellerInlineConstructor = ({
                   </div>
                 ) : (
                   <div>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
-                        <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
+                        <legend className="text-[26px] font-black uppercase leading-[1.05] tracking-normal sm:text-[28px]">
                           {worldLegend}
                         </legend>
                         <ConstructorHint />
@@ -618,6 +732,9 @@ const FairytellerInlineConstructor = ({
                         </button>
                       </div>
                     </div>
+                    <p className="mt-3 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+                      Выберите жанр, затем заполните место действия и важную деталь ниже — это всё один короткий шаг.
+                    </p>
                     <div
                       ref={worldStripRef}
                       className="fairyteller-choice-strip mt-5 flex snap-x snap-mandatory overflow-x-auto scroll-smooth border-l border-t border-black"
@@ -626,7 +743,10 @@ const FairytellerInlineConstructor = ({
                         <button
                           key={item.id}
                           type="button"
-                          onClick={() => setWorld(item.id)}
+                          onClick={() => {
+                            setWorld(item.id);
+                            trackGenreSelected(item.id);
+                          }}
                           className={`flex h-[206px] w-[260px] shrink-0 snap-start flex-col border-b border-r border-black p-4 text-left transition md:h-[194px] md:w-[310px] ${
                             world === item.id ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                           }`}
@@ -644,25 +764,33 @@ const FairytellerInlineConstructor = ({
                 )}
               </fieldset>
 
-              <div className="mt-8 grid gap-5 md:grid-cols-2">
-                <label className="block">
-                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{locationLabel}</span>
-                  <input
-                    value={location}
-                    onChange={(event) => setLocation(event.currentTarget.value)}
-                    className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                    placeholder={locationPlaceholder}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{artifactLabel}</span>
-                  <input
-                    value={artifact}
-                    onChange={(event) => setArtifact(event.currentTarget.value)}
-                    className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                    placeholder={artifactPlaceholder}
-                  />
-                </label>
+              <div className="mt-6 border-t border-black pt-5">
+                <p className="text-[13px] font-bold uppercase tracking-[0.12em]">
+                  Детали первого шага
+                </p>
+                <p className="mt-2 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+                  После жанра заполните место действия и важную деталь — это сразу попадет в основу сюжета.
+                </p>
+                <div className="mt-4 grid gap-5 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{locationLabel}</span>
+                    <input
+                      value={location}
+                      onChange={(event) => setLocation(event.currentTarget.value)}
+                      className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
+                      placeholder={locationPlaceholder}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[13px] font-bold uppercase tracking-[0.12em]">{artifactLabel}</span>
+                    <input
+                      value={artifact}
+                      onChange={(event) => setArtifact(event.currentTarget.value)}
+                      className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
+                      placeholder={artifactPlaceholder}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="mt-8 flex justify-end">
@@ -688,32 +816,6 @@ const FairytellerInlineConstructor = ({
                   <p className="max-w-[520px] text-[14px] leading-6 text-[#5e6264]">
                     {heroIntro}
                   </p>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsHeroMenuOpen((value) => !value)}
-                      disabled={hiddenHeroes.length === 0}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-black bg-white px-4 text-[12px] font-bold uppercase tracking-[0.1em] transition hover:bg-black hover:text-white disabled:cursor-default disabled:border-[#8a8a8a] disabled:text-[#8a8a8a] disabled:hover:bg-white"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Добавить героя
-                    </button>
-                    {isHeroMenuOpen && hiddenHeroes.length > 0 && (
-                      <div className="absolute right-0 top-[calc(100%+8px)] z-10 w-[210px] border border-black bg-white shadow-[8px_8px_0_#000]">
-                        {hiddenHeroes.map(({ slot, index }) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => addHero(index)}
-                            className="flex h-11 w-full items-center justify-between border-b border-black px-4 text-left text-[12px] font-bold uppercase tracking-[0.1em] last:border-b-0 hover:bg-[#f5f5f5]"
-                          >
-                            {slot}
-                            <Plus className="h-4 w-4" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
                 <div className="mt-5 grid gap-5 md:grid-cols-2">
                   {visibleHeroes.map((index) => {
@@ -742,12 +844,22 @@ const FairytellerInlineConstructor = ({
                           )}
                         </div>
                         <div className="mt-5 grid gap-4">
-                          <input
-                            value={heroes[index]?.name ?? ""}
-                            onChange={(event) => updateHero(index, { name: event.currentTarget.value })}
-                            className="h-[48px] w-full border border-black bg-white px-4 text-[16px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                            placeholder="Имя"
-                          />
+	                          <input
+	                            value={heroes[index]?.name ?? ""}
+	                            onChange={(event) => handleHeroNameChange(index, event.currentTarget.value)}
+	                            aria-invalid={isRequiredHero && Boolean(constructorErrors.heroName)}
+	                            className={`h-[48px] w-full border px-4 text-[16px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5] ${
+	                              isRequiredHero && constructorErrors.heroName
+	                                ? "border-[#C2410C] bg-[#fff7ed]"
+	                                : "border-black bg-white"
+	                            }`}
+	                            placeholder="Имя"
+	                          />
+	                          {isRequiredHero && constructorErrors.heroName && (
+	                            <p className="text-[13px] font-bold leading-5 text-[#C2410C]">
+	                              {constructorErrors.heroName}
+	                            </p>
+	                          )}
                           <input
                             type="hidden"
                             name={`hero${index + 1}_age_group`}
@@ -771,7 +883,10 @@ const FairytellerInlineConstructor = ({
                                     type="button"
                                     role="radio"
                                     aria-checked={isSelected}
-                                    onClick={() => setHeroAgeGroups((items) => ({ ...items, [index]: option.value }))}
+	                                    onClick={() => {
+	                                      setHeroAgeGroups((items) => ({ ...items, [index]: option.value }));
+	                                      clearConstructorError("heroAge");
+	                                    }}
                                     className={`min-h-[44px] border-b border-r border-black px-2 text-[11px] font-bold uppercase tracking-[0.07em] transition ${
                                       isSelected ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                                     }`}
@@ -807,7 +922,35 @@ const FairytellerInlineConstructor = ({
                       </article>
                     );
                   })}
-                </div>
+	                </div>
+	                {constructorErrors.heroAge && (
+	                  <p className="mt-3 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                    {constructorErrors.heroAge}
+	                  </p>
+	                )}
+	                {hiddenHeroes.length > 0 && (
+	                  <div className="mt-5 border border-black bg-[#f5f5f5] p-4 md:flex md:items-center md:justify-between md:gap-6">
+	                    <div>
+	                      <p className="text-[18px] font-black uppercase leading-none tracking-normal">
+	                        Хотите добавить ещё героя?
+	                      </p>
+	                      <p className="mt-3 max-w-[620px] text-[14px] leading-6 text-[#5e6264]">
+	                        Можно добавить маму, друга, ребёнка или любого важного человека.
+	                      </p>
+	                      <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[#5e6264]">
+	                        Одного героя достаточно для превью.
+	                      </p>
+	                    </div>
+	                    <button
+	                      type="button"
+	                      onClick={addNextHero}
+	                      className="mt-4 inline-flex h-11 items-center justify-center gap-2 border border-black bg-white px-4 text-[12px] font-bold uppercase tracking-[0.1em] transition hover:bg-black hover:text-white md:mt-0"
+	                    >
+	                      <Plus className="h-4 w-4" />
+	                      Добавить героя
+	                    </button>
+	                  </div>
+	                )}
               </fieldset>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -819,10 +962,10 @@ const FairytellerInlineConstructor = ({
                   <ChevronLeft className="h-5 w-5" />
                   Назад
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setConstructorStep(2)}
-                  className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
+	                <button
+	                  type="button"
+	                  onClick={handleGoToStyle}
+	                  className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
                 >
                   Перейти к стилю
                   <ChevronRight className="h-5 w-5" />
@@ -889,32 +1032,79 @@ const FairytellerInlineConstructor = ({
               <div className="mt-8 grid gap-5 border-t border-black pt-6 md:grid-cols-2">
                 <label className="block">
                   <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Email для превью</span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.currentTarget.value)}
-                    className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                    placeholder="name@example.com"
-                  />
-                </label>
-                <label className="flex min-h-[52px] items-start gap-3 border border-black p-4 text-[13px] leading-5 text-[#5e6264]">
-                  <input
-                    type="checkbox"
-                    checked={consentChecked}
-                    onChange={(event) => setConsentChecked(event.currentTarget.checked)}
-                    className="mt-1 h-4 w-4 accent-black"
-                  />
+	                  <input
+	                    type="email"
+	                    value={email}
+	                    onChange={(event) => {
+	                      const nextEmail = event.currentTarget.value;
+	                      setEmail(nextEmail);
+	                      if (validateEmail(nextEmail)) {
+	                        clearConstructorError("email");
+	                      }
+	                    }}
+	                    aria-invalid={Boolean(constructorErrors.email)}
+	                    className={`mt-2 h-[52px] w-full border px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5] ${
+	                      constructorErrors.email ? "border-[#C2410C] bg-[#fff7ed]" : "border-black bg-white"
+	                    }`}
+	                    placeholder="name@example.com"
+	                  />
+	                  {constructorErrors.email && (
+	                    <p className="mt-2 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                      {constructorErrors.email}
+	                    </p>
+	                  )}
+	                </label>
+	                <label className={`flex min-h-[52px] items-start gap-3 border p-4 text-[13px] leading-5 ${
+	                  constructorErrors.consent ? "border-[#C2410C] bg-[#fff7ed] text-[#C2410C]" : "border-black text-[#5e6264]"
+	                }`}>
+	                  <input
+	                    type="checkbox"
+	                    checked={consentChecked}
+	                    onChange={(event) => {
+	                      setConsentChecked(event.currentTarget.checked);
+	                      if (event.currentTarget.checked) {
+	                        clearConstructorError("consent");
+	                      }
+	                    }}
+	                    className="mt-1 h-4 w-4 accent-black"
+	                  />
                   <span>
                     Я согласен на обработку персональных данных в соответствии с{" "}
                     <a href="/policy" target="_blank" rel="noreferrer" className="font-bold text-black underline">
                       политикой
                     </a>
                     .
-                  </span>
-                </label>
-              </div>
+	                  </span>
+	                </label>
+	              </div>
+	              {constructorErrors.consent && (
+	                <p className="mt-2 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                  {constructorErrors.consent}
+	                </p>
+	              )}
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
+	              {missingActions.length > 0 && (
+	                <div className="mt-6 border border-black bg-[#fff7ed] p-4" role="alert">
+	                  <p className="text-[14px] font-black uppercase tracking-[0.1em] text-black">
+	                    Чтобы создать превью, осталось:
+	                  </p>
+	                  <div className="mt-3 grid gap-2">
+	                    {missingActions.map((action) => (
+	                      <button
+	                        key={action.key}
+	                        type="button"
+	                        onClick={() => handleMissingActionClick(action)}
+	                        className="flex min-h-10 items-center justify-between border border-black bg-white px-3 py-2 text-left text-[13px] font-bold uppercase tracking-[0.08em] transition hover:bg-black hover:text-white"
+	                      >
+	                        {action.label}
+	                        <ChevronRight className="h-4 w-4 shrink-0" />
+	                      </button>
+	                    ))}
+	                  </div>
+	                </div>
+	              )}
+
+	              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setConstructorStep(1)}

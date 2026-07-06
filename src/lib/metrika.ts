@@ -10,7 +10,14 @@ type MetrikaGoal =
   | "ft_generate_submit"
   | "ft_preview_ready"
   | "ft_checkout_start"
-  | "ft_payment_success";
+  | "ft_payment_success"
+  | "constructor_cta_clicked"
+  | "constructor_first_field_started"
+  | "genre_selected"
+  | "hero_required_completed"
+  | "style_step_reached"
+  | "preview_submit_clicked"
+  | "preview_submit_success";
 
 type GoalParams = Record<string, string | number | boolean | undefined | null>;
 type OnceStorage = "local" | "session";
@@ -39,6 +46,55 @@ export function trackConstructorStart() {
     `constructor_start:${currentPath()}`,
     "session",
   );
+}
+
+export function trackConstructorCtaClicked() {
+  return trackGoal("constructor_cta_clicked", pageParams());
+}
+
+export function trackConstructorFirstFieldStarted() {
+  return trackGoalOnce(
+    "constructor_first_field_started",
+    pageParams(),
+    `constructor_first_field_started:${currentPath()}`,
+    "session",
+  );
+}
+
+export function trackGenreSelected(genre?: string) {
+  return trackGoal("genre_selected", {
+    ...pageParams(),
+    genre,
+  });
+}
+
+export function trackHeroRequiredCompleted() {
+  return trackGoalOnce(
+    "hero_required_completed",
+    pageParams(),
+    `hero_required_completed:${currentPath()}`,
+    "session",
+  );
+}
+
+export function trackStyleStepReached() {
+  return trackGoalOnce(
+    "style_step_reached",
+    pageParams(),
+    `style_step_reached:${currentPath()}`,
+    "session",
+  );
+}
+
+export function trackPreviewSubmitClicked() {
+  return trackGoal("preview_submit_clicked", pageParams());
+}
+
+export function trackPreviewSubmitSuccess(jobId?: string | null) {
+  return trackGoal("preview_submit_success", {
+    ...pageParams(),
+    jobId: jobId || undefined,
+  });
 }
 
 export function trackGenerateSubmit(jobId?: string | null) {

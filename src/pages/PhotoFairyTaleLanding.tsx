@@ -370,7 +370,7 @@ const PhotoFairyTaleLanding = () => {
             artifactLabel="Важная деталь"
             artifactPlaceholder="Игрушка, рюкзак, питомец, любимая книга, талисман, шутка"
             heroIntro="Добавьте главного героя. Фото поможет сохранить узнаваемые черты в иллюстрациях; героем может быть ребёнок, взрослый, пара, друг, коллега или даже питомец."
-            defaultVisibleHeroIndexes={[0, 1]}
+            defaultVisibleHeroIndexes={[0]}
             requiredHeroCount={1}
             heroSlots={photoHeroSlots}
             submitLabel="Создать сказку по фото"

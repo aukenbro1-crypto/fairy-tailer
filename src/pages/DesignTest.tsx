@@ -19,7 +19,19 @@ import SEO from "@/components/SEO";
 import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
 import ConstructorHint from "@/components/ConstructorHint";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
-import { trackCheckoutStart } from "@/lib/metrika";
+import {
+  trackCheckoutStart,
+  trackConstructorCtaClicked,
+  trackConstructorFirstFieldStarted,
+  trackConstructorStart,
+  trackGenerateSubmit,
+  trackGenreSelected,
+  trackHeroRequiredCompleted,
+  trackPreviewReady,
+  trackPreviewSubmitClicked,
+  trackPreviewSubmitSuccess,
+  trackStyleStepReached,
+} from "@/lib/metrika";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
@@ -110,7 +122,7 @@ const styles = [
   { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: photorealismStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
-  { id: "minibrick", title: "Лего", label: "Лего", image: minibrickStyleImage },
+  { id: "minibrick", title: "Блоки", label: "Блоки", image: minibrickStyleImage },
   { id: "naive", title: "Наивный", label: "Наивный", image: naiveStyleImage },
   { id: "watercolor", title: "Акварель", label: "Акварель", image: watercolorStyleImage },
   { id: "claymotion", title: "Пластилин", label: "Пластилин", image: claymotionStyleImage },
@@ -140,17 +152,25 @@ const illustrationStylePrompts: Record<string, string> = {
 };
 
 const process = [
-  ["01", "Расскажите о себе", "Имя, возраст, фото, характер и детали, которые сделают историю личной."],
+  [
+    "01",
+    "Выберите жанр",
+    "Романтическая история, приключения, мир Хогвартса, фэнтези или русский киберпанк — выберите атмосферу будущей книги.",
+  ],
   [
     "02",
-    "Выберите жанр",
-    "Романтическая история, приключения, мир Хогвартса, фэнтези или русский киберпанк. Выберите атмосферу и стиль изображений, который подходит именно вам.",
+    "Расскажите о герое и деталях",
+    "Добавьте имя, возраст, место действия, важную деталь и фото, чтобы история получилась личной.",
   ],
-  ["03", "Получите превью", "Готовую историю с иллюстрациями вы увидите через 2-3 минуты."],
+  [
+    "03",
+    "Получите превью",
+    "Через 3–4 минуты после заполнения конструктора покажем превью истории с иллюстрациями.",
+  ],
   [
     "04",
     "Отправьте книгу в печать",
-    "Оплатите заказ, мы напечатаем книгу в течение одного дня и вышлем ее по указанному адресу.",
+    "Оплатите заказ, мы подготовим макет, напечатаем книгу и отправим ее по указанному адресу.",
   ],
 ];
 
@@ -393,9 +413,19 @@ type JobStatus = {
   error?: string | null;
 };
 
+type ConstructorErrorKey = "heroName" | "heroAge" | "email" | "consent";
+type ConstructorErrors = Partial<Record<ConstructorErrorKey, string>>;
+type MissingAction = {
+  key: ConstructorErrorKey;
+  label: string;
+  step: number;
+  message: string;
+};
+
 const CtaStrip = () => (
   <a
     href="#create"
+    onClick={trackConstructorCtaClicked}
     className="group flex min-h-[62px] items-center justify-center border-b border-black bg-black px-5 text-center text-[15px] font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#E89C31] hover:text-black md:text-[20px]"
   >
     Создать свою книгу
@@ -411,17 +441,17 @@ const DesignTest = () => {
   const [style, setStyle] = useState(styles[0].id);
   const [heroIndex, setHeroIndex] = useState(0);
   const [constructorStep, setConstructorStep] = useState(0);
-  const [visibleHeroes, setVisibleHeroes] = useState([0, 1]);
+  const [visibleHeroes, setVisibleHeroes] = useState([0]);
   const [location, setLocation] = useState("");
   const [artifact, setArtifact] = useState("");
   const [email, setEmail] = useState("");
   const [consentChecked, setConsentChecked] = useState(false);
   const [heroes, setHeroes] = useState<Record<number, HeroDraft>>({
     0: { name: "", desc: "", photo: null },
-    1: { name: "", desc: "", photo: null },
   });
   const [heroAgeGroups, setHeroAgeGroups] = useState<Record<number, string>>({});
-  const [isHeroMenuOpen, setIsHeroMenuOpen] = useState(false);
+  const [constructorErrors, setConstructorErrors] = useState<ConstructorErrors>({});
+  const [missingActions, setMissingActions] = useState<MissingAction[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
@@ -487,6 +517,18 @@ const DesignTest = () => {
   const hiddenHeroes = heroSlots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => item.index > 0 && !visibleHeroes.includes(item.index));
+  const trackConstructorInteraction = () => {
+    trackConstructorStart();
+    trackConstructorFirstFieldStarted();
+  };
+  const clearConstructorError = (key: ConstructorErrorKey) => {
+    setConstructorErrors((items) => {
+      const next = { ...items };
+      delete next[key];
+      return next;
+    });
+    setMissingActions((items) => items.filter((item) => item.key !== key));
+  };
   const goHero = (direction: -1 | 1) => {
     setHeroIndex((index) => (index + direction + heroImages.length) % heroImages.length);
   };
@@ -496,7 +538,12 @@ const DesignTest = () => {
       ...items,
       [index]: items[index] ?? { name: "", desc: "", photo: null },
     }));
-    setIsHeroMenuOpen(false);
+  };
+  const addNextHero = () => {
+    const nextHero = hiddenHeroes[0];
+    if (nextHero) {
+      addHero(nextHero.index);
+    }
   };
   const removeHero = (index: number) => {
     setVisibleHeroes((items) => items.filter((item) => item !== index));
@@ -546,40 +593,128 @@ const DesignTest = () => {
     const hero = heroes[index];
     return Boolean(hero?.name.trim() || hero?.desc.trim() || hero?.photo);
   };
+  const buildMissingActions = () => {
+    const actions: MissingAction[] = [];
+    const missingAgeHero = visibleHeroes.find((index) => heroHasContent(index) && !heroAgeGroups[index]);
+
+    if (!heroes[0]?.name.trim()) {
+      actions.push({
+        key: "heroName",
+        label: "Добавить имя главного героя",
+        step: 1,
+        message: "Добавьте имя главного героя, чтобы история была про него.",
+      });
+    }
+
+    if (missingAgeHero !== undefined) {
+      actions.push({
+        key: "heroAge",
+        label: `Выбрать возраст для поля «${heroSlots[missingAgeHero]}»`,
+        step: 1,
+        message: `Выберите возраст для поля «${heroSlots[missingAgeHero]}».`,
+      });
+    }
+
+    if (!validateEmail(email)) {
+      actions.push({
+        key: "email",
+        label: "Указать email",
+        step: 2,
+        message: "Укажите email, чтобы мы отправили превью.",
+      });
+    }
+
+    if (!consentChecked) {
+      actions.push({
+        key: "consent",
+        label: "Подтвердить согласие",
+        step: 2,
+        message: "Подтвердите согласие, чтобы создать превью.",
+      });
+    }
+
+    return actions;
+  };
+  const applyMissingActions = (actions: MissingAction[]) => {
+    const nextErrors = actions.reduce<ConstructorErrors>((acc, action) => {
+      acc[action.key] = action.message;
+      return acc;
+    }, {});
+
+    setConstructorErrors(nextErrors);
+    setMissingActions(actions);
+  };
+  const validateHeroStep = (shouldOpenHeroStep = false) => {
+    if (heroes[0]?.name.trim()) {
+      clearConstructorError("heroName");
+      return true;
+    }
+
+    applyMissingActions([
+      {
+        key: "heroName",
+        label: "Добавить имя главного героя",
+        step: 1,
+        message: "Добавьте имя главного героя, чтобы история была про него.",
+      },
+    ]);
+
+    if (shouldOpenHeroStep) {
+      setConstructorStep(1);
+    }
+
+    return false;
+  };
+  const handleConstructorTabClick = (index: number) => {
+    if (index === 2 && !validateHeroStep(true)) {
+      return;
+    }
+
+    if (index === 2) {
+      trackStyleStepReached();
+    }
+
+    setConstructorStep(index);
+  };
+  const handleHeroNameChange = (index: number, value: string) => {
+    updateHero(index, { name: value });
+
+    if (index === 0 && value.trim()) {
+      clearConstructorError("heroName");
+      trackHeroRequiredCompleted();
+    }
+  };
+  const handleGoToStyle = () => {
+    if (!validateHeroStep()) {
+      return;
+    }
+
+    trackStyleStepReached();
+    setConstructorStep(2);
+  };
+  const handleMissingActionClick = (action: MissingAction) => {
+    setConstructorStep(action.step);
+  };
   const handleSubmitBook = async () => {
     if (isSubmitting) {
       return;
     }
 
-    if (!consentChecked) {
+    trackPreviewSubmitClicked();
+
+    const missing = buildMissingActions();
+    if (missing.length > 0) {
+      applyMissingActions(missing);
       toast({
         variant: "destructive",
-        title: "Нужно согласие",
-        description: "Подтвердите согласие на обработку персональных данных.",
+        title: "Не хватает данных",
+        description: "Проверьте список недостающих действий под формой.",
       });
       return;
     }
 
-    if (!validateEmail(email)) {
-      toast({
-        variant: "destructive",
-        title: "Почта",
-        description: "Введите корректный email для превью.",
-      });
-      setConstructorStep(2);
-      return;
-    }
-
-    const missingAgeHero = visibleHeroes.find((index) => heroHasContent(index) && !heroAgeGroups[index]);
-    if (missingAgeHero !== undefined) {
-      toast({
-        variant: "destructive",
-        title: "Возраст героя",
-        description: `Выберите возраст для поля «${heroSlots[missingAgeHero]}».`,
-      });
-      setConstructorStep(1);
-      return;
-    }
+    setConstructorErrors({});
+    setMissingActions([]);
 
     const multipartData = new FormData();
     multipartData.append("world", selectedWorld.value);
@@ -629,7 +764,10 @@ const DesignTest = () => {
         throw new Error(createResult?.message || "Create request failed");
       }
 
-      setSubmittedJobId(createResult?.jobId || null);
+      const nextJobId = createResult?.jobId || null;
+      trackGenerateSubmit(nextJobId);
+      trackPreviewSubmitSuccess(nextJobId);
+      setSubmittedJobId(nextJobId);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
       setGenerationStartedAt(Date.now());
       toast({
@@ -793,6 +931,12 @@ const DesignTest = () => {
   }, [submittedJobId, isGenerationReady, isGenerationFailed]);
 
   useEffect(() => {
+    if (submittedJobId && isGenerationReady) {
+      trackPreviewReady(submittedJobId);
+    }
+  }, [submittedJobId, isGenerationReady]);
+
+  useEffect(() => {
     if (window.location.pathname !== "/create") {
       return;
     }
@@ -932,7 +1076,7 @@ const DesignTest = () => {
             <a href="#process" className="hover:underline">
               Как это работает
             </a>
-            <a href="#create" className="hover:underline">
+            <a href="#create" onClick={trackConstructorCtaClicked} className="hover:underline">
               Создать
             </a>
             <a href="#examples" className="hover:underline">
@@ -949,6 +1093,7 @@ const DesignTest = () => {
           <div className="flex items-center gap-2">
             <a
               href="#create"
+              onClick={trackConstructorCtaClicked}
               className="inline-flex h-10 items-center justify-center gap-2 border border-black bg-black px-4 text-[13px] font-bold uppercase tracking-[0.05em] text-white transition hover:bg-white hover:text-black"
             >
               <ShoppingBag className="h-4 w-4" />
@@ -971,6 +1116,7 @@ const DesignTest = () => {
             <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row">
               <a
                 href="#create"
+                onClick={trackConstructorCtaClicked}
                 className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
               >
                 <BookOpen className="h-5 w-5" />
@@ -1064,22 +1210,22 @@ const DesignTest = () => {
           <div className="mb-9 grid gap-5 md:grid-cols-[1fr_420px] md:items-end">
             <div>
               <h2 className={sectionTitleClass}>
-                Соберите свою книгу.
+                Конструктор книги
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
-              Мир, место действия, важная деталь, герои, фото, стиль иллюстраций и email — введите необходимую информацию и через несколько минут история будет готова. Чем больше подробностей вы укажете — тем интереснее получится текст.
+              Заполните 5 коротких пунктов и оставьте email — через 2–3 минуты покажем превью истории. Чем больше живых деталей вы добавите, тем интереснее получится история.
             </p>
           </div>
 
           <div className="border border-black bg-white">
-            <form className="bg-white p-5 md:p-8">
+            <form className="bg-white p-5 md:p-8" onChange={trackConstructorInteraction} onInput={trackConstructorInteraction} onClick={trackConstructorStart}>
               <div className="mb-8 flex flex-wrap gap-0 border-l border-t border-black">
                 {constructorTabs.map((step, index) => (
                   <button
                     type="button"
                     key={step}
-                    onClick={() => setConstructorStep(index)}
+                    onClick={() => handleConstructorTabClick(index)}
                     className={`inline-flex h-11 items-center gap-2 border-b border-r border-black px-4 text-[12px] font-bold uppercase tracking-[0.12em] ${
                       index === constructorStep ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                     }`}
@@ -1093,16 +1239,16 @@ const DesignTest = () => {
               {constructorStep === 0 && (
                 <div>
                   <fieldset>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
-                          Выберите жанр
-                        </legend>
-                        <ConstructorHint />
-                      </div>
-                      <div className="flex shrink-0 border-l border-t border-black">
-                        <button
-                          type="button"
+	                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+	                      <div className="flex min-w-0 items-center gap-3">
+	                        <legend className="text-[26px] font-black uppercase leading-[1.05] tracking-normal sm:text-[28px]">
+	                          Шаг 1 из 3. Выберите жанр и добавьте детали
+	                        </legend>
+	                        <ConstructorHint />
+	                      </div>
+	                      <div className="flex shrink-0 border-l border-t border-black">
+	                        <button
+	                          type="button"
                           onClick={() => scrollWorlds(-1)}
                           className="inline-flex h-11 w-11 items-center justify-center border-b border-r border-black bg-white transition hover:bg-black hover:text-white"
                           aria-label="Прокрутить жанры влево"
@@ -1116,20 +1262,26 @@ const DesignTest = () => {
                           aria-label="Прокрутить жанры вправо"
                         >
                           <ChevronRight className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      ref={worldStripRef}
+	                        </button>
+	                      </div>
+	                    </div>
+	                    <p className="mt-3 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+	                      Выберите жанр, затем заполните место действия и важную деталь ниже — это всё один короткий шаг.
+	                    </p>
+	                    <div
+	                      ref={worldStripRef}
                       className="fairyteller-choice-strip mt-5 flex snap-x snap-mandatory overflow-x-auto scroll-smooth border-l border-t border-black"
                     >
                       {worlds.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setWorld(item.id)}
-                          className={`flex h-[206px] w-[260px] shrink-0 snap-start flex-col border-b border-r border-black p-4 text-left transition md:h-[194px] md:w-[310px] ${
-                            world === item.id ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
+	                        <button
+	                          key={item.id}
+	                          type="button"
+	                          onClick={() => {
+	                            setWorld(item.id);
+	                            trackGenreSelected(item.id);
+	                          }}
+	                          className={`flex h-[206px] w-[260px] shrink-0 snap-start flex-col border-b border-r border-black p-4 text-left transition md:h-[194px] md:w-[310px] ${
+	                            world === item.id ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                           }`}
                         >
                           <span className="block min-h-[52px] text-[21px] font-black uppercase leading-[1.08] tracking-normal">
@@ -1143,26 +1295,34 @@ const DesignTest = () => {
                     </div>
                   </fieldset>
 
-                  <div className="mt-8 grid gap-5 md:grid-cols-2">
-                    <label className="block">
-                      <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Место действия</span>
-                      <input
-                        value={location}
-                        onChange={(event) => setLocation(event.currentTarget.value)}
-                        className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                        placeholder="Мехико, дача, поезд, старый город"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Важная деталь</span>
-                      <input
-                        value={artifact}
-                        onChange={(event) => setArtifact(event.currentTarget.value)}
-                        className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                        placeholder="Компас, кулон, билет, игрушка"
-                      />
-                    </label>
-                  </div>
+	                  <div className="mt-6 border-t border-black pt-5">
+	                    <p className="text-[13px] font-bold uppercase tracking-[0.12em]">
+	                      Детали первого шага
+	                    </p>
+	                    <p className="mt-2 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+	                      После жанра заполните место действия и важную деталь — это сразу попадет в основу сюжета.
+	                    </p>
+	                    <div className="mt-4 grid gap-5 md:grid-cols-2">
+	                      <label className="block">
+	                        <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Место действия</span>
+	                        <input
+	                          value={location}
+	                          onChange={(event) => setLocation(event.currentTarget.value)}
+	                          className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
+	                          placeholder="Мехико, дача, поезд, старый город"
+	                        />
+	                      </label>
+	                      <label className="block">
+	                        <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Важная деталь</span>
+	                        <input
+	                          value={artifact}
+	                          onChange={(event) => setArtifact(event.currentTarget.value)}
+	                          className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
+	                          placeholder="Компас, кулон, билет, игрушка"
+	                        />
+	                      </label>
+	                    </div>
+	                  </div>
 
                   <div className="mt-8 flex justify-end">
                     <button
@@ -1183,39 +1343,13 @@ const DesignTest = () => {
                     <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
                       Герои и фото
                     </legend>
-                    <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-                      <p className="max-w-[520px] text-[14px] leading-6 text-[#5e6264]">
-                        Главный герой обязателен. Дополнительных героев можно добавить вручную.
-                      </p>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setIsHeroMenuOpen((value) => !value)}
-                          disabled={hiddenHeroes.length === 0}
-                          className="inline-flex h-11 items-center justify-center gap-2 border border-black bg-white px-4 text-[12px] font-bold uppercase tracking-[0.1em] transition hover:bg-black hover:text-white disabled:cursor-default disabled:border-[#8a8a8a] disabled:text-[#8a8a8a] disabled:hover:bg-white"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Добавить героя
-                        </button>
-                        {isHeroMenuOpen && hiddenHeroes.length > 0 && (
-                          <div className="absolute right-0 top-[calc(100%+8px)] z-10 w-[210px] border border-black bg-white shadow-[8px_8px_0_#000]">
-                            {hiddenHeroes.map(({ slot, index }) => (
-                              <button
-                                key={slot}
-                                type="button"
-                                onClick={() => addHero(index)}
-                                className="flex h-11 w-full items-center justify-between border-b border-black px-4 text-left text-[12px] font-bold uppercase tracking-[0.1em] last:border-b-0 hover:bg-[#f5f5f5]"
-                              >
-                                {slot}
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-5 grid gap-5 md:grid-cols-2">
-                      {visibleHeroes.map((index) => (
+	                    <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
+	                      <p className="max-w-[520px] text-[14px] leading-6 text-[#5e6264]">
+	                        Заполните главного героя: имя нужно обязательно, фото и детали помогут сделать историю личной.
+	                      </p>
+	                    </div>
+	                    <div className="mt-5 grid gap-5 md:grid-cols-2">
+	                      {visibleHeroes.map((index) => (
                         <article key={heroSlots[index]} className="border border-black p-4">
                           <div className="flex items-center justify-between gap-4">
                             <h3 className="text-[20px] font-black uppercase leading-none tracking-[-0.02em]">
@@ -1237,12 +1371,22 @@ const DesignTest = () => {
                             )}
                           </div>
                           <div className="mt-5 grid gap-4">
-                            <input
-                              value={heroes[index]?.name ?? ""}
-                              onChange={(event) => updateHero(index, { name: event.currentTarget.value })}
-                              className="h-[48px] w-full border border-black bg-white px-4 text-[16px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                              placeholder="Имя"
-                            />
+	                            <input
+	                              value={heroes[index]?.name ?? ""}
+	                              onChange={(event) => handleHeroNameChange(index, event.currentTarget.value)}
+	                              aria-invalid={index === 0 && Boolean(constructorErrors.heroName)}
+	                              className={`h-[48px] w-full border px-4 text-[16px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5] ${
+	                                index === 0 && constructorErrors.heroName
+	                                  ? "border-[#C2410C] bg-[#fff7ed]"
+	                                  : "border-black bg-white"
+	                              }`}
+	                              placeholder="Имя"
+	                            />
+	                            {index === 0 && constructorErrors.heroName && (
+	                              <p className="text-[13px] font-bold leading-5 text-[#C2410C]">
+	                                {constructorErrors.heroName}
+	                              </p>
+	                            )}
                             <input
                               type="hidden"
                               name={`hero${index + 1}_age_group`}
@@ -1266,7 +1410,10 @@ const DesignTest = () => {
                                       type="button"
                                       role="radio"
                                       aria-checked={isSelected}
-                                      onClick={() => setHeroAgeGroups((items) => ({ ...items, [index]: option.value }))}
+	                                      onClick={() => {
+	                                        setHeroAgeGroups((items) => ({ ...items, [index]: option.value }));
+	                                        clearConstructorError("heroAge");
+	                                      }}
                                       className={`min-h-[44px] border-b border-r border-black px-2 text-[11px] font-bold uppercase tracking-[0.07em] transition ${
                                         isSelected ? "bg-black text-white" : "bg-white text-black hover:bg-[#f5f5f5]"
                                       }`}
@@ -1300,9 +1447,37 @@ const DesignTest = () => {
                             </button>
                           </div>
                         </article>
-                      ))}
-                    </div>
-                  </fieldset>
+	                      ))}
+	                    </div>
+	                    {constructorErrors.heroAge && (
+	                      <p className="mt-3 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                        {constructorErrors.heroAge}
+	                      </p>
+	                    )}
+	                    {hiddenHeroes.length > 0 && (
+	                      <div className="mt-5 border border-black bg-[#f5f5f5] p-4 md:flex md:items-center md:justify-between md:gap-6">
+	                        <div>
+	                          <p className="text-[18px] font-black uppercase leading-none tracking-normal">
+	                            Хотите добавить ещё героя?
+	                          </p>
+	                          <p className="mt-3 max-w-[620px] text-[14px] leading-6 text-[#5e6264]">
+	                            Можно добавить маму, друга, ребёнка или любого важного человека.
+	                          </p>
+	                          <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[#5e6264]">
+	                            Одного героя достаточно для превью.
+	                          </p>
+	                        </div>
+	                        <button
+	                          type="button"
+	                          onClick={addNextHero}
+	                          className="mt-4 inline-flex h-11 items-center justify-center gap-2 border border-black bg-white px-4 text-[12px] font-bold uppercase tracking-[0.1em] transition hover:bg-black hover:text-white md:mt-0"
+	                        >
+	                          <Plus className="h-4 w-4" />
+	                          Добавить героя
+	                        </button>
+	                      </div>
+	                    )}
+	                  </fieldset>
 
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                     <button
@@ -1313,10 +1488,10 @@ const DesignTest = () => {
                       <ChevronLeft className="h-5 w-5" />
                       Назад
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setConstructorStep(2)}
-                      className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
+	                    <button
+	                      type="button"
+	                      onClick={handleGoToStyle}
+	                      className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
                     >
                       Перейти к стилю
                       <ChevronRight className="h-5 w-5" />
@@ -1356,12 +1531,12 @@ const DesignTest = () => {
                       className="fairyteller-choice-strip mt-5 flex snap-x snap-mandatory overflow-x-auto scroll-smooth border-l border-t border-black"
                     >
                       {styles.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setStyle(item.id)}
-                          className="group w-[220px] shrink-0 snap-start border-b border-r border-black bg-white text-left md:w-[245px]"
-                        >
+	                        <button
+	                          key={item.id}
+	                          type="button"
+	                          onClick={() => setStyle(item.id)}
+	                          className="group w-[220px] shrink-0 snap-start border-b border-r border-black bg-white text-left md:w-[245px]"
+	                        >
                           <img
                             src={item.image}
                             alt={item.label}
@@ -1385,30 +1560,77 @@ const DesignTest = () => {
                   <div className="mt-8 grid gap-5 border-t border-black pt-6 md:grid-cols-2">
                     <label className="block">
                       <span className="text-[13px] font-bold uppercase tracking-[0.12em]">Email для превью</span>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.currentTarget.value)}
-                        className="mt-2 h-[52px] w-full border border-black bg-white px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
-                        placeholder="name@example.com"
-                      />
-                    </label>
-                    <label className="flex min-h-[52px] items-start gap-3 border border-black p-4 text-[13px] leading-5 text-[#5e6264]">
-                      <input
-                        type="checkbox"
-                        checked={consentChecked}
-                        onChange={(event) => setConsentChecked(event.currentTarget.checked)}
-                        className="mt-1 h-4 w-4 accent-black"
-                      />
+	                      <input
+	                        type="email"
+	                        value={email}
+	                        onChange={(event) => {
+	                          const nextEmail = event.currentTarget.value;
+	                          setEmail(nextEmail);
+	                          if (validateEmail(nextEmail)) {
+	                            clearConstructorError("email");
+	                          }
+	                        }}
+	                        aria-invalid={Boolean(constructorErrors.email)}
+	                        className={`mt-2 h-[52px] w-full border px-4 text-[18px] text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5] ${
+	                          constructorErrors.email ? "border-[#C2410C] bg-[#fff7ed]" : "border-black bg-white"
+	                        }`}
+	                        placeholder="name@example.com"
+	                      />
+	                      {constructorErrors.email && (
+	                        <p className="mt-2 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                          {constructorErrors.email}
+	                        </p>
+	                      )}
+	                    </label>
+	                    <label className={`flex min-h-[52px] items-start gap-3 border p-4 text-[13px] leading-5 ${
+	                      constructorErrors.consent ? "border-[#C2410C] bg-[#fff7ed] text-[#C2410C]" : "border-black text-[#5e6264]"
+	                    }`}>
+	                      <input
+	                        type="checkbox"
+	                        checked={consentChecked}
+	                        onChange={(event) => {
+	                          setConsentChecked(event.currentTarget.checked);
+	                          if (event.currentTarget.checked) {
+	                            clearConstructorError("consent");
+	                          }
+	                        }}
+	                        className="mt-1 h-4 w-4 accent-black"
+	                      />
                       <span>
                         Я согласен на обработку персональных данных в соответствии с{" "}
                         <a href="/policy" target="_blank" rel="noreferrer" className="font-bold text-black underline">
                           политикой
                         </a>
                         .
-                      </span>
-                    </label>
-                  </div>
+	                      </span>
+	                    </label>
+	                  </div>
+	                  {constructorErrors.consent && (
+	                    <p className="mt-2 text-[13px] font-bold leading-5 text-[#C2410C]">
+	                      {constructorErrors.consent}
+	                    </p>
+	                  )}
+
+	                  {missingActions.length > 0 && (
+	                    <div className="mt-6 border border-black bg-[#fff7ed] p-4" role="alert">
+	                      <p className="text-[14px] font-black uppercase tracking-[0.1em] text-black">
+	                        Чтобы создать превью, осталось:
+	                      </p>
+	                      <div className="mt-3 grid gap-2">
+	                        {missingActions.map((action) => (
+	                          <button
+	                            key={action.key}
+	                            type="button"
+	                            onClick={() => handleMissingActionClick(action)}
+	                            className="flex min-h-10 items-center justify-between border border-black bg-white px-3 py-2 text-left text-[13px] font-bold uppercase tracking-[0.08em] transition hover:bg-black hover:text-white"
+	                          >
+	                            {action.label}
+	                            <ChevronRight className="h-4 w-4 shrink-0" />
+	                          </button>
+	                        ))}
+	                      </div>
+	                    </div>
+	                  )}
 
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                     <button
@@ -1634,7 +1856,7 @@ const DesignTest = () => {
               </p>
               <nav className="mt-6 flex flex-wrap gap-4 text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
                 <a href="#process" className="hover:text-white hover:underline">Как работает</a>
-                <a href="#create" className="hover:text-white hover:underline">Создать</a>
+                <a href="#create" onClick={trackConstructorCtaClicked} className="hover:text-white hover:underline">Создать</a>
                 <a href="#examples" className="hover:text-white hover:underline">Примеры</a>
                 <Link to="/podarok/dlya-pary" className="hover:text-white hover:underline">Для пары</Link>
                 <a href="#faq" className="hover:text-white hover:underline">FAQ</a>
@@ -1662,6 +1884,7 @@ const DesignTest = () => {
                 </a>
                 <a
                   href="#create"
+                  onClick={trackConstructorCtaClicked}
                   className="inline-flex h-11 items-center justify-center gap-2 border border-white bg-white px-5 text-[12px] font-bold uppercase tracking-[0.1em] text-black transition hover:bg-black hover:text-white"
                 >
                   Создать книгу
