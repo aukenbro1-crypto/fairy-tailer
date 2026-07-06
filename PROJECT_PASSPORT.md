@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 13:03 UTC
+Last updated: 2026-07-06 14:00 UTC
 
 ## Project Context
 
@@ -89,7 +89,7 @@ Text generation note:
 - The first-chapter Gemini call is wrapped in a code node with controlled transient retries/backoff (`10s`, `20s`, `35s`, `55s`). If Gemini still returns provider errors, the workflow patches the Job API to `failed` before throwing so the frontend and Telegram do not hang silently.
 - The first-chapter normalizer extracts fenced/embedded JSON and repairs raw control characters inside strings before `JSON.parse`.
 - The first-chapter normalizer also patches the Job API to `failed` before throwing if Gemini returns unrecoverable JSON or an invalid print-ready block shape.
-- The first-chapter and full-text normalizers remove generated quotation marks from `textBlocks`, avoid direct-speech examples wrapped in guillemets in prompts, and insert paragraph breaks before inline Russian dialogue turns so direct speech stays visually separate from narration. Recalled phrases, thoughts, messages, and labels should be paraphrased without quote marks rather than treated as dialogue.
+- The first-chapter and full-text normalizers remove generated quotation marks from `textBlocks`, avoid direct-speech examples wrapped in guillemets in prompts, and repair Russian dash-dialogue typography. They keep author attributions inline (`— Реплика! — сказала Женя.`), split narrative actions into separate paragraphs (`— Реплика.\n\nЖеня кивнула.`), and only insert paragraph breaks before true new dialogue turns. Recalled phrases, thoughts, messages, and labels should be paraphrased without quote marks rather than treated as dialogue.
 - The previous OpenAI path is not active because the current VPS n8n `OPENAI_API_KEY` returned `401 invalid_api_key` on 2026-05-23.
 - The first-chapter contract writes `text.preview.imageStatus = "pending"` so `fairyteller_visuals` can prioritize the first chapter illustration next.
 - `fairyteller_text` starts the full book automatically after chapter 1 is normalized. It fans out to `fairyteller_visuals` for the portrait sheet/chapter 1 image and to `fairyteller_full_text` for chapters 2-5. `fairyteller_continue` remains available only for old jobs or manual recovery.
@@ -265,6 +265,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-06
+
+- Deployed Fairyteller dialogue typography repair to production n8n and renderer after inspecting job `ft_1783328471690_elzdmo`, where the generated text had dash dialogue remapped into broken PDF paragraphs such as orphaned `— крикнула Женя` lines and narration glued to a dialogue paragraph. Updated `fairyteller_text` and `fairyteller_full_text` normalizers to distinguish author attributions from new dialogue turns, split narrative actions after dialogue into non-dash paragraphs, preserve the same normalization for chapter 1 when `fairyteller_full_text` assembles the complete book, and added the same repair pass to `/opt/fairyteller-render/fairyteller-render-pdf.mjs` for old artifacts. Production backup before import: `/root/fairyteller-n8n-exports/20260706-134709Z-dialogue-typography-before`; renderer backup: `/opt/fairyteller-render/backups/fairyteller-render-pdf.20260706-134709Z-dialogue-typography-before.mjs`; import: `/root/fairyteller-n8n-imports/20260706-134709Z-dialogue-typography`; after-export: `/root/fairyteller-n8n-exports/20260706-134709Z-dialogue-typography-after`. Verified workflow code syntax, renderer `node --check`, n8n/API health, active published workflow exports, and re-rendered `ft_1783328471690_elzdmo` at `2026-07-06T13:58:36.683Z` with `noTextTruncation=true`; `pdftotext` found `orphan_attribution 0`, and the known `Илья обернулся` line is now separated from the preceding dialogue by a blank paragraph break.
 
 - Deployed Fairyteller image aspect-ratio controls to production n8n. Updated `fairyteller_visuals` and `fairyteller_full_visuals` so chapter image Gemini requests include `imageConfig.aspectRatio="1:1"`, and updated `fairyteller_cover` so cover Gemini requests include `imageConfig.aspectRatio="3:2"` plus generated PNG/JPEG dimension validation before accepting the cover image. This should prevent portrait cover art from being contain-fitted into the wide front-cover frame with empty side fields while keeping the renderer's no-head-crop `contain` behavior. Production backup before import: `/root/fairyteller-n8n-exports/20260706-011931Z-image-aspect-before`; import: `/root/fairyteller-n8n-imports/20260706-012452Z-image-aspect`; after-export: `/root/fairyteller-n8n-exports/20260706-012715Z-image-aspect-after`. Verified `gemini-2.5-flash-image` accepts `imageConfig.aspectRatio="3:2"` and returns `1248x832`, parsed all updated n8n code nodes, published/restarted `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`, confirmed all three remain `active: true`, and checked n8n/API health endpoints.
 

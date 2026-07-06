@@ -114,7 +114,10 @@ function bookSummary(fullText, fallback = '') {
   return bible.coverSummary || bible.readerBlurb || fullText.text?.preview?.summary || fallback;
 }
 
-function normalizeDialogueDashes(value) {
+const SPEECH_ATTRIBUTION_RE = /^(?:(?:тихо|мягко|громко|спокойно|настойчиво|сухо|весело|серьезно|серьёзно|неуверенно|уверенно|коротко|устало|радостно|осторожно|резко|твердо|твёрдо|хрипло|едва\s+слышно|с\s+улыбкой|с\s+облегчением)\s+){0,4}(?:сказал[аи]?|говорил[аи]?|ответил[аи]?|крикнул[аи]?|прошептал[аи]?|спросил[аи]?|произнесл?[аи]?|проворчал[аи]?|скомандовал[аи]?|воскликнул[аи]?|заметил[аи]?|добавил[аи]?|пояснил[аи]?|признал[аи]?|выдохнул[аи]?|позвал[аи]?|предложил[аи]?|объяснил[аи]?|пробормотал[аи]?|буркнул[аи]?)(?=\s|[.,!?…]|$)/iu;
+const DIALOGUE_NARRATIVE_ACTION_RE = /(?:обернул[аи]?с[ья]|посмотрел[аи]?|оглянул[аи]?с[ья]|кивнул[аи]?|осмотрел[аи]?|замер(?:ла)?|положил[аи]?|указал[аи]?|улыбнул[аи]?с[ья]|усмехнул[аи]?с[ья]|нахмурил[аи]?с[ья]|вздохнул[аи]?|поднял[аи]?|опустил[аи]?|перевел[аи]?|перевёл[аи]?|пошел|пошёл|пошла|побежал[аи]?|бросил[аи]?с[ья]|сел[аи]?|стоял[аи]?|молчал[аи]?|почувствовал[аи]?|понял[аи]?|заметил[аи]?|сделал[аи]?|достал[аи]?|убрал[аи]?|прижал[аи]?|обнял[аи]?|схватил[аи]?|помог(?:ла)?|развернул[аи]?с[ья]|смотрел[аи]?|слушал[аи]?|ждал[аи]?|дрожал[аи]?|рассмеял[аи]?с[ья]|улыбнул[аи]?с[ья])(?=\s|[.,!?…]|$)/iu;
+
+function normalizeDashSpacing(value) {
   return String(value || '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
@@ -123,6 +126,69 @@ function normalizeDialogueDashes(value) {
     .replace(/[ \t]+/g, ' ')
     .replace(/[ \t]+\n/g, '\n')
     .trim();
+}
+
+function isSpeechAttributionStart(value) {
+  return SPEECH_ATTRIBUTION_RE.test(cleanText(value));
+}
+
+function capitalizeSentenceStart(value) {
+  return String(value || '').replace(/^(\s*)([а-яё])/u, (_, prefix, letter) => prefix + letter.toUpperCase());
+}
+
+function repairLowercaseDashParagraphs(value) {
+  const paragraphs = String(value || '').split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  const repaired = [];
+  for (const paragraph of paragraphs) {
+    const lowercaseDash = paragraph.match(/^—\s+([а-яё][\s\S]*)$/u);
+    if (!lowercaseDash) {
+      repaired.push(paragraph);
+      continue;
+    }
+    const body = lowercaseDash[1].trim();
+    if (isSpeechAttributionStart(body) && repaired.length && /^—\s/.test(repaired[repaired.length - 1])) {
+      repaired[repaired.length - 1] += ' — ' + body;
+      continue;
+    }
+    repaired.push(capitalizeSentenceStart(body));
+  }
+  return repaired.join('\n\n');
+}
+
+function repairInlineLowercaseDashes(value) {
+  return String(value || '').replace(/([.!?…])\s+—\s+([а-яё][^.!?…\n]*(?:[.!?…]|$))/gu, (match, punctuation, tail) => (
+    isSpeechAttributionStart(tail)
+      ? `${punctuation} — ${tail.trim()}`
+      : `${punctuation}\n\n${capitalizeSentenceStart(tail.trim())}`
+  ));
+}
+
+function splitNarrativeAfterDialogue(value) {
+  const subject = '(?:[А-ЯЁ][а-яё]{1,24}|Он|Она|Они)';
+  const action = DIALOGUE_NARRATIVE_ACTION_RE.source;
+  const narrativeStartRe = new RegExp(`([.!?…])\\s+(${subject}\\s+${action})`, 'giu');
+  return String(value || '')
+    .split(/\n{2,}/)
+    .map((paragraph) => {
+      if (!/^—\s/.test(paragraph)) return paragraph;
+      let changed = false;
+      return paragraph.replace(narrativeStartRe, (match, punctuation, narrative) => {
+        if (changed) return match;
+        changed = true;
+        return `${punctuation}\n\n${narrative}`;
+      });
+    })
+    .join('\n\n');
+}
+
+function normalizeDialogueDashes(value) {
+  let text = normalizeDashSpacing(value);
+  text = repairLowercaseDashParagraphs(text);
+  text = repairInlineLowercaseDashes(text);
+  text = splitNarrativeAfterDialogue(text);
+  text = text.replace(/([.!?…:])\s+—\s+(?=[А-ЯЁA-Z0-9])/gu, '$1\n\n— ');
+  text = splitNarrativeAfterDialogue(text);
+  return normalizeDashSpacing(text).replace(/\n{3,}/g, '\n\n');
 }
 
 function normalizeParagraphText(value) {
@@ -188,7 +254,7 @@ function splitSentences(text) {
 }
 
 function inferDisplayParagraphs(text) {
-  const dialogueChunks = cleanText(normalizeDialogueDashes(text))
+  const dialogueChunks = normalizeDialogueDashes(text)
     .replace(/(^|[.!?…]\s+)(—\s*(?=[A-ZА-ЯЁ0-9]))/gu, '$1\n\n$2')
     .split(/\n{2,}/)
     .map(cleanText)
