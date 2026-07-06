@@ -798,7 +798,7 @@ async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   }
   if (summary) {
     const summaryLayout = drawTextBox(page, summary, {
-      ...topLeftBox(page, pptBox(217.1, 87, 184, 178)),
+      ...topLeftBox(page, pptBox(217.1, 87, 150.43, 178)),
       paddingX: 6,
       paddingY: 0,
       startSize: 7.3,
