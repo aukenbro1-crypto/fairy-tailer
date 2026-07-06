@@ -212,8 +212,8 @@ const FairytellerInlineConstructor = ({
   lockedWorld,
   availableWorldIds,
   worldTabLabel = "Жанр",
-  worldLegend = "Шаг 1 из 3. Выберите жанр и добавьте детали",
-  heading = "Конструктор книги",
+  worldLegend = "Выберите жанр и добавьте детали",
+  heading = "Конструктор",
   description = "Заполните 5 коротких пунктов и оставьте email — через 2–3 минуты покажем превью истории. Чем больше живых деталей вы добавите, тем интереснее получится история.",
   locationLabel = "Место действия",
   locationPlaceholder = "Город знакомства, дом, поездка, любимое место",
@@ -240,6 +240,7 @@ const FairytellerInlineConstructor = ({
   const [world, setWorld] = useState(selectableWorlds[0]?.id ?? worlds[0].id);
   const [style, setStyle] = useState(styles[0].id);
   const [constructorStep, setConstructorStep] = useState(0);
+  const [isConstructorActive, setIsConstructorActive] = useState(false);
   const [visibleHeroes, setVisibleHeroes] = useState(initialVisibleHeroes);
   const [location, setLocation] = useState("");
   const [artifact, setArtifact] = useState("");
@@ -261,6 +262,7 @@ const FairytellerInlineConstructor = ({
   const worldStripRef = useRef<HTMLDivElement>(null);
   const styleStripRef = useRef<HTMLDivElement>(null);
   const generationStatusRef = useRef<HTMLDivElement>(null);
+  const constructorFocusRef = useRef<HTMLDivElement>(null);
 
   const selectedWorld = lockedWorld ?? selectableWorlds.find((item) => item.id === world) ?? selectableWorlds[0] ?? worlds[0];
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
@@ -599,6 +601,34 @@ const FairytellerInlineConstructor = ({
   };
 
   useEffect(() => {
+    if (!isConstructorActive) {
+      return undefined;
+    }
+
+    const handlePointerDownOutside = (event: globalThis.PointerEvent) => {
+      const target = event.target;
+
+      if (target instanceof Node && constructorFocusRef.current?.contains(target)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const activeElement = document.activeElement;
+
+      if (activeElement instanceof HTMLElement) {
+        activeElement.blur();
+      }
+
+      setIsConstructorActive(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+
+    return () => document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+  }, [isConstructorActive]);
+
+  useEffect(() => {
     if (!submittedJobId) {
       return undefined;
     }
@@ -658,7 +688,17 @@ const FairytellerInlineConstructor = ({
   }, [submittedJobId]);
 
   return (
-    <div className="mx-auto max-w-[1480px]">
+    <>
+      {isConstructorActive && (
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-40 bg-black/45 transition" />
+      )}
+
+      <div
+        ref={constructorFocusRef}
+        className={`relative mx-auto max-w-[1480px] ${isConstructorActive ? "z-50" : ""}`}
+        onPointerDownCapture={() => setIsConstructorActive(true)}
+        onFocusCapture={() => setIsConstructorActive(true)}
+      >
       <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
         <div>
           <h2 className="max-w-[980px] text-[36px] font-black uppercase leading-[1.12] tracking-normal md:text-[58px] xl:text-[62px]">
@@ -765,11 +805,8 @@ const FairytellerInlineConstructor = ({
               </fieldset>
 
               <div className="mt-6 border-t border-black pt-5">
-                <p className="text-[13px] font-bold uppercase tracking-[0.12em]">
-                  Детали первого шага
-                </p>
-                <p className="mt-2 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
-                  После жанра заполните место действия и важную деталь — это сразу попадет в основу сюжета.
+                <p className="max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+                  Укажите место действия и важную деталь, чтобы создать историю
                 </p>
                 <div className="mt-4 grid gap-5 md:grid-cols-2">
                   <label className="block">
@@ -1182,7 +1219,8 @@ const FairytellerInlineConstructor = ({
           )}
         </form>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

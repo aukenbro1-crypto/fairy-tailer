@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 06:16 UTC
+Last updated: 2026-07-06 07:13 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260706-constructor-quick-wins-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260706-constructor-focus-dim-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed Fairyteller image aspect-ratio controls to production n8n. Updated `fairyteller_visuals` and `fairyteller_full_visuals` so chapter image Gemini requests include `imageConfig.aspectRatio="1:1"`, and updated `fairyteller_cover` so cover Gemini requests include `imageConfig.aspectRatio="3:2"` plus generated PNG/JPEG dimension validation before accepting the cover image. This should prevent portrait cover art from being contain-fitted into the wide front-cover frame with empty side fields while keeping the renderer's no-head-crop `contain` behavior. Production backup before import: `/root/fairyteller-n8n-exports/20260706-011931Z-image-aspect-before`; import: `/root/fairyteller-n8n-imports/20260706-012452Z-image-aspect`; after-export: `/root/fairyteller-n8n-exports/20260706-012715Z-image-aspect-after`. Verified `gemini-2.5-flash-image` accepts `imageConfig.aspectRatio="3:2"` and returns `1248x832`, parsed all updated n8n code nodes, published/restarted `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`, confirmed all three remain `active: true`, and checked n8n/API health endpoints.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-quick-wins-codex` for constructor quick wins. The homepage process block now follows the real flow (`Выберите жанр` -> hero/details -> preview -> print), the constructor section title is `Конструктор книги`, step 1 is `Шаг 1 из 3. Выберите жанр и добавьте детали`, location/detail fields are visually tied to the first step, hero step defaults to one required `Главный герой` with an optional `Хотите добавить ещё героя?` block, hero-name validation blocks the style step with an inline error, final submit shows a full missing-action list, the `minibrick` public style label is now `Блоки`, and the new funnel goals are emitted in addition to existing `ft_*` goals: `constructor_cta_clicked`, `constructor_first_field_started`, `genre_selected`, `hero_required_completed`, `style_step_reached`, `preview_submit_clicked`, and `preview_submit_success`. Verified `npm run build`, Playwright desktop constructor flow, Playwright mobile `/create` viewport, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, and active JS contains the new constructor copy/errors/style label. `npm run lint` still fails on pre-existing unrelated issues in shadcn UI files, `useScrollReveal.ts`, `BlogAdmin.tsx`, `NarutoStory.tsx`, and `tailwind.config.ts`.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-focus-dim-codex` for the constructor focus/copy follow-up. The constructor section now uses the shorter title `Конструктор`, the first genre legend is `Выберите жанр и добавьте детали` without `Шаг 1 из 3`, the first-step detail helper is `Укажите место действия и важную деталь, чтобы создать историю`, and the breathing hint bulb is click-toggleable without layout movement. Interacting with the constructor now dims the rest of the page; clicking outside the constructor clears the dimming and active hint focus. Verified `npm run build`, targeted ESLint for `ConstructorHint`, `FairytellerInlineConstructor`, and `DesignTest`, `git diff --check`, Playwright `/create` text/hint/dimming/outside-click behavior, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, active JS contains the new legend/detail/dim layer strings, and active JS contains zero `Шаг 1 из 3` matches.
 
 ### 2026-07-05
 

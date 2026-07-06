@@ -441,6 +441,7 @@ const DesignTest = () => {
   const [style, setStyle] = useState(styles[0].id);
   const [heroIndex, setHeroIndex] = useState(0);
   const [constructorStep, setConstructorStep] = useState(0);
+  const [isConstructorActive, setIsConstructorActive] = useState(false);
   const [visibleHeroes, setVisibleHeroes] = useState([0]);
   const [location, setLocation] = useState("");
   const [artifact, setArtifact] = useState("");
@@ -458,6 +459,7 @@ const DesignTest = () => {
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
   const [generationNowMs, setGenerationNowMs] = useState(Date.now());
+  const constructorFocusRef = useRef<HTMLDivElement>(null);
   const worldStripRef = useRef<HTMLDivElement>(null);
   const styleStripRef = useRef<HTMLDivElement>(null);
   const exampleStripRef = useRef<HTMLDivElement>(null);
@@ -837,6 +839,34 @@ const DesignTest = () => {
   };
 
   useEffect(() => {
+    if (!isConstructorActive) {
+      return undefined;
+    }
+
+    const handlePointerDownOutside = (event: globalThis.PointerEvent) => {
+      const target = event.target;
+
+      if (target instanceof Node && constructorFocusRef.current?.contains(target)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const activeElement = document.activeElement;
+
+      if (activeElement instanceof HTMLElement) {
+        activeElement.blur();
+      }
+
+      setIsConstructorActive(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+
+    return () => document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+  }, [isConstructorActive]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       setHeroIndex((index) => (index + 1) % heroImages.length);
     }, 8500);
@@ -1205,12 +1235,24 @@ const DesignTest = () => {
         </div>
       </section>
 
-      <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
-        <div className="mx-auto max-w-[1480px]">
+      {isConstructorActive && (
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-40 bg-black/45 transition" />
+      )}
+
+      <section
+        id="create"
+        className="relative scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11"
+      >
+        <div
+          ref={constructorFocusRef}
+          className={`relative mx-auto max-w-[1480px] ${isConstructorActive ? "z-50" : ""}`}
+          onPointerDownCapture={() => setIsConstructorActive(true)}
+          onFocusCapture={() => setIsConstructorActive(true)}
+        >
           <div className="mb-9 grid gap-5 md:grid-cols-[1fr_420px] md:items-end">
             <div>
               <h2 className={sectionTitleClass}>
-                Конструктор книги
+                Конструктор
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
@@ -1242,7 +1284,7 @@ const DesignTest = () => {
 	                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 	                      <div className="flex min-w-0 items-center gap-3">
 	                        <legend className="text-[26px] font-black uppercase leading-[1.05] tracking-normal sm:text-[28px]">
-	                          Шаг 1 из 3. Выберите жанр и добавьте детали
+	                          Выберите жанр и добавьте детали
 	                        </legend>
 	                        <ConstructorHint />
 	                      </div>
@@ -1296,11 +1338,8 @@ const DesignTest = () => {
                   </fieldset>
 
 	                  <div className="mt-6 border-t border-black pt-5">
-	                    <p className="text-[13px] font-bold uppercase tracking-[0.12em]">
-	                      Детали первого шага
-	                    </p>
-	                    <p className="mt-2 max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
-	                      После жанра заполните место действия и важную деталь — это сразу попадет в основу сюжета.
+	                    <p className="max-w-[680px] text-[14px] leading-6 text-[#5e6264]">
+	                      Укажите место действия и важную деталь, чтобы создать историю
 	                    </p>
 	                    <div className="mt-4 grid gap-5 md:grid-cols-2">
 	                      <label className="block">
