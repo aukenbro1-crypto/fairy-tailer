@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 07:13 UTC
+Last updated: 2026-07-06 07:46 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260706-constructor-focus-dim-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260706-photo-landing-process-order-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -271,6 +271,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-quick-wins-codex` for constructor quick wins. The homepage process block now follows the real flow (`Выберите жанр` -> hero/details -> preview -> print), the constructor section title is `Конструктор книги`, step 1 is `Шаг 1 из 3. Выберите жанр и добавьте детали`, location/detail fields are visually tied to the first step, hero step defaults to one required `Главный герой` with an optional `Хотите добавить ещё героя?` block, hero-name validation blocks the style step with an inline error, final submit shows a full missing-action list, the `minibrick` public style label is now `Блоки`, and the new funnel goals are emitted in addition to existing `ft_*` goals: `constructor_cta_clicked`, `constructor_first_field_started`, `genre_selected`, `hero_required_completed`, `style_step_reached`, `preview_submit_clicked`, and `preview_submit_success`. Verified `npm run build`, Playwright desktop constructor flow, Playwright mobile `/create` viewport, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, and active JS contains the new constructor copy/errors/style label. `npm run lint` still fails on pre-existing unrelated issues in shadcn UI files, `useScrollReveal.ts`, `BlogAdmin.tsx`, `NarutoStory.tsx`, and `tailwind.config.ts`.
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260706-constructor-focus-dim-codex` for the constructor focus/copy follow-up. The constructor section now uses the shorter title `Конструктор`, the first genre legend is `Выберите жанр и добавьте детали` without `Шаг 1 из 3`, the first-step detail helper is `Укажите место действия и важную деталь, чтобы создать историю`, and the breathing hint bulb is click-toggleable without layout movement. Interacting with the constructor now dims the rest of the page; clicking outside the constructor clears the dimming and active hint focus. Verified `npm run build`, targeted ESLint for `ConstructorHint`, `FairytellerInlineConstructor`, and `DesignTest`, `git diff --check`, Playwright `/create` text/hint/dimming/outside-click behavior, nginx config/reload, active symlink, production `/`, `/create`, and `/podarok/skazka-po-foto` `200`, active JS contains the new legend/detail/dim layer strings, and active JS contains zero `Шаг 1 из 3` matches.
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260706-photo-landing-process-order-codex` for the `/podarok/skazka-po-foto` landing order update. The `Как создать книгу.` process block was moved above the constructor and renamed `Как это работает.`, while `Не шаблон. Личная история.` moved down to the former process-block position before the CTA strip. Verified `npm run build`, targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, Playwright desktop/mobile section-order checks, nginx config/reload, production `/podarok/skazka-po-foto`, `/podarok/skazka-po-foto#process`, and `/` `200`, and the active `PhotoFairyTaleLanding` chunk contains `Как это работает` and no `Как создать книгу`.
 
 ### 2026-07-05
 

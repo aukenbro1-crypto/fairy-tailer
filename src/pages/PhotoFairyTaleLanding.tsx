@@ -332,28 +332,22 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
-        <section id="meaning" className="scroll-mt-24 border-y border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
-          <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
+        <section id="process" className="scroll-mt-24 border-y border-black bg-white px-5 py-9 md:px-8 md:py-11">
+          <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div>
-              <h2 className={sectionTitleClass}>Не шаблон. Личная история.</h2>
+              <h2 className={sectionTitleClass}>Как это работает.</h2>
             </div>
-            <div className="grid border-l border-t border-black md:grid-cols-2">
-              <article className="border-b border-r border-black bg-white p-5">
-                <Heart className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">На основе героя</h3>
-                <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Добавьте фото, имя, возраст, характер, любимые места и маленькие привычки.
-                  Так персональная сказка становится не абстрактной историей, а книгой про конкретного человека.
-                </p>
-              </article>
-              <article className="border-b border-r border-black bg-white p-5">
-                <BookOpen className="h-7 w-7" />
-                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Хочется читать</h3>
-                <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
-                  Персонализированный сюжет, знакомые места и красивые иллюстрации превращают подарок
-                  в книгу, которую хочется перелистывать и рассматривать.
-                </p>
-              </article>
+            <div className="grid border-l border-t border-black sm:grid-cols-2">
+              {process.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <article key={item.title} className="min-h-[230px] border-b border-r border-black bg-[#f5f5f5] p-5">
+                    <Icon className="h-7 w-7" />
+                    <h3 className="mt-9 text-[30px] font-black uppercase leading-none">{item.title}</h3>
+                    <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">{item.text}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -421,22 +415,28 @@ const PhotoFairyTaleLanding = () => {
           </div>
         </section>
 
-        <section id="process" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
-          <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+        <section id="meaning" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
+          <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Как создать книгу.</h2>
+              <h2 className={sectionTitleClass}>Не шаблон. Личная история.</h2>
             </div>
-            <div className="grid border-l border-t border-black sm:grid-cols-2">
-              {process.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <article key={item.title} className="min-h-[230px] border-b border-r border-black bg-[#f5f5f5] p-5">
-                    <Icon className="h-7 w-7" />
-                    <h3 className="mt-9 text-[30px] font-black uppercase leading-none">{item.title}</h3>
-                    <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">{item.text}</p>
-                  </article>
-                );
-              })}
+            <div className="grid border-l border-t border-black md:grid-cols-2">
+              <article className="border-b border-r border-black bg-white p-5">
+                <Heart className="h-7 w-7" />
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">На основе героя</h3>
+                <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
+                  Добавьте фото, имя, возраст, характер, любимые места и маленькие привычки.
+                  Так персональная сказка становится не абстрактной историей, а книгой про конкретного человека.
+                </p>
+              </article>
+              <article className="border-b border-r border-black bg-white p-5">
+                <BookOpen className="h-7 w-7" />
+                <h3 className="mt-10 text-[34px] font-black uppercase leading-none">Хочется читать</h3>
+                <p className="mt-5 text-[16px] leading-7 text-[#5e6264]">
+                  Персонализированный сюжет, знакомые места и красивые иллюстрации превращают подарок
+                  в книгу, которую хочется перелистывать и рассматривать.
+                </p>
+              </article>
             </div>
           </div>
         </section>
