@@ -36,6 +36,11 @@ const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
 const ADMIN_MAIL_PATH = `${ADMIN_BOOKS_PATH}/mail`;
+const ADMIN_MAIL_MAX_BUTTONS = 6;
+const ADMIN_MAIL_DEFAULT_FOOTER = `Остались вопросы? Свяжитесь с нами в <a href="https://t.me/nikita0shch">Telegram</a> или через <a href="${PUBLIC_BASE_URL}">форму на сайте</a>.
+
+С любовью,<br>команда FairyTeller`;
+const ADMIN_MAIL_ALLOWED_HTML_TAGS = new Set(['a', 'strong', 'b', 'em', 'i', 'u', 'br', 'p', 'div', 'ul', 'ol', 'li', 'h2', 'h3']);
 const ADMIN_JOBS_PATH = `${ADMIN_BOOKS_PATH}/jobs`;
 const ADMIN_STORAGE_PATH = `${ADMIN_BOOKS_PATH}/storage`;
 const ADMIN_BOOKS_COOKIE = 'fairyteller_books_admin';
@@ -2931,24 +2936,254 @@ function normalizeAdminMailUrl(value) {
   throw httpError(400, 'Ссылка для кнопки должна начинаться с https:// или /');
 }
 
-function adminMailFormValue(form, key, fallback = '') {
-  return escapeHtml(form?.get?.(key) || fallback);
+function normalizeAdminMailLinkHref(value) {
+  const href = String(value || '').trim();
+  if (!href) return '';
+  if (href.startsWith('/')) return publicUrl(href);
+  if (/^(https?:|mailto:|tel:)/i.test(href)) return href;
+  return '';
 }
 
-function renderAdminMailParagraphs(text) {
+function adminMailFormRawValue(form, key, fallback = '') {
+  const value = form?.get?.(key);
+  return value === null || value === undefined || value === '' ? fallback : String(value);
+}
+
+function adminMailFormValue(form, key, fallback = '') {
+  return escapeHtml(adminMailFormRawValue(form, key, fallback));
+}
+
+function adminMailFormAllRawValues(form, key) {
+  return typeof form?.getAll === 'function' ? form.getAll(key).map((value) => String(value || '')) : [];
+}
+
+function adminMailTextStyle(options = {}) {
+  const color = options.color || '#000000';
+  const fontSize = options.fontSize || '16px';
+  const lineHeight = options.lineHeight || '26px';
+  return `font-family:Arial, Helvetica, sans-serif; font-size:${fontSize}; line-height:${lineHeight}; color:${color};`;
+}
+
+function adminMailTagStyle(tag, options = {}) {
+  const base = adminMailTextStyle(options);
+  const paragraphMargin = options.paragraphMargin || '0 0 16px';
+  if (tag === 'p' || tag === 'div') return ` style="margin:${paragraphMargin}; ${base}"`;
+  if (tag === 'h2') return ` style="margin:0 0 14px; ${base} font-size:22px; line-height:28px; font-weight:900;"`;
+  if (tag === 'h3') return ` style="margin:0 0 12px; ${base} font-size:18px; line-height:24px; font-weight:900;"`;
+  if (tag === 'ul' || tag === 'ol') return ` style="margin:0 0 16px 22px; padding:0; ${base}"`;
+  if (tag === 'li') return ` style="margin:0 0 8px; ${base}"`;
+  if (tag === 'a') {
+    const linkColor = options.linkColor || options.color || '#000000';
+    return ` style="color:${linkColor}; text-decoration:underline; font-weight:800;"`;
+  }
+  return '';
+}
+
+function adminMailTagAttribute(tagText, name) {
+  const match = String(tagText || '').match(new RegExp(`${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'));
+  return match ? (match[1] || match[2] || match[3] || '') : '';
+}
+
+function sanitizeAdminMailHtml(input, options = {}) {
+  const value = String(input || '').replace(/\r\n?/g, '\n').replace(/\0/g, '');
+  const tagPattern = /<\/?\s*([a-z][a-z0-9]*)\b[^>]*>/gi;
+  let html = '';
+  let cursor = 0;
+  let skippedAnchors = 0;
+  let match;
+
+  while ((match = tagPattern.exec(value))) {
+    html += escapeHtml(value.slice(cursor, match.index));
+    const rawTag = match[0];
+    const tag = match[1].toLowerCase();
+    const isClosing = /^<\//.test(rawTag);
+
+    if (ADMIN_MAIL_ALLOWED_HTML_TAGS.has(tag)) {
+      if (isClosing) {
+        if (tag === 'a' && skippedAnchors > 0) {
+          skippedAnchors -= 1;
+        } else if (tag !== 'br') {
+          html += `</${tag}>`;
+        }
+      } else if (tag === 'br') {
+        html += '<br>';
+      } else if (tag === 'a') {
+        const href = normalizeAdminMailLinkHref(adminMailTagAttribute(rawTag, 'href'));
+        if (href) {
+          html += `<a href="${escapeHtml(href)}"${adminMailTagStyle('a', options)}>`;
+        } else {
+          skippedAnchors += 1;
+        }
+      } else {
+        html += `<${tag}${adminMailTagStyle(tag, options)}>`;
+      }
+    }
+
+    cursor = match.index + rawTag.length;
+  }
+
+  html += escapeHtml(value.slice(cursor));
+  return html;
+}
+
+function renderAdminMailParagraphs(text, options = {}) {
   return String(text || '')
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((paragraph) => `<p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .map((paragraph) => `<p${adminMailTagStyle('p', options)}>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
     .join('');
 }
 
-function renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }) {
+function renderAdminMailRichText(text, options = {}) {
+  const value = String(text || '').trim();
+  if (!value) return options.fallback || '';
+  if (/<\/?\s*[a-z][\s\S]*>/i.test(value)) {
+    const html = sanitizeAdminMailHtml(value, options).trim();
+    if (!html) return options.fallback || '';
+    if (/<(p|div|h2|h3|ul|ol|li)\b/i.test(html)) return html;
+    return `<p${adminMailTagStyle('p', options)}>${html}</p>`;
+  }
+  return renderAdminMailParagraphs(value, options);
+}
+
+function decodeBasicHtmlEntities(value) {
+  return String(value || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => {
+      try {
+        return String.fromCodePoint(Number(code));
+      } catch {
+        return '';
+      }
+    });
+}
+
+function adminMailHtmlToText(value) {
+  let text = String(value || '').replace(/\r\n?/g, '\n');
+  text = text.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (_, attributes, labelHtml) => {
+    const label = adminMailHtmlToText(labelHtml).trim();
+    const href = normalizeAdminMailLinkHref(adminMailTagAttribute(attributes, 'href'));
+    if (href && label && label !== href) return `${label} (${href})`;
+    return label || href;
+  });
+  text = text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<\/?(ul|ol)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]*>/g, '');
+  return decodeBasicHtmlEntities(text)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function getAdminMailFormButtons(form, options = {}) {
+  let labels = adminMailFormAllRawValues(form, 'buttonLabel');
+  let urls = adminMailFormAllRawValues(form, 'buttonUrl');
+  if (!labels.length && !urls.length) {
+    labels = adminMailFormAllRawValues(form, 'ctaLabel');
+    urls = adminMailFormAllRawValues(form, 'ctaUrl');
+  }
+
+  const count = Math.max(labels.length, urls.length);
+  const buttons = [];
+  for (let index = 0; index < count; index += 1) {
+    buttons.push({
+      label: labels[index] || '',
+      url: urls[index] || '',
+    });
+  }
+  if (buttons.length || options.defaultRow === false || form?.has?.('buttonsConfigured')) return buttons;
+  return [{ label: 'Открыть книгу', url: '' }];
+}
+
+function parseAdminMailButtons(params) {
+  const rows = getAdminMailFormButtons(params, { defaultRow: false });
+  if (rows.length > ADMIN_MAIL_MAX_BUTTONS) {
+    throw httpError(400, `Можно добавить не больше ${ADMIN_MAIL_MAX_BUTTONS} кнопок.`);
+  }
+
+  const buttons = [];
+  for (const row of rows) {
+    const label = String(row.label || '').trim();
+    const rawUrl = String(row.url || '').trim();
+    if (!label && !rawUrl) continue;
+    if (!label) throw httpError(400, 'Укажите текст кнопки или удалите строку.');
+    if (!rawUrl) throw httpError(400, 'Укажите ссылку кнопки или удалите строку.');
+    if (label.length > 80) throw httpError(400, 'Текст кнопки слишком длинный.');
+    buttons.push({ label, url: normalizeAdminMailUrl(rawUrl) });
+  }
+  return buttons;
+}
+
+function renderAdminMailButtons(buttons) {
+  if (!buttons?.length) return '';
+  const rows = buttons.map((button, index) => `<tr>
+              <td style="padding:${index ? '10px 0 0' : '0'}; text-align:center;">
+                ${renderEmailButton(button.label, button.url, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+              </td>
+            </tr>`).join('');
+  return `<tr>
+              <td style="padding:4px 32px 30px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  ${rows}
+                </table>
+              </td>
+            </tr>`;
+}
+
+function renderAdminMailButtonControls(form) {
+  const rows = getAdminMailFormButtons(form).slice(0, ADMIN_MAIL_MAX_BUTTONS);
+  const controls = rows.map((button) => `<div class="button-item" data-button-row>
+            <div class="button-fields">
+              <input name="buttonLabel" value="${escapeHtml(button.label)}" placeholder="Текст кнопки">
+              <input name="buttonUrl" value="${escapeHtml(button.url)}" placeholder="https://fairyteller.ru/...">
+            </div>
+            <button class="secondary-button remove-button" type="button" data-remove-button>Убрать</button>
+          </div>`).join('');
+  const defaultControl = form?.has?.('buttonsConfigured') ? '' : `<div class="button-item" data-button-row>
+            <div class="button-fields">
+              <input name="buttonLabel" value="Открыть книгу" placeholder="Текст кнопки">
+              <input name="buttonUrl" placeholder="https://fairyteller.ru/...">
+            </div>
+            <button class="secondary-button remove-button" type="button" data-remove-button>Убрать</button>
+          </div>`;
+
+  return `<div class="field">
+        <label>Кнопки</label>
+        <input type="hidden" name="buttonsConfigured" value="1">
+        <div class="button-list" data-button-list>
+          ${controls || defaultControl}
+        </div>
+        <button class="secondary-button" type="button" data-add-button>Добавить кнопку</button>
+        <p class="hint">Можно оставить без кнопок или добавить до ${ADMIN_MAIL_MAX_BUTTONS} ссылок.</p>
+      </div>`;
+}
+
+function renderAdminMailHtml({ subject, message, buttons = [], footer = ADMIN_MAIL_DEFAULT_FOOTER }) {
   const safeSubject = escapeHtml(subject);
-  const messageHtml = renderAdminMailParagraphs(message);
-  const telegramUrl = 'https://t.me/nikita0shch';
-  const siteUrl = PUBLIC_BASE_URL;
+  const messageHtml = renderAdminMailRichText(message, {
+    color: '#000000',
+    linkColor: '#000000',
+    fontSize: '16px',
+    lineHeight: '26px',
+    paragraphMargin: '0 0 16px',
+    fallback: '<p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Здравствуйте!</p>',
+  });
+  const footerHtml = renderAdminMailRichText(footer || ADMIN_MAIL_DEFAULT_FOOTER, {
+    color: '#ffffff',
+    linkColor: '#E89C31',
+    fontSize: '15px',
+    lineHeight: '24px',
+    paragraphMargin: '0 0 16px',
+  }) || renderAdminMailRichText(ADMIN_MAIL_DEFAULT_FOOTER, { color: '#ffffff', linkColor: '#E89C31' });
 
   return `<!doctype html>
 <html>
@@ -2972,22 +3207,13 @@ function renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }) {
             </tr>
             <tr>
               <td style="padding:30px 32px 14px;">
-                ${messageHtml || '<p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Здравствуйте!</p>'}
+                ${messageHtml}
               </td>
             </tr>
-            ${ctaUrl ? `<tr>
-              <td style="padding:4px 32px 30px; text-align:center;">
-                ${renderEmailButton(ctaLabel || 'Открыть', ctaUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
-              </td>
-            </tr>` : ''}
+            ${renderAdminMailButtons(buttons)}
             <tr>
               <td style="padding:22px 32px 24px; background:#000000; border-top:1px solid #000000;">
-                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#ffffff;">
-                  Остались вопросы? Свяжитесь с нами в <a href="${telegramUrl}" style="color:#E89C31; text-decoration:underline; font-weight:800;">Telegram</a> или через <a href="${escapeHtml(siteUrl)}" style="color:#E89C31; text-decoration:underline; font-weight:800;">форму на сайте</a>.
-                </p>
-                <p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#ffffff;">
-                  С любовью,<br>команда FairyTeller
-                </p>
+                ${footerHtml}
               </td>
             </tr>
           </table>
@@ -2998,13 +3224,13 @@ function renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }) {
 </html>`;
 }
 
-function adminMailText({ message, ctaLabel, ctaUrl }) {
+function adminMailText({ message, buttons = [], footer = ADMIN_MAIL_DEFAULT_FOOTER }) {
+  const buttonLines = buttons.map((button) => `${button.label}: ${button.url}`);
   return [
-    String(message || '').trim(),
-    ctaUrl ? `${ctaLabel || 'Открыть'}: ${ctaUrl}` : '',
+    adminMailHtmlToText(message),
+    buttonLines.length ? buttonLines.join('\n') : '',
     '',
-    `Форма на сайте: ${PUBLIC_BASE_URL}`,
-    'Telegram: https://t.me/nikita0shch',
+    adminMailHtmlToText(footer || ADMIN_MAIL_DEFAULT_FOOTER),
   ].filter(Boolean).join('\n');
 }
 
@@ -3012,29 +3238,31 @@ async function sendAdminMail(params) {
   const to = normalizeEmail(params.get('to'));
   const subject = String(params.get('subject') || '').trim();
   const message = String(params.get('message') || '').trim();
-  const ctaUrl = normalizeAdminMailUrl(params.get('ctaUrl'));
-  const ctaLabel = String(params.get('ctaLabel') || '').trim() || (ctaUrl ? 'Открыть' : '');
+  const footer = String(params.get('footer') ?? ADMIN_MAIL_DEFAULT_FOOTER).trim() || ADMIN_MAIL_DEFAULT_FOOTER;
+  const buttons = parseAdminMailButtons(params);
 
   if (!to) throw httpError(400, 'Введите корректный email получателя.');
   if (!subject) throw httpError(400, 'Введите тему письма.');
   if (!message) throw httpError(400, 'Введите текст письма.');
   if (subject.length > 180) throw httpError(400, 'Тема слишком длинная.');
   if (message.length > 8000) throw httpError(400, 'Текст письма слишком длинный.');
-  if (ctaLabel.length > 80) throw httpError(400, 'Текст кнопки слишком длинный.');
+  if (footer.length > 4000) throw httpError(400, 'Подпись слишком длинная.');
 
   const payload = {
     to,
     subject,
-    text: adminMailText({ message, ctaLabel, ctaUrl }),
-    html: renderAdminMailHtml({ subject, message, ctaLabel, ctaUrl }),
+    text: adminMailText({ message, buttons, footer }),
+    html: renderAdminMailHtml({ subject, message, buttons, footer }),
   };
   const delivery = await sendCustomerEmail(payload);
   await appendAdminMailSend({
     to,
     subject,
-    ctaUrl,
-    ctaLabel,
-    messagePreview: message.slice(0, 240),
+    buttonCount: buttons.length,
+    buttons,
+    ctaUrl: buttons[0]?.url || '',
+    ctaLabel: buttons[0]?.label || '',
+    messagePreview: adminMailHtmlToText(message).slice(0, 240),
     status: delivery.status,
     provider: delivery.provider || null,
     id: delivery.id || null,
@@ -3083,9 +3311,17 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
     label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     input, textarea { width: 100%; border: 1px solid #cdbfaaa; border-radius: 6px; padding: 11px 12px; font: inherit; background: #fff; color: #172126; }
     textarea { min-height: 180px; resize: vertical; line-height: 1.45; }
+    textarea.footer-textarea { min-height: 120px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .field { margin-bottom: 16px; }
     button { min-height: 46px; padding: 0 18px; border: 1px solid #000; border-radius: 6px; background: #E89C31; color: #000; font: inherit; font-weight: 900; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    .secondary-button { min-height: 42px; background: #fffaf0; color: #1f5d53; border-color: #1f5d53; }
+    .button-list { display: grid; gap: 10px; margin-bottom: 10px; }
+    .button-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+    .button-fields { display: grid; grid-template-columns: minmax(140px, .7fr) minmax(180px, 1fr); gap: 10px; }
+    .remove-button { white-space: nowrap; }
+    .hint { margin: 7px 0 0; color: #68737d; font-size: 13px; line-height: 1.45; }
     .notice, .error { padding: 12px 14px; margin-bottom: 16px; border-radius: 6px; font-size: 14px; line-height: 1.45; }
     .notice { color: #14532d; background: #dcfce7; border: 1px solid #86efac; }
     .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
@@ -3101,6 +3337,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
       header { display: block; }
       .actions { margin-top: 12px; flex-wrap: wrap; }
       .grid { grid-template-columns: 1fr; gap: 0; }
+      .button-item, .button-fields { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -3135,16 +3372,13 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
       <div class="field">
         <label for="message">Текст</label>
         <textarea id="message" name="message" required>${adminMailFormValue(form, 'message')}</textarea>
+        <p class="hint">Можно использовать HTML: &lt;a href="https://..."&gt;ссылка&lt;/a&gt;, &lt;strong&gt;жирный&lt;/strong&gt;, списки, абзацы и переносы.</p>
       </div>
-      <div class="grid">
-        <div class="field">
-          <label for="ctaLabel">Текст кнопки</label>
-          <input id="ctaLabel" name="ctaLabel" value="${adminMailFormValue(form, 'ctaLabel', 'Открыть книгу')}">
-        </div>
-        <div class="field">
-          <label for="ctaUrl">Ссылка кнопки</label>
-          <input id="ctaUrl" name="ctaUrl" value="${adminMailFormValue(form, 'ctaUrl')}" placeholder="https://fairyteller.ru/...">
-        </div>
+      ${renderAdminMailButtonControls(form)}
+      <div class="field">
+        <label for="footer">Подвал / подпись</label>
+        <textarea id="footer" name="footer" class="footer-textarea">${adminMailFormValue(form, 'footer', ADMIN_MAIL_DEFAULT_FOOTER)}</textarea>
+        <p class="hint">В подписи тоже работают ссылки и базовое HTML-форматирование.</p>
       </div>
       <button type="submit">Отправить письмо</button>
     </form>
@@ -3163,6 +3397,45 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
       <tbody>${rows}</tbody>
     </table>` : '<div class="empty">Ручных отправок пока нет.</div>'}
   </section>
+  <script>
+    (function () {
+      var list = document.querySelector('[data-button-list]');
+      var addButton = document.querySelector('[data-add-button]');
+      var maxButtons = ${ADMIN_MAIL_MAX_BUTTONS};
+      if (!list || !addButton) return;
+
+      function buttonRows() {
+        return Array.prototype.slice.call(list.querySelectorAll('[data-button-row]'));
+      }
+
+      function createRow() {
+        var row = document.createElement('div');
+        row.className = 'button-item';
+        row.setAttribute('data-button-row', '');
+        row.innerHTML = '<div class="button-fields"><input name="buttonLabel" placeholder="Текст кнопки"><input name="buttonUrl" placeholder="https://fairyteller.ru/..."></div><button class="secondary-button remove-button" type="button" data-remove-button>Убрать</button>';
+        return row;
+      }
+
+      function updateState() {
+        addButton.disabled = buttonRows().length >= maxButtons;
+      }
+
+      addButton.addEventListener('click', function () {
+        if (buttonRows().length >= maxButtons) return;
+        list.appendChild(createRow());
+        updateState();
+      });
+
+      list.addEventListener('click', function (event) {
+        if (!event.target.matches('[data-remove-button]')) return;
+        var row = event.target.closest('[data-button-row]');
+        if (row) row.remove();
+        updateState();
+      });
+
+      updateState();
+    })();
+  </script>
 </body>
 </html>`;
 }

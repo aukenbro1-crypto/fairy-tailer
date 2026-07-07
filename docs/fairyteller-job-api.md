@@ -83,8 +83,8 @@ The legacy render-ready customer email template references small public product-
 - `GET /api/fairyteller/books/storage/share/:folderId/:token` is a noindex public read-only gallery link for sharing a folder without admin login.
 - `GET /api/fairyteller/books/leads` shows a protected deduplicated email database built from `leads.jsonl`.
 - `GET /api/fairyteller/books/leads.csv` downloads the same email database as CSV.
-- `GET /api/fairyteller/books/mail` shows the protected manual mail form.
-- `POST /api/fairyteller/books/mail` sends one manual email through the configured Resend sender and appends a local audit row to `mail-sends.jsonl`.
+- `GET /api/fairyteller/books/mail` shows the protected manual mail form with editable HTML body, repeatable CTA buttons, and editable footer/signature.
+- `POST /api/fairyteller/books/mail` sends one manual email through the configured Resend sender and appends a local audit row to `mail-sends.jsonl`; the email HTML allows a limited safe tag set for links and basic formatting.
 
 The email database is populated automatically when `POST /api/fairyteller/jobs` receives an order with a valid `email`.
 

@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-07 00:38 UTC
+Last updated: 2026-07-07 00:47 UTC
 
 ## Project Context
 
@@ -267,6 +267,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ### 2026-07-07
 
 - Deployed frontend release `/var/www/fairyteller/releases/20260707-photo-examples-marquee-speed-codex` for the `/podarok/skazka-po-foto` examples carousel speed tweak. Increased `PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED` from `0.004` to `0.005` so the textless draggable photo marquee moves slightly faster while preserving the same drag/manual scroll behavior. Verified targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, `npm run build`, nginx config/reload, production `/`, `/podarok/skazka-po-foto`, and `/create` `200`, active JS contains `.005`, and active production assets contain no ` 2` duplicate files.
+
+- Deployed a Job API update for the protected manual mail form at `/api/fairyteller/books/mail`. Operators can now write the message and footer/signature with a limited safe HTML tag set for links/basic formatting, add or remove up to six CTA buttons, and send emails with a matching plain-text fallback and audit entries that record button metadata. Production API backup before deploy: `/opt/fairyteller-api/fairyteller-api.mjs.20260707-0042-admin-mail-html.bak`. Verified local `node --check`, `git diff --check`, targeted ESLint for `server/fairyteller-api.mjs`, local GET/POST smoke including HTML and no-button cases, Playwright desktop/mobile form checks with no mobile horizontal overflow, production `node --check`, `fairyteller-api.service` restart/active state, API health, public unauthenticated login page, and authenticated production form HTML containing the new controls. `npm run lint` still fails on pre-existing unrelated frontend lint issues in shadcn UI files, `useScrollReveal.ts`, `BlogAdmin.tsx`, `NarutoStory.tsx`, and `tailwind.config.ts`.
 
 ### 2026-07-06
 
