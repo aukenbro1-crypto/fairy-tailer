@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-06 14:22 UTC
+Last updated: 2026-07-07 00:38 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260706-photo-examples-marquee-drag-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260707-photo-examples-marquee-speed-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -263,6 +263,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-07
+
+- Deployed frontend release `/var/www/fairyteller/releases/20260707-photo-examples-marquee-speed-codex` for the `/podarok/skazka-po-foto` examples carousel speed tweak. Increased `PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED` from `0.004` to `0.005` so the textless draggable photo marquee moves slightly faster while preserving the same drag/manual scroll behavior. Verified targeted ESLint for `PhotoFairyTaleLanding`, `git diff --check`, `npm run build`, nginx config/reload, production `/`, `/podarok/skazka-po-foto`, and `/create` `200`, active JS contains `.005`, and active production assets contain no ` 2` duplicate files.
 
 ### 2026-07-06
 

@@ -221,7 +221,7 @@ const exampleMarqueeItems = [
   ...exampleCarouselItems,
 ];
 
-const PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED = 0.004;
+const PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED = 0.005;
 
 const jsonLd = [
   {
