@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -32,6 +32,20 @@ const YOOKASSA_SHOP_PASSWORD = process.env.FAIRYTELLER_YOOKASSA_SHOP_PASSWORD ||
 const YOOKASSA_AMOUNT_RUB = process.env.FAIRYTELLER_BOOK_PRICE_RUB || '3500.00';
 const PAID_ACCESS_TTL_DAYS = Math.max(1, Number(process.env.FAIRYTELLER_PAID_ACCESS_TTL_DAYS || 30) || 30);
 const RESEND_LINK_WINDOW_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_RESEND_LINK_WINDOW_MS || 5 * 60_000) || 5 * 60_000);
+const DAILY_FREE_GENERATION_LIMIT_RAW = Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT ?? 3);
+const DAILY_FREE_GENERATION_LIMIT = Number.isFinite(DAILY_FREE_GENERATION_LIMIT_RAW)
+  ? Math.max(0, Math.floor(DAILY_FREE_GENERATION_LIMIT_RAW))
+  : 3;
+const DAILY_FREE_GENERATION_WINDOW_MS = Math.max(
+  60 * 60 * 1000,
+  Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000,
+);
+const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
+  24 * 60 * 60 * 1000,
+  Number(process.env.FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
+);
+const CUSTOMER_BOOKS_TOKEN_SECRET = process.env.FAIRYTELLER_CUSTOMER_BOOKS_SECRET || API_TOKEN || 'fairyteller-local-customer-books';
+const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь? Свяжитесь с нами через Telegram (t.me/nikita0shch), форму на сайте или books@fairyteller.ru.';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
@@ -109,9 +123,12 @@ function jobDir(jobId) {
   return dir;
 }
 
-function httpError(status, message) {
+function httpError(status, message, publicFields = null) {
   const error = new Error(message);
   error.status = status;
+  if (publicFields && typeof publicFields === 'object') {
+    error.publicFields = publicFields;
+  }
   return error;
 }
 
@@ -358,6 +375,222 @@ async function appendEvent(dir, event) {
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) ? email : '';
+}
+
+function supportContact() {
+  return {
+    text: CUSTOMER_SUPPORT_SIGNATURE,
+    telegramUrl: 'https://t.me/nikita0shch',
+    siteUrl: PUBLIC_BASE_URL,
+    email: 'books@fairyteller.ru',
+  };
+}
+
+function base64UrlEncode(value) {
+  return Buffer.from(value).toString('base64url');
+}
+
+function base64UrlDecode(value) {
+  return Buffer.from(String(value || ''), 'base64url').toString('utf8');
+}
+
+function signCustomerBooksPayload(encodedPayload) {
+  return createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET).update(encodedPayload).digest('base64url');
+}
+
+function createCustomerBooksToken(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return '';
+  const payload = {
+    purpose: 'customer-books',
+    email: normalizedEmail,
+    iat: Date.now(),
+    exp: Date.now() + CUSTOMER_BOOKS_TOKEN_TTL_MS,
+  };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  return `${encodedPayload}.${signCustomerBooksPayload(encodedPayload)}`;
+}
+
+function verifyCustomerBooksToken(token) {
+  const [encodedPayload, signature] = String(token || '').split('.');
+  if (!encodedPayload || !signature) throw httpError(403, 'Invalid books link');
+  const expectedSignature = signCustomerBooksPayload(encodedPayload);
+  if (!safeEqual(expectedSignature, signature)) throw httpError(403, 'Invalid books link');
+
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw httpError(403, 'Invalid books link');
+  }
+
+  if (payload?.purpose !== 'customer-books') throw httpError(403, 'Invalid books link');
+  if (!payload.exp || Number(payload.exp) <= Date.now()) throw httpError(403, 'Books link expired');
+  const email = normalizeEmail(payload.email);
+  if (!email) throw httpError(403, 'Invalid books link');
+  return { email };
+}
+
+function customerBooksPath(email) {
+  const token = createCustomerBooksToken(email);
+  return token ? `/api/fairyteller/my-books/${encodeURIComponent(token)}` : '';
+}
+
+function customerJobBookUrl(jobId) {
+  return `/book/${encodeURIComponent(jobId)}`;
+}
+
+function pdfUrlFromStatus(status = {}) {
+  return status?.artifacts?.bookPdf?.url
+    || status?.artifacts?.render?.files?.book?.url
+    || status?.artifacts?.previewPdf?.url
+    || status?.artifacts?.render?.files?.preview?.url
+    || '';
+}
+
+function customerJobPayUrl(jobId, status = {}) {
+  const params = new URLSearchParams({ jobId });
+  const pdfUrl = pdfUrlFromStatus(status);
+  if (pdfUrl) params.set('pdf', pdfUrl);
+  return `/pay?${params.toString()}`;
+}
+
+function customerJobStatusLabel(status = {}, payment = {}) {
+  if (payment?.status === 'paid') return 'Оплачено';
+  if (status.status === 'done' || status.stage === 'complete') return 'Превью готово';
+  if (status.status === 'failed') return 'Нужна проверка';
+  return 'Создается';
+}
+
+async function listCustomerGenerationJobs(email, options = {}) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+
+  const root = resolve(DATA_DIR, 'jobs');
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const sinceMs = Number(options.sinceMs || 0);
+  const rows = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      let dir;
+      try {
+        dir = jobDir(entry.name);
+      } catch {
+        return null;
+      }
+
+      const [status, orderEnvelope, payment] = await Promise.all([
+        readJsonFile(join(dir, 'status.json'), {}),
+        readJsonFile(join(dir, 'order.json'), {}),
+        readPayment(entry.name).catch(() => ({})),
+      ]);
+      const order = orderEnvelope.order || orderEnvelope || {};
+      if (normalizeEmail(order.email) !== normalizedEmail) return null;
+
+      const createdAt = status?.createdAt || orderEnvelope.receivedAt || '';
+      const createdMs = Date.parse(createdAt);
+      if (sinceMs && (!Number.isFinite(createdMs) || createdMs < sinceMs)) return null;
+
+      const title = options.includeTitle === false ? '' : await bookTitle(dir, status).catch(() => '');
+      return {
+        jobId: entry.name,
+        title: title || status?.preview?.title || 'Персональная сказка',
+        status: status?.status || '',
+        stage: status?.stage || '',
+        createdAt,
+        updatedAt: status?.updatedAt || createdAt,
+        statusLabel: customerJobStatusLabel(status, payment),
+        paid: payment?.status === 'paid',
+        bookUrl: customerJobBookUrl(entry.name),
+        payUrl: customerJobPayUrl(entry.name, status),
+      };
+    }));
+
+  const limit = Math.max(1, Number(options.limit || 100));
+  return rows
+    .filter(Boolean)
+    .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')))
+    .slice(0, limit);
+}
+
+function generationLimitResetAt(recentJobs) {
+  const times = recentJobs
+    .map((job) => Date.parse(job.createdAt))
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right);
+  if (!times.length) return new Date(Date.now() + DAILY_FREE_GENERATION_WINDOW_MS).toISOString();
+  return new Date(times[0] + DAILY_FREE_GENERATION_WINDOW_MS).toISOString();
+}
+
+async function buildGenerationLimitPayload(email, recentJobs) {
+  const booksPath = customerBooksPath(email);
+  const allJobs = await listCustomerGenerationJobs(email, { limit: 20 });
+  const payableJob = allJobs.find((job) => !job.paid) || allJobs[0] || null;
+  return {
+    limitExceeded: true,
+    code: 'daily_limit_exceeded',
+    message: `Сегодня уже использован лимит бесплатных генераций: ${DAILY_FREE_GENERATION_LIMIT}. Посмотрите свои готовые истории или оплатите одну из них.`,
+    limit: DAILY_FREE_GENERATION_LIMIT,
+    used: recentJobs.length,
+    resetAt: generationLimitResetAt(recentJobs),
+    booksUrl: booksPath,
+    booksAbsoluteUrl: publicUrl(booksPath),
+    payUrl: payableJob?.payUrl || '',
+    payAbsoluteUrl: payableJob?.payUrl ? publicUrl(payableJob.payUrl) : '',
+    jobs: allJobs.slice(0, 5),
+    support: supportContact(),
+  };
+}
+
+async function assertDailyGenerationLimit(order = {}) {
+  if (!DAILY_FREE_GENERATION_LIMIT) return;
+  const email = normalizeEmail(order.email);
+  if (!email) return;
+
+  const recentJobs = await listCustomerGenerationJobs(email, {
+    sinceMs: Date.now() - DAILY_FREE_GENERATION_WINDOW_MS,
+    includeTitle: false,
+    limit: DAILY_FREE_GENERATION_LIMIT + 10,
+  });
+  if (recentJobs.length < DAILY_FREE_GENERATION_LIMIT) return;
+
+  throw httpError(
+    429,
+    'Daily free generation limit reached',
+    await buildGenerationLimitPayload(email, recentJobs),
+  );
+}
+
+const generationLimitLocks = new Map();
+
+async function withGenerationLimitLock(email, action) {
+  const key = normalizeEmail(email);
+  if (!key) return await action();
+
+  const previous = generationLimitLocks.get(key) || Promise.resolve();
+  let release = () => {};
+  const current = new Promise((resolvePromise) => {
+    release = resolvePromise;
+  });
+  const chain = previous.catch(() => {}).then(() => current);
+  generationLimitLocks.set(key, chain);
+
+  await previous.catch(() => {});
+  try {
+    return await action();
+  } finally {
+    release();
+    if (generationLimitLocks.get(key) === chain) {
+      generationLimitLocks.delete(key);
+    }
+  }
 }
 
 function summarizeOrder(order = {}) {
@@ -2038,6 +2271,79 @@ function renderBooksPage(books, options = {}) {
       </thead>
       <tbody>${rows}</tbody>
     </table>` : '<div class="empty">Готовых PDF пока не нашлось.</div>'}
+  </main>
+	</body>
+	</html>`;
+}
+
+function renderCustomerBooksPage(email, jobs) {
+  const rows = jobs.map((job) => `<article class="book-card">
+    <div>
+      <p class="eyebrow">${escapeHtml(job.statusLabel || 'Сказка')}</p>
+      <h2>${escapeHtml(job.title || 'Персональная сказка')}</h2>
+      <p class="meta">${escapeHtml(formatDateTime(job.createdAt) || 'Дата создания уточняется')}</p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="${escapeHtml(job.bookUrl)}">Открыть сказку</a>
+      ${job.paid ? '<span class="paid">Оплачено</span>' : `<a class="button" href="${escapeHtml(job.payUrl)}">Оплатить</a>`}
+    </div>
+  </article>`).join('');
+
+  const support = supportContact();
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Мои сказки · FairyTeller</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111; background: #fffaf0; }
+    * { box-sizing: border-box; min-width: 0; }
+    body { margin: 0; padding: 24px; }
+    main { width: min(880px, 100%); margin: 0 auto; }
+    header { border: 2px solid #111; background: #fff; padding: 24px; box-shadow: 8px 8px 0 #111; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(32px, 7vw, 58px); line-height: 0.95; text-transform: uppercase; }
+    h2 { margin-top: 6px; font-size: 24px; line-height: 1.1; }
+    p { color: #5e6264; line-height: 1.55; }
+    .lead { margin-top: 14px; max-width: 620px; font-size: 17px; }
+    .email { color: #111; font-weight: 900; overflow-wrap: anywhere; }
+    .books { display: grid; gap: 14px; margin-top: 28px; }
+    .book-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; border: 2px solid #111; background: #fae7e1; padding: 18px; box-shadow: 5px 5px 0 #111; }
+    .eyebrow { color: #5e6264; font-size: 12px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .meta { margin-top: 8px; font-size: 14px; font-weight: 700; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+    .button, .paid { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 2px solid #111; padding: 0 16px; color: #111; font-size: 13px; font-weight: 900; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
+    .button { background: #e89c31; }
+    .button.secondary { background: #fff; }
+    .button:hover { background: #111; color: #fff; }
+    .paid { background: #dcfce7; }
+    .empty { margin-top: 28px; border: 2px solid #111; background: #fff; padding: 20px; font-weight: 800; }
+    footer { margin-top: 28px; border-top: 2px solid #111; padding-top: 18px; font-size: 15px; font-weight: 700; }
+    footer a { color: #111; font-weight: 900; }
+    @media (max-width: 680px) {
+      body { padding: 16px; }
+      header, .book-card { box-shadow: 4px 4px 0 #111; }
+      .book-card { grid-template-columns: 1fr; }
+      .actions { justify-content: stretch; }
+      .button, .paid { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Мои сказки</h1>
+      <p class="lead">Все генерации, созданные для <span class="email">${escapeHtml(email)}</span>. Здесь можно открыть превью и оплатить готовую книгу.</p>
+    </header>
+    <section class="books" aria-label="Список сказок">
+      ${rows || '<div class="empty">Для этой почты пока нет созданных сказок.</div>'}
+    </section>
+    <footer>
+      Нужна помощь? Свяжитесь с нами через <a href="${escapeHtml(support.telegramUrl)}">Telegram (t.me/nikita0shch)</a>, <a href="${escapeHtml(support.siteUrl)}">форму на сайте</a> или <a href="mailto:${escapeHtml(support.email)}">${escapeHtml(support.email)}</a>.
+    </footer>
   </main>
 </body>
 </html>`;
@@ -4782,45 +5088,49 @@ async function createJob(body) {
     throw httpError(400, 'Missing order object');
   }
 
-  const jobId = assertSafeJobId(body.jobId || makeJobId());
-  const dir = jobDir(jobId);
-  await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
+  return await withGenerationLimitLock(order.email, async () => {
+    await assertDailyGenerationLimit(order);
 
-  try {
-    await mkdir(dir, { mode: 0o700 });
-  } catch (error) {
-    if (error.code === 'EEXIST') {
-      throw httpError(409, 'Job already exists');
+    const jobId = assertSafeJobId(body.jobId || makeJobId());
+    const dir = jobDir(jobId);
+    await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
+
+    try {
+      await mkdir(dir, { mode: 0o700 });
+    } catch (error) {
+      if (error.code === 'EEXIST') {
+        throw httpError(409, 'Job already exists');
+      }
+      throw error;
     }
-    throw error;
-  }
 
-  const createdAt = nowIso();
-  const status = {
-    jobId,
-    status: 'received',
-    stage: 'intake',
-    progress: 0,
-    message: 'Order received',
-    createdAt,
-    updatedAt: createdAt,
-    preview: null,
-    artifacts: {},
-    error: null,
-  };
+    const createdAt = nowIso();
+    const status = {
+      jobId,
+      status: 'received',
+      stage: 'intake',
+      progress: 0,
+      message: 'Order received',
+      createdAt,
+      updatedAt: createdAt,
+      preview: null,
+      artifacts: {},
+      error: null,
+    };
 
-  await writeJsonAtomic(join(dir, 'order.json'), {
-    jobId,
-    source: body.source || 'fairyteller',
-    receivedAt: createdAt,
-    order,
+    await writeJsonAtomic(join(dir, 'order.json'), {
+      jobId,
+      source: body.source || 'fairyteller',
+      receivedAt: createdAt,
+      order,
+    });
+    await writeJsonAtomic(join(dir, 'status.json'), status);
+    await appendEvent(dir, { type: 'job.created', status: status.status, stage: status.stage });
+    await appendLead(jobId, body.source, order);
+    notifyJob('created', status, { source: body.source || 'fairyteller', order });
+
+    return status;
   });
-  await writeJsonAtomic(join(dir, 'status.json'), status);
-  await appendEvent(dir, { type: 'job.created', status: status.status, stage: status.stage });
-  await appendLead(jobId, body.source, order);
-  notifyJob('created', status, { source: body.source || 'fairyteller', order });
-
-  return status;
 }
 
 function sanitizePublicStatus(status, payment = null) {
@@ -5573,6 +5883,13 @@ async function route(req, res) {
     return;
   }
 
+  const customerBooksMatch = url.pathname.match(/^\/api\/fairyteller\/my-books\/([^/]+)$/);
+  if (method === 'GET' && customerBooksMatch) {
+    const { email } = verifyCustomerBooksToken(decodeURIComponent(customerBooksMatch[1]));
+    sendHtml(req, res, 200, renderCustomerBooksPage(email, await listCustomerGenerationJobs(email, { limit: 100 })));
+    return;
+  }
+
   const storageShareFileMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/share\/(sf_[a-zA-Z0-9_-]{8,80})\/([a-f0-9]{32,80})\/files\/(.+)$/);
   if (method === 'GET' && storageShareFileMatch) {
     await sendStorageFile(req, res, storageShareFileMatch[1], storageShareFileMatch[3], {
@@ -5967,9 +6284,11 @@ async function main() {
       await route(req, res);
     } catch (error) {
       const status = error.status || 500;
+      const publicFields = status >= 500 ? {} : (error.publicFields || {});
       sendJson(req, res, status, {
         ok: false,
         error: status >= 500 ? 'Internal server error' : error.message,
+        ...publicFields,
         requestId: randomUUID(),
       });
     }

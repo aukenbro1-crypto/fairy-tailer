@@ -11,6 +11,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import ConstructorHint from "@/components/ConstructorHint";
+import GenerationLimitNotice from "@/components/GenerationLimitNotice";
 import {
   trackCheckoutStart,
   trackConstructorFirstFieldStarted,
@@ -23,6 +24,7 @@ import {
   trackPreviewReady,
   trackStyleStepReached,
 } from "@/lib/metrika";
+import { isGenerationLimitPayload, type GenerationLimitPayload } from "@/lib/fairytellerLimit";
 import claymotionStyleImage from "@/assets/claymotion-style.png";
 import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import disneyStyleImage from "@/assets/disney-style.jpg";
@@ -125,7 +127,7 @@ type HeroDraft = {
   photo: File | null;
 };
 
-type CreateResponse = {
+type CreateResponse = GenerationLimitPayload & {
   ok?: boolean;
   jobId?: string;
   statusUrl?: string;
@@ -256,6 +258,7 @@ const FairytellerInlineConstructor = ({
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [generationLimitNotice, setGenerationLimitNotice] = useState<GenerationLimitPayload | null>(null);
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
   const [generationNowMs, setGenerationNowMs] = useState(Date.now());
 
@@ -555,6 +558,7 @@ const FairytellerInlineConstructor = ({
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
+    setGenerationLimitNotice(null);
     setGenerationStartedAt(null);
 
     try {
@@ -568,6 +572,14 @@ const FairytellerInlineConstructor = ({
         : null;
 
       if (!response.ok) {
+        if (isGenerationLimitPayload(createResult)) {
+          setGenerationLimitNotice(createResult);
+          toast({
+            title: "Лимит на сегодня исчерпан",
+            description: "Откройте свои сказки или оплатите готовую книгу.",
+          });
+          return;
+        }
         throw new Error(createResult?.message || "Create request failed");
       }
 
@@ -678,14 +690,14 @@ const FairytellerInlineConstructor = ({
   }, [submittedJobId, isGenerationReady]);
 
   useEffect(() => {
-    if (!submittedJobId) {
+    if (!submittedJobId && !generationLimitNotice) {
       return;
     }
 
     window.requestAnimationFrame(() => {
       generationStatusRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  }, [submittedJobId]);
+  }, [generationLimitNotice, submittedJobId]);
 
   return (
     <>
@@ -1163,8 +1175,14 @@ const FairytellerInlineConstructor = ({
             </div>
           )}
 
-          {submittedJobId && (
-            <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8">
+	          {generationLimitNotice && (
+	            <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px]">
+	              <GenerationLimitNotice notice={generationLimitNotice} />
+	            </div>
+	          )}
+
+	          {!generationLimitNotice && submittedJobId && (
+	            <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8">
               <div className="mx-auto flex h-16 w-16 items-center justify-center border border-black bg-white">
                 {isGenerationReady ? <Check className="h-8 w-8" /> : <Sparkles className="h-8 w-8" />}
               </div>

@@ -76,6 +76,7 @@
           "options": {
             "response": {
               "response": {
+                "neverError": true,
                 "responseFormat": "json"
               }
             },
@@ -99,12 +100,45 @@
         }
       },
       {
+        "id": "d8f6e4fe-9699-4c5f-8f1f-c0c32fc02cc3",
+        "name": "Generation Limit Reached?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1320,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "83e8e4de-f450-49d9-aafd-37ed80d19a91",
+                "leftValue": "={{ $json.jobApi?.limitExceeded === true ? \"yes\" : \"no\" }}",
+                "rightValue": "yes",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "or"
+          },
+          "options": {}
+        }
+      },
+      {
         "id": "3b3386c2-af72-4885-8c11-37de434fe0c9",
         "name": "Start Text Pipeline",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.3,
         "position": [
-          1440,
+          1620,
           300
         ],
         "parameters": {
@@ -127,7 +161,7 @@
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.5,
         "position": [
-          1740,
+          1920,
           300
         ],
         "parameters": {
@@ -135,6 +169,23 @@
           "responseBody": "={{ { ok: true, status: \"received\", jobId: $(\"Attach Job API Result\").item.json.jobId, statusUrl: \"https://fairyteller.ru/api/fairyteller/jobs/\" + $(\"Attach Job API Result\").item.json.jobId, message: \"Book job accepted\" } }}",
           "options": {
             "responseCode": 202
+          }
+        }
+      },
+      {
+        "id": "294d6d78-f149-4981-bef1-50f5cfbc8776",
+        "name": "Respond 429 Limit Reached",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          1620,
+          520
+        ],
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { ok: false, limitExceeded: true, code: \"daily_limit_exceeded\", message: $json.jobApi?.message || \"Сегодня уже создано 3 сказки.\", limit: $json.jobApi?.limit, used: $json.jobApi?.used, resetAt: $json.jobApi?.resetAt, booksUrl: $json.jobApi?.booksUrl, booksAbsoluteUrl: $json.jobApi?.booksAbsoluteUrl, payUrl: $json.jobApi?.payUrl, payAbsoluteUrl: $json.jobApi?.payAbsoluteUrl, jobs: $json.jobApi?.jobs || [], support: $json.jobApi?.support || {} } }}",
+          "options": {
+            "responseCode": 429
           }
         }
       }
@@ -175,6 +226,24 @@
       },
       "Attach Job API Result": {
         "main": [
+          [
+            {
+              "node": "Generation Limit Reached?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generation Limit Reached?": {
+        "main": [
+          [
+            {
+              "node": "Respond 429 Limit Reached",
+              "type": "main",
+              "index": 0
+            }
+          ],
           [
             {
               "node": "Start Text Pipeline",

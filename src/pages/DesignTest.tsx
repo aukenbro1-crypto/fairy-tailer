@@ -19,6 +19,7 @@ import SEO from "@/components/SEO";
 import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
 import ConstructorHint from "@/components/ConstructorHint";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
+import GenerationLimitNotice from "@/components/GenerationLimitNotice";
 import {
   trackCheckoutStart,
   trackConstructorCtaClicked,
@@ -32,6 +33,7 @@ import {
   trackPreviewSubmitSuccess,
   trackStyleStepReached,
 } from "@/lib/metrika";
+import { isGenerationLimitPayload, type GenerationLimitPayload } from "@/lib/fairytellerLimit";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
@@ -385,7 +387,7 @@ type HeroDraft = {
   photo: File | null;
 };
 
-type CreateResponse = {
+type CreateResponse = GenerationLimitPayload & {
   ok?: boolean;
   jobId?: string;
   statusUrl?: string;
@@ -462,6 +464,7 @@ const DesignTest = () => {
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [generationLimitNotice, setGenerationLimitNotice] = useState<GenerationLimitPayload | null>(null);
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
   const [generationNowMs, setGenerationNowMs] = useState(Date.now());
   const constructorFocusRef = useRef<HTMLDivElement>(null);
@@ -755,6 +758,7 @@ const DesignTest = () => {
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
+    setGenerationLimitNotice(null);
     setGenerationStartedAt(null);
 
     try {
@@ -768,6 +772,14 @@ const DesignTest = () => {
         : null;
 
       if (!response.ok) {
+        if (isGenerationLimitPayload(createResult)) {
+          setGenerationLimitNotice(createResult);
+          toast({
+            title: "Лимит на сегодня исчерпан",
+            description: "Откройте свои сказки или оплатите готовую книгу.",
+          });
+          return;
+        }
         throw new Error(createResult?.message || "Create request failed");
       }
 
@@ -982,14 +994,14 @@ const DesignTest = () => {
   }, []);
 
   useEffect(() => {
-    if (!submittedJobId) {
+    if (!submittedJobId && !generationLimitNotice) {
       return;
     }
 
     window.requestAnimationFrame(() => {
       generationStatusRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  }, [submittedJobId]);
+  }, [generationLimitNotice, submittedJobId]);
 
   return (
     <main className="design-test-page min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
@@ -1698,8 +1710,14 @@ const DesignTest = () => {
 	                </div>
 	              )}
 
-              {submittedJobId && (
-                <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8">
+	              {generationLimitNotice && (
+	                <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px]">
+	                  <GenerationLimitNotice notice={generationLimitNotice} />
+	                </div>
+	              )}
+
+	              {!generationLimitNotice && submittedJobId && (
+	                <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center border border-black bg-white">
                     {isGenerationReady ? <Check className="h-8 w-8" /> : <Sparkles className="h-8 w-8" />}
                   </div>

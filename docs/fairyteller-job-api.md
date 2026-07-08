@@ -70,8 +70,13 @@ The API never stores notification secrets in the repo. Configure them on the ser
 - `FAIRYTELLER_MAIL_REPLY_TO` is optional.
 - `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.
 - `FAIRYTELLER_SEND_RENDER_READY_EMAIL=1` restores the old render-ready email behavior. Leave it unset for the paywall flow.
+- `FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT` defaults to `3` and limits free create requests per normalized email.
+- `FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS` defaults to 24 hours.
+- `FAIRYTELLER_CUSTOMER_BOOKS_SECRET` is optional; when unset, the API token signs customer "my books" links.
 
 Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready for operators. Public PDF downloads require a paid access token; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
+
+Production also runs a service-level watchdog via `fairyteller-service-watchdog.timer` every five minutes. It uses the same alert Telegram variables, reads secrets only from `/etc/fairyteller/api.env`, and checks root disk usage, Job API health, n8n health/container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. The script lives in the repo at `ops/fairyteller-service-watchdog.mjs` and is deployed to `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`; dedupe state is stored under `/data/fairyteller/monitor/`.
 
 The legacy render-ready customer email template references small public product-example images from `/images/email/`. If mail is not configured, generation and payment state still persist; email delivery records `mail_provider_not_configured`.
 
@@ -103,6 +108,28 @@ POST /api/fairyteller/jobs
 Authorization: Bearer <token>
 Content-Type: application/json
 ```
+
+Create requests with a valid email are limited to 3 free jobs per rolling 24-hour window by default. When the limit is reached, the API does not create a job and returns `429` with `code=daily_limit_exceeded`, `booksUrl`, `payUrl`, reset timing, and the support signature:
+
+```json
+{
+  "ok": false,
+  "limitExceeded": true,
+  "code": "daily_limit_exceeded",
+  "limit": 3,
+  "used": 3,
+  "booksUrl": "/api/fairyteller/my-books/...",
+  "payUrl": "/pay?jobId=..."
+}
+```
+
+### Customer Books Link
+
+```http
+GET /api/fairyteller/my-books/:token
+```
+
+Shows a noindex/no-store customer page with all jobs for the token email, preview links, payment buttons, and the support signature. Tokens are signed and expire according to `FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS` (default 30 days).
 
 ### Public Sample
 

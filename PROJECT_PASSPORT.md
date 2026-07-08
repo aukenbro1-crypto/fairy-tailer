@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260707-photo-examples-marquee-speed-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260708-daily-email-limit-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -35,6 +35,7 @@ The `/create` form is now compatible with both response shapes:
 
 - legacy Make response: any successful HTTP response marks the request as accepted and keeps the email-based UX
 - n8n response: JSON with `jobId` and optional `statusUrl` starts public status polling from the generation overlay
+- limit response: `429` JSON with `code=daily_limit_exceeded`, `booksUrl`, `payUrl`, reset timing, and support contacts shows the "3 сказки в сутки" customer state without starting generation
 - current n8n UX: no intermediate first-chapter reader. The overlay shows a staged full-book progress/timer flow while generation is running, then switches to a clean in-modal `preview.pdf` reader with a bottom print-payment CTA when render is ready.
 
 Frontend migration environment variables:
@@ -153,6 +154,7 @@ Core endpoints:
 - `POST /api/fairyteller/jobs`
 - `GET /api/fairyteller/jobs/:jobId`
 - `GET /api/fairyteller/jobs/:jobId/full`
+- `GET /api/fairyteller/my-books/:token`
 - `PATCH /api/fairyteller/jobs/:jobId`
 - `PUT /api/fairyteller/jobs/:jobId/artifacts/:fileName.json`
 - `PUT /api/fairyteller/jobs/:jobId/files/:fileName`
@@ -207,6 +209,8 @@ Generation progress and failure alerts use a separate Telegram bot identity:
 
 - `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN`
 - `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID`
+
+Service-level health alerts use the same alert bot identity. Production runs `fairyteller-service-watchdog.timer` every five minutes; it executes `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`, sourced from `ops/fairyteller-service-watchdog.mjs` in this repo, and dedupes state under `/data/fairyteller/monitor/`. The watchdog checks root disk usage, Job API `/healthz`, n8n `/healthz`, the `baku-n8n-docker` container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. It was installed and verified on 2026-07-08 after the full-disk ENOSPC incident; a TaleBoy test alert was sent successfully, and a normal run reported `activeIssues:0`.
 
 Successful payment alerts use `FAIRYTELLER_PAYMENT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_ID`, falling back to the site chat bot (`@fairysender_bot` in production) when dedicated payment variables are absent. The alert includes job/payment IDs, amount, customer email, phone, recipient name, delivery address, customer-email delivery status, and the public book URL.
 
@@ -263,6 +267,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-08
+
+- Added and deployed the customer daily generation limit flow. The Job API now limits free create jobs to `FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT=3` per normalized email over a rolling 24-hour window, returns `429 daily_limit_exceeded` without creating a job, and includes signed `/api/fairyteller/my-books/:token` plus payment links and the support signature (`Telegram t.me/nikita0shch`, site form, `books@fairyteller.ru`). The public my-books page is noindex/no-store and lists all jobs for that email with preview/payment actions. The `fairyteller_intake` n8n workflow now treats Job API `429` as JSON, branches before `Start Text Pipeline`, and returns the limit payload to the frontend. The `/create`, inline constructor, legacy story constructor, and romantic form render the limit screen instead of a generic submit error. Frontend release: `/var/www/fairyteller/releases/20260708-daily-email-limit-codex`; API backups: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260708-131911Z-daily-limit-before.bak` and `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260708-140240Z-daily-limit-message-before.bak`; n8n backup/export: `/root/fairyteller-n8n-exports/20260708-131911Z-daily-limit-before` and `/root/fairyteller-n8n-exports/20260708-135726Z-daily-limit-after`. Verified `node --check server/fairyteller-api.mjs`, targeted ESLint for touched server/frontend files, `npm run build`, `git diff --check`, n8n workflow JSON validation, and local API smoke: three jobs created for one email, fourth request returned `429`, only three job directories existed, and the my-books link rendered three cards with payment/support links. Production smoke verified API and n8n health, active frontend release, `/` and `/create` `200`, active JS contains the limit UI and `daily_limit_exceeded`, invalid my-books token returns `403`, and the active n8n export contains `Generation Limit Reached?` / `Respond 429 Limit Reached`. No production customer email had three jobs in the last 24 hours, so the public webhook `429` path was not exercised against real data.
 
 ### 2026-07-07
 

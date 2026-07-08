@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Lock, ShoppingBag, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import GenerationLimitNotice from '@/components/GenerationLimitNotice';
 import {
   trackCheckoutStart,
   trackConstructorStart,
   trackGenerateSubmit,
   trackPreviewReady,
 } from '@/lib/metrika';
+import { isGenerationLimitPayload, type GenerationLimitPayload } from '@/lib/fairytellerLimit';
 import claymotionStyleImage from '@/assets/claymotion-style.png';
 import naiveStyleImage from '@/assets/naive-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
@@ -27,7 +29,7 @@ const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 
-interface CreateResponse {
+interface CreateResponse extends GenerationLimitPayload {
   ok?: boolean;
   jobId?: string;
   statusUrl?: string;
@@ -573,6 +575,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [generationLimitNotice, setGenerationLimitNotice] = useState<GenerationLimitPayload | null>(null);
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   
@@ -767,6 +770,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
+    setGenerationLimitNotice(null);
     setGenerationStartedAt(Date.now());
 
     const multipartData = new FormData();
@@ -844,6 +848,17 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       ok = false;
     }
 
+    if (!ok && isGenerationLimitPayload(createResult)) {
+      setShowLoader(false);
+      setGenerationStartedAt(null);
+      setGenerationLimitNotice(createResult);
+      toast({
+        title: "Лимит на сегодня исчерпан",
+        description: "Откройте свои сказки или оплатите готовую книгу."
+      });
+      return;
+    }
+
     toast({
       title: ok ? "Начали создавать книгу" : "Не получилось отправить форму",
       description: ok ? "Запустили полный цикл: текст, картинки, обложка и печатный PDF." : "Проверьте данные и попробуйте ещё раз."
@@ -864,6 +879,7 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
   };
 
   const resetForm = () => {
+    setGenerationLimitNotice(null);
     setFormData({
       world: 'romantic_story',
       newyear_mode: false,
@@ -1514,15 +1530,19 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
             >
               <X size={18} aria-hidden="true" />
             </button>
-            <GenerationStatusPanel
-              title={readerTitle}
-              jobStatus={jobStatus}
-              fullTextStatus={fullTextStatus}
-              renderStatus={renderStatus}
-              previewPdfUrl={previewPdfUrl}
-              printPdfUrl={printPdfUrl}
-              generationStartedAt={generationStartedAt}
-            />
+	            {generationLimitNotice ? (
+	              <GenerationLimitNotice notice={generationLimitNotice} />
+	            ) : (
+	              <GenerationStatusPanel
+	                title={readerTitle}
+	                jobStatus={jobStatus}
+	                fullTextStatus={fullTextStatus}
+	                renderStatus={renderStatus}
+	                previewPdfUrl={previewPdfUrl}
+	                printPdfUrl={printPdfUrl}
+	                generationStartedAt={generationStartedAt}
+	              />
+	            )}
           </div>
         </div>
       )}

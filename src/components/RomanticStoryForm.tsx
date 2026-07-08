@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import GenerationLimitNotice from '@/components/GenerationLimitNotice';
+import { isGenerationLimitPayload, type GenerationLimitPayload } from '@/lib/fairytellerLimit';
 
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || "/webhook/fairyteller/create";
 
@@ -160,6 +162,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [generationLimitNotice, setGenerationLimitNotice] = useState<GenerationLimitPayload | null>(null);
   const [showHero3, setShowHero3] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -241,6 +244,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
     }
 
     setIsSubmitting(true);
+    setGenerationLimitNotice(null);
 
     const multipartData = new FormData();
     
@@ -292,12 +296,17 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
     }
 
     let ok = false;
+    let createResult: GenerationLimitPayload | null = null;
     try {
       const response = await fetch(CREATE_ENDPOINT_URL, {
         method: 'POST',
         body: multipartData,
       });
       ok = response.ok;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        createResult = await response.json() as GenerationLimitPayload;
+      }
     } catch (error) {
       ok = false;
     }
@@ -306,10 +315,17 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
 
     if (ok) {
       setIsSuccess(true);
+    } else if (isGenerationLimitPayload(createResult)) {
+      setGenerationLimitNotice(createResult);
+      toast({ title: "Лимит на сегодня исчерпан", description: "Откройте свои сказки или оплатите готовую книгу." });
     } else {
       toast({ variant: "destructive", title: "Ошибка отправки", description: "Не удалось отправить данные. Попробуйте ещё раз." });
     }
   };
+
+  if (generationLimitNotice) {
+    return <GenerationLimitNotice notice={generationLimitNotice} className="my-8" />;
+  }
 
   if (isSuccess) {
     return (
