@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260709-limit-copy-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260709-personal-generation-limit-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-09
+
+- Deployed a personal generation limit override for `aleks27134@gmail.com`: 1 free generation per rolling 3-day window. The default remains 3 free generations per rolling 24-hour window for other emails. The Job API now returns `windowMs`, `periodLabel`, and `periodScopeLabel` in `daily_limit_exceeded` responses, and the frontend limit screen renders period-aware copy such as `1 сказку за 3 дня` while preserving the `сегодня` copy for default daily limits. Frontend release: `/var/www/fairyteller/releases/20260709-personal-generation-limit-codex`; API backup: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-131046Z-personal-limit-before.bak`. Verified production source API matched local `HEAD` before changing it, local `node --check`, targeted ESLint, `npm run build`, `git diff --check`, local smoke for the personal override and default limit, production API restart/health, `/create` `200`, active HTML uses `index-TJ85uEsy.js`, active JS contains `periodLabel`, and direct production API smoke for the override returned `429 daily_limit_exceeded` with `limit=1`, `used=1`, `periodLabel="за 3 дня"`, `windowMs=259200000`, and unchanged job count.
 
 - Deployed a copy update for the daily generation limit screen. The frontend now says `Бесплатный лимит на сегодня исчерпан`, shows `Вы уже создали 3 сказки сегодня`, explains that the customer can choose a finished story and оформить ее в книгу, adds the manual-help paragraph for text/illustrations/story details, changes the payment CTA to `ОФОРМИТЬ КНИГУ`, and updates the support footer to `Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.` The Job API payload and noindex `my-books` HTML page use the same support wording, and the API clamps `used` to the free limit so legacy/high-count emails do not display values like `8/3`. Frontend release: `/var/www/fairyteller/releases/20260709-limit-copy-codex`; API backup: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-001952Z-limit-copy-before.bak`. Verified `node --check server/fairyteller-api.mjs`, targeted ESLint for `server/fairyteller-api.mjs` and `GenerationLimitNotice`, `npm run build`, `git diff --check`, API health, nginx reload, production `/` and `/create` `200`, and active JS contains the new limit copy and `ОФОРМИТЬ КНИГУ`.
 

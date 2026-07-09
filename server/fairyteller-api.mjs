@@ -40,6 +40,14 @@ const DAILY_FREE_GENERATION_WINDOW_MS = Math.max(
   60 * 60 * 1000,
   Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000,
 );
+const CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
+  ['aleks27134@gmail.com', {
+    limit: 1,
+    windowMs: 3 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 3 дня',
+    periodScopeLabel: 'за этот период',
+  }],
+]);
 const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
   24 * 60 * 60 * 1000,
   Number(process.env.FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
@@ -386,6 +394,35 @@ function supportContact() {
   };
 }
 
+function generationLimitRuleForEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const override = CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES.get(normalizedEmail);
+  if (override) {
+    return {
+      ...override,
+      limit: Math.max(0, Number(override.limit) || 0),
+      windowMs: Math.max(60 * 60 * 1000, Number(override.windowMs) || DAILY_FREE_GENERATION_WINDOW_MS),
+    };
+  }
+
+  return {
+    limit: DAILY_FREE_GENERATION_LIMIT,
+    windowMs: DAILY_FREE_GENERATION_WINDOW_MS,
+    periodLabel: 'сегодня',
+    periodScopeLabel: 'сегодня',
+  };
+}
+
+function generationLimitMessage(rule) {
+  if (rule.limit === 1) {
+    return `Вы использовали бесплатную попытку ${rule.periodScopeLabel || rule.periodLabel || 'за этот период'}. Посмотрите готовую сказку, выберите любимую и оформите ее в книгу.`;
+  }
+  if (rule.periodLabel === 'сегодня') {
+    return 'Сегодня вы использовали все бесплатные попытки. Посмотрите готовые сказки, выберите любимую и оформите ее в книгу.';
+  }
+  return `Вы использовали все бесплатные попытки ${rule.periodLabel || 'за этот период'}. Посмотрите готовые сказки, выберите любимую и оформите одну из них в книгу.`;
+}
+
 function base64UrlEncode(value) {
   return Buffer.from(value).toString('base64url');
 }
@@ -520,26 +557,30 @@ async function listCustomerGenerationJobs(email, options = {}) {
     .slice(0, limit);
 }
 
-function generationLimitResetAt(recentJobs) {
+function generationLimitResetAt(recentJobs, rule) {
   const times = recentJobs
     .map((job) => Date.parse(job.createdAt))
     .filter(Number.isFinite)
     .sort((left, right) => left - right);
-  if (!times.length) return new Date(Date.now() + DAILY_FREE_GENERATION_WINDOW_MS).toISOString();
-  return new Date(times[0] + DAILY_FREE_GENERATION_WINDOW_MS).toISOString();
+  const windowMs = rule?.windowMs || DAILY_FREE_GENERATION_WINDOW_MS;
+  if (!times.length) return new Date(Date.now() + windowMs).toISOString();
+  return new Date(times[0] + windowMs).toISOString();
 }
 
-async function buildGenerationLimitPayload(email, recentJobs) {
+async function buildGenerationLimitPayload(email, recentJobs, rule) {
   const booksPath = customerBooksPath(email);
   const allJobs = await listCustomerGenerationJobs(email, { limit: 20 });
   const payableJob = allJobs.find((job) => !job.paid) || allJobs[0] || null;
   return {
     limitExceeded: true,
     code: 'daily_limit_exceeded',
-    message: 'Сегодня вы использовали все бесплатные попытки. Посмотрите готовые сказки, выберите любимую и оформите ее в книгу.',
-    limit: DAILY_FREE_GENERATION_LIMIT,
-    used: Math.min(recentJobs.length, DAILY_FREE_GENERATION_LIMIT),
-    resetAt: generationLimitResetAt(recentJobs),
+    message: generationLimitMessage(rule),
+    limit: rule.limit,
+    used: Math.min(recentJobs.length, rule.limit),
+    windowMs: rule.windowMs,
+    periodLabel: rule.periodLabel,
+    periodScopeLabel: rule.periodScopeLabel,
+    resetAt: generationLimitResetAt(recentJobs, rule),
     booksUrl: booksPath,
     booksAbsoluteUrl: publicUrl(booksPath),
     payUrl: payableJob?.payUrl || '',
@@ -550,21 +591,22 @@ async function buildGenerationLimitPayload(email, recentJobs) {
 }
 
 async function assertDailyGenerationLimit(order = {}) {
-  if (!DAILY_FREE_GENERATION_LIMIT) return;
   const email = normalizeEmail(order.email);
   if (!email) return;
+  const rule = generationLimitRuleForEmail(email);
+  if (!rule.limit) return;
 
   const recentJobs = await listCustomerGenerationJobs(email, {
-    sinceMs: Date.now() - DAILY_FREE_GENERATION_WINDOW_MS,
+    sinceMs: Date.now() - rule.windowMs,
     includeTitle: false,
-    limit: DAILY_FREE_GENERATION_LIMIT + 10,
+    limit: rule.limit + 10,
   });
-  if (recentJobs.length < DAILY_FREE_GENERATION_LIMIT) return;
+  if (recentJobs.length < rule.limit) return;
 
   throw httpError(
     429,
     'Daily free generation limit reached',
-    await buildGenerationLimitPayload(email, recentJobs),
+    await buildGenerationLimitPayload(email, recentJobs, rule),
   );
 }
 

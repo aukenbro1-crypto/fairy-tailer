@@ -5,6 +5,9 @@ export type GenerationLimitPayload = {
   message?: string;
   limit?: number;
   used?: number;
+  windowMs?: number;
+  periodLabel?: string;
+  periodScopeLabel?: string;
   resetAt?: string;
   booksUrl?: string;
   booksAbsoluteUrl?: string;

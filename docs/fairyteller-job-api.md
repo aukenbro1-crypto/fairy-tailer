@@ -72,6 +72,7 @@ The API never stores notification secrets in the repo. Configure them on the ser
 - `FAIRYTELLER_SEND_RENDER_READY_EMAIL=1` restores the old render-ready email behavior. Leave it unset for the paywall flow.
 - `FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT` defaults to `3` and limits free create requests per normalized email.
 - `FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS` defaults to 24 hours.
+- `CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES` in `server/fairyteller-api.mjs` contains hardcoded per-email exceptions. Current exception: `aleks27134@gmail.com` is limited to 1 free generation per rolling 3-day window.
 - `FAIRYTELLER_CUSTOMER_BOOKS_SECRET` is optional; when unset, the API token signs customer "my books" links.
 
 Telegram messages include direct `book.pdf` and `preview.pdf` links once the render artifact is ready for operators. Public PDF downloads require a paid access token; `book.pdf` is the primary customer/print artifact. If the PDF render endpoint itself fails, the API marks the job as `failed`, stores the render error, and sends the failure notification.
@@ -109,7 +110,7 @@ Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
-Create requests with a valid email are limited to 3 free jobs per rolling 24-hour window by default. When the limit is reached, the API does not create a job and returns `429` with `code=daily_limit_exceeded`, `booksUrl`, `payUrl`, reset timing, and the support signature:
+Create requests with a valid email are limited to 3 free jobs per rolling 24-hour window by default. Per-email overrides can change both the limit and the rolling window. When the limit is reached, the API does not create a job and returns `429` with `code=daily_limit_exceeded`, `booksUrl`, `payUrl`, reset timing, period labels, and the support signature:
 
 ```json
 {
@@ -118,6 +119,9 @@ Create requests with a valid email are limited to 3 free jobs per rolling 24-hou
   "code": "daily_limit_exceeded",
   "limit": 3,
   "used": 3,
+  "windowMs": 86400000,
+  "periodLabel": "сегодня",
+  "periodScopeLabel": "сегодня",
   "booksUrl": "/api/fairyteller/my-books/...",
   "payUrl": "/pay?jobId=..."
 }
