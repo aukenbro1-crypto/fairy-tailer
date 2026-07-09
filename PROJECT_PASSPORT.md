@@ -12,7 +12,7 @@ The current public app is a Vite/React static site. The active generation path s
 
 - VPS: `82.26.198.127`
 - Hostname: `tr-vmv2-nano`
-- SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
+- SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`; password authentication is disabled in production, root login is key-only.
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
 - Current static site release: `/var/www/fairyteller/releases/20260709-personal-generation-limit-codex`
@@ -210,7 +210,7 @@ Generation progress and failure alerts use a separate Telegram bot identity:
 - `FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN`
 - `FAIRYTELLER_ALERT_TELEGRAM_CHAT_ID`
 
-Service-level health alerts use the same alert bot identity. Production runs `fairyteller-service-watchdog.timer` every five minutes; it executes `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`, sourced from `ops/fairyteller-service-watchdog.mjs` in this repo, and dedupes state under `/data/fairyteller/monitor/`. The watchdog checks root disk usage, Job API `/healthz`, n8n `/healthz`, the `baku-n8n-docker` container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. It was installed and verified on 2026-07-08 after the full-disk ENOSPC incident; a TaleBoy test alert was sent successfully, and a normal run reported `activeIssues:0`.
+Service-level health alerts use the same alert bot identity. Production runs `fairyteller-service-watchdog.timer` every five minutes; it executes `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`, sourced from `ops/fairyteller-service-watchdog.mjs` in this repo, and dedupes state under `/data/fairyteller/monitor/`. The watchdog checks root disk usage, suspicious SSH activity, Job API `/healthz`, n8n `/healthz`, the `baku-n8n-docker` container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. It was installed and verified on 2026-07-08 after the full-disk ENOSPC incident; a TaleBoy test alert was sent successfully, and a normal run reported `activeIssues:0`.
 
 Successful payment alerts use `FAIRYTELLER_PAYMENT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_ID`, falling back to the site chat bot (`@fairysender_bot` in production) when dedicated payment variables are absent. The alert includes job/payment IDs, amount, customer email, phone, recipient name, delivery address, customer-email delivery status, and the public book URL.
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-09
+
+- Hardened production SSH after recurring evening slowdown correlated with brute-force traffic. Installed and enabled `fail2ban` for `sshd`, disabled SSH password and keyboard-interactive authentication, kept root login key-only, reduced unauthenticated SSH retry windows, added a persistent 1 GB swap file, and deployed SSH suspicious-activity checks to `fairyteller-service-watchdog.timer`. Verified fresh key login works, password-only login is rejected with `publickey`, `fail2ban` banned the active noisy IPs, watchdog sent a new SSH activity issue, and production site/API/n8n health checks remained `200`.
 
 - Deployed a personal generation limit override for `aleks27134@gmail.com`: 1 free generation per rolling 3-day window. The default remains 3 free generations per rolling 24-hour window for other emails. The Job API now returns `windowMs`, `periodLabel`, and `periodScopeLabel` in `daily_limit_exceeded` responses, and the frontend limit screen renders period-aware copy such as `1 сказку за 3 дня` while preserving the `сегодня` copy for default daily limits. Frontend release: `/var/www/fairyteller/releases/20260709-personal-generation-limit-codex`; API backup: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-131046Z-personal-limit-before.bak`. Verified production source API matched local `HEAD` before changing it, local `node --check`, targeted ESLint, `npm run build`, `git diff --check`, local smoke for the personal override and default limit, production API restart/health, `/create` `200`, active HTML uses `index-TJ85uEsy.js`, active JS contains `periodLabel`, and direct production API smoke for the override returned `429 daily_limit_exceeded` with `limit=1`, `used=1`, `periodLabel="за 3 дня"`, `windowMs=259200000`, and unchanged job count.
 
