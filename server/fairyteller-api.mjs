@@ -2603,6 +2603,22 @@ function renderStoryFontModeOptions(selectedMode) {
   )).join('');
 }
 
+function storyFontModeLabel(mode) {
+  return STORY_FONT_MODE_OPTIONS.find((option) => option.value === mode)?.label || mode || '';
+}
+
+function formatStoryFontSize(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size)) return '';
+  return Number.isInteger(size) ? String(size) : size.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function renderStoryFontSummary(storyFont = null) {
+  if (!storyFont?.mode) return '';
+  const size = formatStoryFontSize(storyFont.appliedSizePt);
+  return [storyFontModeLabel(storyFont.mode), size ? `${size} pt` : ''].filter(Boolean).join(' · ');
+}
+
 function renderBookImageEditor(images = []) {
   const rows = images.map((image) => `
     <div class="image-card">
@@ -2638,6 +2654,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const error = options.error || '';
   const lastRender = render.generatedAt || render.requestedAt || status.updatedAt || '';
   const storyFontMode = currentStoryFontMode(fullText);
+  const renderedStoryFont = renderStoryFontSummary(render.preflight?.storyFont);
 
   const chapterFields = chapters.map((chapter) => {
     const chapterNumber = Number(chapter.n);
@@ -2767,7 +2784,8 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
           <select id="storyFontMode" name="storyFontMode">${renderStoryFontModeOptions(storyFontMode)}</select>
         </div>
       </div>
-      <p>Последний render: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
+      <p>Последняя сборка PDF: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
+      ${renderedStoryFont ? `<p>Размер в последнем PDF: ${escapeHtml(renderedStoryFont)}</p>` : ''}
       <div class="file-links">
         ${renderFileLink(files.preview, 'preview')}
         ${renderFileLink(files.book, 'print')}
@@ -2778,8 +2796,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     ${chapterFields}
     <div class="button-row">
       <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
-      <button class="secondary" type="submit" name="action" value="balance_font_render">Выровнять шрифт и пересобрать PDF</button>
-      <button type="submit" name="action" value="save_render">Сохранить и пересобрать PDF</button>
+      <button type="submit" name="action" value="save_render">Сохранить выбранный размер и пересобрать PDF</button>
     </div>
   </form>
 </body>
@@ -2821,9 +2838,12 @@ function buildEditedFullText(current, params) {
   const coverSummary = normalizeMultiLine(params.get('coverSummary'), 1800, 'Cover summary');
   const previewTitle = normalizeSingleLine(params.get('previewTitle'), 180, 'Preview title') || bookTitle;
   const previewSummary = normalizeSingleLine(params.get('previewSummary'), 700, 'Preview summary') || coverSummary;
-  const storyFontMode = params.get('action') === 'balance_font_render'
-    ? 'balanced'
-    : normalizeStoryFontMode(params.has('storyFontMode') ? params.get('storyFontMode') : next.text.printLayout?.storyFontMode);
+  const submittedStoryFontMode = params.has('storyFontMode')
+    ? params.get('storyFontMode')
+    : params.get('action') === 'balance_font_render'
+      ? 'balanced'
+      : next.text.printLayout?.storyFontMode;
+  const storyFontMode = normalizeStoryFontMode(submittedStoryFontMode);
 
   next.text.bible.bookTitle = bookTitle;
   next.text.bible.subtitle = subtitle;

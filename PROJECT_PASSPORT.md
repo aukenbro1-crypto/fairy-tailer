@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-07 00:47 UTC
+Last updated: 2026-07-09 14:33 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-09
+
+- Deployed a Job API admin editor fix for story PDF font-size modes. The editor no longer shows the confusing separate `Выровнять шрифт и пересобрать PDF` submit button that forced `text.printLayout.storyFontMode="balanced"` and made manually selected `large`/`small` modes appear ineffective; the remaining rebuild button now saves the selected size mode, and the editor shows `Размер в последнем PDF` from `render.preflight.storyFont`. Production API backup before deploy: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-143102Z-story-font-mode-before.bak`. Verified production/local API and renderer sources matched before changing them, local `node --check server/fairyteller-api.mjs`, targeted ESLint, `git diff --check`, `npm run build`, production `node --check`, `fairyteller-api.service` restart/active state, local API `/healthz`, production editor HTML for `ft_1783523896859_zg7py7`, and synthetic production-renderer smoke where `small` recorded `9.5 pt` and `large` recorded `11 pt`.
 
 - Hardened production SSH after recurring evening slowdown correlated with brute-force traffic. Installed and enabled `fail2ban` for `sshd`, disabled SSH password and keyboard-interactive authentication, kept root login key-only, reduced unauthenticated SSH retry windows, added a persistent 1 GB swap file, and deployed SSH suspicious-activity checks to `fairyteller-service-watchdog.timer`. Verified fresh key login works, password-only login is rejected with `publickey`, `fail2ban` banned the active noisy IPs, watchdog sent a new SSH activity issue, and production site/API/n8n health checks remained `200`.
 
