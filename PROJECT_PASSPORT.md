@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-09 14:33 UTC
+Last updated: 2026-07-09 14:55 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-09
+
+- Deployed systemic PDF font-size preflight diagnostics for admin rebuilds. The renderer now reports the exact overflowing story text location and fit threshold instead of an uncaught stack trace, e.g. `chapter 2, block 4, page 15, mode small, selected 9.5 pt, needs 9 pt or smaller`; the Job API preserves the previous successful render metadata while a rebuild is generating/failed, and the admin editor labels stale PDF links as the previous successful PDF after failures. The editor rebuild button is now `Сохранить все и пересобрать PDF`. Production backups before deploy: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-145505Z-render-preflight-before.bak` and `/opt/fairyteller-render/backups/fairyteller-render-pdf.20260709-145505Z-render-preflight-before.mjs`. Verified local `node --check`, targeted ESLint, `git diff --check`, `npm run build`, isolated production-renderer matrix on a copy of `ft_1783523896859_zg7py7` (`auto` and `balanced` pass; fixed `small/compact/regular/large` fail with specific block diagnostics), production `node --check`, matching deployed hashes, API restart/health, active renderer smoke on `/tmp` copy, and admin editor HTML for `ft_1783523896859_zg7py7`. The current production job was back to `done` with a successful balanced render at `2026-07-09T14:43:17Z`.
 
 - Deployed a Job API admin editor fix for story PDF font-size modes. The editor no longer shows the confusing separate `Выровнять шрифт и пересобрать PDF` submit button that forced `text.printLayout.storyFontMode="balanced"` and made manually selected `large`/`small` modes appear ineffective; the remaining rebuild button now saves the selected size mode, and the editor shows `Размер в последнем PDF` from `render.preflight.storyFont`. Production API backup before deploy: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-143102Z-story-font-mode-before.bak`. Verified production/local API and renderer sources matched before changing them, local `node --check server/fairyteller-api.mjs`, targeted ESLint, `git diff --check`, `npm run build`, production `node --check`, `fairyteller-api.service` restart/active state, local API `/healthz`, production editor HTML for `ft_1783523896859_zg7py7`, and synthetic production-renderer smoke where `small` recorded `9.5 pt` and `large` recorded `11 pt`.
 

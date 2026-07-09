@@ -1144,6 +1144,12 @@ function storyFontMode(fullText) {
   return STORY_FONT_MODE_CONFIGS.has(mode) ? mode : 'auto';
 }
 
+function formatPt(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size)) return '';
+  return Number.isInteger(size) ? String(size) : size.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
 function pptStoryTextBox(pageNumber, isLastTextPage = false) {
   if (isLastTextPage) return pptBox(29.69, 28.35, 327.52, 260);
   if (CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber)) {
@@ -1236,6 +1242,25 @@ function resolvePptStoryFontControl(fullText, fonts, textPages) {
     return { mode, fixedSize: fittedSizes.length ? Math.min(...fittedSizes) : null };
   }
   return { mode, fixedSize: null };
+}
+
+function storyTextOverflowMessage({ chapter, blockIndex, pageNumber, text, fonts, isLastTextPage, storyFontControl, textLayout }) {
+  const fitLayout = fitPptStoryTextLayout(text, fonts, pageNumber, isLastTextPage);
+  const selectedSize = Number.isFinite(storyFontControl?.fixedSize) ? storyFontControl.fixedSize : textLayout?.size;
+  const details = [
+    `chapter ${chapter.n}`,
+    `block ${blockIndex + 1}`,
+    `page ${pageNumber}`,
+    `mode ${storyFontControl?.mode || 'auto'}`,
+  ];
+  if (Number.isFinite(selectedSize)) details.push(`selected ${formatPt(selectedSize)} pt`);
+  if (!fitLayout.truncated && Number.isFinite(fitLayout.size)) {
+    details.push(`needs ${formatPt(fitLayout.size)} pt or smaller`);
+  }
+  const advice = fitLayout.truncated
+    ? 'Shorten this text block; it does not fit even at the renderer minimum.'
+    : 'Use auto/balanced sizing, choose a smaller fixed size, or shorten this text block.';
+  return `Story text does not fit without truncation (${details.join(', ')}). ${advice}`;
 }
 
 function drawBookPaper(page, assets, variant = 'image8') {
@@ -1454,7 +1479,16 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       const isLastTextPage = chapterIndex === chapters.length && blockIndex === blocks.length - 1;
       const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1, isLastTextPage, storyFontControl);
       if (textLayout.truncated) {
-        throw new Error(`Text block does not fit on page without truncation: chapter ${chapter.n}`);
+        throw new Error(storyTextOverflowMessage({
+          chapter,
+          blockIndex,
+          pageNumber: pdf.getPageCount(),
+          text: block,
+          fonts,
+          isLastTextPage,
+          storyFontControl,
+          textLayout,
+        }));
       }
     }
   }
@@ -1618,4 +1652,9 @@ async function main() {
   console.log(JSON.stringify({ jobId: JOB_ID, render }, null, 2));
 }
 
-await main();
+try {
+  await main();
+} catch (error) {
+  console.error(error?.message || 'PDF render failed');
+  process.exitCode = 1;
+}

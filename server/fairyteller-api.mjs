@@ -2556,10 +2556,25 @@ async function getAdminBookText(jobId) {
   if (!fullText?.text || !Array.isArray(fullText.text.chapters)) {
     throw httpError(404, 'Full text artifact not found');
   }
-  const [status, files] = await Promise.all([
+  let [status, files, renderArtifact] = await Promise.all([
     readJsonFile(join(dir, 'status.json'), {}),
     getJobPdfFiles(jobId),
+    readJsonFile(join(dir, 'artifacts', 'render.json'), null),
   ]);
+  const render = status.artifacts?.render;
+  const previousReady = readyRenderSnapshot(renderArtifact?.render || renderArtifact);
+  if (render?.status && render.status !== 'ready' && !render.previousReady && previousReady) {
+    status = {
+      ...status,
+      artifacts: {
+        ...(status.artifacts || {}),
+        render: {
+          ...render,
+          previousReady,
+        },
+      },
+    };
+  }
   const images = await getAdminBookImages(jobId, status);
   return { dir, fullText, status, files, images };
 }
@@ -2619,6 +2634,23 @@ function renderStoryFontSummary(storyFont = null) {
   return [storyFontModeLabel(storyFont.mode), size ? `${size} pt` : ''].filter(Boolean).join(' · ');
 }
 
+function readyRenderSnapshot(render = null) {
+  if (!render || typeof render !== 'object') return null;
+  const source = render.status === 'ready' ? render : render.previousReady;
+  if (!source || typeof source !== 'object') return null;
+  return {
+    status: 'ready',
+    generatedAt: source.generatedAt || '',
+    preflight: source.preflight || null,
+    files: source.files || null,
+  };
+}
+
+function renderFailureMessage(render = null) {
+  if (render?.status !== 'failed') return '';
+  return render.message || 'PDF не удалось пересобрать.';
+}
+
 function renderBookImageEditor(images = []) {
   const rows = images.map((image) => `
     <div class="image-card">
@@ -2652,9 +2684,14 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const render = status.artifacts?.render || {};
   const notice = options.notice || '';
   const error = options.error || '';
-  const lastRender = render.generatedAt || render.requestedAt || status.updatedAt || '';
+  const previousReadyRender = readyRenderSnapshot(render);
+  const lastRender = previousReadyRender?.generatedAt || '';
   const storyFontMode = currentStoryFontMode(fullText);
-  const renderedStoryFont = renderStoryFontSummary(render.preflight?.storyFont);
+  const renderedStoryFont = renderStoryFontSummary(previousReadyRender?.preflight?.storyFont);
+  const renderError = renderFailureMessage(render)
+    || (status.status === 'failed' && status.stage === 'render'
+      ? status.error?.message || status.message || 'PDF не удалось пересобрать.'
+      : '');
 
   const chapterFields = chapters.map((chapter) => {
     const chapterNumber = Number(chapter.n);
@@ -2726,6 +2763,8 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     .notice, .error { max-width: 1180px; margin: 0 auto 16px; padding: 12px 14px; border-radius: 8px; font-weight: 700; }
     .notice { color: #174d43; background: #dff7ec; border: 1px solid #a7e3c5; }
     .error { color: #8f1d1d; background: #fee2e2; border: 1px solid #fecaca; }
+    .render-warning { margin: 14px 0 0; padding: 12px 14px; border: 1px solid #f4b4b4; border-radius: 8px; background: #fff1f1; color: #7f1d1d; font-weight: 700; line-height: 1.45; }
+    .render-warning strong { display: block; margin-bottom: 4px; color: #7f1d1d; }
     @media (max-width: 760px) {
       body { padding: 18px; }
       header { display: block; }
@@ -2784,8 +2823,9 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
           <select id="storyFontMode" name="storyFontMode">${renderStoryFontModeOptions(storyFontMode)}</select>
         </div>
       </div>
-      <p>Последняя сборка PDF: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
-      ${renderedStoryFont ? `<p>Размер в последнем PDF: ${escapeHtml(renderedStoryFont)}</p>` : ''}
+      ${renderError ? `<div class="render-warning"><strong>Последняя пересборка PDF не удалась.</strong>${escapeHtml(renderError)}${lastRender ? `<br>Ссылки ниже ведут к предыдущему успешному PDF от ${escapeHtml(formatDateTime(lastRender) || lastRender)}.` : ''}</div>` : ''}
+      <p>Последняя успешная сборка PDF: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
+      ${renderedStoryFont ? `<p>Размер в последнем успешном PDF: ${escapeHtml(renderedStoryFont)}</p>` : ''}
       <div class="file-links">
         ${renderFileLink(files.preview, 'preview')}
         ${renderFileLink(files.book, 'print')}
@@ -2796,7 +2836,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     ${chapterFields}
     <div class="button-row">
       <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
-      <button type="submit" name="action" value="save_render">Сохранить выбранный размер и пересобрать PDF</button>
+      <button type="submit" name="action" value="save_render">Сохранить все и пересобрать PDF</button>
     </div>
   </form>
 </body>
@@ -5717,12 +5757,20 @@ async function renderJobPdf(jobId, options = {}) {
   if (!existsSync(dir)) {
     throw httpError(404, 'Job not found');
   }
+  const statusBeforeRender = await readJsonFile(join(dir, 'status.json'), {});
+  let previousReady = readyRenderSnapshot(statusBeforeRender?.artifacts?.render);
+  if (!previousReady) {
+    const renderArtifact = await readJsonFile(join(dir, 'artifacts', 'render.json'), null);
+    previousReady = readyRenderSnapshot(renderArtifact?.render || renderArtifact);
+  }
+  const requestedAt = nowIso();
 
   await updateJobStatus(jobId, {
     artifacts: {
       render: {
         status: 'generating',
-        requestedAt: nowIso(),
+        requestedAt,
+        previousReady,
       },
     },
   });
@@ -5787,6 +5835,7 @@ async function renderJobPdf(jobId, options = {}) {
           status: 'failed',
           failedAt: nowIso(),
           message,
+          previousReady,
         },
       },
       error: { message },
