@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260708-daily-email-limit-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260709-limit-copy-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -267,6 +267,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-09
+
+- Deployed a copy update for the daily generation limit screen. The frontend now says `Бесплатный лимит на сегодня исчерпан`, shows `Вы уже создали 3 сказки сегодня`, explains that the customer can choose a finished story and оформить ее в книгу, adds the manual-help paragraph for text/illustrations/story details, changes the payment CTA to `ОФОРМИТЬ КНИГУ`, and updates the support footer to `Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.` The Job API payload and noindex `my-books` HTML page use the same support wording, and the API clamps `used` to the free limit so legacy/high-count emails do not display values like `8/3`. Frontend release: `/var/www/fairyteller/releases/20260709-limit-copy-codex`; API backup: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260709-001952Z-limit-copy-before.bak`. Verified `node --check server/fairyteller-api.mjs`, targeted ESLint for `server/fairyteller-api.mjs` and `GenerationLimitNotice`, `npm run build`, `git diff --check`, API health, nginx reload, production `/` and `/create` `200`, and active JS contains the new limit copy and `ОФОРМИТЬ КНИГУ`.
 
 ### 2026-07-08
 

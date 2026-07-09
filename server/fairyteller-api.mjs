@@ -45,7 +45,7 @@ const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
   Number(process.env.FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
 );
 const CUSTOMER_BOOKS_TOKEN_SECRET = process.env.FAIRYTELLER_CUSTOMER_BOOKS_SECRET || API_TOKEN || 'fairyteller-local-customer-books';
-const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь? Свяжитесь с нами через Telegram (t.me/nikita0shch), форму на сайте или books@fairyteller.ru.';
+const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
@@ -536,9 +536,9 @@ async function buildGenerationLimitPayload(email, recentJobs) {
   return {
     limitExceeded: true,
     code: 'daily_limit_exceeded',
-    message: `Сегодня уже использован лимит бесплатных генераций: ${DAILY_FREE_GENERATION_LIMIT}. Посмотрите свои готовые истории или оплатите одну из них.`,
+    message: 'Сегодня вы использовали все бесплатные попытки. Посмотрите готовые сказки, выберите любимую и оформите ее в книгу.',
     limit: DAILY_FREE_GENERATION_LIMIT,
-    used: recentJobs.length,
+    used: Math.min(recentJobs.length, DAILY_FREE_GENERATION_LIMIT),
     resetAt: generationLimitResetAt(recentJobs),
     booksUrl: booksPath,
     booksAbsoluteUrl: publicUrl(booksPath),
@@ -2285,7 +2285,7 @@ function renderCustomerBooksPage(email, jobs) {
     </div>
     <div class="actions">
       <a class="button secondary" href="${escapeHtml(job.bookUrl)}">Открыть сказку</a>
-      ${job.paid ? '<span class="paid">Оплачено</span>' : `<a class="button" href="${escapeHtml(job.payUrl)}">Оплатить</a>`}
+      ${job.paid ? '<span class="paid">Оплачено</span>' : `<a class="button" href="${escapeHtml(job.payUrl)}">Оформить книгу</a>`}
     </div>
   </article>`).join('');
 
@@ -2342,7 +2342,7 @@ function renderCustomerBooksPage(email, jobs) {
       ${rows || '<div class="empty">Для этой почты пока нет созданных сказок.</div>'}
     </section>
     <footer>
-      Нужна помощь? Свяжитесь с нами через <a href="${escapeHtml(support.telegramUrl)}">Telegram (t.me/nikita0shch)</a>, <a href="${escapeHtml(support.siteUrl)}">форму на сайте</a> или <a href="mailto:${escapeHtml(support.email)}">${escapeHtml(support.email)}</a>.
+      Нужна помощь с текстом или оформлением? Напишите нам в <a href="${escapeHtml(support.telegramUrl)}">Telegram</a>, через <a href="${escapeHtml(support.siteUrl)}">форму на сайте</a> или на <a href="mailto:${escapeHtml(support.email)}">${escapeHtml(support.email)}</a>.
     </footer>
   </main>
 </body>
