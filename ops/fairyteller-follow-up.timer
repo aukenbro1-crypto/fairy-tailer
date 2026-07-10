@@ -1,0 +1,10 @@
+[Unit]
+Description=Run FairyTeller follow-up email processor every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=fairyteller-follow-up.service
+
+[Install]
+WantedBy=timers.target

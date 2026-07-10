@@ -70,6 +70,9 @@ The API never stores notification secrets in the repo. Configure them on the ser
 - `FAIRYTELLER_MAIL_REPLY_TO` is optional.
 - `FAIRYTELLER_PUBLIC_BASE_URL` defaults to `https://fairyteller.ru` and is used to build public links in emails.
 - `FAIRYTELLER_SEND_RENDER_READY_EMAIL=1` restores the old render-ready email behavior. Leave it unset for the paywall flow.
+- The follow-up processor is run by `fairyteller-follow-up.timer` every 15 minutes. It waits three hours from the customer's latest generation, sends at most one follow-up per email in 24 hours, includes up to three finished stories, and skips the email when that customer has a paid book within the preceding 24 hours. It stores only hashed-email follow-up audit/state records under `${FAIRYTELLER_DATA_DIR}/follow-up/`.
+- Follow-up tuning is optional: `FAIRYTELLER_FOLLOW_UP_DELAY_MS` (default 3h), `FAIRYTELLER_FOLLOW_UP_COOLDOWN_MS` (default 24h), `FAIRYTELLER_FOLLOW_UP_PAYMENT_BLOCK_MS` (default 24h), `FAIRYTELLER_FOLLOW_UP_MAX_BOOKS` (default/max 3), and `FAIRYTELLER_FOLLOW_UP_SEND_INTERVAL_MS` (default 750 ms between accepted sends). Run it manually with `node server/fairyteller-api.mjs --run-follow-ups` after loading the same environment as the API service.
+- Follow-up emails include a signed one-click unsubscribe link. It suppresses only follow-up reminders, not payment or access emails.
 - `FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT` defaults to `3` and limits free create requests per normalized email.
 - `FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS` defaults to 24 hours.
 - `CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES` in `server/fairyteller-api.mjs` contains hardcoded per-email exceptions. Current exception: `aleks27134@gmail.com` is limited to 1 free generation per rolling 3-day window.

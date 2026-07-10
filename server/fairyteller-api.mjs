@@ -53,6 +53,12 @@ const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
   Number(process.env.FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
 );
 const CUSTOMER_BOOKS_TOKEN_SECRET = process.env.FAIRYTELLER_CUSTOMER_BOOKS_SECRET || API_TOKEN || 'fairyteller-local-customer-books';
+const FOLLOW_UP_DELAY_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_FOLLOW_UP_DELAY_MS || 3 * 60 * 60 * 1000) || 3 * 60 * 60 * 1000);
+const FOLLOW_UP_COOLDOWN_MS = Math.max(60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_COOLDOWN_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
+const FOLLOW_UP_PAYMENT_BLOCK_MS = Math.max(60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_PAYMENT_BLOCK_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
+const FOLLOW_UP_MAX_BOOKS = Math.max(1, Math.min(3, Number(process.env.FAIRYTELLER_FOLLOW_UP_MAX_BOOKS || 3) || 3));
+const FOLLOW_UP_SEND_INTERVAL_MS = Math.max(250, Number(process.env.FAIRYTELLER_FOLLOW_UP_SEND_INTERVAL_MS || 750) || 750);
+const FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS = Math.max(24 * 60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS || 365 * 24 * 60 * 60 * 1000) || 365 * 24 * 60 * 60 * 1000);
 const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
@@ -472,6 +478,85 @@ function verifyCustomerBooksToken(token) {
 function customerBooksPath(email) {
   const token = createCustomerBooksToken(email);
   return token ? `/api/fairyteller/my-books/${encodeURIComponent(token)}` : '';
+}
+
+function followUpRootDir() {
+  return resolve(DATA_DIR, 'follow-up');
+}
+
+function followUpEmailHash(email) {
+  return createHash('sha256').update(normalizeEmail(email)).digest('hex');
+}
+
+function followUpStatePath(email) {
+  return join(followUpRootDir(), 'recipients', `${followUpEmailHash(email)}.json`);
+}
+
+function followUpAuditPath() {
+  return join(followUpRootDir(), 'sends.jsonl');
+}
+
+async function readFollowUpState(email) {
+  return await readJsonFile(followUpStatePath(email), {});
+}
+
+async function writeFollowUpState(email, patch) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+  const path = followUpStatePath(normalizedEmail);
+  const current = await readJsonFile(path, {});
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(path, {
+    ...current,
+    ...patch,
+    emailHash: followUpEmailHash(normalizedEmail),
+    updatedAt: nowIso(),
+  });
+}
+
+async function appendFollowUpAudit(email, event) {
+  await mkdir(followUpRootDir(), { recursive: true, mode: 0o700 });
+  await appendFile(followUpAuditPath(), `${JSON.stringify({
+    at: nowIso(),
+    emailHash: followUpEmailHash(email),
+    ...event,
+  })}\n`, { mode: 0o600 });
+}
+
+function createFollowUpUnsubscribeToken(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return '';
+  const payload = base64UrlEncode(JSON.stringify({
+    purpose: 'follow-up-unsubscribe',
+    email: normalizedEmail,
+    iat: Date.now(),
+    exp: Date.now() + FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS,
+  }));
+  return `${payload}.${signCustomerBooksPayload(payload)}`;
+}
+
+function verifyFollowUpUnsubscribeToken(token) {
+  const [encodedPayload, signature] = String(token || '').split('.');
+  if (!encodedPayload || !signature || !safeEqual(signCustomerBooksPayload(encodedPayload), signature)) {
+    throw httpError(403, 'Invalid unsubscribe link');
+  }
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw httpError(403, 'Invalid unsubscribe link');
+  }
+  if (payload?.purpose !== 'follow-up-unsubscribe' || Number(payload.exp) <= Date.now()) {
+    throw httpError(403, 'Invalid unsubscribe link');
+  }
+  const email = normalizeEmail(payload.email);
+  if (!email) throw httpError(403, 'Invalid unsubscribe link');
+  return { email };
+}
+
+async function unsubscribeFollowUp(email) {
+  await writeFollowUpState(email, { unsubscribedAt: nowIso() });
+  await appendFollowUpAudit(email, { type: 'follow_up.unsubscribed' });
 }
 
 function customerJobBookUrl(jobId) {
@@ -4693,6 +4778,88 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   return { to: email, subject, text, html };
 }
 
+function formatBookPrice() {
+  const amount = Number.parseFloat(YOOKASSA_AMOUNT_RUB);
+  if (!Number.isFinite(amount)) return '3 500 ₽';
+  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(amount)} ₽`;
+}
+
+function renderFollowUpStoryCard(story) {
+  const price = formatBookPrice();
+  return `<tr>
+            <td style="padding:0 28px 18px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #000000; background:#ffffff;">
+                <tr><td style="padding:18px 18px 8px; font-family:Arial, Helvetica, sans-serif; font-size:18px; line-height:25px; font-weight:900; color:#000000;">«${escapeHtml(story.title)}»</td></tr>
+                <tr><td style="padding:6px 18px 18px;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+                    <td align="center" style="padding:5px;">${renderEmailButton('Открыть книгу', story.bookUrl, { background: '#ffffff', color: '#000000', border: '#000000', padding: '13px 17px' })}</td>
+                    <td align="center" style="padding:5px;">${renderEmailButton(`Оформить за ${price}`, story.payUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '13px 17px' })}</td>
+                  </tr></table>
+                </td></tr>
+              </table>
+            </td>
+          </tr>`;
+}
+
+function followUpEmailPayload(email, stories) {
+  const multiple = stories.length > 1;
+  const price = formatBookPrice();
+  const subject = 'Остался один шаг — книга в подарок готова к печати';
+  const unsubscribeToken = createFollowUpUnsubscribeToken(email);
+  const unsubscribeUrl = `${PUBLIC_BASE_URL}/api/fairyteller/follow-up/unsubscribe/${encodeURIComponent(unsubscribeToken)}`;
+  const telegramUrl = 'https://t.me/nikita0shch';
+  const siteUrl = PUBLIC_BASE_URL;
+  const cards = stories.map(renderFollowUpStoryCard).join('');
+  const plainCards = stories.flatMap((story) => [
+    `«${story.title}»`,
+    `Открыть книгу: ${story.bookUrl}`,
+    `Оформить за ${price}: ${story.payUrl}`,
+    '',
+  ]);
+  const text = [
+    'Здравствуйте!',
+    '',
+    multiple
+      ? 'Недавно вы создали на Fairyteller.ru несколько уникальных историй. Каждую из них можно превратить в настоящую печатную книгу с красочными иллюстрациями.'
+      : `Недавно вы создали уникальную историю «${stories[0].title}» на Fairyteller.ru, но ещё не оформили печатную книгу.`,
+    '',
+    multiple ? 'Выберите сказку, которую хотите заказать:' : 'До книги с красочными иллюстрациями остался один шаг. Оформите заказ сегодня — завтра история будет напечатана, а послезавтра мы бесплатно отправим её в удобный пункт выдачи.',
+    '',
+    ...plainCards,
+    multiple ? 'Оформите заказ сегодня — завтра выбранная история будет напечатана, а послезавтра мы бесплатно отправим её в удобный пункт выдачи.' : '',
+    '',
+    `Возникли вопросы? Хотите изменить иллюстрации или сюжет, уточнить срок доставки? Просто ответьте на это письмо, напишите нам в Telegram (${telegramUrl}) или на сайте (${siteUrl}) — мы поможем сделать подарок идеальным.`,
+    '',
+    `Или создайте новую историю всего за 3 минуты на ${siteUrl}.`,
+    '',
+    'С заботой,',
+    'команда FairyTeller',
+    '',
+    'Вы получили это письмо, потому что оставили email при создании персональной сказки на fairyteller.ru.',
+    `Отписаться от таких напоминаний: ${unsubscribeUrl}`,
+  ].filter((line, index, lines) => line || (index > 0 && lines[index - 1] !== '')).join('\n');
+  const intro = multiple
+    ? 'Недавно вы создали на Fairyteller.ru несколько уникальных историй. Каждую из них можно превратить в настоящую печатную книгу с красочными иллюстрациями.'
+    : `Недавно вы создали уникальную историю «${escapeHtml(stories[0].title)}» на Fairyteller.ru, но ещё не оформили печатную книгу.`;
+  const lead = multiple
+    ? 'Выберите сказку, которую хотите заказать:'
+    : 'До книги с красочными иллюстрациями остался один шаг. Оформите заказ сегодня — завтра история будет напечатана, а послезавтра мы бесплатно отправим её в удобный пункт выдачи.';
+  const afterCards = multiple
+    ? '<p style="margin:0 0 22px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Оформите заказ сегодня — завтра выбранная история будет напечатана, а послезавтра мы бесплатно отправим её в удобный пункт выдачи.</p>'
+    : '';
+  const html = `<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0; padding:0; background:#f5f5f5;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:28px 12px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:1px solid #000000;">
+<tr><td style="padding:24px 28px; background:#fae7e1; border-bottom:1px solid #000000; text-align:center;"><div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; letter-spacing:.18em; text-transform:uppercase; font-weight:800; color:#5e6264;">FairyTeller</div><h1 style="margin:10px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:29px; line-height:35px; font-weight:900; color:#000000;">Остался один шаг</h1><p style="margin:8px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#5e6264;">Книга в подарок готова к печати</p></td></tr>
+<tr><td style="padding:28px 28px 12px;"><p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Здравствуйте!</p><p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">${intro}</p><p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">${lead}</p></td></tr>
+${cards}
+<tr><td style="padding:0 28px 8px;">${afterCards}<p style="margin:0 0 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Возникли вопросы? Хотите изменить иллюстрации или сюжет, уточнить срок доставки? Просто ответьте на это письмо, напишите нам в <a href="${escapeHtml(telegramUrl)}" style="color:#000000; font-weight:800;">Telegram</a> или на <a href="${escapeHtml(siteUrl)}" style="color:#000000; font-weight:800;">сайте</a> — мы поможем сделать подарок идеальным.</p><p style="margin:0 0 24px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Или создайте новую историю всего за 3 минуты на <a href="${escapeHtml(siteUrl)}" style="color:#000000; font-weight:800;">Fairyteller.ru</a>.</p></td></tr>
+<tr><td style="padding:20px 28px; background:#000000;"><p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:23px; color:#ffffff;">С заботой,<br>команда FairyTeller</p><p style="margin:16px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#ffffffaa;">Вы получили это письмо, потому что оставили email при создании персональной сказки на fairyteller.ru.<br><a href="${escapeHtml(unsubscribeUrl)}" style="color:#ffffff;">Отписаться от таких напоминаний</a></p></td></tr>
+</table></td></tr></table></body></html>`;
+  return { to: email, subject, text, html };
+}
+
 async function sendCustomerEmail(payload) {
   if (!payload) return { status: 'skipped', reason: 'missing_email' };
   if (!RESEND_API_KEY || !MAIL_FROM) {
@@ -4728,6 +4895,130 @@ async function sendCustomerEmail(payload) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function listFollowUpCandidateGroups() {
+  const root = resolve(DATA_DIR, 'jobs');
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+  const rows = await Promise.all(entries.filter((entry) => entry.isDirectory()).map(async (entry) => {
+    let dir;
+    try { dir = jobDir(entry.name); } catch { return null; }
+    const [status, orderEnvelope, payment] = await Promise.all([
+      readJsonFile(join(dir, 'status.json'), {}),
+      readJsonFile(join(dir, 'order.json'), {}),
+      readPayment(entry.name).catch(() => ({})),
+    ]);
+    const email = normalizeEmail((orderEnvelope.order || orderEnvelope || {}).email);
+    const createdAt = status.createdAt || orderEnvelope.receivedAt || '';
+    const createdMs = Date.parse(createdAt);
+    if (!email || !Number.isFinite(createdMs)) return null;
+    return { jobId: entry.name, dir, status, payment, email, createdAt, createdMs };
+  }));
+  const groups = new Map();
+  for (const row of rows.filter(Boolean)) {
+    const group = groups.get(row.email) || { email: row.email, rows: [] };
+    group.rows.push(row);
+    groups.set(row.email, group);
+  }
+  return [...groups.values()];
+}
+
+async function withFollowUpLock(email, task) {
+  const lockPath = join(followUpRootDir(), 'locks', followUpEmailHash(email));
+  await mkdir(dirname(lockPath), { recursive: true, mode: 0o700 });
+  try {
+    await mkdir(lockPath, { mode: 0o700 });
+  } catch (error) {
+    if (error.code === 'EEXIST') return { skipped: 'locked' };
+    throw error;
+  }
+  try {
+    return await task();
+  } finally {
+    await rm(lockPath, { recursive: true, force: true });
+  }
+}
+
+function followUpPaidRecently(rows, nowMs) {
+  return rows.some((row) => {
+    if (row.payment?.status !== 'paid') return false;
+    const paidAt = Date.parse(row.payment.paidAt || row.payment.updatedAt || '');
+    return Number.isFinite(paidAt) && paidAt >= nowMs - FOLLOW_UP_PAYMENT_BLOCK_MS;
+  });
+}
+
+async function processFollowUpGroup(group, nowMs = Date.now()) {
+  return await withFollowUpLock(group.email, async () => {
+    const state = await readFollowUpState(group.email);
+    if (state.unsubscribedAt) return { skipped: 'unsubscribed' };
+    if (state.lastSentAt && nowMs - Date.parse(state.lastSentAt) < FOLLOW_UP_COOLDOWN_MS) return { skipped: 'cooldown' };
+    if (followUpPaidRecently(group.rows, nowMs)) {
+      await appendFollowUpAudit(group.email, { type: 'follow_up.skipped', reason: 'paid_within_block_window' });
+      return { skipped: 'paid' };
+    }
+    const newestCreatedMs = Math.max(...group.rows.map((row) => row.createdMs));
+    if (nowMs < newestCreatedMs + FOLLOW_UP_DELAY_MS) return { skipped: 'not_due' };
+    const stories = await Promise.all(group.rows
+      .filter((row) => row.status.status === 'done' || row.status.stage === 'complete')
+      .sort((left, right) => right.createdMs - left.createdMs)
+      .slice(0, FOLLOW_UP_MAX_BOOKS)
+      .map(async (row) => ({
+        jobId: row.jobId,
+        title: await bookTitle(row.dir, row.status).catch(() => '') || row.status.preview?.title || 'Персональная сказка',
+        bookUrl: `${PUBLIC_BASE_URL}${customerJobBookUrl(row.jobId)}`,
+        payUrl: `${PUBLIC_BASE_URL}${customerJobPayUrl(row.jobId, row.status)}`,
+      })));
+    if (!stories.length) {
+      await appendFollowUpAudit(group.email, { type: 'follow_up.skipped', reason: 'no_ready_stories' });
+      return { skipped: 'no_ready_stories' };
+    }
+    // Check the payment state again immediately before delivery.
+    const freshRows = await listFollowUpCandidateGroups();
+    const freshGroup = freshRows.find((candidate) => candidate.email === group.email);
+    if (!freshGroup || followUpPaidRecently(freshGroup.rows, Date.now())) {
+      await appendFollowUpAudit(group.email, { type: 'follow_up.skipped', reason: 'paid_before_delivery' });
+      return { skipped: 'paid_before_delivery' };
+    }
+    const payload = followUpEmailPayload(group.email, stories);
+    const delivery = { attemptedAt: nowIso(), ...(await sendCustomerEmail(payload)) };
+    await appendFollowUpAudit(group.email, {
+      type: 'follow_up.delivery',
+      status: delivery.status,
+      reason: delivery.reason || null,
+      provider: delivery.provider || null,
+      providerId: delivery.id || null,
+      error: delivery.error || null,
+      jobIds: stories.map((story) => story.jobId),
+    });
+    if (delivery.status === 'sent') {
+      await writeFollowUpState(group.email, { lastSentAt: delivery.attemptedAt, lastJobIds: stories.map((story) => story.jobId) });
+    }
+    return delivery;
+  });
+}
+
+async function runFollowUpProcessor() {
+  const groups = await listFollowUpCandidateGroups();
+  const results = [];
+  for (const group of groups) {
+    const result = await processFollowUpGroup(group);
+    results.push(result);
+    if (result?.status === 'sent' && FOLLOW_UP_SEND_INTERVAL_MS) {
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, FOLLOW_UP_SEND_INTERVAL_MS));
+    }
+  }
+  return {
+    processed: groups.length,
+    sent: results.filter((result) => result?.status === 'sent').length,
+    skipped: results.filter((result) => result?.skipped).length,
+    failed: results.filter((result) => result?.status === 'failed').length,
+  };
 }
 
 async function deliverCustomerCompletionEmail(jobId, status) {
@@ -6036,6 +6327,14 @@ async function route(req, res) {
     return;
   }
 
+  const followUpUnsubscribeMatch = url.pathname.match(/^\/api\/fairyteller\/follow-up\/unsubscribe\/([^/]+)$/);
+  if (method === 'GET' && followUpUnsubscribeMatch) {
+    const { email } = verifyFollowUpUnsubscribeToken(decodeURIComponent(followUpUnsubscribeMatch[1]));
+    await unsubscribeFollowUp(email);
+    sendHtml(req, res, 200, `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Готово — FairyTeller</title></head><body style="margin:0; padding:32px 16px; background:#f5f5f5; font-family:Arial,Helvetica,sans-serif;"><main style="max-width:560px; margin:0 auto; padding:32px; background:#fff; border:1px solid #000;"><p style="margin:0 0 12px; font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#5e6264;">FairyTeller</p><h1 style="margin:0 0 16px; font-size:28px;">Готово</h1><p style="margin:0; font-size:16px; line-height:1.6;">Мы больше не будем отправлять вам напоминания о печатных книгах. Сервисные письма об оплаченных заказах останутся включены.</p></main></body></html>`);
+    return;
+  }
+
   const storageShareFileMatch = url.pathname.match(/^\/api\/fairyteller\/books\/storage\/share\/(sf_[a-zA-Z0-9_-]{8,80})\/([a-f0-9]{32,80})\/files\/(.+)$/);
   if (method === 'GET' && storageShareFileMatch) {
     await sendStorageFile(req, res, storageShareFileMatch[1], storageShareFileMatch[3], {
@@ -6424,6 +6723,12 @@ async function route(req, res) {
 
 async function main() {
   await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
+
+  if (process.argv.includes('--run-follow-ups')) {
+    const result = await runFollowUpProcessor();
+    console.log(`fairyteller follow-up: processed=${result.processed} sent=${result.sent} skipped=${result.skipped} failed=${result.failed}`);
+    return;
+  }
 
   const server = createServer(async (req, res) => {
     try {

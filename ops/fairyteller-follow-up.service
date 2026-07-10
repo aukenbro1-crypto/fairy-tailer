@@ -1,0 +1,11 @@
+[Unit]
+Description=FairyTeller follow-up email processor
+After=network-online.target fairyteller-api.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/fairyteller/api.env
+WorkingDirectory=/opt/fairyteller-api
+ExecStart=/usr/bin/node /opt/fairyteller-api/fairyteller-api.mjs --run-follow-ups
