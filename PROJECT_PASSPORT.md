@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 18:45 UTC
+Last updated: 2026-07-10 18:55 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-11
+
+- Fixed a production `fairyteller_visuals` regression introduced by visual stage 1: `normalizedWorldVisual` was evaluated before the local `bible` declaration in `Build Chapter 1 Image Prompt`, causing `ReferenceError: Cannot access 'bible' before initialization` immediately after hero-card generation. Jobs `ft_1783708406300_p6pg38` and `ft_1783708827964_u2w42f` exposed the issue; the first was also interrupted by the deployment restart, while the second full-visual workflow later failed waiting for the missing `visuals.json`. Moved normalization after the `bible` declaration and added an explicit declaration-order execution guard in validation. The two existing test jobs were intentionally left untouched for manual replacement tests. Production backup: `/root/fairyteller-n8n-exports/20260710-184600Z-visual-tdz-before`; import: `/root/fairyteller-n8n-imports/20260710-184600Z-visual-tdz`; after-export: `/root/fairyteller-n8n-exports/20260710-184600Z-visual-tdz-after`. Verified active published export order and n8n health after restart.
 
 - Made all five story-world visual directions rendering-technique neutral so the selected illustration style is the only owner of medium and surface treatment. Removed world-level cues such as `storybook realism`, `textured painterly surfaces`, `soft bokeh`, `3D/collage`, and cinematic-render wording while preserving palette, lighting, environment, spatial composition, readable objects, movement, mood, and genre motifs for romantic, adventure, magical-school, fantasy, and cyberpunk stories. This prevents `toonflat`, `minibrick`, `watercolor`, `claymotion`, `yarncraft`, `naive`, and `celcinema` from competing with an unrelated technique embedded in the genre bible. Production backup: `/root/fairyteller-n8n-exports/20260710-183502Z-world-visual-before`; import: `/root/fairyteller-n8n-imports/20260710-183502Z-world-visual`; after-export: `/root/fairyteller-n8n-exports/20260710-183502Z-world-visual-after`. Verified production/local parity before editing, workflow JSON and all Code-node syntax, exactly five technique-neutral world visual profiles, `git diff --check`, active published export, and n8n health after restart.
 
