@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 18:35 UTC
+Last updated: 2026-07-10 18:45 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-11
+
+- Made all five story-world visual directions rendering-technique neutral so the selected illustration style is the only owner of medium and surface treatment. Removed world-level cues such as `storybook realism`, `textured painterly surfaces`, `soft bokeh`, `3D/collage`, and cinematic-render wording while preserving palette, lighting, environment, spatial composition, readable objects, movement, mood, and genre motifs for romantic, adventure, magical-school, fantasy, and cyberpunk stories. This prevents `toonflat`, `minibrick`, `watercolor`, `claymotion`, `yarncraft`, `naive`, and `celcinema` from competing with an unrelated technique embedded in the genre bible. Production backup: `/root/fairyteller-n8n-exports/20260710-183502Z-world-visual-before`; import: `/root/fairyteller-n8n-imports/20260710-183502Z-world-visual`; after-export: `/root/fairyteller-n8n-exports/20260710-183502Z-world-visual-after`. Verified production/local parity before editing, workflow JSON and all Code-node syntax, exactly five technique-neutral world visual profiles, `git diff --check`, active published export, and n8n health after restart.
 
 - Deployed visual-generation quality stage 1 after reviewing job `ft_1783700508293_yogcai`, where chapters 2-3 fell through to `safe_environment_no_references`, replaced the two adult heroes with generic children, and the requested `photorealistic` style conflicted with the fantasy bible's painterly language. Hero reference cards now use a consistent neutral waist-up identity composition, even light, plain gray background, source-photo clothing cues, and explicit bans on invented occupation/religious/story props. Photorealistic jobs sanitize painterly/watercolor/storybook world-language conflicts and add a camera-like realism lock across chapter 1, chapters 2-5, and cover prompts. Chapter 4 uses a calm discovery/decision tableau before safety filters rather than an aggressive confrontation. Chapter and cover generation now use the primary referenced request plus one calm referenced retry; the removed third near-duplicate retry reduces latency. If both referenced attempts fail, jobs with identity references generate an environment/object/animal-only image with no people or humanoid replacements instead of accepting random substitute heroes. Production backup: `/root/fairyteller-n8n-exports/20260710-182416Z-visual-stage1-before`; import: `/root/fairyteller-n8n-imports/20260710-182416Z-visual-stage1`; after-export: `/root/fairyteller-n8n-exports/20260710-182416Z-visual-stage1-after`. Verified local/production workflow parity before editing, JSON and all Code-node syntax, targeted executable prompt tests for style locking, chapter-4 staging and people-free fallback, `git diff --check`, active published exports for `fairyteller_visuals`, `fairyteller_full_visuals`, and `fairyteller_cover`, and n8n health after restart. No paid synthetic generation was started.
 
