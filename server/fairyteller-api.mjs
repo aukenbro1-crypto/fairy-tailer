@@ -54,6 +54,7 @@ const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
 );
 const CUSTOMER_BOOKS_TOKEN_SECRET = process.env.FAIRYTELLER_CUSTOMER_BOOKS_SECRET || API_TOKEN || 'fairyteller-local-customer-books';
 const FOLLOW_UP_DELAY_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_FOLLOW_UP_DELAY_MS || 3 * 60 * 60 * 1000) || 3 * 60 * 60 * 1000);
+const FOLLOW_UP_GENERATION_WINDOW_MS = Math.max(3 * 60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
 const FOLLOW_UP_COOLDOWN_MS = Math.max(60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_COOLDOWN_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
 const FOLLOW_UP_PAYMENT_BLOCK_MS = Math.max(60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_PAYMENT_BLOCK_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
 const FOLLOW_UP_MAX_BOOKS = Math.max(1, Math.min(3, Number(process.env.FAIRYTELLER_FOLLOW_UP_MAX_BOOKS || 3) || 3));
@@ -4957,7 +4958,7 @@ function followUpPaidRecently(rows, nowMs) {
 async function processFollowUpGroup(group, nowMs = Date.now()) {
   return await withFollowUpLock(group.email, async () => {
     const eligibleRows = Number.isFinite(FOLLOW_UP_ENABLED_AT_MS)
-      ? group.rows.filter((row) => row.createdMs >= FOLLOW_UP_ENABLED_AT_MS)
+      ? group.rows.filter((row) => row.createdMs >= FOLLOW_UP_ENABLED_AT_MS && row.createdMs >= nowMs - FOLLOW_UP_GENERATION_WINDOW_MS)
       : [];
     if (!eligibleRows.length) return { skipped: 'before_enabled_at' };
     const state = await readFollowUpState(group.email);
