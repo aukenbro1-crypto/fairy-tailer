@@ -75,10 +75,10 @@ const ADMIN_STORAGE_UPLOAD_MAX_BYTES = Math.max(ADMIN_STORAGE_FILE_MAX_BYTES, Nu
 const STORY_FONT_MODE_OPTIONS = [
   { value: 'auto', label: 'Авто по страницам' },
   { value: 'balanced', label: 'Выровнять автоматически' },
-  { value: 'large', label: 'Крупный · 11 pt' },
-  { value: 'regular', label: 'Обычный · 10.5 pt' },
-  { value: 'compact', label: 'Компактный · 10 pt' },
-  { value: 'small', label: 'Мелкий · 9.5 pt' },
+  { value: 'large', label: 'Крупный · до 11 pt' },
+  { value: 'regular', label: 'Обычный · до 10.5 pt' },
+  { value: 'compact', label: 'Компактный · до 10 pt' },
+  { value: 'small', label: 'Мелкий · до 9.5 pt' },
 ];
 const STORY_FONT_MODE_VALUES = new Set(STORY_FONT_MODE_OPTIONS.map((option) => option.value));
 const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
@@ -2630,8 +2630,17 @@ function formatStoryFontSize(value) {
 
 function renderStoryFontSummary(storyFont = null) {
   if (!storyFont?.mode) return '';
-  const size = formatStoryFontSize(storyFont.appliedSizePt);
-  return [storyFontModeLabel(storyFont.mode), size ? `${size} pt` : ''].filter(Boolean).join(' · ');
+  const requested = formatStoryFontSize(storyFont.requestedSizePt);
+  const applied = formatStoryFontSize(storyFont.appliedSizePt);
+  const minApplied = formatStoryFontSize(storyFont.minAppliedSizePt);
+  const maxApplied = formatStoryFontSize(storyFont.maxAppliedSizePt);
+  const range = minApplied && maxApplied && minApplied !== maxApplied
+    ? `${minApplied}-${maxApplied} pt`
+    : minApplied || maxApplied
+      ? `${minApplied || maxApplied} pt`
+      : '';
+  if (requested && range) return `${storyFontModeLabel(storyFont.mode)} · фактически ${range}`;
+  return [storyFontModeLabel(storyFont.mode), applied ? `${applied} pt` : range].filter(Boolean).join(' · ');
 }
 
 function readyRenderSnapshot(render = null) {
@@ -5844,19 +5853,16 @@ async function renderJobPdf(jobId, options = {}) {
   }
 }
 
-const ADMIN_RENDER_QUEUE = new Set();
+const ADMIN_RENDER_QUEUE = new Map();
 
-async function queueAdminRenderJob(jobId, eventType = 'job.adminRenderRequested') {
+async function runQueuedAdminRender(jobId) {
   const dir = jobDir(jobId);
-  const queuedAt = nowIso();
-  if (ADMIN_RENDER_QUEUE.has(jobId)) {
-    await appendEvent(dir, { type: 'job.adminRenderAlreadyQueued', requestedAt: queuedAt, eventType });
-    return false;
-  }
-  ADMIN_RENDER_QUEUE.add(jobId);
-  await appendEvent(dir, { type: eventType, queuedAt, background: true });
-  setImmediate(() => {
-    renderJobPdf(jobId, { skipCustomerEmail: true }).catch(async (error) => {
+  while (ADMIN_RENDER_QUEUE.has(jobId)) {
+    const state = ADMIN_RENDER_QUEUE.get(jobId);
+    state.pending = false;
+    try {
+      await renderJobPdf(jobId, { skipCustomerEmail: true });
+    } catch (error) {
       const message = error?.message || 'PDF render failed';
       console.error(`Background admin PDF render failed for ${jobId}: ${message}`);
       await appendEvent(dir, {
@@ -5866,8 +5872,35 @@ async function queueAdminRenderJob(jobId, eventType = 'job.adminRenderRequested'
       }).catch((appendError) => {
         console.error(`Failed to append admin render failure event for ${jobId}: ${appendError.message}`);
       });
-    }).finally(() => {
+    }
+    if (!state.pending) {
       ADMIN_RENDER_QUEUE.delete(jobId);
+      return;
+    }
+    await appendEvent(dir, {
+      type: 'job.adminRenderPendingStarted',
+      queuedAt: nowIso(),
+      eventType: state.eventType || 'job.adminRenderRequested',
+    });
+  }
+}
+
+async function queueAdminRenderJob(jobId, eventType = 'job.adminRenderRequested') {
+  const dir = jobDir(jobId);
+  const queuedAt = nowIso();
+  const current = ADMIN_RENDER_QUEUE.get(jobId);
+  if (current) {
+    current.pending = true;
+    current.eventType = eventType;
+    await appendEvent(dir, { type: 'job.adminRenderQueuedAgain', requestedAt: queuedAt, eventType });
+    return false;
+  }
+  ADMIN_RENDER_QUEUE.set(jobId, { pending: false, eventType });
+  await appendEvent(dir, { type: eventType, queuedAt, background: true });
+  setImmediate(() => {
+    runQueuedAdminRender(jobId).catch((error) => {
+      ADMIN_RENDER_QUEUE.delete(jobId);
+      console.error(`Admin render queue crashed for ${jobId}: ${error?.message || error}`);
     });
   });
   return true;

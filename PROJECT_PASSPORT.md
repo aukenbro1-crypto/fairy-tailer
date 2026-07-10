@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-09 14:55 UTC
+Last updated: 2026-07-10 04:04 UTC
 
 ## Project Context
 
@@ -267,6 +267,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-10
+
+- Deployed the follow-up systemic fix for admin PDF font-size changes. Manual story font options now mean a maximum size (`Крупный · до 11 pt`, `Обычный · до 10.5 pt`, `Компактный · до 10 pt`, `Мелкий · до 9.5 pt`) rather than an unshrinkable fixed size, so long pages safely autoshrink instead of failing preflight. The renderer records `requestedSizePt`, `minAppliedSizePt`, and `maxAppliedSizePt`; the admin editor displays the actual applied range. Admin render queueing now preserves a pending rerender request while a render is already running, so rapid repeated saves do not drop the latest font/text changes. Production backups before deploy: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260710-040401Z-font-cap-queue-before.bak` and `/opt/fairyteller-render/backups/fairyteller-render-pdf.20260710-040401Z-font-cap-queue-before.mjs`. Verified local `node --check`, targeted ESLint, `git diff --check`, `npm run build`, production `node --check`, matching deployed hashes, API restart/health, production editor HTML, and active renderer smoke on a `/tmp` copy of `ft_1783523896859_zg7py7` where `large` succeeded with `minAppliedSizePt=9` and `maxAppliedSizePt=11`.
 
 ### 2026-07-09
 

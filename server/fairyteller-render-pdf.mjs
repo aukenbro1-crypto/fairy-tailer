@@ -1158,9 +1158,9 @@ function pptStoryTextBox(pageNumber, isLastTextPage = false) {
   return TEXT_PAGE_BOX;
 }
 
-function pptStoryTextOptions(fonts, pageNumber, fixedSize = null) {
+function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null) {
   const hasFixedSize = Number.isFinite(fixedSize);
-  const size = hasFixedSize ? fixedSize : 11;
+  const size = hasFixedSize ? fixedSize : Number.isFinite(maxSize) ? maxSize : 11;
   const hasDropCap = CHAPTER_FIRST_TEXT_PAGES.includes(pageNumber);
   return {
     font: fonts.fontInterBody,
@@ -1233,15 +1233,15 @@ function resolvePptStoryFontControl(fullText, fonts, textPages) {
   const mode = storyFontMode(fullText);
   const config = STORY_FONT_MODE_CONFIGS.get(mode) || STORY_FONT_MODE_CONFIGS.get('auto');
   if (config.kind === 'fixed') {
-    return { mode, fixedSize: config.size };
+    return { mode, requestedSize: config.size, maxSize: config.size, fixedSize: null };
   }
   if (config.kind === 'balanced') {
     const fittedSizes = textPages.map((entry) => (
       fitPptStoryTextLayout(entry.text, fonts, entry.pageNumber, entry.isLastTextPage).size
     ));
-    return { mode, fixedSize: fittedSizes.length ? Math.min(...fittedSizes) : null };
+    return { mode, fixedSize: fittedSizes.length ? Math.min(...fittedSizes) : null, requestedSize: null, maxSize: null };
   }
-  return { mode, fixedSize: null };
+  return { mode, fixedSize: null, requestedSize: null, maxSize: null };
 }
 
 function storyTextOverflowMessage({ chapter, blockIndex, pageNumber, text, fonts, isLastTextPage, storyFontControl, textLayout }) {
@@ -1367,7 +1367,12 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber, isLastTextPage = f
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, CHAPTER_FINAL_TEXT_PAGES.includes(pageNumber) ? 'image9' : 'image8');
   const textBox = pptStoryTextBox(pageNumber, isLastTextPage);
-  const textLayout = drawPptParagraphText(page, text, textBox, pptStoryTextOptions(fonts, pageNumber, storyFontControl?.fixedSize));
+  const textLayout = drawPptParagraphText(
+    page,
+    text,
+    textBox,
+    pptStoryTextOptions(fonts, pageNumber, storyFontControl?.fixedSize, storyFontControl?.maxSize),
+  );
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
   if ([9, 15, 23, 31].includes(pageNumber)) {
     drawPptImage(page, assets.book.image15, pptBox(146.1, 324.7, 94.8, 8.0));
@@ -1416,6 +1421,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   }
   const storyTextPages = collectPptStoryTextPages(chapters, layout);
   const storyFontControl = resolvePptStoryFontControl(fullText, fonts, storyTextPages);
+  const storyFontSizes = [];
 
   const bible = fullText.text?.bible || {};
 
@@ -1478,6 +1484,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       const block = blocks[blockIndex];
       const isLastTextPage = chapterIndex === chapters.length && blockIndex === blocks.length - 1;
       const textLayout = addPptTextPage(pdf, fonts, assets, block, pdf.getPageCount() + 1, isLastTextPage, storyFontControl);
+      if (Number.isFinite(textLayout.size)) storyFontSizes.push(textLayout.size);
       if (textLayout.truncated) {
         throw new Error(storyTextOverflowMessage({
           chapter,
@@ -1503,7 +1510,10 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     bytes: await pdf.save({ useObjectStreams: false }),
     storyFont: {
       mode: storyFontControl.mode,
+      requestedSizePt: Number.isFinite(storyFontControl.requestedSize) ? storyFontControl.requestedSize : null,
       appliedSizePt: Number.isFinite(storyFontControl.fixedSize) ? storyFontControl.fixedSize : null,
+      minAppliedSizePt: storyFontSizes.length ? Math.min(...storyFontSizes) : null,
+      maxAppliedSizePt: storyFontSizes.length ? Math.max(...storyFontSizes) : null,
     },
   };
 }
