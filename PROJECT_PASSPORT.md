@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 11:50 UTC
+Last updated: 2026-07-10 17:50 UTC
 
 ## Project Context
 
@@ -267,6 +267,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
   6. render service
 
 ## Change Log
+
+### 2026-07-11
+
+- Softened the `fantasy_epic` and `cyberpunk_dream` story profiles without removing genre conflict. Fantasy now uses local, recoverable stakes, wonder, restoration, return, or reconciliation instead of absolute evil, death, bloodshed, sacrifice, world destruction, or hopelessness. Cyberpunk now centers on a technological mystery and helping a person or small community instead of repression, political persecution, arrests, war, overthrowing a system, or global catastrophe. Both profiles target an approximate `60%` adventure/discovery, `25%` tension, and `15%` warm/quiet/humorous balance with no more than two tense scenes in sequence. Added an explicit child-tone override to both `fairyteller_text` and `fairyteller_full_text`: if any active hero has `ageGroup="child"`, the entire book must be light, life-affirming, emotionally safe, and warmly resolved; this rule explicitly overrides genre atmosphere. Production backup: `/root/fairyteller-n8n-exports/20260710-174348Z-tone-guard-before`; import: `/root/fairyteller-n8n-imports/20260710-174348Z-tone-guard`; after-export: `/root/fairyteller-n8n-exports/20260710-174348Z-tone-guard-after`. Verified production/local workflow parity before editing, workflow JSON and all Code-node syntax, active published exports containing the child and genre guards, `git diff --check`, and n8n health after restart.
 
 ### 2026-07-10
 
