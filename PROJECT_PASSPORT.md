@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 18:55 UTC
+Last updated: 2026-07-10 19:20 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-11
+
+- Reduced Gemini image safety refusals in continuation chapters and covers after inspecting completed test jobs `ft_1783709435207_8aa6p4` and `ft_1783709822549_8jetms`. Although both books completed, every chapter 2-5 needed a retry; one photorealistic chapter and three watercolor chapters fell through to the people-free fallback. Removed prompt language that repeatedly framed generated reference cards as private-person likeness reproduction (`private person`, `real-person`, `direct copy`, `recognizable face`, `identity-preserving`) and now describes them solely as generated fictional character designs and visual canon. Continuation image prompts no longer append the first 900 characters of chapter prose; they use a maximum 700-character visual summary after sanitizing phrases such as forbidden entry, breaking in, traps, security systems, intruders, tools, threats, and danger into calm visual equivalents. Cover whole-story context now uses the same visual sanitizer. The people-free last-resort fallback remains unchanged. Production backup: `/root/fairyteller-n8n-exports/20260710-191143Z-visual-safety-language-before`; import: `/root/fairyteller-n8n-imports/20260710-191143Z-visual-safety-language`; after-export: `/root/fairyteller-n8n-exports/20260710-191143Z-visual-safety-language-after`. Verified workflow JSON and all Code-node syntax, executable visual-scene tests, `git diff --check`, active published exports with no private-likeness language or full-prose scene input, and n8n health after restart.
 
 - Fixed a production `fairyteller_visuals` regression introduced by visual stage 1: `normalizedWorldVisual` was evaluated before the local `bible` declaration in `Build Chapter 1 Image Prompt`, causing `ReferenceError: Cannot access 'bible' before initialization` immediately after hero-card generation. Jobs `ft_1783708406300_p6pg38` and `ft_1783708827964_u2w42f` exposed the issue; the first was also interrupted by the deployment restart, while the second full-visual workflow later failed waiting for the missing `visuals.json`. Moved normalization after the `bible` declaration and added an explicit declaration-order execution guard in validation. The two existing test jobs were intentionally left untouched for manual replacement tests. Production backup: `/root/fairyteller-n8n-exports/20260710-184600Z-visual-tdz-before`; import: `/root/fairyteller-n8n-imports/20260710-184600Z-visual-tdz`; after-export: `/root/fairyteller-n8n-exports/20260710-184600Z-visual-tdz-after`. Verified active published export order and n8n health after restart.
 
