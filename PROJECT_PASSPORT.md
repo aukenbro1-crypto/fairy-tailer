@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 19:30 UTC
+Last updated: 2026-07-10 19:50 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-11
+
+- Corrected the continuation/cover reference contract after visually auditing `ft_1783711569220_cke85c`. Its hero card was good and chapter 1 succeeded with `primary_with_reference_cards`, but every chapter 2-5 and the cover rejected both referenced attempts and fell through to `safe_environment_no_people`; Gemini then ignored the people ban in chapter 4 and the cover and drew unrelated characters. The prior `generated fictional character` wording was therefore removed. Continuation and cover prompts now mirror the successful chapter-1 contract: attached generated character reference cards are the required visual canon, with the same face shape, hairline, hair, age, accessories, clothing colors, body type, and silhouette. All three image calls in each workflow request `IMAGE` only, matching chapter 1. When a job with references reaches the people-free fallback, chapter summaries, chapter titles, book promises, hero names, and character actions are omitted entirely; the request contains only style, world direction, location, environment, and important object. Production backup: `/root/fairyteller-n8n-exports/20260710-194309Z-visual-reference-contract-before`; import: `/root/fairyteller-n8n-imports/20260710-194309Z-visual-reference-contract`; after-export: `/root/fairyteller-n8n-exports/20260710-194309Z-visual-reference-contract-after`. Verified workflow JSON and all Code-node syntax, executable people-free prompt tests with no character-context leakage, `git diff --check`, active published exports, and n8n health after restart.
 
 - Split the first chapter's reader summary from its image-generation brief. Previously `chapter1.summary` was explicitly requested as a camera/lighting/composition brief and the same field was printed on the chapter title page, producing photo descriptions while chapters 2-5 displayed normal plot summaries. The first-text schema now requires `chapter1.summary` as a 160-280 character reader-facing description of the chapter's events and `chapter1.visualBrief` as the separate 260-380 character illustration direction. Normalization persists both fields in preview/chapter data, while `fairyteller_visuals` routes only `visualBrief` into the chapter-1 image prompt and keeps `summary` for PDF/admin readers. Loose-response recovery falls back from `visualBrief` to `summary` for compatibility. Existing artifacts are unchanged; new generations use the split contract. Production backup: `/root/fairyteller-n8n-exports/20260710-192051Z-chapter1-summary-before`; import: `/root/fairyteller-n8n-imports/20260710-192051Z-chapter1-summary`; after-export: `/root/fairyteller-n8n-exports/20260710-192051Z-chapter1-summary-after`. Verified workflow JSON and all Code-node syntax, an executable end-to-end synthetic Gemini response proving summary/visualBrief routing, `git diff --check`, active published exports, and n8n health after restart.
 
