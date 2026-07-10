@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 11:15 UTC
+Last updated: 2026-07-10 11:50 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-10
+
+- Hardened first-chapter normalization after job `ft_1783682727540_0yg1hp` returned valid Gemini JSON with 9 text blocks while the print contract requires 4. `Normalize First Chapter` now joins any non-empty mismatched block list and reflows the complete text by sentence boundaries into exactly the configured number of first-chapter blocks; empty or genuinely unrecoverable responses still fail. Production backup: `/root/fairyteller-n8n-exports/20260710-114500Z-first-chapter-reflow-before`; import: `/root/fairyteller-n8n-imports/20260710-114500Z-first-chapter-reflow`; after-export: `/root/fairyteller-n8n-exports/20260710-114500Z-first-chapter-reflow-after`. Verified workflow JSON and all Code-node syntax, `git diff --check`, active published export, and n8n health after restart.
 
 - Raised the default generated-story length target from 15,000 to 19,500 characters in every public constructor and in the production `fairyteller_intake`/`fairyteller_text` fallback contract. This is intentionally only a target increase; no post-generation actual-length validator was added yet. Frontend release: `/var/www/fairyteller/releases/20260710-length-target-19500-codex`; n8n backup: `/root/fairyteller-n8n-exports/20260710-110039Z-length-target-before`; import: `/root/fairyteller-n8n-imports/20260710-110039Z-length-target-19500`; after-export: `/root/fairyteller-n8n-exports/20260710-110039Z-length-target-after`. Verified workflow JSON and Code-node syntax, targeted ESLint, `git diff --check`, `npm run build`, active published workflow exports with `19500` and without the old fallback, n8n health, active frontend symlink, and production `/` and `/create` responses.
 
