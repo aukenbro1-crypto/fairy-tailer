@@ -5044,6 +5044,41 @@ async function runFollowUpProcessor() {
   };
 }
 
+async function sendManualFollowUp(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) throw httpError(400, 'A valid email is required');
+  const state = await readFollowUpState(normalizedEmail);
+  if (state.unsubscribedAt) throw httpError(409, 'Follow-up is unsubscribed for this email');
+  const groups = await listFollowUpCandidateGroups();
+  const group = groups.find((candidate) => candidate.email === normalizedEmail);
+  if (!group) throw httpError(404, 'No stories found for this email');
+  const stories = await Promise.all(group.rows
+    .filter((row) => (row.status.status === 'done' || row.status.stage === 'complete') && row.payment?.status !== 'paid')
+    .sort((left, right) => right.createdMs - left.createdMs)
+    .slice(0, FOLLOW_UP_MAX_BOOKS)
+    .map(async (row) => ({
+      jobId: row.jobId,
+      title: await bookTitle(row.dir, row.status).catch(() => '') || row.status.preview?.title || 'Персональная сказка',
+      bookUrl: `${PUBLIC_BASE_URL}${customerJobBookUrl(row.jobId)}`,
+      payUrl: `${PUBLIC_BASE_URL}${customerJobPayUrl(row.jobId, row.status)}`,
+    })));
+  if (!stories.length) throw httpError(409, 'No ready unpaid stories found for this email');
+  const delivery = { attemptedAt: nowIso(), ...(await sendCustomerEmail(followUpEmailPayload(normalizedEmail, stories)))};
+  await appendFollowUpAudit(normalizedEmail, {
+    type: 'follow_up.manual_delivery',
+    status: delivery.status,
+    reason: delivery.reason || null,
+    provider: delivery.provider || null,
+    providerId: delivery.id || null,
+    error: delivery.error || null,
+    jobIds: stories.map((story) => story.jobId),
+  });
+  if (delivery.status === 'sent') {
+    await writeFollowUpState(normalizedEmail, { lastSentAt: delivery.attemptedAt, lastJobIds: stories.map((story) => story.jobId) });
+  }
+  return { ...delivery, stories: stories.map((story) => story.jobId) };
+}
+
 async function deliverCustomerCompletionEmail(jobId, status) {
   const dir = jobDir(jobId);
   const artifactsDir = join(dir, 'artifacts');
@@ -6749,6 +6784,13 @@ async function main() {
   if (process.argv.includes('--run-follow-ups')) {
     const result = await runFollowUpProcessor();
     console.log(`fairyteller follow-up: processed=${result.processed} sent=${result.sent} skipped=${result.skipped} failed=${result.failed}`);
+    return;
+  }
+
+  const manualFollowUpArg = process.argv.find((arg) => arg.startsWith('--send-follow-up='));
+  if (manualFollowUpArg) {
+    const result = await sendManualFollowUp(manualFollowUpArg.slice('--send-follow-up='.length));
+    console.log(`fairyteller manual follow-up: status=${result.status} stories=${result.stories.length}`);
     return;
   }
 
