@@ -11,6 +11,17 @@ const LAYOUT_DIR = resolve(process.env.FAIRYTELLER_LAYOUT_DIR || '/opt/fairytell
 const ASSET_DIR = resolve(TEMPLATE_DIR, 'assets');
 const FONT_DIR = resolve(TEMPLATE_DIR, 'fonts');
 const JOB_ID = process.argv[2] || process.env.FAIRYTELLER_JOB_ID;
+const TEXT_PREFLIGHT_ONLY = process.argv.includes('--text-preflight');
+const STORY_FONT_MODE_OVERRIDE = String(process.env.FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE || '').trim();
+const DEBUG_TEXT_PAGINATION = process.env.FAIRYTELLER_DEBUG_TEXT_PAGINATION === '1';
+const TEXT_PREFLIGHT_BATCH_JOB_IDS = String(process.env.FAIRYTELLER_TEXT_PREFLIGHT_BATCH_JOB_IDS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+function debugTextPagination(message) {
+  if (DEBUG_TEXT_PAGINATION) console.error(`[text-pagination] ${message}`);
+}
 
 const COVER_SIZE_MM = [268.5, 136];
 const INTERIOR_SIZE_MM = [136, 136];
@@ -56,7 +67,14 @@ function topLeftBox(page, box) {
 }
 
 function jobDir(jobId) {
-  return join(DATA_DIR, 'jobs', jobId);
+  return join(DATA_DIR, 'jobs', assertSafeJobIdForPreflight(jobId));
+}
+
+function assertSafeJobIdForPreflight(jobId) {
+  if (!/^ft_[a-zA-Z0-9_-]{8,80}$/.test(String(jobId || ''))) {
+    throw new Error(`Invalid Fairyteller job id: ${jobId || 'missing'}`);
+  }
+  return jobId;
 }
 
 async function readJson(path) {
@@ -107,6 +125,25 @@ function validateLayout(layout) {
 
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+const FONT_TEXT_WIDTH_CACHE = new WeakMap();
+
+function textWidthAtSize(font, text, size) {
+  let fontCache = FONT_TEXT_WIDTH_CACHE.get(font);
+  if (!fontCache) {
+    fontCache = new Map();
+    FONT_TEXT_WIDTH_CACHE.set(font, fontCache);
+  }
+  const sizeKey = Number(size).toFixed(3);
+  let sizeCache = fontCache.get(sizeKey);
+  if (!sizeCache) {
+    sizeCache = new Map();
+    fontCache.set(sizeKey, sizeCache);
+  }
+  const value = String(text || '');
+  if (!sizeCache.has(value)) sizeCache.set(value, font.widthOfTextAtSize(value, size));
+  return sizeCache.get(value);
 }
 
 function bookSummary(fullText, fallback = '') {
@@ -223,7 +260,7 @@ function wrapText(text, font, size, maxWidth) {
   let line = '';
   for (const word of words) {
     const candidate = line ? `${line} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+    if (textWidthAtSize(font, candidate, size) <= maxWidth) {
       line = candidate;
       continue;
     }
@@ -304,7 +341,7 @@ function wrapParagraph(text, font, size, maxWidth, firstLineIndent, lineShapes =
     const shape = lineShapes[lineIndex] || {};
     const indent = lineIndex === 0 ? firstLineIndent : 0;
     const availableWidth = maxWidth - (shape.widthReduction || 0);
-    if (font.widthOfTextAtSize(candidate, size) + indent <= availableWidth) {
+    if (textWidthAtSize(font, candidate, size) + indent <= availableWidth) {
       line = candidate;
       continue;
     }
@@ -353,7 +390,7 @@ function buildParagraphLayout(paragraphs, font, options) {
       const dropCapFont = dropCap.font || font;
       const dropCapSize = dropCap.size || size * (dropCap.sizeRatio || 3.15);
       const dropCapGap = dropCap.gap ?? size * 0.55;
-      const dropCapWidth = dropCapFont.widthOfTextAtSize(split.char, dropCapSize);
+      const dropCapWidth = textWidthAtSize(dropCapFont, split.char, dropCapSize);
       const lineSpan = dropCap.lineSpan || 3;
       dropCapLayout = {
         char: split.char,
@@ -383,7 +420,7 @@ function buildParagraphLayout(paragraphs, font, options) {
   const lineCount = sectionHeights.reduce((sum, height) => sum + height, 0);
   const gapCount = Math.max(0, sections.length - 1);
   const totalHeight = lineCount * lineHeight + gapCount * paragraphGap;
-  const widestLine = sections.reduce((max, lines) => Math.max(max, ...lines.map((line) => font.widthOfTextAtSize(line.text, size) + line.indent + line.xOffset)), 0);
+  const widestLine = sections.reduce((max, lines) => Math.max(max, ...lines.map((line) => textWidthAtSize(font, line.text, size) + line.indent + line.xOffset)), 0);
   return { sections, sectionHeights, lineCount, gapCount, lineHeight, totalHeight, widestLine, dropCap: dropCapLayout };
 }
 
@@ -531,7 +568,7 @@ function fitTextLayout(text, font, options) {
   while (size >= minSize) {
     const lines = wrapText(text, font, size, maxWidth);
     const lineHeight = size * lineHeightRatio;
-    const widestLine = lines.reduce((max, line) => Math.max(max, font.widthOfTextAtSize(line, size)), 0);
+    const widestLine = lines.reduce((max, line) => Math.max(max, textWidthAtSize(font, line, size)), 0);
     if (lines.length * lineHeight <= maxHeight && widestLine <= maxWidth) {
       return { lines, size, lineHeight, truncated: false };
     }
@@ -616,7 +653,7 @@ function drawTextBox(page, text, box, options) {
   }
 
   layout.lines.forEach((line, index) => {
-    const lineWidth = font.widthOfTextAtSize(line, layout.size);
+    const lineWidth = textWidthAtSize(font, line, layout.size);
     let x = content.x;
     if (align === 'center') {
       x = content.x + (content.width - lineWidth) / 2;
@@ -633,7 +670,7 @@ function drawCenteredText(page, text, options) {
   const { width } = page.getSize();
   const lines = wrapText(text, font, size, maxWidth);
   lines.forEach((line, index) => {
-    const lineWidth = font.widthOfTextAtSize(line, size);
+    const lineWidth = textWidthAtSize(font, line, size);
     page.drawText(line, { x: (width - lineWidth) / 2, y: y - index * lineHeight, size, font, color });
   });
   return y - lines.length * lineHeight;
@@ -643,7 +680,7 @@ function drawCenteredTextInBox(page, text, options) {
   const { font, size, x, y, maxWidth, color = rgb(0.12, 0.1, 0.08), lineHeight = size * 1.25 } = options;
   const lines = wrapText(text, font, size, maxWidth);
   lines.forEach((line, index) => {
-    const lineWidth = font.widthOfTextAtSize(line, size);
+    const lineWidth = textWidthAtSize(font, line, size);
     page.drawText(line, { x: x + (maxWidth - lineWidth) / 2, y: y - index * lineHeight, size, font, color });
   });
   return y - lines.length * lineHeight;
@@ -714,7 +751,7 @@ function drawPageNumber(page, pageNumber, font, layout) {
   const text = String(pageNumber);
   const size = layout.interior.pageNumber.size;
   page.drawText(text, {
-    x: (width - font.widthOfTextAtSize(text, size)) / 2,
+    x: (width - textWidthAtSize(font, text, size)) / 2,
     y: layout.interior.pageNumber.y,
     size,
     font,
@@ -1037,7 +1074,7 @@ function drawPptLines(page, lines, box, options) {
   const color = options.color || hexColor('#292929');
   lines.filter(Boolean).forEach((line, index) => {
     const text = cleanText(line);
-    const textWidth = font.widthOfTextAtSize(text, size);
+    const textWidth = textWidthAtSize(font, text, size);
     let x = pageBox.x;
     if (options.align === 'center') x = pageBox.x + (pageBox.width - textWidth) / 2;
     if (options.align === 'right') x = pageBox.x + pageBox.width - textWidth;
@@ -1103,9 +1140,18 @@ const CHAPTER_START_PAGES = [4, 10, 16, 24, 32];
 const CHAPTER_FIRST_TEXT_PAGES = [6, 12, 18, 26, 34];
 const CHAPTER_FINAL_TEXT_PAGES = [9, 15, 23, 31, 38];
 const TEXT_PAGE_BOX = pptBox(29.69, 28.35, 327.52, 300.35);
+const UNIFORM_STORY_FONT_SIZE_RAW = Number(process.env.FAIRYTELLER_RENDER_UNIFORM_STORY_FONT_SIZE_PT || 10.5);
+const UNIFORM_STORY_FONT_SIZE_PT = Number.isFinite(UNIFORM_STORY_FONT_SIZE_RAW)
+  ? Math.max(9, Math.min(11, UNIFORM_STORY_FONT_SIZE_RAW))
+  : 10.5;
+const UNIFORM_STORY_FONT_MIN_SIZE_RAW = Number(process.env.FAIRYTELLER_RENDER_UNIFORM_STORY_FONT_MIN_SIZE_PT || 10);
+const UNIFORM_STORY_FONT_MIN_SIZE_PT = Number.isFinite(UNIFORM_STORY_FONT_MIN_SIZE_RAW)
+  ? Math.max(9, Math.min(UNIFORM_STORY_FONT_SIZE_PT, UNIFORM_STORY_FONT_MIN_SIZE_RAW))
+  : 10;
 const STORY_FONT_MODE_CONFIGS = new Map([
   ['auto', { kind: 'auto' }],
   ['balanced', { kind: 'balanced' }],
+  ['uniform', { kind: 'paginated', maxSize: UNIFORM_STORY_FONT_SIZE_PT, minSize: UNIFORM_STORY_FONT_MIN_SIZE_PT }],
   ['large', { kind: 'fixed', size: 11 }],
   ['regular', { kind: 'fixed', size: 10.5 }],
   ['compact', { kind: 'fixed', size: 10 }],
@@ -1140,8 +1186,8 @@ const TEXT_PAGE_NUM_BOXES = {
 };
 
 function storyFontMode(fullText) {
-  const mode = String(fullText?.text?.printLayout?.storyFontMode || 'auto').trim();
-  return STORY_FONT_MODE_CONFIGS.has(mode) ? mode : 'auto';
+  const mode = STORY_FONT_MODE_OVERRIDE || String(fullText?.text?.printLayout?.storyFontMode || 'uniform').trim();
+  return STORY_FONT_MODE_CONFIGS.has(mode) ? mode : 'uniform';
 }
 
 function formatPt(value) {
@@ -1184,9 +1230,9 @@ function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null
   };
 }
 
-function fitPptStoryTextLayout(text, fonts, pageNumber, isLastTextPage = false) {
+function fitPptStoryTextLayout(text, fonts, pageNumber, isLastTextPage = false, fixedSize = null) {
   const textBox = pptStoryTextBox(pageNumber, isLastTextPage);
-  const options = pptStoryTextOptions(fonts, pageNumber);
+  const options = pptStoryTextOptions(fonts, pageNumber, fixedSize);
   return fitParagraphTextLayout(text, options.font, {
     maxWidth: textBox.width,
     maxHeight: textBox.height,
@@ -1199,6 +1245,277 @@ function fitPptStoryTextLayout(text, fonts, pageNumber, isLastTextPage = false) 
     inferParagraphs: options.inferParagraphs,
     dropCap: options.dropCap,
   });
+}
+
+function storyPaginationSegments(chapter, splitNarrativeParagraphs = false) {
+  const paragraphs = getChapterTextBlocks(chapter)
+    .flatMap((block) => normalizeParagraphText(block).split(/\n{2,}/))
+    .map(cleanText)
+    .filter(Boolean);
+  return paragraphs.flatMap((paragraph, paragraphIndex) => {
+    const parts = splitNarrativeParagraphs && !startsWithDialogueDash(paragraph)
+      ? splitSentences(paragraph)
+      : [paragraph];
+    return (parts.length ? parts : [paragraph]).map((part, partIndex, allParts) => ({
+      text: part,
+      paragraphIndex,
+      boundaryAfter: partIndex === allParts.length - 1 ? 'paragraph' : 'sentence',
+    }));
+  });
+}
+
+function splitPaginationSegment(segment) {
+  if (!startsWithDialogueDash(segment.text)) {
+    const sentences = splitSentences(segment.text);
+    if (sentences.length > 1) {
+      const totalLength = sentences.reduce((sum, sentence) => sum + sentence.length, 0);
+      let leftLength = 0;
+      let splitIndex = 1;
+      for (let index = 0; index < sentences.length - 1; index += 1) {
+        leftLength += sentences[index].length;
+        splitIndex = index + 1;
+        if (leftLength >= totalLength / 2) break;
+      }
+      return [
+        { ...segment, text: sentences.slice(0, splitIndex).join(' '), boundaryAfter: 'sentence' },
+        { ...segment, text: sentences.slice(splitIndex).join(' ') },
+      ];
+    }
+  }
+  const words = cleanText(segment.text).split(' ').filter(Boolean);
+  if (words.length < 2) return null;
+  const midpoint = Math.max(1, Math.min(words.length - 1, Math.round(words.length / 2)));
+  return [
+    { ...segment, text: words.slice(0, midpoint).join(' '), boundaryAfter: 'word' },
+    { ...segment, text: words.slice(midpoint).join(' ') },
+  ];
+}
+
+function ensurePaginationSegmentCount(segments, pageCount) {
+  const expanded = [...segments];
+  while (expanded.length < pageCount) {
+    let longestIndex = -1;
+    let longestLength = -1;
+    expanded.forEach((segment, index) => {
+      if (segment.text.length > longestLength && splitPaginationSegment(segment)) {
+        longestIndex = index;
+        longestLength = segment.text.length;
+      }
+    });
+    if (longestIndex < 0) break;
+    expanded.splice(longestIndex, 1, ...splitPaginationSegment(expanded[longestIndex]));
+  }
+  return expanded;
+}
+
+function paginationText(segments, start, end) {
+  let result = '';
+  for (let index = start; index < end; index += 1) {
+    const segment = segments[index];
+    if (!result) {
+      result = segment.text;
+      continue;
+    }
+    const previous = segments[index - 1];
+    result += previous.paragraphIndex === segment.paragraphIndex ? ` ${segment.text}` : `\n\n${segment.text}`;
+  }
+  return result;
+}
+
+function paginationBoundaryPenalty(segments, end) {
+  if (end >= segments.length) return 0;
+  const boundary = segments[end - 1]?.boundaryAfter;
+  if (boundary === 'paragraph') return 0;
+  if (boundary === 'sentence') return 7;
+  return 24;
+}
+
+function baseStoryLayoutHeight(layout, size) {
+  return layout.lineCount * layout.lineHeight + layout.gapCount * size * 0.54;
+}
+
+function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
+  const startedAt = Date.now();
+  let segments = ensurePaginationSegmentCount(storyPaginationSegments(chapter), pagePlans.length);
+  const sourceText = getChapterTextBlocks(chapter).join('\n\n');
+  const layoutCache = new Map();
+  let candidateCalls = 0;
+  const candidate = (pageIndex, start, end) => {
+    const key = `${pageIndex}:${start}:${end}`;
+    if (layoutCache.has(key)) return layoutCache.get(key);
+    candidateCalls += 1;
+    const text = paginationText(segments, start, end);
+    const pagePlan = pagePlans[pageIndex];
+    const layout = fitPptStoryTextLayout(text, fonts, pagePlan.pageNumber, pagePlan.isLastTextPage, size);
+    const box = pptStoryTextBox(pagePlan.pageNumber, pagePlan.isLastTextPage);
+    const usedHeight = baseStoryLayoutHeight(layout, size);
+    const measured = {
+      text,
+      layout,
+      utilization: usedHeight / box.height,
+    };
+    layoutCache.set(key, measured);
+    return measured;
+  };
+
+  function pagePaginationScore(page, end) {
+    return ((1 - page.utilization) ** 2) * 100 + paginationBoundaryPenalty(segments, end);
+  }
+
+  function solutionScore(boundaries, pages) {
+    return pages.reduce((score, page, pageIndex) => (
+      score + pagePaginationScore(page, boundaries[pageIndex + 1])
+    ), 0);
+  }
+
+  function measuredPages(boundaries) {
+    const pages = [];
+    for (let pageIndex = 0; pageIndex < pagePlans.length; pageIndex += 1) {
+      const measured = candidate(pageIndex, boundaries[pageIndex], boundaries[pageIndex + 1]);
+      if (measured.layout.truncated) return null;
+      pages.push(measured);
+    }
+    return pages;
+  }
+
+  function solvePagination() {
+    const boundaries = [0];
+    let start = 0;
+    for (let pageIndex = 0; pageIndex < pagePlans.length; pageIndex += 1) {
+      const remainingPages = pagePlans.length - pageIndex;
+      const maxEnd = segments.length - (remainingPages - 1);
+      if (pageIndex === pagePlans.length - 1) {
+        boundaries.push(segments.length);
+        break;
+      }
+      let bestEnd = null;
+      for (let end = start + 1; end <= maxEnd; end += 1) {
+        const measured = candidate(pageIndex, start, end);
+        if (measured.layout.truncated) break;
+        bestEnd = end;
+      }
+      if (!bestEnd) return null;
+      boundaries.push(bestEnd);
+      start = bestEnd;
+    }
+
+    let pages = measuredPages(boundaries);
+    if (!pages) return null;
+    let score = solutionScore(boundaries, pages);
+    for (let iteration = 0; iteration < 60; iteration += 1) {
+      let bestMove = null;
+      for (let boundaryIndex = 1; boundaryIndex < boundaries.length - 1; boundaryIndex += 1) {
+        for (const delta of [-1, 1]) {
+          const nextBoundary = boundaries[boundaryIndex] + delta;
+          if (nextBoundary <= boundaries[boundaryIndex - 1] || nextBoundary >= boundaries[boundaryIndex + 1]) continue;
+          const leftPageIndex = boundaryIndex - 1;
+          const rightPageIndex = boundaryIndex;
+          const nextLeftPage = candidate(leftPageIndex, boundaries[leftPageIndex], nextBoundary);
+          const nextRightPage = candidate(rightPageIndex, nextBoundary, boundaries[rightPageIndex + 1]);
+          if (nextLeftPage.layout.truncated || nextRightPage.layout.truncated) continue;
+          const oldPairScore = pagePaginationScore(pages[leftPageIndex], boundaries[boundaryIndex])
+            + pagePaginationScore(pages[rightPageIndex], boundaries[boundaryIndex + 1]);
+          const nextPairScore = pagePaginationScore(nextLeftPage, nextBoundary)
+            + pagePaginationScore(nextRightPage, boundaries[boundaryIndex + 1]);
+          const nextScore = score - oldPairScore + nextPairScore;
+          if (nextScore + 0.0001 < score && (!bestMove || nextScore < bestMove.score)) {
+            bestMove = {
+              boundaryIndex,
+              nextBoundary,
+              leftPageIndex,
+              rightPageIndex,
+              nextLeftPage,
+              nextRightPage,
+              score: nextScore,
+            };
+          }
+        }
+      }
+      if (!bestMove) break;
+      boundaries[bestMove.boundaryIndex] = bestMove.nextBoundary;
+      pages[bestMove.leftPageIndex] = bestMove.nextLeftPage;
+      pages[bestMove.rightPageIndex] = bestMove.nextRightPage;
+      score = bestMove.score;
+    }
+    return { score, pages };
+  }
+
+  let solution = solvePagination();
+  if (!solution) {
+    debugTextPagination(`chapter ${chapter.n}: paragraph boundaries did not fit, retrying sentence boundaries`);
+    segments = ensurePaginationSegmentCount(storyPaginationSegments(chapter, true), pagePlans.length);
+    layoutCache.clear();
+    solution = solvePagination();
+  }
+  if (!solution) {
+    debugTextPagination(`chapter ${chapter.n}: failed after ${candidateCalls} layouts in ${Date.now() - startedAt} ms`);
+    throw new Error(`Story chapter ${chapter.n} cannot be paginated across ${pagePlans.length} pages at ${formatPt(size)} pt without changing the text.`);
+  }
+
+  const pages = solution.pages.map((page, index) => ({
+    text: page.text,
+    pageNumber: pagePlans[index].pageNumber,
+    utilization: page.utilization,
+    lineCount: page.layout.lineCount,
+    characterCount: page.text.length,
+  }));
+  const paginatedText = pages.map((page) => page.text).join('\n\n');
+  if (cleanText(sourceText) !== cleanText(paginatedText)) {
+    throw new Error(`Story chapter ${chapter.n} pagination changed source text.`);
+  }
+  debugTextPagination(`chapter ${chapter.n}: ${segments.length} segments, ${candidateCalls} layouts, ${Date.now() - startedAt} ms`);
+  return { pages, sourceCharacterCount: cleanText(sourceText).length };
+}
+
+function paginatePptStoryChapters(chapters, layout, fonts, size) {
+  const paginatedChapters = [];
+  const chapterMetrics = [];
+  let pageNumber = layout.pagePlan.frontMatterPages || 3;
+  chapters.forEach((chapter, chapterPosition) => {
+    const chapterIndex = Number(chapter.n);
+    const expectedTextPages = layout.pagePlan.chapterTextPages[chapterIndex - 1] || CHAPTER_TEXT_PAGE_COUNTS[chapterIndex - 1];
+    pageNumber += layout.pagePlan.chapterTitlePagesPerChapter || 1;
+    pageNumber += layout.pagePlan.chapterImagePagesPerChapter || 1;
+    const pagePlans = Array.from({ length: expectedTextPages }, (_, blockIndex) => {
+      pageNumber += 1;
+      return {
+        pageNumber,
+        isLastTextPage: chapterPosition === chapters.length - 1 && blockIndex === expectedTextPages - 1,
+      };
+    });
+    const result = paginateChapterStoryText(chapter, pagePlans, fonts, size);
+    const blocks = result.pages.map((page) => page.text);
+    paginatedChapters.push({ ...chapter, textBlocks: blocks, text: blocks.join('\n\n') });
+    chapterMetrics.push({
+      chapter: chapterIndex,
+      pageCount: blocks.length,
+      sourceCharacterCount: result.sourceCharacterCount,
+      minUtilization: Math.min(...result.pages.map((page) => page.utilization)),
+      maxUtilization: Math.max(...result.pages.map((page) => page.utilization)),
+      pages: result.pages.map(({ pageNumber: number, utilization, lineCount, characterCount }) => ({
+        pageNumber: number,
+        utilization,
+        lineCount,
+        characterCount,
+      })),
+    });
+  });
+  return { chapters: paginatedChapters, metrics: chapterMetrics };
+}
+
+function paginatePptStoryChaptersAtUniformSize(chapters, layout, fonts, config) {
+  const maxSize = Number(config?.maxSize || UNIFORM_STORY_FONT_SIZE_PT);
+  const minSize = Number(config?.minSize || UNIFORM_STORY_FONT_MIN_SIZE_PT);
+  let lastError = null;
+  for (let size = maxSize; size >= minSize - 0.001; size -= 0.25) {
+    const candidateSize = Math.max(minSize, Math.round(size * 100) / 100);
+    try {
+      return { ...paginatePptStoryChapters(chapters, layout, fonts, candidateSize), fontSizePt: candidateSize };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(`${lastError?.message || 'Story text cannot be paginated.'} Uniform story text is limited to ${formatPt(minSize)} pt or larger; shorten the overflowing chapter.`);
 }
 
 function collectPptStoryTextPages(chapters, layout) {
@@ -1229,11 +1546,15 @@ function collectPptStoryTextPages(chapters, layout) {
   return entries;
 }
 
-function resolvePptStoryFontControl(fullText, fonts, textPages) {
+function resolvePptStoryFontControl(fullText, fonts, textPages, appliedUniformSize = null) {
   const mode = storyFontMode(fullText);
   const config = STORY_FONT_MODE_CONFIGS.get(mode) || STORY_FONT_MODE_CONFIGS.get('auto');
   if (config.kind === 'fixed') {
     return { mode, requestedSize: config.size, maxSize: config.size, fixedSize: null };
+  }
+  if (config.kind === 'paginated') {
+    const size = Number.isFinite(appliedUniformSize) ? appliedUniformSize : config.maxSize;
+    return { mode, requestedSize: config.maxSize, maxSize: config.maxSize, fixedSize: size };
   }
   if (config.kind === 'balanced') {
     const fittedSizes = textPages.map((entry) => (
@@ -1415,12 +1736,18 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
   const assets = await loadTemplateAssets(pdf);
-  const chapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
-  if (chapters.length !== layout.pagePlan.chapters) {
-    throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${chapters.length}`);
+  const sourceChapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
+  if (sourceChapters.length !== layout.pagePlan.chapters) {
+    throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${sourceChapters.length}`);
   }
+  const mode = storyFontMode(fullText);
+  const modeConfig = STORY_FONT_MODE_CONFIGS.get(mode) || STORY_FONT_MODE_CONFIGS.get('auto');
+  const pagination = modeConfig.kind === 'paginated'
+    ? paginatePptStoryChaptersAtUniformSize(sourceChapters, layout, fonts, modeConfig)
+    : { chapters: sourceChapters, metrics: null, fontSizePt: null };
+  const chapters = pagination.chapters;
   const storyTextPages = collectPptStoryTextPages(chapters, layout);
-  const storyFontControl = resolvePptStoryFontControl(fullText, fonts, storyTextPages);
+  const storyFontControl = resolvePptStoryFontControl(fullText, fonts, storyTextPages, pagination.fontSizePt);
   const storyFontSizes = [];
 
   const bible = fullText.text?.bible || {};
@@ -1514,7 +1841,63 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       appliedSizePt: Number.isFinite(storyFontControl.fixedSize) ? storyFontControl.fixedSize : null,
       minAppliedSizePt: storyFontSizes.length ? Math.min(...storyFontSizes) : null,
       maxAppliedSizePt: storyFontSizes.length ? Math.max(...storyFontSizes) : null,
+      pagination: pagination.metrics ? {
+        reflowed: true,
+        fontSizePt: pagination.fontSizePt,
+        chapters: pagination.metrics,
+      } : null,
     },
+  };
+}
+
+async function preflightStoryTextOnly({ fullText, layout, preparedFonts = null }) {
+  let fonts = preparedFonts;
+  if (!fonts) {
+    debugTextPagination('embedding fonts');
+    fonts = await createPdfWithFonts();
+    debugTextPagination('fonts ready');
+  }
+  const sourceChapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
+  if (sourceChapters.length !== layout.pagePlan.chapters) {
+    throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${sourceChapters.length}`);
+  }
+  const mode = storyFontMode(fullText);
+  const modeConfig = STORY_FONT_MODE_CONFIGS.get(mode) || STORY_FONT_MODE_CONFIGS.get('auto');
+  const pagination = modeConfig.kind === 'paginated'
+    ? paginatePptStoryChaptersAtUniformSize(sourceChapters, layout, fonts, modeConfig)
+    : { chapters: sourceChapters, metrics: null, fontSizePt: null };
+  const textPages = collectPptStoryTextPages(pagination.chapters, layout);
+  const fontControl = resolvePptStoryFontControl(fullText, fonts, textPages, pagination.fontSizePt);
+  const pageSizes = [];
+  for (const entry of textPages) {
+    const fixedSize = Number.isFinite(fontControl.fixedSize) ? fontControl.fixedSize : null;
+    const layoutResult = fitPptStoryTextLayout(entry.text, fonts, entry.pageNumber, entry.isLastTextPage, fixedSize);
+    if (layoutResult.truncated) {
+      throw new Error(storyTextOverflowMessage({
+        chapter: entry.chapter,
+        blockIndex: entry.blockIndex,
+        pageNumber: entry.pageNumber,
+        text: entry.text,
+        fonts,
+        isLastTextPage: entry.isLastTextPage,
+        storyFontControl: fontControl,
+        textLayout: layoutResult,
+      }));
+    }
+    pageSizes.push(layoutResult.size);
+  }
+  return {
+    mode,
+    requestedSizePt: Number.isFinite(fontControl.requestedSize) ? fontControl.requestedSize : null,
+    appliedSizePt: Number.isFinite(fontControl.fixedSize) ? fontControl.fixedSize : null,
+    minAppliedSizePt: pageSizes.length ? Math.min(...pageSizes) : null,
+    maxAppliedSizePt: pageSizes.length ? Math.max(...pageSizes) : null,
+    textPageCount: textPages.length,
+    pagination: pagination.metrics ? {
+      reflowed: true,
+      fontSizePt: pagination.fontSizePt,
+      chapters: pagination.metrics,
+    } : null,
   };
 }
 
@@ -1572,6 +1955,43 @@ async function renderPreviewPdf({ coverPdf, interiorPdf }) {
 }
 
 async function main() {
+  if (TEXT_PREFLIGHT_ONLY && TEXT_PREFLIGHT_BATCH_JOB_IDS.length) {
+    const layout = validateLayout(await readJson(LAYOUT_PATH));
+    debugTextPagination('embedding shared batch fonts');
+    const preparedFonts = await createPdfWithFonts();
+    debugTextPagination('shared batch fonts ready');
+    const results = [];
+    for (const jobId of TEXT_PREFLIGHT_BATCH_JOB_IDS) {
+      assertSafeJobIdForPreflight(jobId);
+      const startedAt = Date.now();
+      try {
+        const fullText = await readJson(join(jobDir(jobId), 'artifacts', 'full-text.json'));
+        const storyFont = await preflightStoryTextOnly({ fullText, layout, preparedFonts });
+        const utilizations = (storyFont.pagination?.chapters || [])
+          .flatMap((chapter) => chapter.pages || [])
+          .map((page) => page.utilization);
+        results.push({
+          jobId,
+          ok: true,
+          durationMs: Date.now() - startedAt,
+          appliedSizePt: storyFont.appliedSizePt,
+          minUtilization: utilizations.length ? Math.min(...utilizations) : null,
+          maxUtilization: utilizations.length ? Math.max(...utilizations) : null,
+        });
+      } catch (error) {
+        results.push({ jobId, ok: false, durationMs: Date.now() - startedAt, error: error?.message || 'Text preflight failed' });
+      }
+    }
+    console.log(JSON.stringify({
+      mode: storyFontMode({}),
+      requestedSizePt: UNIFORM_STORY_FONT_SIZE_PT,
+      total: results.length,
+      passed: results.filter((result) => result.ok).length,
+      failed: results.filter((result) => !result.ok).length,
+      results,
+    }, null, 2));
+    return;
+  }
   const dir = jobDir(JOB_ID);
   const artifactsDir = join(dir, 'artifacts');
   const filesDir = join(dir, 'files');
@@ -1579,9 +1999,14 @@ async function main() {
   await mkdir(filesDir, { recursive: true, mode: 0o700 });
 
   const fullText = await readJson(join(artifactsDir, 'full-text.json'));
+  const layout = validateLayout(await readJson(LAYOUT_PATH));
+  if (TEXT_PREFLIGHT_ONLY) {
+    const storyFont = await preflightStoryTextOnly({ fullText, layout });
+    console.log(JSON.stringify({ jobId: JOB_ID, storyFont }, null, 2));
+    return;
+  }
   const visualsArtifact = await readJson(join(artifactsDir, 'visuals.json'));
   const visuals = visualsArtifact.visuals || {};
-  const layout = validateLayout(await readJson(LAYOUT_PATH));
 
   const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
   const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout });

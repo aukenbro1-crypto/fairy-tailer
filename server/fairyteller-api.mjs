@@ -73,6 +73,7 @@ const ADMIN_BOOK_IMAGE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIR
 const ADMIN_STORAGE_FILE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_FILE_MAX_BYTES || 50 * 1024 * 1024) || 50 * 1024 * 1024);
 const ADMIN_STORAGE_UPLOAD_MAX_BYTES = Math.max(ADMIN_STORAGE_FILE_MAX_BYTES, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_UPLOAD_MAX_BYTES || 512 * 1024 * 1024) || 512 * 1024 * 1024);
 const STORY_FONT_MODE_OPTIONS = [
+  { value: 'uniform', label: 'Ровный по всей книге · 10–10.5 pt' },
   { value: 'auto', label: 'Авто по страницам' },
   { value: 'balanced', label: 'Выровнять автоматически' },
   { value: 'large', label: 'Крупный · до 11 pt' },
@@ -2602,14 +2603,14 @@ function renderAdminNotice(message, type = 'notice') {
 }
 
 function normalizeStoryFontMode(value, label = 'Story font mode') {
-  const mode = String(value || 'auto').trim();
+  const mode = String(value || 'uniform').trim();
   if (STORY_FONT_MODE_VALUES.has(mode)) return mode;
   throw httpError(400, `${label} is invalid`);
 }
 
 function currentStoryFontMode(fullText) {
-  const mode = String(fullText?.text?.printLayout?.storyFontMode || 'auto').trim();
-  return STORY_FONT_MODE_VALUES.has(mode) ? mode : 'auto';
+  const mode = String(fullText?.text?.printLayout?.storyFontMode || 'uniform').trim();
+  return STORY_FONT_MODE_VALUES.has(mode) ? mode : 'uniform';
 }
 
 function renderStoryFontModeOptions(selectedMode) {
@@ -2830,6 +2831,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
         <div>
           <label for="storyFontMode">Размер текста в PDF</label>
           <select id="storyFontMode" name="storyFontMode">${renderStoryFontModeOptions(storyFontMode)}</select>
+          <p class="field-hint">Ровный режим сохраняет один кегль во всей книге и автоматически перераспределяет тот же текст между страницами внутри главы. Границы полей ниже могут не совпадать с границами страниц PDF.</p>
         </div>
       </div>
       ${renderError ? `<div class="render-warning"><strong>Последняя пересборка PDF не удалась.</strong>${escapeHtml(renderError)}${lastRender ? `<br>Ссылки ниже ведут к предыдущему успешному PDF от ${escapeHtml(formatDateTime(lastRender) || lastRender)}.` : ''}</div>` : ''}
