@@ -531,7 +531,7 @@ const FairytellerInlineConstructor = ({
     multipartData.append("newyear_mode", "false");
     multipartData.append("location", location);
     multipartData.append("artifact", artifact);
-    multipartData.append("length_target", "15000");
+    multipartData.append("length_target", "19500");
     multipartData.append("chapters", "5");
     multipartData.append("title_need", "false");
     multipartData.append("language", "ru");

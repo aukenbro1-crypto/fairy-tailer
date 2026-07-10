@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 05:00 UTC
+Last updated: 2026-07-10 11:15 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`; password authentication is disabled in production, root login is key-only.
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260709-personal-generation-limit-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260710-length-target-19500-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-10
+
+- Raised the default generated-story length target from 15,000 to 19,500 characters in every public constructor and in the production `fairyteller_intake`/`fairyteller_text` fallback contract. This is intentionally only a target increase; no post-generation actual-length validator was added yet. Frontend release: `/var/www/fairyteller/releases/20260710-length-target-19500-codex`; n8n backup: `/root/fairyteller-n8n-exports/20260710-110039Z-length-target-before`; import: `/root/fairyteller-n8n-imports/20260710-110039Z-length-target-19500`; after-export: `/root/fairyteller-n8n-exports/20260710-110039Z-length-target-after`. Verified workflow JSON and Code-node syntax, targeted ESLint, `git diff --check`, `npm run build`, active published workflow exports with `19500` and without the old fallback, n8n health, active frontend symlink, and production `/` and `/create` responses.
 
 - Deployed deterministic uniform story pagination for PDF books. New/no-explicit-mode renders now default to `uniform`: the renderer joins each chapter's generated blocks, preserves the exact normalized text, reflows paragraph/sentence boundaries across the existing `[4, 4, 6, 6, 5]` page map, and chooses one book-wide size from `10.5`, `10.25`, or `10` pt. It never falls below 10 pt; an outlier that still overflows fails with the exact chapter instead of silently shrinking individual pages. Added cached font-width measurement, a read-only `--text-preflight`/batch corpus mode, pagination utilization diagnostics in `render.preflight.storyFont`, the admin option `Ровный по всей книге · 10–10.5 pt`, and editor guidance that source block boundaries may differ from derived PDF pages. Production backups: `/opt/fairyteller-render/backups/fairyteller-render-pdf.20260710-045618Z-pagination-before.mjs` and `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260710-045618Z-pagination-before.bak`. Verified `node --check`, targeted ESLint, `git diff --check`, `npm run build`, matching local/production hashes, API restart/health, public site health, installed-renderer default preflight, and a 50-job production corpus: 49 fit uniformly at 10-10.5 pt while the single 25k-character outlier correctly failed at the 10 pt floor. Full isolated render of prior problem job `ft_1783523896859_zg7py7` produced PDF 1.7 with embedded fonts, 41 combined/40 interior pages, `noTextTruncation=true`, and a uniform 10 pt across all 25 story pages; rendered page PNGs were visually checked for drop caps, dense text, dialogue/page transitions, and final-chapter layout.
 
