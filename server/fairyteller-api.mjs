@@ -525,6 +525,21 @@ async function appendFollowUpAudit(email, event) {
   })}\n`, { mode: 0o600 });
 }
 
+async function getFollowUpStats() {
+  const recipientsDir = join(followUpRootDir(), 'recipients');
+  let entries;
+  try {
+    entries = await readdir(recipientsDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return { unsubscribed: 0 };
+    throw error;
+  }
+  const states = await Promise.all(entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => readJsonFile(join(recipientsDir, entry.name), {})));
+  return { unsubscribed: states.filter((state) => state?.unsubscribedAt).length };
+}
+
 function createFollowUpUnsubscribeToken(email) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return '';
@@ -3784,7 +3799,7 @@ async function sendAdminMail(params) {
   return delivery;
 }
 
-function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error = '', sends = [] } = {}) {
+function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error = '', sends = [], followUpStats = { unsubscribed: 0 } } = {}) {
   const rows = sends.map((send) => `<tr>
     <td><strong>${escapeHtml(send.to || '—')}</strong><span>${escapeHtml(send.id || send.error || send.reason || '—')}</span></td>
     <td>${escapeHtml(send.subject || '—')}</td>
@@ -3838,6 +3853,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
     strong { display: block; margin-bottom: 4px; font-size: 15px; color: #172126; }
     span { display: block; color: #68737d; font-size: 12px; }
     .empty { padding: 24px; color: #56616b; }
+    .follow-up-stat { display:inline-block; margin-top:12px; padding:8px 11px; border:1px solid #d6c7b2; border-radius:999px; background:#f1e8d8; color:#473f35; font-size:13px; font-weight:800; }
     @media (max-width: 760px) {
       body { padding: 18px; }
       header { display: block; }
@@ -3852,6 +3868,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
     <div>
       <h1>Письмо</h1>
       <p>Отправитель: ${escapeHtml(MAIL_FROM || 'не настроен')}${MAIL_REPLY_TO ? ` · Reply-To: ${escapeHtml(MAIL_REPLY_TO)}` : ''}</p>
+      <div class="follow-up-stat">Отписались от follow-up: ${escapeHtml(String(followUpStats.unsubscribed || 0))}</div>
     </div>
     <div class="actions">
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
@@ -6558,6 +6575,7 @@ async function route(req, res) {
           form: params,
           error: error.message || 'Не удалось отправить письмо.',
           sends: await readAdminMailSends(),
+          followUpStats: await getFollowUpStats(),
         }));
         return;
       }
@@ -6566,10 +6584,8 @@ async function route(req, res) {
     const notice = url.searchParams.get('sent') === '1'
       ? `Письмо отправлено${url.searchParams.get('id') ? `: ${url.searchParams.get('id')}` : ''}.`
       : '';
-    sendHtml(req, res, 200, renderAdminMailPage({
-      notice,
-      sends: await readAdminMailSends(),
-    }));
+    const [sends, followUpStats] = await Promise.all([readAdminMailSends(), getFollowUpStats()]);
+    sendHtml(req, res, 200, renderAdminMailPage({ notice, sends, followUpStats }));
     return;
   }
 
