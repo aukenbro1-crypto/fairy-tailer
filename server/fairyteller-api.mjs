@@ -59,6 +59,7 @@ const FOLLOW_UP_PAYMENT_BLOCK_MS = Math.max(60 * 60 * 1000, Number(process.env.F
 const FOLLOW_UP_MAX_BOOKS = Math.max(1, Math.min(3, Number(process.env.FAIRYTELLER_FOLLOW_UP_MAX_BOOKS || 3) || 3));
 const FOLLOW_UP_SEND_INTERVAL_MS = Math.max(250, Number(process.env.FAIRYTELLER_FOLLOW_UP_SEND_INTERVAL_MS || 750) || 750);
 const FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS = Math.max(24 * 60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS || 365 * 24 * 60 * 60 * 1000) || 365 * 24 * 60 * 60 * 1000);
+const FOLLOW_UP_ENABLED_AT_MS = Date.parse(process.env.FAIRYTELLER_FOLLOW_UP_ENABLED_AT || '');
 const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
@@ -4955,6 +4956,10 @@ function followUpPaidRecently(rows, nowMs) {
 
 async function processFollowUpGroup(group, nowMs = Date.now()) {
   return await withFollowUpLock(group.email, async () => {
+    const eligibleRows = Number.isFinite(FOLLOW_UP_ENABLED_AT_MS)
+      ? group.rows.filter((row) => row.createdMs >= FOLLOW_UP_ENABLED_AT_MS)
+      : [];
+    if (!eligibleRows.length) return { skipped: 'before_enabled_at' };
     const state = await readFollowUpState(group.email);
     if (state.unsubscribedAt) return { skipped: 'unsubscribed' };
     if (state.lastSentAt && nowMs - Date.parse(state.lastSentAt) < FOLLOW_UP_COOLDOWN_MS) return { skipped: 'cooldown' };
@@ -4962,9 +4967,9 @@ async function processFollowUpGroup(group, nowMs = Date.now()) {
       await appendFollowUpAudit(group.email, { type: 'follow_up.skipped', reason: 'paid_within_block_window' });
       return { skipped: 'paid' };
     }
-    const newestCreatedMs = Math.max(...group.rows.map((row) => row.createdMs));
+    const newestCreatedMs = Math.max(...eligibleRows.map((row) => row.createdMs));
     if (nowMs < newestCreatedMs + FOLLOW_UP_DELAY_MS) return { skipped: 'not_due' };
-    const stories = await Promise.all(group.rows
+    const stories = await Promise.all(eligibleRows
       .filter((row) => row.status.status === 'done' || row.status.stage === 'complete')
       .sort((left, right) => right.createdMs - left.createdMs)
       .slice(0, FOLLOW_UP_MAX_BOOKS)
