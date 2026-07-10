@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 19:20 UTC
+Last updated: 2026-07-10 19:30 UTC
 
 ## Project Context
 
@@ -269,6 +269,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-11
+
+- Split the first chapter's reader summary from its image-generation brief. Previously `chapter1.summary` was explicitly requested as a camera/lighting/composition brief and the same field was printed on the chapter title page, producing photo descriptions while chapters 2-5 displayed normal plot summaries. The first-text schema now requires `chapter1.summary` as a 160-280 character reader-facing description of the chapter's events and `chapter1.visualBrief` as the separate 260-380 character illustration direction. Normalization persists both fields in preview/chapter data, while `fairyteller_visuals` routes only `visualBrief` into the chapter-1 image prompt and keeps `summary` for PDF/admin readers. Loose-response recovery falls back from `visualBrief` to `summary` for compatibility. Existing artifacts are unchanged; new generations use the split contract. Production backup: `/root/fairyteller-n8n-exports/20260710-192051Z-chapter1-summary-before`; import: `/root/fairyteller-n8n-imports/20260710-192051Z-chapter1-summary`; after-export: `/root/fairyteller-n8n-exports/20260710-192051Z-chapter1-summary-after`. Verified workflow JSON and all Code-node syntax, an executable end-to-end synthetic Gemini response proving summary/visualBrief routing, `git diff --check`, active published exports, and n8n health after restart.
 
 - Reduced Gemini image safety refusals in continuation chapters and covers after inspecting completed test jobs `ft_1783709435207_8aa6p4` and `ft_1783709822549_8jetms`. Although both books completed, every chapter 2-5 needed a retry; one photorealistic chapter and three watercolor chapters fell through to the people-free fallback. Removed prompt language that repeatedly framed generated reference cards as private-person likeness reproduction (`private person`, `real-person`, `direct copy`, `recognizable face`, `identity-preserving`) and now describes them solely as generated fictional character designs and visual canon. Continuation image prompts no longer append the first 900 characters of chapter prose; they use a maximum 700-character visual summary after sanitizing phrases such as forbidden entry, breaking in, traps, security systems, intruders, tools, threats, and danger into calm visual equivalents. Cover whole-story context now uses the same visual sanitizer. The people-free last-resort fallback remains unchanged. Production backup: `/root/fairyteller-n8n-exports/20260710-191143Z-visual-safety-language-before`; import: `/root/fairyteller-n8n-imports/20260710-191143Z-visual-safety-language`; after-export: `/root/fairyteller-n8n-exports/20260710-191143Z-visual-safety-language-after`. Verified workflow JSON and all Code-node syntax, executable visual-scene tests, `git diff --check`, active published exports with no private-likeness language or full-prose scene input, and n8n health after restart.
 
