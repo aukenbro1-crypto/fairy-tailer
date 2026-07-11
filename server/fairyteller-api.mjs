@@ -1026,6 +1026,7 @@ function paymentSuccessTelegramMessage(jobId, status = {}, payment = {}, deliver
   lines.push('Данные заказа:');
   lines.push(`email: ${normalizeShortText(payment.email, 180) || '-'}`);
   lines.push(`phone: ${normalizeShortText(payment.phone, 80) || '-'}`);
+  lines.push(`messengers: ${normalizeShortText(payment.contactChannels, 80) || '-'}`);
   lines.push(`recipient: ${normalizeShortText(payment.customerName, 180) || '-'}`);
   lines.push(`address: ${normalizeShortText(payment.customerAddress, 360) || '-'}`);
   lines.push('');
@@ -5240,6 +5241,10 @@ async function createCheckout(jobId, checkout = {}) {
   }
   const email = normalizeEmail(checkout.email) || normalizeEmail((orderEnvelope.order || orderEnvelope).email);
   const phone = normalizeShortText(checkout.phone, 64);
+  const contactChannels = [
+    checkout.contactWhatsApp === true ? 'WhatsApp' : '',
+    checkout.contactTelegram === true ? 'Telegram' : '',
+  ].filter(Boolean).join(', ');
   const customerName = normalizeShortText(checkout.customerName || checkout.custName, 180);
   const customerAddress = normalizeShortText(checkout.customerAddress || checkout.custAddr, 320);
   const pdfUrl = normalizeShortText(checkout.pdfUrl, 500);
@@ -5256,6 +5261,7 @@ async function createCheckout(jobId, checkout = {}) {
       jobId,
       email,
       phone,
+      contactChannels,
       customerName,
       customerAddress,
       pdfUrl,
@@ -5286,6 +5292,7 @@ async function createCheckout(jobId, checkout = {}) {
     amount: body.amount,
     email,
     phone,
+    contactChannels,
     customerName,
     customerAddress,
     pdfUrl,
@@ -5340,6 +5347,7 @@ async function handleYookassaWebhook(req) {
       amount: actual.amount || current.amount || null,
       email: actual.metadata?.email || current.email || '',
       phone: actual.metadata?.phone || current.phone || '',
+      contactChannels: actual.metadata?.contactChannels || current.contactChannels || '',
       customerName: actual.metadata?.customerName || current.customerName || '',
       customerAddress: actual.metadata?.customerAddress || current.customerAddress || '',
       pdfUrl: actual.metadata?.pdfUrl || current.pdfUrl || '',

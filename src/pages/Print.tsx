@@ -99,6 +99,8 @@ const Print = () => {
         body: JSON.stringify({
           email: formData.get("cps_email"),
           phone: formData.get("cps_phone"),
+          contactWhatsApp: formData.get("contactWhatsApp") === "on",
+          contactTelegram: formData.get("contactTelegram") === "on",
           customerName: formData.get("custName"),
           customerAddress: formData.get("custAddr"),
           pdfUrl: formData.get("pdfUrl"),
@@ -340,6 +342,19 @@ const Print = () => {
               Телефон
               <input name="cps_phone" className="ym-input" placeholder="+7 999 000-00-00" required type="tel" />
             </label>
+            <fieldset className="grid gap-2 border-0 p-0">
+              <legend className="print-field-label">Как с вами связаться</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                <label className="flex cursor-pointer items-center gap-2 text-[13px] font-bold text-[#3f4447]">
+                  <input name="contactWhatsApp" type="checkbox" className="h-4 w-4 cursor-pointer accent-[#111111]" />
+                  WhatsApp
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-[13px] font-bold text-[#3f4447]">
+                  <input name="contactTelegram" type="checkbox" className="h-4 w-4 cursor-pointer accent-[#111111]" />
+                  Telegram
+                </label>
+              </div>
+            </fieldset>
             <label className="print-field-label">
               Получатель
               <input name="custName" className="ym-input" placeholder="ФИО получателя" required type="text" />
