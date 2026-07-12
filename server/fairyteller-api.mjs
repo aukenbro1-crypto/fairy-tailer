@@ -2593,6 +2593,16 @@ function textareaRows(value, minRows = 4, maxRows = 18) {
   return Math.max(minRows, Math.min(maxRows, lineRows + lengthRows));
 }
 
+const STORY_BLOCK_CHARACTER_MIN = 760;
+const STORY_BLOCK_CHARACTER_MAX = 1050;
+
+function storyBlockCharacterState(value) {
+  const count = String(value || '').length;
+  if (count < STORY_BLOCK_CHARACTER_MIN) return { count, state: 'short', label: 'мало текста' };
+  if (count > STORY_BLOCK_CHARACTER_MAX) return { count, state: 'long', label: 'риск переполнения' };
+  return { count, state: 'ok', label: 'норма' };
+}
+
 function adminBookImageSlots() {
   return [
     { fieldName: 'image_cover', slot: 'cover', label: 'Обложка', baseName: 'cover-spread', defaultFileName: 'cover-spread.png' },
@@ -2809,11 +2819,17 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const chapterFields = chapters.map((chapter) => {
     const chapterNumber = Number(chapter.n);
     const blocks = editableChapterBlocks(chapter);
-    const blockFields = blocks.map((block, index) => `
-      <label for="chapter_${chapterNumber}_block_${index}">Блок ${index + 1}</label>
-      <p class="field-hint">Пустая строка внутри блока станет новым абзацем в PDF.</p>
-      <textarea id="chapter_${chapterNumber}_block_${index}" name="chapter_${chapterNumber}_block_${index}" rows="${textareaRows(block)}">${escapeHtml(block)}</textarea>
-    `).join('');
+    const blockFields = blocks.map((block, index) => {
+      const characterState = storyBlockCharacterState(block);
+      return `<div class="story-block-field">
+        <div class="story-block-heading">
+          <label for="chapter_${chapterNumber}_block_${index}">Блок ${index + 1}</label>
+          <span class="character-count character-count--${characterState.state}" data-character-count-for="chapter_${chapterNumber}_block_${index}">${characterState.count} знаков · ${characterState.label}</span>
+        </div>
+        <p class="field-hint">Ориентир на страницу: ${STORY_BLOCK_CHARACTER_MIN}–${STORY_BLOCK_CHARACTER_MAX} знаков. Пустая строка станет новым абзацем в PDF.</p>
+        <textarea class="story-block-textarea" id="chapter_${chapterNumber}_block_${index}" name="chapter_${chapterNumber}_block_${index}" rows="${textareaRows(block)}" data-character-min="${STORY_BLOCK_CHARACTER_MIN}" data-character-max="${STORY_BLOCK_CHARACTER_MAX}">${escapeHtml(block)}</textarea>
+      </div>`;
+    }).join('');
 
     return `<section class="chapter">
       <h2>Глава ${escapeHtml(String(chapter.n || ''))}</h2>
@@ -2851,6 +2867,13 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
     a { color: #1f5d53; font-weight: 800; text-decoration: none; }
     label { display: block; margin: 0 0 7px; color: #5b5147; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     .field-hint { margin: -2px 0 7px; color: #766b60; font-size: 12px; }
+    .story-block-field { margin-top: 14px; }
+    .story-block-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 7px; }
+    .story-block-heading label { margin: 0; }
+    .character-count { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .character-count--short { color: #8a4b08; background: #fff0c7; }
+    .character-count--ok { color: #176149; background: #dff7ec; }
+    .character-count--long { color: #991b1b; background: #fee2e2; }
     input, textarea, select { width: 100%; border: 1px solid #d2c4b0; border-radius: 6px; padding: 11px 12px; background: #fffdf8; color: #1f2933; font: inherit; line-height: 1.5; }
     textarea { resize: vertical; min-height: 110px; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
@@ -2886,6 +2909,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       .image-grid { grid-template-columns: 1fr; }
       .button-row { margin-left: -18px; margin-right: -18px; margin-bottom: -18px; padding-left: 18px; padding-right: 18px; }
       button { width: 100%; }
+      .story-block-heading { align-items: flex-start; flex-direction: column; gap: 6px; }
     }
   </style>
 </head>
@@ -2953,6 +2977,25 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       <button type="submit" name="action" value="save_render">Сохранить все и пересобрать PDF</button>
     </div>
   </form>
+  <script>
+    (() => {
+      const updateCharacterCount = (textarea) => {
+        const counter = document.querySelector('[data-character-count-for="' + textarea.id + '"]');
+        if (!counter) return;
+        const count = textarea.value.length;
+        const min = Number(textarea.dataset.characterMin || ${STORY_BLOCK_CHARACTER_MIN});
+        const max = Number(textarea.dataset.characterMax || ${STORY_BLOCK_CHARACTER_MAX});
+        const state = count < min ? 'short' : count > max ? 'long' : 'ok';
+        const label = state === 'short' ? 'мало текста' : state === 'long' ? 'риск переполнения' : 'норма';
+        counter.textContent = count + ' знаков · ' + label;
+        counter.className = 'character-count character-count--' + state;
+      };
+      document.querySelectorAll('.story-block-textarea').forEach((textarea) => {
+        updateCharacterCount(textarea);
+        textarea.addEventListener('input', () => updateCharacterCount(textarea));
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }

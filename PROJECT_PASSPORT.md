@@ -268,6 +268,10 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 
 ## Change Log
 
+### 2026-07-13
+
+- Added live character-count guidance to every story text block in the protected admin book editor. Each textarea now shows `current characters · state` and updates immediately while typing: below 760 is highlighted as `мало текста`, 760-1050 as `норма`, and above 1050 as `риск переполнения`. The accompanying copy explicitly calls the range a per-page guideline because actual PDF capacity depends on words, paragraph structure, uniform font size, and chapter-level repagination. The counter is advisory and does not block saving. Production API backup: `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260712-171216Z-admin-character-counts.before.bak`. Verified production/local API parity before editing, `node --check`, active API service, public site availability, and real editor HTML for `ft_1783851745821_0r25p4` containing correct normal/short/overflow values.
+
 ### 2026-07-12
 
 - Preserved same-speaker dialogue continuation during PDF pagination. The renderer previously treated every punctuation-plus-dash sequence such as `. — Какой торт...` as an inferred new paragraph, corrupting correctly authored Russian dialogue of the form `— Реплика, — сказал герой. — Продолжение реплики.` It now respects the editor's paragraph structure: a new PDF paragraph is created from an actual blank line, while sentence continuation after author words remains in the same paragraph and may wrap only at the page's line width. Rebuilt `ft_1783851745821_0r25p4` and verified the target passage through final-PDF text extraction; the continuation stays inline. Removing the false paragraph gaps also allowed the whole book to return from 9.75 pt to a uniform 10.25 pt. Renderer backup: `/opt/fairyteller-render/backups/20260712-170437Z-dialogue-paragraphs/fairyteller-render-pdf.mjs.before`. Verified `node --check`, production text preflight, completed render, `done` status, extracted dialogue layout, and identical 10.25 pt min/max story font.
