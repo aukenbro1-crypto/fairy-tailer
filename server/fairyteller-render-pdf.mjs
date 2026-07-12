@@ -223,7 +223,6 @@ function normalizeDialogueDashes(value) {
   text = repairLowercaseDashParagraphs(text);
   text = repairInlineLowercaseDashes(text);
   text = splitNarrativeAfterDialogue(text);
-  text = text.replace(/([.!?…:])\s+—\s+(?=[А-ЯЁA-Z0-9])/gu, '$1\n\n— ');
   text = splitNarrativeAfterDialogue(text);
   return normalizeDashSpacing(text).replace(/\n{3,}/g, '\n\n');
 }
@@ -292,7 +291,6 @@ function splitSentences(text) {
 
 function inferDisplayParagraphs(text) {
   const dialogueChunks = normalizeDialogueDashes(text)
-    .replace(/(^|[.!?…]\s+)(—\s*(?=[A-ZА-ЯЁ0-9]))/gu, '$1\n\n$2')
     .split(/\n{2,}/)
     .map(cleanText)
     .filter(Boolean);
