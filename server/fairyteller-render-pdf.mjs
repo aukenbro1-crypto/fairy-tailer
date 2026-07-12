@@ -1144,7 +1144,7 @@ const UNIFORM_STORY_FONT_SIZE_RAW = Number(process.env.FAIRYTELLER_RENDER_UNIFOR
 const UNIFORM_STORY_FONT_SIZE_PT = Number.isFinite(UNIFORM_STORY_FONT_SIZE_RAW)
   ? Math.max(9, Math.min(11, UNIFORM_STORY_FONT_SIZE_RAW))
   : 10.5;
-const UNIFORM_STORY_FONT_MIN_SIZE_RAW = Number(process.env.FAIRYTELLER_RENDER_UNIFORM_STORY_FONT_MIN_SIZE_PT || 10);
+const UNIFORM_STORY_FONT_MIN_SIZE_RAW = Number(process.env.FAIRYTELLER_RENDER_UNIFORM_STORY_FONT_MIN_SIZE_PT || 9.5);
 const UNIFORM_STORY_FONT_MIN_SIZE_PT = Number.isFinite(UNIFORM_STORY_FONT_MIN_SIZE_RAW)
   ? Math.max(9, Math.min(UNIFORM_STORY_FONT_SIZE_PT, UNIFORM_STORY_FONT_MIN_SIZE_RAW))
   : 10;
@@ -1379,65 +1379,41 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
   }
 
   function solvePagination() {
-    const boundaries = [0];
-    let start = 0;
-    for (let pageIndex = 0; pageIndex < pagePlans.length; pageIndex += 1) {
+    const memo = new Map();
+    function solveFrom(pageIndex, start) {
+      const key = `${pageIndex}:${start}`;
+      if (memo.has(key)) return memo.get(key);
       const remainingPages = pagePlans.length - pageIndex;
-      const maxEnd = segments.length - (remainingPages - 1);
+      const remainingSegments = segments.length - start;
+      if (remainingSegments < remainingPages) {
+        memo.set(key, null);
+        return null;
+      }
       if (pageIndex === pagePlans.length - 1) {
-        boundaries.push(segments.length);
-        break;
+        const page = candidate(pageIndex, start, segments.length);
+        const result = page.layout.truncated
+          ? null
+          : { score: pagePaginationScore(page, segments.length), pages: [page] };
+        memo.set(key, result);
+        return result;
       }
-      let bestEnd = null;
-      for (let end = start + 1; end <= maxEnd; end += 1) {
-        const measured = candidate(pageIndex, start, end);
-        if (measured.layout.truncated) break;
-        bestEnd = end;
-      }
-      if (!bestEnd) return null;
-      boundaries.push(bestEnd);
-      start = bestEnd;
-    }
 
-    let pages = measuredPages(boundaries);
-    if (!pages) return null;
-    let score = solutionScore(boundaries, pages);
-    for (let iteration = 0; iteration < 60; iteration += 1) {
-      let bestMove = null;
-      for (let boundaryIndex = 1; boundaryIndex < boundaries.length - 1; boundaryIndex += 1) {
-        for (const delta of [-1, 1]) {
-          const nextBoundary = boundaries[boundaryIndex] + delta;
-          if (nextBoundary <= boundaries[boundaryIndex - 1] || nextBoundary >= boundaries[boundaryIndex + 1]) continue;
-          const leftPageIndex = boundaryIndex - 1;
-          const rightPageIndex = boundaryIndex;
-          const nextLeftPage = candidate(leftPageIndex, boundaries[leftPageIndex], nextBoundary);
-          const nextRightPage = candidate(rightPageIndex, nextBoundary, boundaries[rightPageIndex + 1]);
-          if (nextLeftPage.layout.truncated || nextRightPage.layout.truncated) continue;
-          const oldPairScore = pagePaginationScore(pages[leftPageIndex], boundaries[boundaryIndex])
-            + pagePaginationScore(pages[rightPageIndex], boundaries[boundaryIndex + 1]);
-          const nextPairScore = pagePaginationScore(nextLeftPage, nextBoundary)
-            + pagePaginationScore(nextRightPage, boundaries[boundaryIndex + 1]);
-          const nextScore = score - oldPairScore + nextPairScore;
-          if (nextScore + 0.0001 < score && (!bestMove || nextScore < bestMove.score)) {
-            bestMove = {
-              boundaryIndex,
-              nextBoundary,
-              leftPageIndex,
-              rightPageIndex,
-              nextLeftPage,
-              nextRightPage,
-              score: nextScore,
-            };
-          }
+      const maxEnd = segments.length - (remainingPages - 1);
+      let best = null;
+      for (let end = start + 1; end <= maxEnd; end += 1) {
+        const page = candidate(pageIndex, start, end);
+        if (page.layout.truncated) break;
+        const tail = solveFrom(pageIndex + 1, end);
+        if (!tail) continue;
+        const score = pagePaginationScore(page, end) + tail.score;
+        if (!best || score < best.score) {
+          best = { score, pages: [page, ...tail.pages] };
         }
       }
-      if (!bestMove) break;
-      boundaries[bestMove.boundaryIndex] = bestMove.nextBoundary;
-      pages[bestMove.leftPageIndex] = bestMove.nextLeftPage;
-      pages[bestMove.rightPageIndex] = bestMove.nextRightPage;
-      score = bestMove.score;
+      memo.set(key, best);
+      return best;
     }
-    return { score, pages };
+    return solveFrom(0, 0);
   }
 
   let solution = solvePagination();
