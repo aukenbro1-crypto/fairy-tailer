@@ -2586,6 +2586,16 @@ function editableChapterBlocks(chapter) {
     .filter(Boolean);
 }
 
+function renderedChapterBlocks(chapter, paginationChapter = null) {
+  const renderedBlocks = Array.isArray(paginationChapter?.pages)
+    ? paginationChapter.pages.map((page) => editorBlockText(page?.text || '')).filter(Boolean)
+    : [];
+  if (!renderedBlocks.length) return editableChapterBlocks(chapter);
+  const sourceText = cleanEditorText(editableChapterBlocks(chapter).join(' '));
+  const renderedText = cleanEditorText(renderedBlocks.join(' '));
+  return sourceText === renderedText ? renderedBlocks : editableChapterBlocks(chapter);
+}
+
 function textareaRows(value, minRows = 4, maxRows = 18) {
   const text = String(value || '');
   const lineRows = text.split('\n').length;
@@ -2811,6 +2821,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const lastRender = previousReadyRender?.generatedAt || '';
   const storyFontMode = currentStoryFontMode(fullText);
   const renderedStoryFont = renderStoryFontSummary(previousReadyRender?.preflight?.storyFont);
+  const renderedPaginationChapters = previousReadyRender?.preflight?.storyFont?.pagination?.chapters || [];
   const renderError = renderFailureMessage(render)
     || (status.status === 'failed' && status.stage === 'render'
       ? status.error?.message || status.message || 'PDF не удалось пересобрать.'
@@ -2818,7 +2829,8 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
 
   const chapterFields = chapters.map((chapter) => {
     const chapterNumber = Number(chapter.n);
-    const blocks = editableChapterBlocks(chapter);
+    const paginationChapter = renderedPaginationChapters.find((entry) => Number(entry?.chapter) === chapterNumber);
+    const blocks = renderedChapterBlocks(chapter, paginationChapter);
     const blockFields = blocks.map((block, index) => {
       const characterState = storyBlockCharacterState(block);
       return `<div class="story-block-field">

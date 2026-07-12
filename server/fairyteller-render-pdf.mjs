@@ -219,12 +219,7 @@ function splitNarrativeAfterDialogue(value) {
 }
 
 function normalizeDialogueDashes(value) {
-  let text = normalizeDashSpacing(value);
-  text = repairLowercaseDashParagraphs(text);
-  text = repairInlineLowercaseDashes(text);
-  text = splitNarrativeAfterDialogue(text);
-  text = splitNarrativeAfterDialogue(text);
-  return normalizeDashSpacing(text).replace(/\n{3,}/g, '\n\n');
+  return normalizeDashSpacing(value).replace(/\n{3,}/g, '\n\n');
 }
 
 function normalizeParagraphText(value) {
@@ -1214,7 +1209,7 @@ function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null
     firstLineIndent: 15,
     paragraphGapRatio: 0.54,
     maxParagraphGapRatio: 1.45,
-    inferParagraphs: true,
+    inferParagraphs: false,
     dropCap: hasDropCap ? {
       enabled: true,
       font: fonts.fontSerifBold,
@@ -1466,11 +1461,12 @@ function paginatePptStoryChapters(chapters, layout, fonts, size) {
       sourceCharacterCount: result.sourceCharacterCount,
       minUtilization: Math.min(...result.pages.map((page) => page.utilization)),
       maxUtilization: Math.max(...result.pages.map((page) => page.utilization)),
-      pages: result.pages.map(({ pageNumber: number, utilization, lineCount, characterCount }) => ({
-        pageNumber: number,
-        utilization,
-        lineCount,
-        characterCount,
+      pages: result.pages.map((page) => ({
+        pageNumber: page.pageNumber,
+        utilization: page.utilization,
+        lineCount: page.lineCount,
+        characterCount: page.characterCount,
+        text: page.text,
       })),
     });
   });
