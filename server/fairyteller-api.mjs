@@ -41,7 +41,16 @@ const DAILY_FREE_GENERATION_WINDOW_MS = Math.max(
   Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000,
 );
 const CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
+  ['zoowall@yandex.ru', {
+    limit: 0,
+  }],
   ['aleks27134@gmail.com', {
+    limit: 1,
+    windowMs: 3 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 3 дня',
+    periodScopeLabel: 'за этот период',
+  }],
+  ['tsapatsarap@gmail.com', {
     limit: 1,
     windowMs: 3 * 24 * 60 * 60 * 1000,
     periodLabel: 'за 3 дня',
