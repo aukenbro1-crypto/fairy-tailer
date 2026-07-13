@@ -83,6 +83,8 @@ Telegram messages include direct `book.pdf` and `preview.pdf` links once the ren
 
 Production also runs a service-level watchdog via `fairyteller-service-watchdog.timer` every five minutes. It uses the same alert Telegram variables, reads secrets only from `/etc/fairyteller/api.env`, and checks root disk usage, suspicious SSH activity, Job API health, n8n health/container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. The script lives in the repo at `ops/fairyteller-service-watchdog.mjs` and is deployed to `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`; dedupe state is stored under `/data/fairyteller/monitor/`.
 
+Generated PDFs for unpaid jobs are retained for 30 days in production. The daily `fairyteller-cleanup-unpaid-pdfs.timer` runs `/opt/fairyteller-monitor/fairyteller-cleanup-unpaid-pdfs.mjs`, sourced from `ops/fairyteller-cleanup-unpaid-pdfs.mjs`, and removes only generated PDF files (`book.pdf`, `preview.pdf`, `cover.pdf`, `interior.pdf`, `paywall-preview.pdf`) for unpaid jobs older than `FAIRYTELLER_UNPAID_PDF_RETENTION_DAYS`. Paid jobs and non-PDF job data are preserved.
+
 The legacy render-ready customer email template references small public product-example images from `/images/email/`. If mail is not configured, generation and payment state still persist; email delivery records `mail_provider_not_configured`.
 
 ## Protected Operator Views

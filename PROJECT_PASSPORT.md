@@ -1,6 +1,6 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-07-10 19:50 UTC
+Last updated: 2026-07-13 14:58 UTC
 
 ## Project Context
 
@@ -15,7 +15,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`; password authentication is disabled in production, root login is key-only.
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260710-length-target-19500-codex`
+- Current static site release: `/var/www/fairyteller/releases/20260711-paywall-collapsed-strip-codex`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
@@ -212,6 +212,8 @@ Generation progress and failure alerts use a separate Telegram bot identity:
 
 Service-level health alerts use the same alert bot identity. Production runs `fairyteller-service-watchdog.timer` every five minutes; it executes `/opt/fairyteller-monitor/fairyteller-service-watchdog.mjs`, sourced from `ops/fairyteller-service-watchdog.mjs` in this repo, and dedupes state under `/data/fairyteller/monitor/`. The watchdog checks root disk usage, suspicious SSH activity, Job API `/healthz`, n8n `/healthz`, the `baku-n8n-docker` container state, recent n8n webhook start errors, recent failed jobs, and fresh stuck jobs. It was installed and verified on 2026-07-08 after the full-disk ENOSPC incident; a TaleBoy test alert was sent successfully, and a normal run reported `activeIssues:0`.
 
+Production also runs `fairyteller-cleanup-unpaid-pdfs.timer` daily. It executes `/opt/fairyteller-monitor/fairyteller-cleanup-unpaid-pdfs.mjs`, sourced from `ops/fairyteller-cleanup-unpaid-pdfs.mjs`, and deletes only generated PDF artifacts (`book.pdf`, `preview.pdf`, `cover.pdf`, `interior.pdf`, `paywall-preview.pdf`) for unpaid jobs older than `FAIRYTELLER_UNPAID_PDF_RETENTION_DAYS` days. The production default is 30 days. Paid jobs and non-PDF job data are not deleted by this timer.
+
 Successful payment alerts use `FAIRYTELLER_PAYMENT_TELEGRAM_BOT_TOKEN` and `FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_ID`, falling back to the site chat bot (`@fairysender_bot` in production) when dedicated payment variables are absent. The alert includes job/payment IDs, amount, customer email, phone, recipient name, delivery address, customer-email delivery status, and the public book URL.
 
 Legacy `FAIRYTELLER_TELEGRAM_*` variables remain as fallback only when the split role-specific variables are absent. Production should keep the site support chat on the support bot and generation alerts on the operations bot.
@@ -269,6 +271,8 @@ Google Slides/Drive should be phased out because OAuth reauthorization has been 
 ## Change Log
 
 ### 2026-07-13
+
+- Cleaned production disk after root usage reached 85%. Safe cleanup removed apt lists/cache, old `/tmp` entries, exited Docker backup containers, reduced systemd journals to about 200 MB, and pruned Fairyteller frontend releases from 102 to the current/latest 7. Applied the unpaid-PDF retention rule once: deleted 156 generated PDF artifacts from unpaid jobs older than 30 days, freeing about 2.52 GB while leaving paid jobs and non-PDF job data untouched. Root filesystem usage dropped from 85% to 69%, `/var/www/fairyteller/releases` dropped to 398 MB, and `/data/fairyteller/jobs` dropped to 12 GB. Installed and verified `fairyteller-cleanup-unpaid-pdfs.timer` for ongoing daily retention.
 
 - Aligned admin text blocks with the actual post-pagination PDF pages. The per-field counters initially described stored source blocks, while the chapter paginator could move sentences between pages, so `Блок 5/6` did not match PDF pages 5/6. Successful renders now persist each page's exact text alongside utilization metrics in `render.json`. The admin editor uses these rendered page blocks only after verifying that their combined normalized text equals the current editorial source; edited or stale renders safely fall back to source blocks. During verification, another renderer mutation was found: dialogue repair logic converted correct `— Настя! — хором закричали...` into two paragraphs and changed capitalization. All renderer-side dialogue rewriting and inferred paragraph creation were removed. PDF layout now respects only explicit blank lines from the editor and otherwise performs line wrapping without editorial changes. Rebuilt `ft_1783851745821_0r25p4`: all six chapter-4 editor blocks match all six rendered PDF pages exactly character-for-character, the dialogue remains inline, the job is `done`, and the entire story fits at a uniform 10.5 pt. Backups: `/opt/fairyteller-render/backups/20260712-184033Z-admin-pdf-page-blocks/fairyteller-render-pdf.mjs.before` and `/opt/fairyteller-api/backups/fairyteller-api.mjs.20260712-184033Z-admin-pdf-page-blocks.before.bak`. Verified both Node files, completed production render, final PDF text extraction, exact editor/render page equality, active API service, and ready artifacts.
 
