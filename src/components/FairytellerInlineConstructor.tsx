@@ -183,6 +183,7 @@ type FairytellerInlineConstructorProps = {
   locationPlaceholder?: string;
   artifactLabel?: string;
   artifactPlaceholder?: string;
+  heroLegend?: string;
   heroIntro?: string;
   defaultVisibleHeroIndexes?: number[];
   defaultHeroAgeGroup?: string;
@@ -221,6 +222,7 @@ const FairytellerInlineConstructor = ({
   locationPlaceholder = "Город знакомства, дом, поездка, любимое место",
   artifactLabel = "Важная деталь",
   artifactPlaceholder = "Кулон, билет, песня, питомец, фраза",
+  heroLegend = "Герои и фото",
   heroIntro = "Заполните главного героя: имя нужно обязательно, фото и детали помогут сделать историю личной.",
   defaultVisibleHeroIndexes = [0],
   defaultHeroAgeGroup,
@@ -591,7 +593,7 @@ const FairytellerInlineConstructor = ({
       setGenerationStartedAt(Date.now());
       toast({
         title: "Книга создается",
-        description: "Запустили генерацию романтической истории, иллюстраций и печатного макета.",
+        description: `Запустили генерацию истории в жанре «${selectedWorld.title}», иллюстраций и печатного макета.`,
       });
     } catch {
       toast({
@@ -859,7 +861,7 @@ const FairytellerInlineConstructor = ({
             <div>
               <fieldset>
                 <legend className="text-[28px] font-black uppercase leading-none tracking-normal">
-                  Герои и фото
+                  {heroLegend}
                 </legend>
                 <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
                   <p className="max-w-[520px] text-[14px] leading-6 text-[#5e6264]">
