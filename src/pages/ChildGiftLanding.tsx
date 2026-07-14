@@ -18,9 +18,10 @@ import FairytellerInlineConstructor from "@/components/FairytellerInlineConstruc
 import LandingHeader from "@/components/LandingHeader";
 import LegalFooterLinks from "@/components/LegalFooterLinks";
 import logoImage from "@/assets/logo.png";
-import tainyBookshelfImage from "@/assets/landing-photos/child-gift-tainy-bookshelf.jpg";
-import tainyHeroImage from "@/assets/landing-photos/child-gift-tainy-hero.jpg";
-import tainyHandsImage from "@/assets/landing-photos/child-gift-tainy-hands.jpg";
+import taynaOpenSpreadImage from "@/assets/landing-photos/child-gift-hero/tayna-beloy-koshki-open-spread.webp";
+import taynaCoverImage from "@/assets/landing-photos/child-gift-hero/tayna-beloy-koshki-cover.webp";
+import kompasStackImage from "@/assets/landing-photos/child-gift-hero/kompas-zhelaniy-stack.webp";
+import kompasFrontBackImage from "@/assets/landing-photos/child-gift-hero/kompas-zhelaniy-front-back.webp";
 import drevogradHandsImage from "@/assets/landing-photos/child-gift-drevograd-hands.jpg";
 import drevogradSpreadImage from "@/assets/landing-photos/child-gift-drevograd-spread.jpg";
 import drevogradBackImage from "@/assets/landing-photos/child-gift-drevograd-back.jpg";
@@ -39,9 +40,10 @@ const metrics = [
 ];
 
 const heroImages = [
-  { title: "Книга Тайны заколдованной карты на книжной полке", image: tainyBookshelfImage },
-  { title: "Разворот и обложка книги Тайны заколдованной карты", image: tainyHeroImage },
-  { title: "Разворот книги Тайны заколдованной карты в руках", image: tainyHandsImage },
+  { title: "Разворот книги Тайны белой кошки", image: taynaOpenSpreadImage },
+  { title: "Обложка книги Тайны белой кошки", image: taynaCoverImage },
+  { title: "Книга Компас желаний на стопке книг", image: kompasStackImage },
+  { title: "Передняя и задняя обложки книги Компас желаний", image: kompasFrontBackImage },
 ];
 
 const occasions = [
@@ -152,7 +154,7 @@ const faqs = [
   DELIVERY_FAQ,
 ];
 
-const childHeroSlots = ["Ребёнок", "Друг", "Родитель", "Герой 4"];
+const childHeroSlots = ["Главный герой", "Герой 2", "Герой 3", "Герой 4"];
 
 const CtaStrip = () => (
   <a
@@ -306,7 +308,7 @@ const ChildGiftLanding = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>
       <SEO
-        title="Книга, где ваш ребенок — главный герой | Fairyteller"
+        title="Персональная сказка, где ваш ребенок — главный герой | Fairyteller"
         description="Создайте именную сказку для ребёнка: уникальный сюжет, иллюстрации по фото, персонаж похож на вашего малыша. Физическая книга от 3500₽ с доставкой по России."
         path="/podarok/rebenku"
         image="/images/book-exmpl6.jpg"
@@ -369,7 +371,7 @@ const ChildGiftLanding = () => {
           <div className="flex min-w-0 flex-col justify-between border-black px-5 py-9 md:px-8 md:py-11 lg:border-r lg:pb-16">
             <div className="w-full max-w-[360px] md:max-w-none">
               <h1 className="w-full max-w-full break-normal text-[28px] font-black uppercase leading-[1.08] tracking-normal min-[420px]:text-[34px] sm:text-[40px] md:max-w-[780px] md:text-[46px] lg:text-[44px] 2xl:text-[54px]">
-                Книга, где ваш ребенок — главный герой
+                Персональная сказка, где ваш ребенок — главный герой
               </h1>
               <p className="mt-5 w-full max-w-[340px] text-[16px] leading-[1.42] md:max-w-[680px] md:text-[21px] md:leading-[1.35]">
                 Создайте бумажную книгу со стильными иллюстрациями про вашего ребенка. Веселое приключение,
