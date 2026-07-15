@@ -16,6 +16,7 @@ data
 uploads
 outputs
 tmp/
+vite.config.ts.timestamp-*.mjs
 
 # Editor directories and files
 .vscode/*
