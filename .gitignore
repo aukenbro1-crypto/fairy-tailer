@@ -15,6 +15,7 @@ dist-ssr
 data
 uploads
 outputs
+tmp/
 
 # Editor directories and files
 .vscode/*

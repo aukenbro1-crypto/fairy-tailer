@@ -25,6 +25,16 @@ import kompasFrontBackImage from "@/assets/landing-photos/child-gift-hero/kompas
 import drevogradHandsImage from "@/assets/landing-photos/child-gift-drevograd-hands.jpg";
 import drevogradSpreadImage from "@/assets/landing-photos/child-gift-drevograd-spread.jpg";
 import drevogradBackImage from "@/assets/landing-photos/child-gift-drevograd-back.jpg";
+import engineerShelfImage from "@/assets/landing-photos/child-gift-carousel/engineer-shelf.webp";
+import engineerReadingImage from "@/assets/landing-photos/child-gift-carousel/engineer-reading.webp";
+import engineerBackImage from "@/assets/landing-photos/child-gift-carousel/engineer-back.webp";
+import malyutinaSpreadImage from "@/assets/landing-photos/child-gift-carousel/malyutina-spread.webp";
+import malyutinaCoverImage from "@/assets/landing-photos/child-gift-carousel/malyutina-cover.webp";
+import malyutinaBackImage from "@/assets/landing-photos/child-gift-carousel/malyutina-back.webp";
+import whiteCatCoverImage from "@/assets/landing-photos/child-gift-carousel/white-cat-cover.webp";
+import whiteCatReadingImage from "@/assets/landing-photos/child-gift-carousel/white-cat-reading.webp";
+import whiteCatBackImage from "@/assets/landing-photos/child-gift-carousel/white-cat-back.webp";
+import cactusStudioImage from "@/assets/landing-photos/child-gift-carousel/cactus-studio.webp";
 
 const typeStyle = {
   fontFamily: '"Avenir Next", "Helvetica Neue", Jost, Futura, Arial, sans-serif',
@@ -167,14 +177,19 @@ const CtaStrip = () => (
 );
 
 const exampleCarouselItems = [
-  { title: "Обложка детской книги", alt: "Обложка детской книги Лист над Древоградом", image: drevogradHandsImage },
-  { title: "Разворот детской книги", alt: "Разворот детской персональной книги", image: drevogradSpreadImage },
-  { title: "Задняя обложка детской книги", alt: "Задняя обложка детской персональной книги", image: drevogradBackImage },
+  { title: "Инженер человеческих связей на книжной полке", alt: "Книга Инженер человеческих связей на полке в детской комнате", image: engineerShelfImage },
+  { title: "Чтение книги Инженер человеческих связей", alt: "Ребенок читает персональную книгу Инженер человеческих связей", image: engineerReadingImage },
+  { title: "Задняя обложка Инженера человеческих связей", alt: "Задняя обложка книги Инженер человеческих связей", image: engineerBackImage },
+  { title: "Разворот Тайны малютиной дачи", alt: "Разворот персональной книги Тайна малютиной дачи", image: malyutinaSpreadImage },
+  { title: "Обложка Тайны малютиной дачи", alt: "Ребенок держит книгу Тайна малютиной дачи", image: malyutinaCoverImage },
+  { title: "Задняя обложка Тайны малютиной дачи", alt: "Задняя обложка книги Тайна малютиной дачи", image: malyutinaBackImage },
+  { title: "Обложка Тайны белой кошки", alt: "Ребенок держит книгу Тайна белой кошки", image: whiteCatCoverImage },
+  { title: "Чтение Тайны белой кошки", alt: "Ребенок читает книгу Тайна белой кошки", image: whiteCatReadingImage },
+  { title: "Задняя обложка Тайны белой кошки", alt: "Задняя обложка книги Тайна белой кошки", image: whiteCatBackImage },
+  { title: "Книга Тайны кактусовой планеты", alt: "Книга Тайны кактусовой планеты в марокканском интерьере", image: cactusStudioImage },
 ];
 
 const exampleMarqueeItems = [...exampleCarouselItems, ...exampleCarouselItems, ...exampleCarouselItems];
-const CHILD_EXAMPLE_AUTO_SCROLL_SPEED = 0.06;
-
 const jsonLd = [
   {
     "@context": "https://schema.org",
@@ -215,9 +230,6 @@ const ChildGiftLanding = () => {
   const [heroIndex, setHeroIndex] = useState(0);
   const exampleStripRef = useRef<HTMLDivElement>(null);
   const exampleDragRef = useRef<{ x: number; scrollLeft: number } | null>(null);
-  const exampleAnimationRef = useRef<number | null>(null);
-  const exampleLastFrameRef = useRef<number | null>(null);
-  const exampleScrollPositionRef = useRef<number | null>(null);
   const exampleDraggingRef = useRef(false);
 
   const normalizeExampleScroll = useCallback(() => {
@@ -229,10 +241,8 @@ const ChildGiftLanding = () => {
 
     if (strip.scrollLeft < cycleWidth * 0.5) {
       strip.scrollLeft += cycleWidth;
-      exampleScrollPositionRef.current = strip.scrollLeft;
     } else if (strip.scrollLeft > cycleWidth * 1.5) {
       strip.scrollLeft -= cycleWidth;
-      exampleScrollPositionRef.current = strip.scrollLeft;
     }
   }, []);
 
@@ -242,7 +252,6 @@ const ChildGiftLanding = () => {
     event.preventDefault();
     exampleStripRef.current.setPointerCapture(event.pointerId);
     exampleDraggingRef.current = true;
-    exampleScrollPositionRef.current = exampleStripRef.current.scrollLeft;
     exampleDragRef.current = { x: event.clientX, scrollLeft: exampleStripRef.current.scrollLeft };
   };
 
@@ -250,7 +259,6 @@ const ChildGiftLanding = () => {
     if (!exampleStripRef.current || !exampleDragRef.current) return;
 
     exampleStripRef.current.scrollLeft = exampleDragRef.current.scrollLeft - (event.clientX - exampleDragRef.current.x);
-    exampleScrollPositionRef.current = exampleStripRef.current.scrollLeft;
   };
 
   const stopExampleDrag = () => {
@@ -266,44 +274,6 @@ const ChildGiftLanding = () => {
 
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const strip = exampleStripRef.current;
-    if (!strip) return undefined;
-
-    const resetToMiddleCycle = () => {
-      const cycleWidth = strip.scrollWidth / 3;
-      if (cycleWidth) {
-        strip.scrollLeft = cycleWidth;
-        exampleScrollPositionRef.current = cycleWidth;
-      }
-    };
-
-    resetToMiddleCycle();
-    const animate = (timestamp: number) => {
-      if (exampleLastFrameRef.current === null) exampleLastFrameRef.current = timestamp;
-      const elapsed = timestamp - exampleLastFrameRef.current;
-      exampleLastFrameRef.current = timestamp;
-
-      if (!exampleDraggingRef.current && exampleStripRef.current) {
-        const nextPosition = (exampleScrollPositionRef.current ?? exampleStripRef.current.scrollLeft) + elapsed * CHILD_EXAMPLE_AUTO_SCROLL_SPEED;
-        exampleScrollPositionRef.current = nextPosition;
-        exampleStripRef.current.scrollLeft = nextPosition;
-        normalizeExampleScroll();
-      }
-
-      exampleAnimationRef.current = window.requestAnimationFrame(animate);
-    };
-
-    exampleAnimationRef.current = window.requestAnimationFrame(animate);
-    window.addEventListener("resize", resetToMiddleCycle);
-    return () => {
-      if (exampleAnimationRef.current !== null) window.cancelAnimationFrame(exampleAnimationRef.current);
-      exampleLastFrameRef.current = null;
-      exampleScrollPositionRef.current = null;
-      window.removeEventListener("resize", resetToMiddleCycle);
-    };
-  }, [normalizeExampleScroll]);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-black" style={typeStyle}>

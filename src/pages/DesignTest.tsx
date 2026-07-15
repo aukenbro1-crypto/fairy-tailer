@@ -1155,7 +1155,7 @@ const DesignTest = () => {
           <div className="w-[calc(100vw-40px)] max-w-[760px] md:w-auto">
             <h1 className={`${sectionTitleClass} w-full max-w-full break-words md:max-w-[760px]`}>
               <span className="block">Книги, где ты</span>
-              <span className="block">главный герой.</span>
+              <span className="block">главный герой</span>
             </h1>
             <p className="mt-5 w-full max-w-[360px] text-[18px] leading-[1.42] sm:max-w-[660px] md:text-[21px] md:leading-[1.35]">
               Создайте бумажную книгу о близком человеке. Персональные книги для себя, родных и друзей — от 3500₽.
@@ -1232,7 +1232,7 @@ const DesignTest = () => {
         <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
           <div>
             <h2 className={sectionTitleClass}>
-              Как это работает.
+              Как это работает
             </h2>
           </div>
 
@@ -1780,7 +1780,7 @@ const DesignTest = () => {
           <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
             <div>
               <h2 className={sectionTitleClass}>
-                Одна и та же история может быть очень разной.
+                Одна и та же история может быть очень разной
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
@@ -1821,7 +1821,7 @@ const DesignTest = () => {
         <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
           <div>
             <h2 className={sectionTitleClass}>
-              Повод начинается с человека.
+              Повод начинается с человека
             </h2>
           </div>
 
@@ -1852,7 +1852,7 @@ const DesignTest = () => {
           <div className="mb-9 grid gap-5 md:grid-cols-[1fr_460px] md:items-end">
             <div>
               <h2 className={sectionTitleClass}>
-                От превью к настоящей книге.
+                От превью к настоящей книге
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
@@ -1881,7 +1881,7 @@ const DesignTest = () => {
         <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
           <div>
             <h2 className={sectionTitleClass}>
-              Вопросы и ответы.
+              Вопросы и ответы
             </h2>
           </div>
 

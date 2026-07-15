@@ -339,7 +339,7 @@ const WifeGiftLanding = () => {
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
             lockedWorld={romanticLockedWorld}
-            heading="Соберите книгу для жены."
+            heading="Соберите книгу для жены"
             description="Добавьте ее имя, фото, характер, важное место, личную деталь или символ вашей жизни вместе. История будет строиться вокруг нее."
             defaultVisibleHeroIndexes={[0]}
             defaultHeroAgeGroup="adult"
@@ -428,7 +428,7 @@ const WifeGiftLanding = () => {
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Вопросы и ответы.</h2>
+              <h2 className={sectionTitleClass}>Вопросы и ответы</h2>
             </div>
             <div className="border-l border-t border-black">
               {faqs.map((item) => (

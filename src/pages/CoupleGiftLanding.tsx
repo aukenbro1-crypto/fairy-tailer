@@ -350,7 +350,7 @@ const CoupleGiftLanding = () => {
         <section id="meaning" className="scroll-mt-24 border-y border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Не вещь. Общая история.</h2>
+              <h2 className={sectionTitleClass}>Не вещь. Общая история</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
@@ -376,7 +376,7 @@ const CoupleGiftLanding = () => {
         <section id="create" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <FairytellerInlineConstructor
             lockedWorld={romanticLockedWorld}
-            heading="Соберите книгу про вашу пару."
+            heading="Соберите книгу про вашу пару"
             description="Добавьте информацию про героев, место, где будет происходить история, личную деталь или важный символ и выберите стиль иллюстраций."
             defaultVisibleHeroIndexes={[0]}
             defaultHeroAgeGroup="adult"
@@ -389,7 +389,7 @@ const CoupleGiftLanding = () => {
         <section id="occasions" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Для каких поводов.</h2>
+              <h2 className={sectionTitleClass}>Для каких поводов</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-3">
               {occasions.map((item) => (
@@ -405,7 +405,7 @@ const CoupleGiftLanding = () => {
         <section id="examples" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Что добавить в историю.</h2>
+              <h2 className={sectionTitleClass}>Что добавить в историю</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
                 Имена, места, шутки и символы делают сюжет узнаваемым: это уже не просто
                 романтическая история, а книга про конкретных людей.
@@ -433,7 +433,7 @@ const CoupleGiftLanding = () => {
         <section id="process" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div>
-              <h2 className={sectionTitleClass}>Как создать книгу.</h2>
+              <h2 className={sectionTitleClass}>Как создать книгу</h2>
             </div>
             <div className="grid border-l border-t border-black sm:grid-cols-2">
               {process.map((item) => {
@@ -453,7 +453,7 @@ const CoupleGiftLanding = () => {
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Вопросы и ответы.</h2>
+              <h2 className={sectionTitleClass}>Вопросы и ответы</h2>
             </div>
             <div className="border-l border-t border-black">
               {faqs.map((item) => (

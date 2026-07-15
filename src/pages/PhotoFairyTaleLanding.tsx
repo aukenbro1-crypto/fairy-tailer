@@ -221,7 +221,7 @@ const exampleMarqueeItems = [
   ...exampleCarouselItems,
 ];
 
-const PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED = 0.005;
+const PHOTO_TALE_EXAMPLE_AUTO_SCROLL_SPEED = 0.04;
 
 const jsonLd = [
   {
@@ -517,7 +517,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="process" className="scroll-mt-24 border-y border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div>
-              <h2 className={sectionTitleClass}>Как это работает.</h2>
+              <h2 className={sectionTitleClass}>Как это работает</h2>
             </div>
             <div className="grid border-l border-t border-black sm:grid-cols-2">
               {process.map((item) => {
@@ -570,7 +570,7 @@ const PhotoFairyTaleLanding = () => {
             availableWorldIds={["romance", "adventure", "hogwarts", "fantasy", "cyber"]}
             worldTabLabel="Жанр"
             worldLegend="Выберите жанр"
-            heading="Создайте сказку по фото."
+            heading="Создайте сказку по фото"
             description="Добавьте фото, имя, характер, место действия и важную деталь героя. Конструктор соберёт персональную сказку с фото и превью иллюстраций."
             locationLabel="Место истории"
             locationPlaceholder="Лес, город, дом, школа, волшебная страна, деревня у бабушки"
@@ -587,7 +587,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="occasions" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Повод для необычного подарка.</h2>
+              <h2 className={sectionTitleClass}>Повод для необычного подарка</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-3">
               {occasions.map((item) => (
@@ -603,7 +603,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="details" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Что добавить в сказку.</h2>
+              <h2 className={sectionTitleClass}>Что добавить в сказку</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
                 Фото помогает сохранить узнаваемые черты, а детали делают сюжет более личным:
                 так сказка по фото превращается в настоящую подарочную книгу.
@@ -631,7 +631,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="meaning" className="scroll-mt-24 border-b border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Не шаблон. Личная история.</h2>
+              <h2 className={sectionTitleClass}>Не шаблон. Личная история</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
@@ -659,7 +659,7 @@ const PhotoFairyTaleLanding = () => {
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Вопросы и ответы.</h2>
+              <h2 className={sectionTitleClass}>Вопросы и ответы</h2>
             </div>
             <div className="border-l border-t border-black">
               {faqs.map((item) => (

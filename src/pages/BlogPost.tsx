@@ -41,7 +41,7 @@ const BlogPostPage = () => {
   const isPhotoFairyTalePost = post.slug === "sozdat-skazku-po-foto";
   const ctaProps = isPhotoFairyTalePost
     ? {
-        title: "Создайте сказку по фото в печатной книге.",
+        title: "Создайте сказку по фото в печатной книге",
         description:
           "Загрузите фото ребёнка, добавьте имя и детали героя, получите превью и оформите настоящую книгу с иллюстрациями.",
         primaryLabel: "Создать сказку по фото",
@@ -286,7 +286,7 @@ const BlogPostPage = () => {
             <div className="mx-auto max-w-[1180px]">
               <div className="mb-8 grid gap-4 md:grid-cols-[1fr_320px] md:items-end">
                 <h2 className="text-[42px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#E89C31] md:text-[72px]">
-                  Похожие статьи.
+                  Похожие статьи
                 </h2>
                 <p className="text-[17px] leading-7 text-[#5e6264]">
                   Еще несколько материалов, которые помогут выбрать повод, сюжет и формат подарка.

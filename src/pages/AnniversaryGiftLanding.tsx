@@ -357,7 +357,7 @@ const AnniversaryGiftLanding = () => {
         <section id="meaning" className="scroll-mt-24 border-y border-black bg-[#fae7e1] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.78fr_1.22fr]">
             <div>
-              <h2 className={sectionTitleClass}>Годовщина просит личный подарок.</h2>
+              <h2 className={sectionTitleClass}>Годовщина просит личный подарок</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-2">
               <article className="border-b border-r border-black bg-white p-5">
@@ -385,7 +385,7 @@ const AnniversaryGiftLanding = () => {
             availableWorldIds={["adventure", "fantasy", "romance"]}
             worldTabLabel="Сюжет"
             worldLegend="Выберите сюжет"
-            heading="Соберите книгу на годовщину."
+            heading="Соберите книгу на годовщину"
             description="Выберите сюжет, добавьте двух героев, важное место, символ даты и стиль иллюстраций. Конструктор соберет превью персональной книги."
             locationLabel="Место или маршрут"
             locationPlaceholder="Город знакомства, первое путешествие, дом, любимое кафе"
@@ -403,7 +403,7 @@ const AnniversaryGiftLanding = () => {
         <section id="plots" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Три сюжета для вашей даты.</h2>
+              <h2 className={sectionTitleClass}>Три сюжета для вашей даты</h2>
             </div>
             <div className="grid border-l border-t border-black md:grid-cols-3">
               {plotCards.map((item) => (
@@ -419,7 +419,7 @@ const AnniversaryGiftLanding = () => {
         <section id="occasions" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Когда особенно подходит.</h2>
+              <h2 className={sectionTitleClass}>Когда особенно подходит</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
                 Страница работает под годовщины, но внутри можно собрать подарок для разных близких сценариев:
                 от первой даты до семейного юбилея.
@@ -439,7 +439,7 @@ const AnniversaryGiftLanding = () => {
         <section id="examples" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto max-w-[1480px]">
             <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
-              <h2 className={sectionTitleClass}>Что добавить в подарок.</h2>
+              <h2 className={sectionTitleClass}>Что добавить в подарок</h2>
               <p className="text-[18px] leading-7 text-[#5e6264]">
                 Самые сильные детали обычно маленькие: место, фраза, билет, привычка или обещание,
                 которое понятно только двоим.
@@ -467,7 +467,7 @@ const AnniversaryGiftLanding = () => {
         <section id="process" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div>
-              <h2 className={sectionTitleClass}>Как создать книгу.</h2>
+              <h2 className={sectionTitleClass}>Как создать книгу</h2>
             </div>
             <div className="grid border-l border-t border-black sm:grid-cols-2">
               {process.map((item) => {
@@ -487,7 +487,7 @@ const AnniversaryGiftLanding = () => {
         <section id="faq" className="scroll-mt-24 border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">
           <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
-              <h2 className={sectionTitleClass}>Вопросы и ответы.</h2>
+              <h2 className={sectionTitleClass}>Вопросы и ответы</h2>
             </div>
             <div className="border-l border-t border-black">
               {faqs.map((item) => (

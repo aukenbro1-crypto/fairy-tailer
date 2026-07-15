@@ -56,6 +56,12 @@ const CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
     periodLabel: 'за 3 дня',
     periodScopeLabel: 'за этот период',
   }],
+  ['rus.plus@bk.ru', {
+    limit: 1,
+    windowMs: 7 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 7 дней',
+    periodScopeLabel: 'за этот период',
+  }],
 ]);
 const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
   24 * 60 * 60 * 1000,
