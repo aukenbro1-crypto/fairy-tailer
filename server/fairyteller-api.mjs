@@ -6282,6 +6282,58 @@ async function renderJobPdf(jobId, options = {}) {
   }
 }
 
+async function preflightJobStoryText(jobId) {
+  const dir = jobDir(jobId);
+  if (!existsSync(dir)) throw httpError(404, 'Job not found');
+  if (!existsSync(join(dir, 'artifacts', 'full-text.json'))) {
+    throw httpError(409, 'Full text artifact is not ready');
+  }
+
+  return await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, [RENDER_SCRIPT, jobId, '--text-preflight'], {
+      env: {
+        ...process.env,
+        FAIRYTELLER_DATA_DIR: DATA_DIR,
+        FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE: 'uniform',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, 'Story text preflight timed out'));
+    }, 60_000);
+
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        try {
+          const payload = JSON.parse(stdout);
+          resolvePromise({ ok: true, checkedAt: nowIso(), storyFont: payload.storyFont || null });
+        } catch (error) {
+          rejectPromise(httpError(500, `Story text preflight returned invalid JSON: ${error.message}`));
+        }
+        return;
+      }
+      const message = String(stderr || stdout || `exit ${code}`).replace(/\s+/g, ' ').trim();
+      const chapter = Number(message.match(/Story chapter (\d+)/i)?.[1] || 0) || null;
+      resolvePromise({
+        ok: false,
+        checkedAt: nowIso(),
+        chapter,
+        error: message || 'Story text does not fit the uniform layout',
+      });
+    });
+  });
+}
+
 const ADMIN_RENDER_QUEUE = new Map();
 
 async function runQueuedAdminRender(jobId) {
@@ -6783,6 +6835,13 @@ async function route(req, res) {
   if (method === 'POST' && renderMatch) {
     requireAuth(req);
     sendJson(req, res, 200, await renderJobPdf(renderMatch[1]));
+    return;
+  }
+
+  const textPreflightMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/text-preflight$/);
+  if (method === 'POST' && textPreflightMatch) {
+    requireAuth(req);
+    sendJson(req, res, 200, await preflightJobStoryText(textPreflightMatch[1]));
     return;
   }
 
