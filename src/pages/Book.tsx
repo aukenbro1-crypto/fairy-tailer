@@ -239,10 +239,13 @@ const Book = () => {
           setShowPaywallLock(true);
         }
 
-        if (chapter === 3 && !purchasePromptDismissed) {
-          setPaywallStage("purchase");
-          setPaywallCollapsed(false);
-          setShowPaywallLock(true);
+        if (chapter === 3) {
+          setRevisionPromptDismissed(false);
+          if (!purchasePromptDismissed) {
+            setPaywallStage("purchase");
+            setPaywallCollapsed(false);
+            setShowPaywallLock(true);
+          }
         }
       },
       { root: null, threshold: 0, rootMargin: "-18% 0px -42% 0px" },
