@@ -7,7 +7,6 @@ const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || "/web
 
 // Illustration styles (same as Index.tsx)
 const ILLUSTRATION_STYLES: Record<string, string> = {
-  'photorealistic': 'photorealistic cinematic book illustration: realistic people, natural skin texture, true-to-life faces, accurate facial proportions, natural hair and fabric, believable hands and anatomy, 50mm lens depth, warm editorial lighting, print-ready composition; use uploaded photos as strong identity references when available; no cartoon, no painterly stylization, no plastic/toy look, no distorted anatomy.',
   'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'toonflat': 'vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.',
   'minibrick': 'brick-miniature diorama style: visible studs and seams, glossy plastic material, simplified blocky anatomy (cylindrical head, curved hands), modular brick-built scenery; strictly figurative, readable poses; original characters; no printed logos or text; no photoreal humans.',
@@ -26,10 +25,8 @@ import naiveStyleImage from '@/assets/naive-style.jpg';
 import celcinemaStyleImage from '@/assets/celcinema-style.jpg';
 import toonflatStyleImage from '@/assets/toonflat-style.jpg';
 import minibrickStyleImage from '@/assets/minibrick-style.jpg';
-import photorealismStyleImage from '@/assets/photorealism-style.jpeg';
 
 const STYLE_SPRITES: Record<string, string> = {
-  'photorealistic': photorealismStyleImage,
   'disney': disneyStyleImage,
   'toonflat': toonflatStyleImage,
   'minibrick': minibrickStyleImage,
@@ -41,7 +38,6 @@ const STYLE_SPRITES: Record<string, string> = {
 };
 
 const STYLE_LABELS: Record<string, string> = {
-  'photorealistic': 'Фотореализм',
   'disney': 'Дисней',
   'toonflat': 'Старые мультфильмы',
   'minibrick': 'Блоки',
@@ -166,7 +162,7 @@ const RomanticStoryForm: React.FC<RomanticStoryFormProps> = ({ worldOverride }) 
   const [showHero3, setShowHero3] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
-    illustrationStyle: 'photorealistic',
+    illustrationStyle: 'disney',
     location: '',
     artifact: '',
     hero1: initialHero(),

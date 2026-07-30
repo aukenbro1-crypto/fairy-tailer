@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Check, Lock, Mail, ShoppingBag } from "lucide-react";
+import { Check, Lock, Mail, MessageCircle, ShoppingBag } from "lucide-react";
 
 import { trackCheckoutStart, trackPreviewReady } from "@/lib/metrika";
 import logoImage from "@/assets/logo.png";
@@ -71,6 +71,8 @@ type PreviewProgress = {
   chapterEndPages?: PreviewChapterBreak[];
 };
 
+type PaywallStage = "revision" | "purchase";
+
 const PREVIEW_PAGE_PRELOAD_BEFORE = 2;
 const PREVIEW_PAGE_PRELOAD_AFTER = 4;
 
@@ -101,7 +103,9 @@ const Book = () => {
   const [currentPreviewPage, setCurrentPreviewPage] = useState(1);
   const [showPaywallLock, setShowPaywallLock] = useState(false);
   const [paywallCollapsed, setPaywallCollapsed] = useState(false);
-  const [paywallDismissed, setPaywallDismissed] = useState(false);
+  const [paywallStage, setPaywallStage] = useState<PaywallStage>("revision");
+  const [revisionPromptDismissed, setRevisionPromptDismissed] = useState(false);
+  const [purchasePromptDismissed, setPurchasePromptDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -188,7 +192,9 @@ const Book = () => {
     setError("");
     setShowPaywallLock(false);
     setPaywallCollapsed(false);
-    setPaywallDismissed(false);
+    setPaywallStage("revision");
+    setRevisionPromptDismissed(false);
+    setPurchasePromptDismissed(false);
     Promise.all([loadStatus(), loadFullText(), loadSample(), loadPreviewPages()])
       .catch((loadError) => {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Не удалось открыть книгу");
@@ -227,12 +233,14 @@ const Book = () => {
         if (!visible.length) return;
 
         const chapter = visible[0].chapter;
-        if (chapter === 1 && !paywallDismissed) {
+        if (chapter === 1 && !revisionPromptDismissed) {
+          setPaywallStage("revision");
           setPaywallCollapsed(false);
           setShowPaywallLock(true);
         }
 
-        if (chapter === 5 && paywallDismissed) {
+        if (chapter === 3 && !purchasePromptDismissed) {
+          setPaywallStage("purchase");
           setPaywallCollapsed(false);
           setShowPaywallLock(true);
         }
@@ -244,7 +252,7 @@ const Book = () => {
     return () => {
       observer.disconnect();
     };
-  }, [access, isLoading, isPaid, isPendingReturn, paywallDismissed, previewPages.length, previewProgress?.chapterEndPages, sample]);
+  }, [access, isLoading, isPaid, isPendingReturn, previewPages.length, previewProgress?.chapterEndPages, purchasePromptDismissed, revisionPromptDismissed, sample]);
 
   useEffect(() => {
     if (isLoading || access || isPendingReturn || isPaid || previewPages.length === 0) {
@@ -395,6 +403,17 @@ const Book = () => {
   };
   const handlePaywallTouchEnd = () => {
     paywallTouchYRef.current = null;
+  };
+  const openSiteChat = () => {
+    window.dispatchEvent(new Event("fairyteller:open-chat"));
+  };
+  const closePaywallPrompt = () => {
+    if (paywallStage === "revision") {
+      setRevisionPromptDismissed(true);
+    } else {
+      setPurchasePromptDismissed(true);
+    }
+    setPaywallCollapsed(true);
   };
 
   if (!isLoading && !access && !isPendingReturn && !isPaid && sample) {
@@ -602,7 +621,7 @@ const Book = () => {
             font-weight: 700;
             line-height: 1.5;
           }
-          .book-paywall-lock-card a {
+          .book-paywall-primary-cta {
             position: relative;
             display: inline-flex;
             align-items: center;
@@ -623,7 +642,7 @@ const Book = () => {
             transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
             pointer-events: auto;
           }
-          .book-paywall-lock-card a::after {
+          .book-paywall-primary-cta::after {
             content: "";
             position: absolute;
             top: 9px;
@@ -635,10 +654,40 @@ const Book = () => {
             background: #e89c31;
             animation: book-pay-cta-pulse 2.4s ease-in-out infinite;
           }
-          .book-paywall-lock-card a:hover {
+          .book-paywall-primary-cta:hover {
             background: #5e6264;
             box-shadow: 3px 3px 0 #e89c31;
             transform: translate(3px, 3px);
+          }
+          .book-paywall-contact-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+          .book-paywall-contact-actions a,
+          .book-paywall-contact-actions button {
+            display: inline-flex;
+            min-height: 44px;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #111111;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #111111;
+            cursor: pointer;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .03em;
+            line-height: 1.2;
+            padding: 9px 8px;
+            text-align: center;
+            text-decoration: none;
+            pointer-events: auto;
+          }
+          .book-paywall-contact-actions a:hover,
+          .book-paywall-contact-actions button:hover {
+            background: #fae7e1;
           }
           @keyframes book-pay-cta-pulse {
             0%, 100% {
@@ -722,10 +771,13 @@ const Book = () => {
               font-size: 14px;
               line-height: 1.42;
             }
-            .book-paywall-lock-card a {
+            .book-paywall-primary-cta {
               min-height: 52px;
               padding: 14px 16px;
               font-size: 12px;
+            }
+            .book-paywall-contact-actions {
+              grid-template-columns: 1fr;
             }
             .book-paywall-strip {
               align-items: flex-start;
@@ -796,8 +848,8 @@ const Book = () => {
         >
           {paywallCollapsed ? (
             <button type="button" className="book-paywall-strip" onClick={() => setPaywallCollapsed(false)}>
-              <span>Почти готово</span>
-              <span>Оплатить — 3 500 ₽</span>
+              <span>{paywallStage === "revision" ? "Хотите внести правки?" : "Почти готово"}</span>
+              <span>{paywallStage === "revision" ? "Написать нам" : "Оплатить — 3 500 ₽"}</span>
             </button>
           ) : (
             <div className="book-paywall-lock-card">
@@ -805,21 +857,34 @@ const Book = () => {
                 type="button"
                 className="book-paywall-close"
                 aria-label="Свернуть оплату"
-                onClick={() => {
-                  setPaywallDismissed(true);
-                  setPaywallCollapsed(true);
-                }}
+                onClick={closePaywallPrompt}
               >
                 ×
               </button>
-              <Lock size={22} aria-hidden="true" className="mx-auto" />
-              <h1>Нравится история?</h1>
-              <p>Перед вами — драфт будущей книги. Оплатите заказ, и мы свяжемся с вами, чтобы уточнить правки в тексте и иллюстрациях и отправить макет в печать.</p>
-              <a href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
-                <ShoppingBag size={18} aria-hidden="true" />
-                Оплатить — 3 500 ₽
-              </a>
-              <small>Мы обязательно согласуем с вами финальную версию.</small>
+              {paywallStage === "revision" ? (
+                <>
+                  <MessageCircle size={22} aria-hidden="true" className="mx-auto" />
+                  <h1>Хотите внести правки?</h1>
+                  <p>Вам нравится история, но в сюжете есть неточность? Или хочется изменить иллюстрации? Напишите нам — внесём необходимые правки.</p>
+                  <div className="book-paywall-contact-actions">
+                    <a href="https://wa.me/79851939841" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                    <a href="https://t.me/nikita0shch" target="_blank" rel="noopener noreferrer">Telegram</a>
+                    <button type="button" onClick={openSiteChat}>Написать в чате</button>
+                  </div>
+                  <small>Продолжайте читать — вся история уже готова.</small>
+                </>
+              ) : (
+                <>
+                  <Lock size={22} aria-hidden="true" className="mx-auto" />
+                  <h1>Нравится история?</h1>
+                  <p>Перед вами — драфт будущей книги. Оплатите заказ, и мы свяжемся с вами, чтобы уточнить правки в тексте и иллюстрациях и отправить макет в печать.</p>
+                  <a className="book-paywall-primary-cta" href={payUrl} onClick={() => trackCheckoutStart(jobId)}>
+                    <ShoppingBag size={18} aria-hidden="true" />
+                    Оплатить — 3 500 ₽
+                  </a>
+                  <small>Мы обязательно согласуем с вами финальную версию.</small>
+                </>
+              )}
             </div>
           )}
         </div>

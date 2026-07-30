@@ -68,6 +68,12 @@ export default function FairytellerChat() {
 
   const isAdminPage = typeof window !== "undefined" && window.location.pathname.startsWith("/blog-admin");
 
+  useEffect(() => {
+    const openChat = () => setIsOpen(true);
+    window.addEventListener("fairyteller:open-chat", openChat);
+    return () => window.removeEventListener("fairyteller:open-chat", openChat);
+  }, []);
+
   const applyServerChat = useCallback((data: ChatResponse) => {
     if (data.sessionId) {
       setSessionId(data.sessionId);

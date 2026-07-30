@@ -47,6 +47,7 @@ export default function GenerationLimitNotice({ notice, className = "" }: Genera
   const periodLabel = notice.periodLabel || "сегодня";
   const periodScopeLabel = notice.periodScopeLabel || (periodLabel === "сегодня" ? "сегодня" : "за этот период");
   const isTodayLimit = periodLabel === "сегодня";
+  const isSingleExtendedLimit = limit === 1 && !isTodayLimit;
   const booksHref = notice.booksUrl || notice.booksAbsoluteUrl || "";
   const payHref = notice.payUrl || notice.payAbsoluteUrl || "";
   const support = { ...fallbackSupport, ...(notice.support || {}) };
@@ -62,12 +63,16 @@ export default function GenerationLimitNotice({ notice, className = "" }: Genera
         <BookOpen className="h-8 w-8" aria-hidden="true" />
       </div>
       <p className="mt-5 text-[12px] font-black uppercase tracking-[0.14em] text-[#5e6264]">
-        {isTodayLimit ? "Бесплатный лимит на сегодня исчерпан" : `Бесплатный лимит ${periodLabel} исчерпан`}
+        {isSingleExtendedLimit
+          ? "Бесплатный лимит исчерпан"
+          : isTodayLimit
+            ? "Бесплатный лимит на сегодня исчерпан"
+            : `Бесплатный лимит ${periodLabel} исчерпан`}
       </p>
       <h3 className="mx-auto mt-3 max-w-[620px] text-[32px] font-black uppercase leading-[1.05] text-black md:text-[48px]">
         Вы уже создали
         <br />
-        {used} {storyWord(used)} {periodLabel}
+        {isSingleExtendedLimit ? "сказку" : `${used} ${storyWord(used)} ${periodLabel}`}
       </h3>
       <div className="mx-auto mt-5 max-w-[650px] space-y-3 text-[17px] leading-7 text-[#5e6264]">
         <p>{limitIntro}</p>

@@ -12,6 +12,7 @@ const PORT = Number(process.env.FAIRYTELLER_API_PORT || process.env.PORT || 3099
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '.data/fairyteller');
 const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
 const RENDER_SCRIPT = process.env.FAIRYTELLER_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-render-pdf.mjs';
+const HARDCOVER_20X20_RENDER_SCRIPT = process.env.FAIRYTELLER_HARDCOVER_20X20_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-hardcover-20x20.mjs';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
 const ALERT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
@@ -46,20 +47,34 @@ const CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
   }],
   ['aleks27134@gmail.com', {
     limit: 1,
-    windowMs: 3 * 24 * 60 * 60 * 1000,
-    periodLabel: 'за 3 дня',
+    windowMs: 30 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 30 дней',
     periodScopeLabel: 'за этот период',
   }],
   ['tsapatsarap@gmail.com', {
     limit: 1,
-    windowMs: 3 * 24 * 60 * 60 * 1000,
-    periodLabel: 'за 3 дня',
+    windowMs: 30 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 30 дней',
     periodScopeLabel: 'за этот период',
   }],
   ['rus.plus@bk.ru', {
     limit: 1,
-    windowMs: 7 * 24 * 60 * 60 * 1000,
-    periodLabel: 'за 7 дней',
+    windowMs: 30 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 30 дней',
+    periodScopeLabel: 'за этот период',
+  }],
+  ['kotovaevelina763@gmail.com', {
+    limit: 1,
+    windowMs: 3 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 3 дня',
+    periodScopeLabel: 'за этот период',
+  }],
+]);
+const IP_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
+  ['94.136.221.206', {
+    limit: 1,
+    windowMs: 30 * 24 * 60 * 60 * 1000,
+    periodLabel: 'за 30 дней',
     periodScopeLabel: 'за этот период',
   }],
 ]);
@@ -409,6 +424,12 @@ function normalizeEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) ? email : '';
 }
 
+function normalizeLimitClientIp(value) {
+  const raw = String(value || '').split(',')[0].trim();
+  if (!raw) return '';
+  return raw.startsWith('::ffff:') ? raw.slice('::ffff:'.length) : raw;
+}
+
 function supportContact() {
   return {
     text: CUSTOMER_SUPPORT_SIGNATURE,
@@ -416,6 +437,10 @@ function supportContact() {
     siteUrl: PUBLIC_BASE_URL,
     email: 'books@fairyteller.ru',
   };
+}
+
+function generationLimitRuleForIp(ip) {
+  return IP_FREE_GENERATION_LIMIT_OVERRIDES.get(normalizeLimitClientIp(ip)) || null;
 }
 
 function generationLimitRuleForEmail(email) {
@@ -675,6 +700,42 @@ async function listCustomerGenerationJobs(email, options = {}) {
     .slice(0, limit);
 }
 
+async function listIpGenerationJobs(ip, options = {}) {
+  const normalizedIp = normalizeLimitClientIp(ip);
+  if (!normalizedIp) return [];
+
+  const jobsRoot = resolve(DATA_DIR, 'jobs');
+  const entries = await readdir(jobsRoot, { withFileTypes: true }).catch(() => []);
+  const sinceMs = Number(options.sinceMs || 0);
+  const rows = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      const dir = join(jobsRoot, entry.name);
+      const [status, orderEnvelope] = await Promise.all([
+        readJsonFile(join(dir, 'status.json'), {}),
+        readJsonFile(join(dir, 'order.json'), {}),
+      ]);
+      const order = orderEnvelope.order || orderEnvelope || {};
+      if (normalizeLimitClientIp(order.clientIp) !== normalizedIp) return null;
+
+      const createdAt = status?.createdAt || orderEnvelope.receivedAt || '';
+      const createdMs = Date.parse(createdAt);
+      if (sinceMs && (!Number.isFinite(createdMs) || createdMs < sinceMs)) return null;
+
+      return {
+        jobId: entry.name,
+        createdAt,
+        updatedAt: status?.updatedAt || createdAt,
+      };
+    }));
+
+  const limit = Math.max(1, Number(options.limit || 100));
+  return rows
+    .filter(Boolean)
+    .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')))
+    .slice(0, limit);
+}
+
 function generationLimitResetAt(recentJobs, rule) {
   const times = recentJobs
     .map((job) => Date.parse(job.createdAt))
@@ -683,6 +744,21 @@ function generationLimitResetAt(recentJobs, rule) {
   const windowMs = rule?.windowMs || DAILY_FREE_GENERATION_WINDOW_MS;
   if (!times.length) return new Date(Date.now() + windowMs).toISOString();
   return new Date(times[0] + windowMs).toISOString();
+}
+
+function buildIpGenerationLimitPayload(ip, recentJobs, rule) {
+  return {
+    limitExceeded: true,
+    code: 'ip_generation_limit_exceeded',
+    message: generationLimitMessage(rule),
+    limit: rule.limit,
+    used: Math.min(recentJobs.length, rule.limit),
+    windowMs: rule.windowMs,
+    periodLabel: rule.periodLabel,
+    periodScopeLabel: rule.periodScopeLabel,
+    resetAt: generationLimitResetAt(recentJobs, rule),
+    support: supportContact(),
+  };
 }
 
 async function buildGenerationLimitPayload(email, recentJobs, rule) {
@@ -708,6 +784,25 @@ async function buildGenerationLimitPayload(email, recentJobs, rule) {
   };
 }
 
+async function assertIpGenerationLimit(ip) {
+  const normalizedIp = normalizeLimitClientIp(ip);
+  if (!normalizedIp) return;
+  const rule = generationLimitRuleForIp(normalizedIp);
+  if (!rule?.limit) return;
+
+  const recentJobs = await listIpGenerationJobs(normalizedIp, {
+    sinceMs: Date.now() - rule.windowMs,
+    limit: rule.limit + 10,
+  });
+  if (recentJobs.length < rule.limit) return;
+
+  throw httpError(
+    429,
+    'IP free generation limit reached',
+    buildIpGenerationLimitPayload(normalizedIp, recentJobs, rule),
+  );
+}
+
 async function assertDailyGenerationLimit(order = {}) {
   const email = normalizeEmail(order.email);
   if (!email) return;
@@ -730,27 +825,34 @@ async function assertDailyGenerationLimit(order = {}) {
 
 const generationLimitLocks = new Map();
 
-async function withGenerationLimitLock(email, action) {
-  const key = normalizeEmail(email);
-  if (!key) return await action();
+async function withGenerationLimitKeyLock(key, action) {
+  const normalizedKey = String(key || '').trim().toLowerCase();
+  if (!normalizedKey) return await action();
 
-  const previous = generationLimitLocks.get(key) || Promise.resolve();
+  const previous = generationLimitLocks.get(normalizedKey) || Promise.resolve();
   let release = () => {};
   const current = new Promise((resolvePromise) => {
     release = resolvePromise;
   });
   const chain = previous.catch(() => {}).then(() => current);
-  generationLimitLocks.set(key, chain);
+  generationLimitLocks.set(normalizedKey, chain);
 
   await previous.catch(() => {});
   try {
     return await action();
   } finally {
     release();
-    if (generationLimitLocks.get(key) === chain) {
-      generationLimitLocks.delete(key);
+    if (generationLimitLocks.get(normalizedKey) === chain) {
+      generationLimitLocks.delete(normalizedKey);
     }
   }
+}
+
+async function withGenerationLimitLock(email, action) {
+  const key = normalizeEmail(email);
+  if (!key) return await action();
+
+  return await withGenerationLimitKeyLock(`email:${key}`, action);
 }
 
 function summarizeOrder(order = {}) {
@@ -2714,13 +2816,20 @@ async function getAdminBookText(jobId) {
       },
     };
   }
-  const images = await getAdminBookImages(jobId, status);
-  return { dir, fullText, status, files, images };
+  const [images, additionalImagesArtifact] = await Promise.all([
+    getAdminBookImages(jobId, status),
+    readJsonFile(join(dir, 'artifacts', 'additional-images.json'), { images: [] }),
+  ]);
+  const additionalImages = await Promise.all((Array.isArray(additionalImagesArtifact?.images) ? additionalImagesArtifact.images : []).map(async (image) => {
+    const info = await optionalFileInfo(join(dir, 'files', image.fileName || ''));
+    return info ? { ...image, url: withUrlParam(adminFileUrl(jobId, image.fileName), 'v', info.updatedAt || String(Date.now())) } : null;
+  }));
+  return { dir, fullText, status, files, images, additionalImages: additionalImages.filter(Boolean) };
 }
 
 async function getJobPdfFiles(jobId) {
   const dir = jobDir(jobId);
-  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf'].map(async (fileName) => {
+  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf', 'hardcover-20x20.pdf'].map(async (fileName) => {
     const info = await optionalFileInfo(join(dir, 'files', fileName));
     if (!info) return null;
     return [
@@ -2799,7 +2908,7 @@ function renderFailureMessage(render = null) {
   return render.message || 'PDF не удалось пересобрать.';
 }
 
-function renderBookImageEditor(images = []) {
+function renderBookImageEditor(images = [], additionalImages = []) {
   const rows = images.map((image) => `
     <div class="image-card">
       <div class="image-preview">
@@ -2814,10 +2923,15 @@ function renderBookImageEditor(images = []) {
     </div>
   `).join('');
 
+  const additionalRows = additionalImages.map((image, index) => `<div class="image-card"><div class="image-preview">${image.url ? `<img src="${escapeHtml(image.url)}" alt="Дополнительная иллюстрация ${index + 1}">` : '<span>нет файла</span>'}</div><div class="image-meta"><strong>Иллюстрация ${index + 1}</strong><span>${escapeHtml(image.fileName || '')}</span></div></div>`).join('');
   return `<section class="panel">
       <h2>Картинки</h2>
       <p>Можно заменить обложку и иллюстрации глав. Поддерживаются PNG/JPG до ${escapeHtml(formatBytes(ADMIN_BOOK_IMAGE_MAX_BYTES) || '12 MB')} на файл.</p>
       <div class="image-grid">${rows}</div>
+      <h3>Дополнительные иллюстрации в конце книги</h3>
+      <p class="field-hint">Выберите несколько PNG/JPG: они появятся подряд после последней страницы. При нечётном количестве перед ними добавится чистая техническая страница, чтобы сохранить чётность внутреннего блока.</p>
+      <input name="additional_images" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple>
+      ${additionalRows ? `<div class="image-grid">${additionalRows}</div><label class="field-hint"><input name="clear_additional_images" type="checkbox" value="1"> Удалить все дополнительные иллюстрации при сохранении</label>` : ''}
     </section>`;
 }
 
@@ -2956,7 +3070,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   ${renderAdminNotice(notice)}
   ${renderAdminNotice(error, 'error')}
   <form method="post" action="${adminBookEditPath(jobId)}" enctype="multipart/form-data">
-    ${renderBookImageEditor(images)}
+    ${renderBookImageEditor(images, options.additionalImages || [])}
     <section class="panel">
       <h2>Книга</h2>
       <div class="grid two">
@@ -2995,13 +3109,15 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
         ${renderFileLink(files.preview, 'preview')}
         ${renderFileLink(files.book, 'print')}
         ${renderFileLink(files.cover, 'cover')}
-        ${renderFileLink(files.interior, 'interior')}
+    ${renderFileLink(files.interior, 'interior')}
+    ${renderFileLink(files['hardcover-20x20'], 'print 20×20')}
       </div>
     </section>
     ${chapterFields}
     <div class="button-row">
       <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
       <button type="submit" name="action" value="save_render">Сохранить все и пересобрать PDF</button>
+      <button class="secondary" type="submit" name="action" value="hardcover_20x20_render">Сохранить и собрать твёрдую 20×20</button>
     </div>
   </form>
   <script>
@@ -3307,7 +3423,7 @@ async function updateStatusAfterImageEdit(jobId, updates) {
   return updateJobStatus(jobId, { preview, artifacts });
 }
 
-async function saveAdminBookImages(jobId, files) {
+async function saveAdminBookImages(jobId, files, fileList = [], fields = new URLSearchParams()) {
   const dir = jobDir(jobId);
   if (!existsSync(dir)) throw httpError(404, 'Job not found');
   const filesDir = join(dir, 'files');
@@ -3333,7 +3449,26 @@ async function saveAdminBookImages(jobId, files) {
     });
   }
 
-  if (!updates.length) {
+  const additionalPath = join(dir, 'artifacts', 'additional-images.json');
+  const existingAdditional = fields.get('clear_additional_images') === '1'
+    ? []
+    : (await readJsonFile(additionalPath, { images: [] })).images || [];
+  const additionalUploads = fileList.filter((file) => file.fieldName === 'additional_images');
+  if (existingAdditional.length + additionalUploads.length > 24) {
+    throw httpError(400, 'Можно добавить не более 24 дополнительных иллюстраций');
+  }
+  const additionalImages = [...existingAdditional];
+  for (const file of additionalUploads) {
+    const detected = detectAdminImageUpload(file);
+    const fileName = `additional-image-${String(additionalImages.length + 1).padStart(2, '0')}-admin-${stamp}.${detected.ext}`;
+    await writeFile(join(filesDir, fileName), file.content, { mode: 0o600 });
+    additionalImages.push({ fileName, mimeType: detected.mimeType, bytes: file.content.length, source: 'admin_upload', addedAt: nowIso() });
+  }
+  if (additionalUploads.length || fields.get('clear_additional_images') === '1') {
+    await writeJsonAtomic(additionalPath, { images: additionalImages, updatedAt: nowIso() });
+  }
+
+  if (!updates.length && !additionalUploads.length && fields.get('clear_additional_images') !== '1') {
     throw httpError(400, 'Выберите хотя бы одну картинку');
   }
 
@@ -3349,7 +3484,7 @@ async function saveAdminBookImages(jobId, files) {
       mimeType: update.mimeType,
     })),
   });
-  return { updates };
+  return { updates, additionalImages };
 }
 
 function redirectAdmin(res, location) {
@@ -3363,10 +3498,13 @@ function redirectAdmin(res, location) {
 }
 
 async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
-  const { fullText, status, files, images } = await getAdminBookText(jobId);
+  const { fullText, status, files, images, additionalImages } = await getAdminBookText(jobId);
   let notice = options.notice || '';
   if (!notice && url.searchParams.get('renderQueued') === '1') {
     notice = 'Изменения сохранены. Пересборка PDF запущена, файлы обновятся примерно через минуту.';
+  }
+  if (!notice && url.searchParams.get('hardcoverQueued') === '1') {
+    notice = 'Изменения сохранены. Собираю отдельную версию для твёрдой обложки 20×20 — обычный PDF не будет перезаписан.';
   }
   if (!notice && url.searchParams.get('rendered') === '1') {
     notice = 'Текст сохранен, PDF пересобран.';
@@ -3385,6 +3523,7 @@ async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
     notice,
     files,
     images,
+    additionalImages,
   }));
 }
 
@@ -5314,6 +5453,7 @@ async function createCheckout(jobId, checkout = {}) {
   const contactChannels = [
     checkout.contactWhatsApp === true ? 'WhatsApp' : '',
     checkout.contactTelegram === true ? 'Telegram' : '',
+    checkout.contactMax === true ? 'MAX' : '',
   ].filter(Boolean).join(', ');
   const customerName = normalizeShortText(checkout.customerName || checkout.custName, 180);
   const customerAddress = normalizeShortText(checkout.customerAddress || checkout.custAddr, 320);
@@ -5622,54 +5762,60 @@ async function resendPurchaseLink(jobId) {
   return { email: { status: delivery.status, to: delivery.to }, payment: sanitizePublicPayment(nextPayment) };
 }
 
-async function createJob(body) {
-  const order = body.order;
-  if (!order || typeof order !== 'object' || Array.isArray(order)) {
+async function createJob(body, options = {}) {
+  if (!body.order || typeof body.order !== 'object' || Array.isArray(body.order)) {
     throw httpError(400, 'Missing order object');
   }
+  const order = { ...body.order };
+  const clientIp = normalizeLimitClientIp(order.clientIp || body.clientIp || options.clientIp);
+  if (clientIp) order.clientIp = clientIp;
 
-  return await withGenerationLimitLock(order.email, async () => {
-    await assertDailyGenerationLimit(order);
+  return await withGenerationLimitKeyLock(clientIp ? `ip:${clientIp}` : '', async () => {
+    await assertIpGenerationLimit(clientIp);
 
-    const jobId = assertSafeJobId(body.jobId || makeJobId());
-    const dir = jobDir(jobId);
-    await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
+    return await withGenerationLimitLock(order.email, async () => {
+      await assertDailyGenerationLimit(order);
 
-    try {
-      await mkdir(dir, { mode: 0o700 });
-    } catch (error) {
-      if (error.code === 'EEXIST') {
-        throw httpError(409, 'Job already exists');
+      const jobId = assertSafeJobId(body.jobId || makeJobId());
+      const dir = jobDir(jobId);
+      await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
+
+      try {
+        await mkdir(dir, { mode: 0o700 });
+      } catch (error) {
+        if (error.code === 'EEXIST') {
+          throw httpError(409, 'Job already exists');
+        }
+        throw error;
       }
-      throw error;
-    }
 
-    const createdAt = nowIso();
-    const status = {
-      jobId,
-      status: 'received',
-      stage: 'intake',
-      progress: 0,
-      message: 'Order received',
-      createdAt,
-      updatedAt: createdAt,
-      preview: null,
-      artifacts: {},
-      error: null,
-    };
+      const createdAt = nowIso();
+      const status = {
+        jobId,
+        status: 'received',
+        stage: 'intake',
+        progress: 0,
+        message: 'Order received',
+        createdAt,
+        updatedAt: createdAt,
+        preview: null,
+        artifacts: {},
+        error: null,
+      };
 
-    await writeJsonAtomic(join(dir, 'order.json'), {
-      jobId,
-      source: body.source || 'fairyteller',
-      receivedAt: createdAt,
-      order,
+      await writeJsonAtomic(join(dir, 'order.json'), {
+        jobId,
+        source: body.source || 'fairyteller',
+        receivedAt: createdAt,
+        order,
+      });
+      await writeJsonAtomic(join(dir, 'status.json'), status);
+      await appendEvent(dir, { type: 'job.created', status: status.status, stage: status.stage });
+      await appendLead(jobId, body.source, order);
+      notifyJob('created', status, { source: body.source || 'fairyteller', order });
+
+      return status;
     });
-    await writeJsonAtomic(join(dir, 'status.json'), status);
-    await appendEvent(dir, { type: 'job.created', status: status.status, stage: status.stage });
-    await appendLead(jobId, body.source, order);
-    notifyJob('created', status, { source: body.source || 'fairyteller', order });
-
-    return status;
   });
 }
 
@@ -6282,6 +6428,58 @@ async function renderJobPdf(jobId, options = {}) {
   }
 }
 
+async function renderHardcover20x20Pdf(jobId) {
+  const dir = jobDir(jobId);
+  const output = await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, [HARDCOVER_20X20_RENDER_SCRIPT, jobId], {
+      env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, '20x20 hardcover render timed out'));
+    }, 240000);
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        rejectPromise(httpError(500, `20x20 hardcover render failed: ${stderr || stdout || `exit ${code}`}`));
+        return;
+      }
+      try {
+        resolvePromise(JSON.parse(stdout));
+      } catch (error) {
+        rejectPromise(httpError(500, `20x20 hardcover renderer returned invalid JSON: ${error.message}`));
+      }
+    });
+  });
+  const info = await optionalFileInfo(join(dir, 'files', 'hardcover-20x20.pdf'));
+  if (!info) throw httpError(500, '20x20 hardcover renderer did not produce a PDF');
+  const file = {
+    fileName: 'hardcover-20x20.pdf',
+    url: adminFileUrlWithVersion(jobId, 'hardcover-20x20.pdf', info),
+    ...info,
+  };
+  await updateJobStatus(jobId, {
+    artifacts: {
+      hardcover20x20: {
+        status: 'ready',
+        generatedAt: output.generatedAt || nowIso(),
+        preflight: output,
+        file,
+      },
+    },
+  });
+  return file;
+}
+
 async function preflightJobStoryText(jobId) {
   const dir = jobDir(jobId);
   if (!existsSync(dir)) throw httpError(404, 'Job not found');
@@ -6343,6 +6541,9 @@ async function runQueuedAdminRender(jobId) {
     state.pending = false;
     try {
       await renderJobPdf(jobId, { skipCustomerEmail: true });
+      if (state.format === 'hardcover_20x20') {
+        await renderHardcover20x20Pdf(jobId);
+      }
     } catch (error) {
       const message = error?.message || 'PDF render failed';
       console.error(`Background admin PDF render failed for ${jobId}: ${message}`);
@@ -6373,15 +6574,38 @@ async function queueAdminRenderJob(jobId, eventType = 'job.adminRenderRequested'
   if (current) {
     current.pending = true;
     current.eventType = eventType;
+    current.format = 'regular';
     await appendEvent(dir, { type: 'job.adminRenderQueuedAgain', requestedAt: queuedAt, eventType });
     return false;
   }
-  ADMIN_RENDER_QUEUE.set(jobId, { pending: false, eventType });
+  ADMIN_RENDER_QUEUE.set(jobId, { pending: false, eventType, format: 'regular' });
   await appendEvent(dir, { type: eventType, queuedAt, background: true });
   setImmediate(() => {
     runQueuedAdminRender(jobId).catch((error) => {
       ADMIN_RENDER_QUEUE.delete(jobId);
       console.error(`Admin render queue crashed for ${jobId}: ${error?.message || error}`);
+    });
+  });
+  return true;
+}
+
+async function queueAdminHardcover20x20RenderJob(jobId, eventType = 'job.adminHardcover20x20Requested') {
+  const dir = jobDir(jobId);
+  const queuedAt = nowIso();
+  const current = ADMIN_RENDER_QUEUE.get(jobId);
+  if (current) {
+    current.pending = true;
+    current.eventType = eventType;
+    current.format = 'hardcover_20x20';
+    await appendEvent(dir, { type: 'job.adminHardcover20x20QueuedAgain', requestedAt: queuedAt, eventType });
+    return false;
+  }
+  ADMIN_RENDER_QUEUE.set(jobId, { pending: false, eventType, format: 'hardcover_20x20' });
+  await appendEvent(dir, { type: eventType, queuedAt, background: true });
+  setImmediate(() => {
+    runQueuedAdminRender(jobId).catch((error) => {
+      ADMIN_RENDER_QUEUE.delete(jobId);
+      console.error(`Admin 20x20 hardcover render queue crashed for ${jobId}: ${error?.message || error}`);
     });
   });
   return true;
@@ -6658,10 +6882,10 @@ async function route(req, res) {
 
     try {
       if (String(req.headers['content-type'] || '').toLowerCase().includes('multipart/form-data')) {
-        const { fields, files } = await readMultipartForm(req);
+        const { fields, files, fileList } = await readMultipartForm(req);
         const action = fields.get('action') || 'save';
         if (action === 'images' || action === 'images_render') {
-          await saveAdminBookImages(jobId, files);
+          await saveAdminBookImages(jobId, files, fileList, fields);
           if (action === 'images_render') {
             await queueAdminRenderJob(jobId, 'job.images.adminRenderRequested');
             redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
@@ -6670,12 +6894,17 @@ async function route(req, res) {
           redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
           return;
         }
-        if (!['save', 'save_render', 'balance_font_render'].includes(action)) {
+        if (!['save', 'save_render', 'balance_font_render', 'hardcover_20x20_render'].includes(action)) {
           throw httpError(400, 'Unknown editor action');
         }
         await saveAdminBookText(jobId, fields);
         if (files.size > 0) {
-          await saveAdminBookImages(jobId, files);
+          await saveAdminBookImages(jobId, files, fileList, fields);
+        }
+        if (action === 'hardcover_20x20_render') {
+          await queueAdminHardcover20x20RenderJob(jobId, 'job.adminEditorHardcover20x20Requested');
+          redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcoverQueued=1`);
+          return;
         }
         if (action === 'save_render' || action === 'balance_font_render') {
           await queueAdminRenderJob(jobId, 'job.adminEditorRenderRequested');
@@ -6688,6 +6917,11 @@ async function route(req, res) {
 
       const params = await readFormBody(req);
       await saveAdminBookText(jobId, params);
+      if (params.get('action') === 'hardcover_20x20_render') {
+        await queueAdminHardcover20x20RenderJob(jobId, 'job.fullTextHardcover20x20Requested');
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcoverQueued=1`);
+        return;
+      }
       if (params.get('action') === 'save_render' || params.get('action') === 'balance_font_render') {
         await queueAdminRenderJob(jobId, 'job.fullText.adminRenderRequested');
         redirectAdmin(res, `${adminBookEditPath(jobId)}?renderQueued=1`);
@@ -6769,7 +7003,7 @@ async function route(req, res) {
 
   if (method === 'POST' && url.pathname === '/api/fairyteller/jobs') {
     requireAuth(req);
-    const status = await createJob(await readJsonBody(req));
+    const status = await createJob(await readJsonBody(req), { clientIp: requestIp(req) });
     sendJson(req, res, 201, sanitizePublicStatus(status));
     return;
   }

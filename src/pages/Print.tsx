@@ -101,6 +101,7 @@ const Print = () => {
           phone: formData.get("cps_phone"),
           contactWhatsApp: formData.get("contactWhatsApp") === "on",
           contactTelegram: formData.get("contactTelegram") === "on",
+          contactMax: formData.get("contactMax") === "on",
           customerName: formData.get("custName"),
           customerAddress: formData.get("custAddr"),
           pdfUrl: formData.get("pdfUrl"),
@@ -353,6 +354,10 @@ const Print = () => {
                   <input name="contactTelegram" type="checkbox" className="h-4 w-4 cursor-pointer accent-[#111111]" />
                   Telegram
                 </label>
+                <label className="flex cursor-pointer items-center gap-2 text-[13px] font-bold text-[#3f4447]">
+                  <input name="contactMax" type="checkbox" className="h-4 w-4 cursor-pointer accent-[#111111]" />
+                  MAX
+                </label>
               </div>
             </fieldset>
             <label className="print-field-label">
@@ -395,7 +400,7 @@ const Print = () => {
                 className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[#111111]"
               />
               <span className="text-[12px] font-black leading-5 text-[#3f4447]">
-                Даю согласие на обработку персональных данных для оплаты и доставки заказа.
+                Даю согласие на <Link to="/policy" className="underline underline-offset-2">обработку персональных данных</Link> для оплаты и доставки заказа.
               </span>
             </label>
           </div>

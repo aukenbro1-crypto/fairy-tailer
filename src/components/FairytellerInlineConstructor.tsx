@@ -30,7 +30,6 @@ import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import disneyStyleImage from "@/assets/disney-style.jpg";
 import minibrickStyleImage from "@/assets/minibrick-style.jpg";
 import naiveStyleImage from "@/assets/naive-style.jpg";
-import photorealismStyleImage from "@/assets/photorealism-style.jpeg";
 import toonflatStyleImage from "@/assets/toonflat-style.jpg";
 import watercolorStyleImage from "@/assets/watercolor-style.jpg";
 import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
@@ -81,7 +80,6 @@ const worlds = [
 ];
 
 const styles = [
-  { id: "photorealistic", title: "Фотореализм", label: "Фотореализм", image: photorealismStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
   { id: "minibrick", title: "Блоки", label: "Блоки", image: minibrickStyleImage },
@@ -93,8 +91,6 @@ const styles = [
 ];
 
 const illustrationStylePrompts: Record<string, string> = {
-  photorealistic:
-    "photorealistic cinematic book illustration: realistic people, natural skin texture, true-to-life faces, accurate facial proportions, natural hair and fabric, believable hands and anatomy, 50mm lens depth, warm editorial lighting, print-ready composition; use uploaded photos as strong identity references when available; no cartoon, no painterly stylization, no plastic/toy look, no distorted anatomy.",
   disney:
     "hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.",
   toonflat:

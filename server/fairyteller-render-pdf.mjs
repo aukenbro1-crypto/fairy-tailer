@@ -81,6 +81,15 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
 
+async function readOptionalJson(path, fallback) {
+  try {
+    return await readJson(path);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return fallback;
+    throw error;
+  }
+}
+
 function assertPair(name, value, expected) {
   if (!Array.isArray(value) || value.length !== 2) {
     throw new Error(`Layout ${name} must be a two-value array`);
@@ -1702,6 +1711,24 @@ function addPptQrPage(pdf, fonts, assets) {
   });
 }
 
+function addPptAdditionalImageSpacerPage(pdf, fonts, assets, pageNumber) {
+  const page = addPptInteriorPage(pdf);
+  drawBookPaper(page, assets, 'image8');
+  drawPptPageNumber(page, pageNumber, fonts);
+}
+
+async function addPptAdditionalImagePage(pdf, fonts, dir, imageJob, pageNumber) {
+  const page = addPptInteriorPage(pdf);
+  const image = await embedImage(pdf, dir, imageJob);
+  const { width, height } = page.getSize();
+  page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.07, 0.06, 0.05) });
+  if (image) {
+    page.pushOperators(pushGraphicsState(), rectangle(0, 0, width, height), clip(), endPath());
+    page.drawImage(image, imageCoverBox(image, { x: 0, y: 0, width, height }));
+    page.pushOperators(popGraphicsState());
+  }
+}
+
 async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
@@ -1800,11 +1827,22 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   addPptDecorativeOutroPage(pdf, fonts, assets);
   addPptQrPage(pdf, fonts, assets);
 
-  if (pdf.getPageCount() !== TARGET_INTERIOR_PAGES) {
-    throw new Error(`Interior page count mismatch: expected ${TARGET_INTERIOR_PAGES}, got ${pdf.getPageCount()}`);
+  const additionalArtifact = await readOptionalJson(join(dir, 'artifacts', 'additional-images.json'), { images: [] });
+  const additionalImages = (Array.isArray(additionalArtifact?.images) ? additionalArtifact.images : [])
+    .filter((image) => image?.fileName && existsSync(filePathForJobFile(dir, image.fileName)));
+  if (additionalImages.length % 2 === 1) {
+    addPptAdditionalImageSpacerPage(pdf, fonts, assets, pdf.getPageCount() + 1);
+  }
+  for (const image of additionalImages) {
+    await addPptAdditionalImagePage(pdf, fonts, dir, image, pdf.getPageCount() + 1);
+  }
+
+  if (pdf.getPageCount() < TARGET_INTERIOR_PAGES || pdf.getPageCount() > 160 || pdf.getPageCount() % 2 !== 0) {
+    throw new Error(`Interior page count must be even and between ${TARGET_INTERIOR_PAGES} and 160, got ${pdf.getPageCount()}`);
   }
   return {
     bytes: await pdf.save({ useObjectStreams: false }),
+    pageCount: pdf.getPageCount(),
     storyFont: {
       mode: storyFontControl.mode,
       requestedSizePt: Number.isFinite(storyFontControl.requestedSize) ? storyFontControl.requestedSize : null,
@@ -1871,7 +1909,7 @@ async function preflightStoryTextOnly({ fullText, layout, preparedFonts = null }
   };
 }
 
-async function renderCombinedBookPdf({ coverPdf, interiorPdf }) {
+async function renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount }) {
   const target = await PDFDocument.create();
   const coverDoc = await PDFDocument.load(coverPdf);
   const interiorDoc = await PDFDocument.load(interiorPdf);
@@ -1879,8 +1917,8 @@ async function renderCombinedBookPdf({ coverPdf, interiorPdf }) {
   const interiorPages = await target.copyPages(interiorDoc, interiorDoc.getPageIndices());
   for (const page of coverPages) target.addPage(page);
   for (const page of interiorPages) target.addPage(page);
-  if (target.getPageCount() !== TARGET_INTERIOR_PAGES + 1) {
-    throw new Error(`Combined book page count mismatch: expected ${TARGET_INTERIOR_PAGES + 1}, got ${target.getPageCount()}`);
+  if (target.getPageCount() !== interiorPageCount + 1) {
+    throw new Error(`Combined book page count mismatch: expected ${interiorPageCount + 1}, got ${target.getPageCount()}`);
   }
   return target.save({ useObjectStreams: false });
 }
@@ -1907,7 +1945,7 @@ function addPreviewCoverHalfPage(target, coverPage, half) {
   page.pushOperators(popGraphicsState());
 }
 
-async function renderPreviewPdf({ coverPdf, interiorPdf }) {
+async function renderPreviewPdf({ coverPdf, interiorPdf, interiorPageCount }) {
   const target = await PDFDocument.create();
   const [coverPage] = await target.embedPdf(coverPdf, [0]);
   const interiorDoc = await PDFDocument.load(interiorPdf);
@@ -1917,7 +1955,7 @@ async function renderPreviewPdf({ coverPdf, interiorPdf }) {
   for (const page of interiorPages) target.addPage(page);
   addPreviewCoverHalfPage(target, coverPage, 'back');
 
-  const expectedPages = TARGET_INTERIOR_PAGES + 2;
+  const expectedPages = interiorPageCount + 2;
   if (target.getPageCount() !== expectedPages) {
     throw new Error(`Preview PDF page count mismatch: expected ${expectedPages}, got ${target.getPageCount()}`);
   }
@@ -1981,8 +2019,8 @@ async function main() {
   const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
   const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout });
   const interiorPdf = interiorResult.bytes;
-  const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf });
-  const previewPdf = await renderPreviewPdf({ coverPdf, interiorPdf });
+  const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount: interiorResult.pageCount });
+  const previewPdf = await renderPreviewPdf({ coverPdf, interiorPdf, interiorPageCount: interiorResult.pageCount });
 
   const coverPath = join(filesDir, 'cover.pdf');
   const interiorPath = join(filesDir, 'interior.pdf');
@@ -2006,7 +2044,7 @@ async function main() {
       book: {
         fileName: 'book.pdf',
         url: `/api/fairyteller/jobs/${JOB_ID}/files/book.pdf`,
-        pageCount: TARGET_INTERIOR_PAGES + 1,
+        pageCount: interiorResult.pageCount + 1,
         pageSizeMm: {
           firstPage: COVER_SIZE_MM,
           interiorPages: INTERIOR_SIZE_MM,
@@ -2016,7 +2054,7 @@ async function main() {
       preview: {
         fileName: 'preview.pdf',
         url: `/api/fairyteller/jobs/${JOB_ID}/files/preview.pdf`,
-        pageCount: TARGET_INTERIOR_PAGES + 2,
+        pageCount: interiorResult.pageCount + 2,
         pageSizeMm: INTERIOR_SIZE_MM,
         coverPlacement: {
           firstPage: 'front cover, right half of print cover spread',
@@ -2034,7 +2072,7 @@ async function main() {
       interior: {
         fileName: 'interior.pdf',
         url: `/api/fairyteller/jobs/${JOB_ID}/files/interior.pdf`,
-        pageCount: TARGET_INTERIOR_PAGES,
+        pageCount: interiorResult.pageCount,
         pageSizeMm: INTERIOR_SIZE_MM,
         bytes: interiorPdf.length,
       },
