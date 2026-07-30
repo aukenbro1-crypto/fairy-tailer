@@ -851,7 +851,7 @@ const Book = () => {
         >
           {paywallCollapsed ? (
             <button type="button" className="book-paywall-strip" onClick={() => setPaywallCollapsed(false)}>
-              <span>{paywallStage === "revision" ? "Хотите внести правки?" : "Почти готово"}</span>
+              <span>{paywallStage === "revision" ? "Хотите внести правки?" : "Нравится история?"}</span>
               <span>{paywallStage === "revision" ? "Написать нам" : "Оплатить — 3 500 ₽"}</span>
             </button>
           ) : (
