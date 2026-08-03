@@ -108,10 +108,11 @@ const ADMIN_BOOKS_SECRET = (process.env.FAIRYTELLER_ADMIN_BOOKS_SECRET || '').tr
 const ADMIN_BOOKS_PASSWORD = (process.env.FAIRYTELLER_ADMIN_BOOKS_PASSWORD || '').trim();
 const ADMIN_BOOKS_MAX_ROWS = Math.max(1, Number(process.env.FAIRYTELLER_ADMIN_BOOKS_MAX_ROWS || 1000) || 1000);
 const ADMIN_BOOK_IMAGE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_IMAGE_MAX_BYTES || 12 * 1024 * 1024) || 12 * 1024 * 1024);
+const ADMIN_ADDITIONAL_IMAGE_AFTER_PAGE_MAX = 159;
 const ADMIN_STORAGE_FILE_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_FILE_MAX_BYTES || 50 * 1024 * 1024) || 50 * 1024 * 1024);
 const ADMIN_STORAGE_UPLOAD_MAX_BYTES = Math.max(ADMIN_STORAGE_FILE_MAX_BYTES, Number(process.env.FAIRYTELLER_ADMIN_STORAGE_UPLOAD_MAX_BYTES || 512 * 1024 * 1024) || 512 * 1024 * 1024);
 const STORY_FONT_MODE_OPTIONS = [
-  { value: 'uniform', label: 'Ровный по всей книге · 10–10.5 pt' },
+  { value: 'uniform', label: 'Ровный по всей книге · 9.5–10.5 pt' },
   { value: 'auto', label: 'Авто по страницам' },
   { value: 'balanced', label: 'Выровнять автоматически' },
   { value: 'large', label: 'Крупный · до 11 pt' },
@@ -120,6 +121,21 @@ const STORY_FONT_MODE_OPTIONS = [
   { value: 'small', label: 'Мелкий · до 9.5 pt' },
 ];
 const STORY_FONT_MODE_VALUES = new Set(STORY_FONT_MODE_OPTIONS.map((option) => option.value));
+const STORY_TEXT_ALIGN_OPTIONS = [
+  { value: 'left', label: 'По левому краю' },
+  { value: 'justify', label: 'По ширине' },
+];
+const STORY_TEXT_ALIGN_VALUES = new Set(STORY_TEXT_ALIGN_OPTIONS.map((option) => option.value));
+const HARDCOVER_COVER_TEMPLATE_OPTIONS = [
+  { value: 'bitten', label: 'Покусанная' },
+  { value: 'white', label: 'Белая' },
+];
+const HARDCOVER_COVER_TEMPLATE_VALUES = new Set(HARDCOVER_COVER_TEMPLATE_OPTIONS.map((option) => option.value));
+const PAGE_PAPER_STYLE_OPTIONS = [
+  { value: 'white', label: 'Белый' },
+  { value: 'cream-speckle', label: 'Кремовый с крапинками' },
+];
+const PAGE_PAPER_STYLE_VALUES = new Set(PAGE_PAPER_STYLE_OPTIONS.map((option) => option.value));
 const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
 const CHAT_MESSAGE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CHAT_MESSAGE_LIMIT || 2000) || 2000);
 const CHAT_MAX_MESSAGES = Math.max(20, Number(process.env.FAIRYTELLER_CHAT_MAX_MESSAGES || 200) || 200);
@@ -982,12 +998,27 @@ function statusLabel(status) {
   }[status] || status;
 }
 
-function artifactStatusLine(artifacts = {}) {
+function hardcoverArtifactForNotification(status = {}) {
+  const message = String(status.message || '');
+  if (!/отдельн(?:ую|ая) верси(?:ю|я) 20×20/i.test(message)) return null;
+  const isAdult12 = /12\s*pt/i.test(message);
+  const key = isAdult12 ? 'hardcover20x20Adult12' : 'hardcover20x20';
+  const artifact = status.artifacts?.[key];
+  if (!artifact || typeof artifact !== 'object') return null;
+  return {
+    key,
+    label: isAdult12 ? 'PDF 20×20 · 12 pt' : 'PDF 20×20',
+    artifact,
+  };
+}
+
+function artifactStatusLine(artifacts = {}, hardcover = null) {
   const labels = [];
   if (artifacts.fullText?.status) labels.push(`текст: ${artifacts.fullText.status}`);
   if (artifacts.fullVisuals?.status) labels.push(`картинки: ${artifacts.fullVisuals.status}`);
   if (artifacts.cover?.status) labels.push(`обложка: ${artifacts.cover.status}`);
-  if (artifacts.render?.status) labels.push(`PDF: ${artifacts.render.status}`);
+  if (hardcover) labels.push(`${hardcover.label}: ${hardcover.artifact.status}`);
+  else if (artifacts.render?.status) labels.push(`PDF: ${artifacts.render.status}`);
   return labels.join(', ');
 }
 
@@ -1016,7 +1047,7 @@ function shouldNotifyJobUpdate(current, next, patch) {
   if (next.status !== current.status || next.stage !== current.stage) return true;
   if (!patch.artifacts || typeof patch.artifacts !== 'object') return false;
   const currentArtifacts = current.artifacts || {};
-  return ['fullText', 'fullVisuals', 'cover', 'render'].some((key) => (
+  return ['fullText', 'fullVisuals', 'cover', 'render', 'hardcover20x20', 'hardcover20x20Adult12'].some((key) => (
     patch.artifacts[key]?.status && patch.artifacts[key]?.status !== currentArtifacts[key]?.status
   )) || Boolean(patch.artifacts.bookPdf || patch.artifacts.previewPdf);
 }
@@ -1025,8 +1056,11 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   const order = orderEnvelope.order || orderEnvelope;
   const summary = summarizeOrder(order);
   const title = status.preview?.title || status.artifacts?.fullText?.title || '';
-  const previewPdfUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
-  const printPdfUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
+  const hardcover = hardcoverArtifactForNotification(status);
+  const previewPdfUrl = hardcover ? '' : publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
+  const printPdfUrl = hardcover
+    ? publicUrl(hardcover.artifact?.file?.url)
+    : publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
   const lines = [
     eventType === 'created' ? 'Fairyteller: новая заявка' : `Fairyteller: ${statusLabel(status.status)}`,
     `job: ${status.jobId}`,
@@ -1038,7 +1072,7 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   if (summary.artifact) lines.push(`artifact: ${summary.artifact}`);
   if (summary.heroNames.length) lines.push(`heroes: ${summary.heroNames.join(', ')}`);
   if (title) lines.push(`title: ${title}`);
-  const artifacts = artifactStatusLine(status.artifacts);
+  const artifacts = artifactStatusLine(status.artifacts, hardcover);
   if (artifacts) lines.push(artifacts);
   if (previewPdfUrl) lines.push(`preview PDF: ${previewPdfUrl}`);
   if (printPdfUrl && printPdfUrl !== previewPdfUrl) lines.push(`print PDF: ${printPdfUrl}`);
@@ -2829,7 +2863,7 @@ async function getAdminBookText(jobId) {
 
 async function getJobPdfFiles(jobId) {
   const dir = jobDir(jobId);
-  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf', 'hardcover-20x20.pdf'].map(async (fileName) => {
+  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf', 'hardcover-20x20.pdf', 'hardcover-20x20-12pt.pdf'].map(async (fileName) => {
     const info = await optionalFileInfo(join(dir, 'files', fileName));
     if (!info) return null;
     return [
@@ -2858,6 +2892,57 @@ function normalizeStoryFontMode(value, label = 'Story font mode') {
 function currentStoryFontMode(fullText) {
   const mode = String(fullText?.text?.printLayout?.storyFontMode || 'uniform').trim();
   return STORY_FONT_MODE_VALUES.has(mode) ? mode : 'uniform';
+}
+
+function normalizeStoryTextAlign(value, label = 'Story text alignment') {
+  const align = String(value || 'justify').trim();
+  if (STORY_TEXT_ALIGN_VALUES.has(align)) return align;
+  throw httpError(400, `${label} is invalid`);
+}
+
+function currentStoryTextAlign(fullText) {
+  const align = String(fullText?.text?.printLayout?.storyTextAlign || 'justify').trim();
+  return STORY_TEXT_ALIGN_VALUES.has(align) ? align : 'justify';
+}
+
+function normalizeHardcoverCoverTemplate(value, label = 'Hardcover cover template') {
+  const template = String(value || 'bitten').trim();
+  if (HARDCOVER_COVER_TEMPLATE_VALUES.has(template)) return template;
+  throw httpError(400, `${label} is invalid`);
+}
+
+function currentHardcoverCoverTemplate(fullText) {
+  const template = String(fullText?.text?.printLayout?.hardcoverCoverTemplate || 'bitten').trim();
+  return HARDCOVER_COVER_TEMPLATE_VALUES.has(template) ? template : 'bitten';
+}
+
+function normalizePagePaperStyle(value, label = 'Page paper style') {
+  const style = String(value || 'cream-speckle').trim();
+  if (PAGE_PAPER_STYLE_VALUES.has(style)) return style;
+  throw httpError(400, `${label} is invalid`);
+}
+
+function currentPagePaperStyle(fullText) {
+  const style = String(fullText?.text?.printLayout?.pagePaperStyle || 'cream-speckle').trim();
+  return PAGE_PAPER_STYLE_VALUES.has(style) ? style : 'cream-speckle';
+}
+
+function renderHardcoverCoverTemplateOptions(selectedTemplate) {
+  return HARDCOVER_COVER_TEMPLATE_OPTIONS.map((option) => (
+    `<option value="${escapeHtml(option.value)}"${option.value === selectedTemplate ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
+  )).join('');
+}
+
+function renderPagePaperStyleOptions(selectedStyle) {
+  return PAGE_PAPER_STYLE_OPTIONS.map((option) => (
+    `<option value="${escapeHtml(option.value)}"${option.value === selectedStyle ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
+  )).join('');
+}
+
+function renderStoryTextAlignOptions(selectedAlign) {
+  return STORY_TEXT_ALIGN_OPTIONS.map((option) => (
+    `<option value="${escapeHtml(option.value)}"${option.value === selectedAlign ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
+  )).join('');
 }
 
 function renderStoryFontModeOptions(selectedMode) {
@@ -2923,14 +3008,15 @@ function renderBookImageEditor(images = [], additionalImages = []) {
     </div>
   `).join('');
 
-  const additionalRows = additionalImages.map((image, index) => `<div class="image-card"><div class="image-preview">${image.url ? `<img src="${escapeHtml(image.url)}" alt="Дополнительная иллюстрация ${index + 1}">` : '<span>нет файла</span>'}</div><div class="image-meta"><strong>Иллюстрация ${index + 1}</strong><span>${escapeHtml(image.fileName || '')}</span></div></div>`).join('');
+  const additionalRows = additionalImages.map((image, index) => `<div class="image-card"><div class="image-preview">${image.url ? `<img src="${escapeHtml(image.url)}" alt="Дополнительная иллюстрация ${index + 1}">` : '<span>нет файла</span>'}</div><div class="image-meta"><strong>Иллюстрация ${index + 1}</strong><span>${escapeHtml(image.fileName || '')}</span><label for="additional_image_after_page_${index}">Вставить после страницы</label><input id="additional_image_after_page_${index}" name="additional_image_after_page_${index}" type="number" min="1" max="${ADMIN_ADDITIONAL_IMAGE_AFTER_PAGE_MAX}" step="1" inputmode="numeric" value="${image.afterPage ? escapeHtml(String(image.afterPage)) : ''}" placeholder="В конце книги"></div></div>`).join('');
   return `<section class="panel">
       <h2>Картинки</h2>
       <p>Можно заменить обложку и иллюстрации глав. Поддерживаются PNG/JPG до ${escapeHtml(formatBytes(ADMIN_BOOK_IMAGE_MAX_BYTES) || '12 MB')} на файл.</p>
       <div class="image-grid">${rows}</div>
-      <h3>Дополнительные иллюстрации в конце книги</h3>
-      <p class="field-hint">Выберите несколько PNG/JPG: они появятся подряд после последней страницы. При нечётном количестве перед ними добавится чистая техническая страница, чтобы сохранить чётность внутреннего блока.</p>
-      <input name="additional_images" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple>
+      <h3>Дополнительные иллюстрации</h3>
+      <p class="field-hint">Укажите, после какой страницы исходного макета вставить каждую картинку. Она учитывается в общей нумерации, но номер на ней не печатается. Поле можно оставить пустым — тогда картинка попадёт в конец книги. После выбора новых файлов появятся такие же поля.</p>
+      <input id="additional_images" name="additional_images" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple>
+      <div id="additional-image-new-placements" class="grid two"></div>
       ${additionalRows ? `<div class="image-grid">${additionalRows}</div><label class="field-hint"><input name="clear_additional_images" type="checkbox" value="1"> Удалить все дополнительные иллюстрации при сохранении</label>` : ''}
     </section>`;
 }
@@ -2944,15 +3030,23 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const files = options.files || {};
   const images = options.images || [];
   const render = status.artifacts?.render || {};
+  const hardcoverRender = status.artifacts?.hardcover20x20 || {};
+  const hardcover12Render = status.artifacts?.hardcover20x20Adult12 || {};
   const notice = options.notice || '';
   const error = options.error || '';
   const previousReadyRender = readyRenderSnapshot(render);
   const lastRender = previousReadyRender?.generatedAt || '';
   const storyFontMode = currentStoryFontMode(fullText);
+  const storyTextAlign = currentStoryTextAlign(fullText);
+  const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
+  const pagePaperStyle = currentPagePaperStyle(fullText);
   const renderedStoryFont = renderStoryFontSummary(previousReadyRender?.preflight?.storyFont);
   const renderedPaginationChapters = previousReadyRender?.preflight?.storyFont?.pagination?.chapters || [];
-  const renderError = renderFailureMessage(render)
-    || (status.status === 'failed' && status.stage === 'render'
+  const hasReadyHardcoverRender = hardcoverRender.status === 'ready' || hardcover12Render.status === 'ready';
+  const renderError = renderFailureMessage(hardcoverRender)
+    || renderFailureMessage(hardcover12Render)
+    || (!hasReadyHardcoverRender && renderFailureMessage(render))
+    || (!hasReadyHardcoverRender && status.status === 'failed' && status.stage === 'render'
       ? status.error?.message || status.message || 'PDF не удалось пересобрать.'
       : '');
 
@@ -3101,6 +3195,23 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
           <select id="storyFontMode" name="storyFontMode">${renderStoryFontModeOptions(storyFontMode)}</select>
           <p class="field-hint">Ровный режим сохраняет один кегль во всей книге и автоматически перераспределяет тот же текст между страницами внутри главы. Границы полей ниже могут не совпадать с границами страниц PDF.</p>
         </div>
+        <div>
+          <label for="storyTextAlign">Выравнивание текста в PDF</label>
+          <select id="storyTextAlign" name="storyTextAlign">${renderStoryTextAlignOptions(storyTextAlign)}</select>
+          <p class="field-hint">Настройка применяется только к текстовым страницам при следующей пересборке. По ширине меняются лишь расстояния между словами; сам текст и его переносы не редактируются.</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <div>
+          <label for="hardcoverCoverTemplate">Оформление обложки 20×20</label>
+          <select id="hardcoverCoverTemplate" name="hardcoverCoverTemplate">${renderHardcoverCoverTemplateOptions(hardcoverCoverTemplate)}</select>
+          <p class="field-hint">Выбирается только для сборок «твёрдая 20×20» и «твёрдая 20×20 · 12 pt». Обычный PDF 13×13 не меняется.</p>
+        </div>
+        <div>
+          <label for="pagePaperStyle">Фон страниц</label>
+          <select id="pagePaperStyle" name="pagePaperStyle">${renderPagePaperStyleOptions(pagePaperStyle)}</select>
+          <p class="field-hint">Белый — без текстуры. Кремовый — фон #fff4e6 с прежней частотой крапинок. Применяется ко всем версиям книги; полноформатные иллюстрации не меняются.</p>
+        </div>
       </div>
       ${renderError ? `<div class="render-warning"><strong>Последняя пересборка PDF не удалась.</strong>${escapeHtml(renderError)}${lastRender ? `<br>Ссылки ниже ведут к предыдущему успешному PDF от ${escapeHtml(formatDateTime(lastRender) || lastRender)}.` : ''}</div>` : ''}
       <p>Последняя успешная сборка PDF: ${escapeHtml(formatDateTime(lastRender) || '—')}</p>
@@ -3111,6 +3222,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
         ${renderFileLink(files.cover, 'cover')}
     ${renderFileLink(files.interior, 'interior')}
     ${renderFileLink(files['hardcover-20x20'], 'print 20×20')}
+    ${renderFileLink(files['hardcover-20x20-12pt'], 'print 20×20 · 12 pt')}
       </div>
     </section>
     ${chapterFields}
@@ -3118,6 +3230,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       <button class="secondary" type="submit" name="action" value="save">Сохранить без пересборки</button>
       <button type="submit" name="action" value="save_render">Сохранить все и пересобрать PDF</button>
       <button class="secondary" type="submit" name="action" value="hardcover_20x20_render">Сохранить и собрать твёрдую 20×20</button>
+      <button class="secondary" type="submit" name="action" value="hardcover_20x20_12pt_render">Сохранить и собрать твёрдую 20×20 · 12 pt</button>
     </div>
   </form>
   <script>
@@ -3137,6 +3250,36 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
         updateCharacterCount(textarea);
         textarea.addEventListener('input', () => updateCharacterCount(textarea));
       });
+
+      const additionalImageInput = document.getElementById('additional_images');
+      const additionalImagePlacements = document.getElementById('additional-image-new-placements');
+      const renderAdditionalImagePlacements = () => {
+        if (!additionalImageInput || !additionalImagePlacements) return;
+        additionalImagePlacements.replaceChildren();
+        Array.from(additionalImageInput.files || []).forEach((file, index) => {
+          const field = document.createElement('div');
+          const label = document.createElement('label');
+          const input = document.createElement('input');
+          const fileName = document.createElement('p');
+          input.id = 'additional_image_new_after_page_' + index;
+          input.name = 'additional_image_new_after_page_' + index;
+          input.type = 'number';
+          input.min = '1';
+          input.max = '${ADMIN_ADDITIONAL_IMAGE_AFTER_PAGE_MAX}';
+          input.step = '1';
+          input.inputMode = 'numeric';
+          input.placeholder = 'В конце книги';
+          label.htmlFor = input.id;
+          label.textContent = 'Иллюстрация ' + (index + 1) + ': вставить после страницы';
+          fileName.className = 'field-hint';
+          fileName.textContent = file.name;
+          field.append(label, input, fileName);
+          additionalImagePlacements.append(field);
+        });
+      };
+      if (additionalImageInput) {
+        additionalImageInput.addEventListener('change', renderAdditionalImagePlacements);
+      }
     })();
   </script>
 </body>
@@ -3184,6 +3327,15 @@ function buildEditedFullText(current, params) {
       ? 'balanced'
       : next.text.printLayout?.storyFontMode;
   const storyFontMode = normalizeStoryFontMode(submittedStoryFontMode);
+  const storyTextAlign = normalizeStoryTextAlign(
+    params.has('storyTextAlign') ? params.get('storyTextAlign') : next.text.printLayout?.storyTextAlign,
+  );
+  const hardcoverCoverTemplate = normalizeHardcoverCoverTemplate(
+    params.has('hardcoverCoverTemplate') ? params.get('hardcoverCoverTemplate') : next.text.printLayout?.hardcoverCoverTemplate,
+  );
+  const pagePaperStyle = normalizePagePaperStyle(
+    params.has('pagePaperStyle') ? params.get('pagePaperStyle') : next.text.printLayout?.pagePaperStyle,
+  );
 
   next.text.bible.bookTitle = bookTitle;
   next.text.bible.subtitle = subtitle;
@@ -3194,6 +3346,9 @@ function buildEditedFullText(current, params) {
   next.text.printLayout = {
     ...(next.text.printLayout || {}),
     storyFontMode,
+    storyTextAlign,
+    hardcoverCoverTemplate,
+    pagePaperStyle,
   };
 
   for (const chapter of next.text.chapters) {
@@ -3308,6 +3463,27 @@ function detectAdminImageUpload(file) {
     return { ext: 'jpg', mimeType: 'image/jpeg' };
   }
   throw httpError(400, `Файл ${file.originalName || ''} должен быть PNG или JPG`);
+}
+
+function normalizeAdditionalImageAfterPage(value, label = 'Страница для иллюстрации') {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  if (!/^\d+$/.test(text)) {
+    throw httpError(400, `${label}: укажите целый номер страницы`);
+  }
+  const pageNumber = Number(text);
+  if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > ADMIN_ADDITIONAL_IMAGE_AFTER_PAGE_MAX) {
+    throw httpError(400, `${label}: допустим номер от 1 до ${ADMIN_ADDITIONAL_IMAGE_AFTER_PAGE_MAX}`);
+  }
+  return pageNumber;
+}
+
+function hasAdditionalImagePlacementFields(fields) {
+  return [...fields.keys()].some((name) => (
+    name === 'clear_additional_images'
+    || name.startsWith('additional_image_after_page_')
+    || name.startsWith('additional_image_new_after_page_')
+  ));
 }
 
 function adminImageVersionedFileName(slotDef, ext, stamp) {
@@ -3450,26 +3626,41 @@ async function saveAdminBookImages(jobId, files, fileList = [], fields = new URL
   }
 
   const additionalPath = join(dir, 'artifacts', 'additional-images.json');
+  const storedAdditional = (await readJsonFile(additionalPath, { images: [] })).images || [];
   const existingAdditional = fields.get('clear_additional_images') === '1'
     ? []
-    : (await readJsonFile(additionalPath, { images: [] })).images || [];
+    : storedAdditional.map((image, index) => {
+      const fieldName = `additional_image_after_page_${index}`;
+      const afterPage = fields.has(fieldName)
+        ? normalizeAdditionalImageAfterPage(fields.get(fieldName), `Иллюстрация ${index + 1}`)
+        : normalizeAdditionalImageAfterPage(image?.afterPage, `Иллюстрация ${index + 1}`);
+      const next = { ...image };
+      if (afterPage === null) delete next.afterPage;
+      else next.afterPage = afterPage;
+      return next;
+    });
   const additionalUploads = fileList.filter((file) => file.fieldName === 'additional_images');
   if (existingAdditional.length + additionalUploads.length > 24) {
     throw httpError(400, 'Можно добавить не более 24 дополнительных иллюстраций');
   }
   const additionalImages = [...existingAdditional];
-  for (const file of additionalUploads) {
+  for (const [index, file] of additionalUploads.entries()) {
     const detected = detectAdminImageUpload(file);
     const fileName = `additional-image-${String(additionalImages.length + 1).padStart(2, '0')}-admin-${stamp}.${detected.ext}`;
     await writeFile(join(filesDir, fileName), file.content, { mode: 0o600 });
-    additionalImages.push({ fileName, mimeType: detected.mimeType, bytes: file.content.length, source: 'admin_upload', addedAt: nowIso() });
+    const afterPage = normalizeAdditionalImageAfterPage(fields.get(`additional_image_new_after_page_${index}`), `Новая иллюстрация ${index + 1}`);
+    additionalImages.push({
+      fileName,
+      mimeType: detected.mimeType,
+      bytes: file.content.length,
+      source: 'admin_upload',
+      addedAt: nowIso(),
+      ...(afterPage === null ? {} : { afterPage }),
+    });
   }
-  if (additionalUploads.length || fields.get('clear_additional_images') === '1') {
+  const additionalPlacementChanged = JSON.stringify(storedAdditional) !== JSON.stringify(additionalImages);
+  if (additionalUploads.length || fields.get('clear_additional_images') === '1' || additionalPlacementChanged) {
     await writeJsonAtomic(additionalPath, { images: additionalImages, updatedAt: nowIso() });
-  }
-
-  if (!updates.length && !additionalUploads.length && fields.get('clear_additional_images') !== '1') {
-    throw httpError(400, 'Выберите хотя бы одну картинку');
   }
 
   await updateVisualsAfterImageEdit(jobId, updates);
@@ -3483,6 +3674,7 @@ async function saveAdminBookImages(jobId, files, fileList = [], fields = new URL
       bytes: update.bytes,
       mimeType: update.mimeType,
     })),
+    additionalImages: additionalImages.map((image) => ({ fileName: image.fileName, afterPage: image.afterPage || null })),
   });
   return { updates, additionalImages };
 }
@@ -3505,6 +3697,9 @@ async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
   }
   if (!notice && url.searchParams.get('hardcoverQueued') === '1') {
     notice = 'Изменения сохранены. Собираю отдельную версию для твёрдой обложки 20×20 — обычный PDF не будет перезаписан.';
+  }
+  if (!notice && url.searchParams.get('hardcover12Queued') === '1') {
+    notice = 'Изменения сохранены. Собираю отдельную версию 20×20 для взрослого чтения с кеглем 12 pt — обычный PDF не будет перезаписан.';
   }
   if (!notice && url.searchParams.get('rendered') === '1') {
     notice = 'Текст сохранен, PDF пересобран.';
@@ -6430,9 +6625,21 @@ async function renderJobPdf(jobId, options = {}) {
 
 async function renderHardcover20x20Pdf(jobId) {
   const dir = jobDir(jobId);
+  const sourceFile = 'book-hardcover-source.pdf';
+  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
+  await runRendererVariant(jobId, {
+    FAIRYTELLER_RENDER_VARIANT: 'hardcover-source',
+    FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+  }, '20x20 hardcover source render');
   const output = await new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(process.execPath, [HARDCOVER_20X20_RENDER_SCRIPT, jobId], {
-      env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR },
+      env: {
+        ...process.env,
+        FAIRYTELLER_DATA_DIR: DATA_DIR,
+        FAIRYTELLER_HARDCOVER_SOURCE_FILE: sourceFile,
+        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -6468,8 +6675,115 @@ async function renderHardcover20x20Pdf(jobId) {
     ...info,
   };
   await updateJobStatus(jobId, {
+    status: 'done',
+    stage: 'render',
+    progress: 100,
+    message: 'Отдельная версия 20×20 готова.',
+    error: null,
     artifacts: {
       hardcover20x20: {
+        status: 'ready',
+        generatedAt: output.generatedAt || nowIso(),
+        preflight: output,
+        file,
+      },
+    },
+  });
+  return file;
+}
+
+async function runRendererVariant(jobId, env, label) {
+  return await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, [RENDER_SCRIPT, jobId], {
+      env: { ...process.env, FAIRYTELLER_DATA_DIR: DATA_DIR, ...env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, `${label} timed out`));
+    }, 240000);
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        rejectPromise(httpError(500, `${label} failed: ${stderr || stdout || `exit ${code}`}`));
+        return;
+      }
+      resolvePromise(stdout);
+    });
+  });
+}
+
+async function renderHardcover20x20Adult12Pdf(jobId) {
+  const dir = jobDir(jobId);
+  const sourceFile = 'book-hardcover-12-source.pdf';
+  const outputFile = 'hardcover-20x20-12pt.pdf';
+  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
+  await runRendererVariant(jobId, {
+    FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE: 'hardcover12',
+    FAIRYTELLER_RENDER_VARIANT: 'hardcover-12-source',
+    FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+  }, '20x20 12 pt source render');
+
+  const output = await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, [HARDCOVER_20X20_RENDER_SCRIPT, jobId], {
+      env: {
+        ...process.env,
+        FAIRYTELLER_DATA_DIR: DATA_DIR,
+        FAIRYTELLER_HARDCOVER_SOURCE_FILE: sourceFile,
+        FAIRYTELLER_HARDCOVER_OUTPUT_FILE: outputFile,
+        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      rejectPromise(httpError(504, '20x20 12 pt hardcover render timed out'));
+    }, 240000);
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        rejectPromise(httpError(500, `20x20 12 pt hardcover render failed: ${stderr || stdout || `exit ${code}`}`));
+        return;
+      }
+      try {
+        resolvePromise(JSON.parse(stdout));
+      } catch (error) {
+        rejectPromise(httpError(500, `20x20 12 pt hardcover renderer returned invalid JSON: ${error.message}`));
+      }
+    });
+  });
+  const info = await optionalFileInfo(join(dir, 'files', outputFile));
+  if (!info) throw httpError(500, '20x20 12 pt hardcover renderer did not produce a PDF');
+  const file = {
+    fileName: outputFile,
+    url: adminFileUrlWithVersion(jobId, outputFile, info),
+    ...info,
+  };
+  await updateJobStatus(jobId, {
+    status: 'done',
+    stage: 'render',
+    progress: 100,
+    message: 'Отдельная версия 20×20 · 12 pt готова.',
+    error: null,
+    artifacts: {
+      hardcover20x20Adult12: {
         status: 'ready',
         generatedAt: output.generatedAt || nowIso(),
         preflight: output,
@@ -6534,19 +6848,67 @@ async function preflightJobStoryText(jobId) {
 
 const ADMIN_RENDER_QUEUE = new Map();
 
+function hardcoverArtifactKey(format) {
+  if (format === 'hardcover_20x20') return 'hardcover20x20';
+  if (format === 'hardcover_20x20_12pt') return 'hardcover20x20Adult12';
+  return '';
+}
+
+async function markHardcoverRenderStatus(jobId, artifactKey, status, details = {}) {
+  const current = await readJsonFile(join(jobDir(jobId), 'status.json'), {});
+  const existing = current?.artifacts?.[artifactKey] || {};
+  const previousReady = existing.status === 'ready' ? existing : (existing.previousReady || null);
+  const isAdult12 = artifactKey === 'hardcover20x20Adult12';
+  await updateJobStatus(jobId, {
+    ...(status === 'generating' ? {
+      status: 'rendering',
+      stage: 'render',
+      message: isAdult12 ? 'Собираю отдельную версию 20×20 · 12 pt.' : 'Собираю отдельную версию 20×20.',
+      error: null,
+    } : {}),
+    artifacts: {
+      [artifactKey]: {
+        status,
+        ...details,
+        ...(previousReady ? { previousReady } : {}),
+      },
+    },
+  });
+  return previousReady;
+}
+
 async function runQueuedAdminRender(jobId) {
   const dir = jobDir(jobId);
   while (ADMIN_RENDER_QUEUE.has(jobId)) {
     const state = ADMIN_RENDER_QUEUE.get(jobId);
     state.pending = false;
     try {
-      await renderJobPdf(jobId, { skipCustomerEmail: true });
+      const artifactKey = hardcoverArtifactKey(state.format);
+      if (artifactKey) {
+        state.previousHardcoverReady = await markHardcoverRenderStatus(jobId, artifactKey, 'generating', {
+          requestedAt: nowIso(),
+        });
+      }
       if (state.format === 'hardcover_20x20') {
         await renderHardcover20x20Pdf(jobId);
+      } else if (state.format === 'hardcover_20x20_12pt') {
+        await renderHardcover20x20Adult12Pdf(jobId);
+      } else {
+        await renderJobPdf(jobId, { skipCustomerEmail: true });
       }
     } catch (error) {
       const message = error?.message || 'PDF render failed';
       console.error(`Background admin PDF render failed for ${jobId}: ${message}`);
+      const artifactKey = hardcoverArtifactKey(state.format);
+      if (artifactKey) {
+        await markHardcoverRenderStatus(jobId, artifactKey, 'failed', {
+          failedAt: nowIso(),
+          message,
+          previousReady: state.previousHardcoverReady || null,
+        }).catch((statusError) => {
+          console.error(`Failed to record hard-cover render failure for ${jobId}: ${statusError.message}`);
+        });
+      }
       await appendEvent(dir, {
         type: 'job.adminRenderFailed',
         failedAt: nowIso(),
@@ -6606,6 +6968,28 @@ async function queueAdminHardcover20x20RenderJob(jobId, eventType = 'job.adminHa
     runQueuedAdminRender(jobId).catch((error) => {
       ADMIN_RENDER_QUEUE.delete(jobId);
       console.error(`Admin 20x20 hardcover render queue crashed for ${jobId}: ${error?.message || error}`);
+    });
+  });
+  return true;
+}
+
+async function queueAdminHardcover20x20Adult12RenderJob(jobId, eventType = 'job.adminHardcover20x20Adult12Requested') {
+  const dir = jobDir(jobId);
+  const queuedAt = nowIso();
+  const current = ADMIN_RENDER_QUEUE.get(jobId);
+  if (current) {
+    current.pending = true;
+    current.eventType = eventType;
+    current.format = 'hardcover_20x20_12pt';
+    await appendEvent(dir, { type: 'job.adminHardcover20x20Adult12QueuedAgain', requestedAt: queuedAt, eventType });
+    return false;
+  }
+  ADMIN_RENDER_QUEUE.set(jobId, { pending: false, eventType, format: 'hardcover_20x20_12pt' });
+  await appendEvent(dir, { type: eventType, queuedAt, background: true });
+  setImmediate(() => {
+    runQueuedAdminRender(jobId).catch((error) => {
+      ADMIN_RENDER_QUEUE.delete(jobId);
+      console.error(`Admin 20x20 12 pt hardcover render queue crashed for ${jobId}: ${error?.message || error}`);
     });
   });
   return true;
@@ -6894,16 +7278,21 @@ async function route(req, res) {
           redirectAdmin(res, `${adminBookEditPath(jobId)}?imagesSaved=1`);
           return;
         }
-        if (!['save', 'save_render', 'balance_font_render', 'hardcover_20x20_render'].includes(action)) {
+        if (!['save', 'save_render', 'balance_font_render', 'hardcover_20x20_render', 'hardcover_20x20_12pt_render'].includes(action)) {
           throw httpError(400, 'Unknown editor action');
         }
         await saveAdminBookText(jobId, fields);
-        if (files.size > 0) {
+        if (files.size > 0 || hasAdditionalImagePlacementFields(fields)) {
           await saveAdminBookImages(jobId, files, fileList, fields);
         }
         if (action === 'hardcover_20x20_render') {
           await queueAdminHardcover20x20RenderJob(jobId, 'job.adminEditorHardcover20x20Requested');
           redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcoverQueued=1`);
+          return;
+        }
+        if (action === 'hardcover_20x20_12pt_render') {
+          await queueAdminHardcover20x20Adult12RenderJob(jobId, 'job.adminEditorHardcover20x20Adult12Requested');
+          redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcover12Queued=1`);
           return;
         }
         if (action === 'save_render' || action === 'balance_font_render') {
@@ -6920,6 +7309,11 @@ async function route(req, res) {
       if (params.get('action') === 'hardcover_20x20_render') {
         await queueAdminHardcover20x20RenderJob(jobId, 'job.fullTextHardcover20x20Requested');
         redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcoverQueued=1`);
+        return;
+      }
+      if (params.get('action') === 'hardcover_20x20_12pt_render') {
+        await queueAdminHardcover20x20Adult12RenderJob(jobId, 'job.fullTextHardcover20x20Adult12Requested');
+        redirectAdmin(res, `${adminBookEditPath(jobId)}?hardcover12Queued=1`);
         return;
       }
       if (params.get('action') === 'save_render' || params.get('action') === 'balance_font_render') {
