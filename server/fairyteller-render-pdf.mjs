@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
-import { PDFDocument, clip, endPath, popGraphicsState, pushGraphicsState, rectangle, rgb } from 'pdf-lib';
+// Use pdf-lib's single-file distribution so the local Lab does not pay the
+// cost of hydrating hundreds of cold CommonJS files before every render.
+import { PDFDocument, clip, endPath, popGraphicsState, pushGraphicsState, rectangle, rgb } from 'pdf-lib/dist/pdf-lib.js';
 import fontkit from '@pdf-lib/fontkit';
 
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '/data/fairyteller');
@@ -15,6 +17,7 @@ const TEXT_PREFLIGHT_ONLY = process.argv.includes('--text-preflight');
 const STORY_FONT_MODE_OVERRIDE = String(process.env.FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE || '').trim();
 const RENDER_VARIANT = String(process.env.FAIRYTELLER_RENDER_VARIANT || '').trim();
 const HARDCOVER_COVER_TEMPLATE = String(process.env.FAIRYTELLER_HARDCOVER_COVER_TEMPLATE || 'bitten').trim();
+const COVER_STYLE_OVERRIDE = String(process.env.FAIRYTELLER_COVER_STYLE || '').trim();
 const DEBUG_TEXT_PAGINATION = process.env.FAIRYTELLER_DEBUG_TEXT_PAGINATION === '1';
 const TEXT_PREFLIGHT_BATCH_JOB_IDS = String(process.env.FAIRYTELLER_TEXT_PREFLIGHT_BATCH_JOB_IDS || '')
   .split(',')
@@ -25,6 +28,11 @@ const HARDCOVER_COVER_TEMPLATE_ASSETS = {
   bitten: 'cover/background-hardcover-template-bitten.jpg',
   white: 'cover/background-hardcover-template-white.jpg',
 };
+const COVER_STYLE_VALUES = new Set(['standard', 'cyberpunk']);
+const CYBERPUNK_WORLD_KEY = 'cyberpunk_dream';
+const CYBERPUNK_HARDCOVER_TEMPLATE_ASSET = 'cover/background-hardcover-template-cyberpunk.png';
+const STANDARD_INTERIOR_ACCENT = '#9B1C1C';
+const CYBERPUNK_INTERIOR_ACCENT = '#7B2CBF';
 const HARDCOVER_COVER_SIZE_MM = [467, 240];
 let hardcoverPaperVariantIndex = 0;
 let activePagePaperStyle = 'cream-speckle';
@@ -44,6 +52,10 @@ const LAYOUT_PATH = resolve(LAYOUT_DIR, 'fairyteller-pptx-v2.json');
 
 if (RENDER_VARIANT && !/^[a-z0-9][a-z0-9-]{0,48}$/.test(RENDER_VARIANT)) {
   throw new Error('FAIRYTELLER_RENDER_VARIANT must contain only lowercase letters, digits and hyphens');
+}
+
+if (COVER_STYLE_OVERRIDE && !COVER_STYLE_VALUES.has(COVER_STYLE_OVERRIDE)) {
+  throw new Error('FAIRYTELLER_COVER_STYLE must be either standard or cyberpunk');
 }
 
 function variantPdfFileName(fileName) {
@@ -813,9 +825,28 @@ function drawPageNumber(page, pageNumber, font, layout) {
 async function createPdfWithFonts() {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
-  const fallbackRegular = await pdf.embedFont(await readFile('/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'), { subset: true });
-  const fallbackBold = await pdf.embedFont(await readFile('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'), { subset: true });
-  const fallbackSans = await pdf.embedFont(await readFile('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'), { subset: true });
+  const firstAvailableFont = (...paths) => paths.find((path) => existsSync(path));
+  const fallbackRegularPath = firstAvailableFont(
+    '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf',
+    '/System/Library/Fonts/Supplemental/Georgia.ttf',
+    resolve(FONT_DIR, 'Inter-Regular.ttf'),
+  );
+  const fallbackBoldPath = firstAvailableFont(
+    '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
+    '/System/Library/Fonts/Supplemental/Georgia Bold.ttf',
+    resolve(FONT_DIR, 'Inter-SemiBold.ttf'),
+  );
+  const fallbackSansPath = firstAvailableFont(
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+    resolve(FONT_DIR, 'Inter-Regular.ttf'),
+  );
+  if (!fallbackRegularPath || !fallbackBoldPath || !fallbackSansPath) {
+    throw new Error('Fairyteller render fonts are not available');
+  }
+  const fallbackRegular = await pdf.embedFont(await readFile(fallbackRegularPath), { subset: true });
+  const fallbackBold = await pdf.embedFont(await readFile(fallbackBoldPath), { subset: true });
+  const fallbackSans = await pdf.embedFont(await readFile(fallbackSansPath), { subset: true });
   const fontInterLight = existsSync(resolve(FONT_DIR, 'Inter-Light.ttf'))
     ? await pdf.embedFont(await readFile(resolve(FONT_DIR, 'Inter-Light.ttf')), { subset: true })
     : fallbackSans;
@@ -867,6 +898,7 @@ async function embedTemplateAsset(pdf, relativePath) {
 async function loadTemplateAssets(pdf) {
   return {
     coverBackground: await embedTemplateAsset(pdf, 'cover/background.png'),
+    coverCyberpunk: await embedTemplateAsset(pdf, 'cover/background-cyberpunk-13x13.png'),
     book: {
       image2: await embedTemplateAsset(pdf, 'book/image2.png'),
       image6: await embedTemplateAsset(pdf, 'book/image6.png'),
@@ -876,13 +908,21 @@ async function loadTemplateAssets(pdf) {
       image13: await embedTemplateAsset(pdf, 'book/image13.png'),
       image15: await embedTemplateAsset(pdf, 'book/image15.png'),
       image15Burgundy: await embedTemplateAsset(pdf, 'book/image15-burgundy.png'),
+      image15CyberpunkPurple: await embedTemplateAsset(pdf, 'book/image15-cyberpunk-purple.png'),
       image16: await embedTemplateAsset(pdf, 'book/image16.png'),
       image17: await embedTemplateAsset(pdf, 'book/image17.png'),
+      outroCyberpunk: await embedTemplateAsset(pdf, 'book/outro-cyberpunk.png'),
       creamSpecklePapers: [
         await embedTemplateAsset(pdf, 'book/cream-speckle-paper-1.jpg'),
         await embedTemplateAsset(pdf, 'book/cream-speckle-paper-2.jpg'),
         await embedTemplateAsset(pdf, 'book/cream-speckle-paper-3.jpg'),
         await embedTemplateAsset(pdf, 'book/cream-speckle-paper-4.jpg'),
+      ],
+      cyberpunkSpecklePapers: [
+        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-1.jpg'),
+        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-2.jpg'),
+        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-3.jpg'),
+        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-4.jpg'),
       ],
     },
   };
@@ -912,9 +952,17 @@ function addSoftBackground(page, templatePage = null) {
   page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.985, 0.955, 0.9) });
 }
 
-async function renderCoverPdf({ dir, fullText, visuals, layout }) {
+async function resolveCoverStyle(dir, fullText) {
+  if (COVER_STYLE_OVERRIDE) return COVER_STYLE_OVERRIDE;
+  const stored = String(fullText?.text?.printLayout?.coverStyle || '').trim();
+  if (COVER_STYLE_VALUES.has(stored)) return stored;
+  const order = await readOptionalJson(join(dir, 'order.json'), {});
+  return order?.world === CYBERPUNK_WORLD_KEY ? 'cyberpunk' : 'standard';
+}
+
+async function renderCoverPdf({ dir, fullText, visuals, layout, coverStyle }) {
   if (HARDCOVER_SOURCE_VARIANTS.has(RENDER_VARIANT)) {
-    return renderHardcoverTemplateCoverPdf({ dir, fullText, visuals });
+    return renderHardcoverTemplateCoverPdf({ dir, fullText, visuals, coverStyle });
   }
   const { pdf, fontRubik, fontAmatic, fontSerif } = await createPdfWithFonts();
   const assets = await loadTemplateAssets(pdf);
@@ -926,7 +974,7 @@ async function renderCoverPdf({ dir, fullText, visuals, layout }) {
   const subtitle = bible.subtitle || '';
   const summary = bookSummary(fullText);
 
-  page.drawImage(assets.coverBackground, { x: 0, y: 0, width, height });
+  page.drawImage(coverStyle === 'cyberpunk' ? assets.coverCyberpunk : assets.coverBackground, { x: 0, y: 0, width, height });
 
   if (coverImage) {
     drawContainedCoverImage(page, coverImage, topLeftBox(page, pptBox(418.01, 145.37, 311.06, 216.64)));
@@ -1001,11 +1049,13 @@ function hardcoverTopLeftBox(page, boxMm) {
   });
 }
 
-async function renderHardcoverTemplateCoverPdf({ dir, fullText, visuals }) {
+async function renderHardcoverTemplateCoverPdf({ dir, fullText, visuals, coverStyle }) {
   const { pdf, fontRubik, fontAmatic, fontSerif } = await createPdfWithFonts();
   const [width, height] = HARDCOVER_COVER_SIZE_MM.map(mmToPt);
   const page = pdf.addPage([width, height]);
-  const template = await embedTemplateAsset(pdf, HARDCOVER_COVER_TEMPLATE_ASSETS[HARDCOVER_COVER_TEMPLATE]);
+  const template = await embedTemplateAsset(pdf, coverStyle === 'cyberpunk'
+    ? CYBERPUNK_HARDCOVER_TEMPLATE_ASSET
+    : HARDCOVER_COVER_TEMPLATE_ASSETS[HARDCOVER_COVER_TEMPLATE]);
   const coverImage = await embedImage(pdf, dir, findImage(visuals, 'cover'));
   const bible = fullText.text?.bible || {};
   const title = bible.bookTitle || fullText.text?.preview?.title || 'Fairyteller';
@@ -1394,9 +1444,14 @@ function storyTextAlign(fullText) {
   return align === 'justify' ? 'justify' : 'left';
 }
 
-function pagePaperStyle(fullText) {
-  const style = String(fullText?.text?.printLayout?.pagePaperStyle || 'cream-speckle').trim();
-  return style === 'white' ? 'white' : 'cream-speckle';
+function pagePaperStyle(fullText, coverStyle = 'standard') {
+  const stored = String(fullText?.text?.printLayout?.pagePaperStyle || '').trim();
+  if (['white', 'cream-speckle', 'cyberpunk-speckle'].includes(stored)) return stored;
+  return coverStyle === 'cyberpunk' ? 'cyberpunk-speckle' : 'cream-speckle';
+}
+
+function interiorAccentColor(coverStyle = 'standard') {
+  return hexColor(coverStyle === 'cyberpunk' ? CYBERPUNK_INTERIOR_ACCENT : STANDARD_INTERIOR_ACCENT);
 }
 
 function formatPt(value) {
@@ -1434,7 +1489,7 @@ function pptStoryTextBox(pageNumber, isLastTextPage = false, isChapterFinalTextP
   return pptBox(x, STANDARD_TEXT_TOP, width, 300.35);
 }
 
-function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null, align = 'left', isChapterFirstTextPage = false) {
+function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null, align = 'left', isChapterFirstTextPage = false, coverStyle = 'standard') {
   const hasFixedSize = Number.isFinite(fixedSize);
   const size = hasFixedSize ? fixedSize : Number.isFinite(maxSize) ? maxSize : 11;
   // A text page can move when a story is reflowed (especially in the 12 pt mode).
@@ -1454,7 +1509,7 @@ function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null
     dropCap: hasDropCap ? {
       enabled: true,
       font: fonts.fontSerifBold,
-      color: hexColor('#9B1C1C'),
+      color: interiorAccentColor(coverStyle),
       lineSpan: 3,
       sizeRatio: 3.2,
       gap: 6,
@@ -1499,22 +1554,25 @@ function storyPaginationSegments(chapter, splitNarrativeParagraphs = false) {
 }
 
 function splitPaginationSegment(segment) {
-  if (!startsWithDialogueDash(segment.text)) {
-    const sentences = splitSentences(segment.text);
-    if (sentences.length > 1) {
-      const totalLength = sentences.reduce((sum, sentence) => sum + sentence.length, 0);
-      let leftLength = 0;
-      let splitIndex = 1;
-      for (let index = 0; index < sentences.length - 1; index += 1) {
-        leftLength += sentences[index].length;
-        splitIndex = index + 1;
-        if (leftLength >= totalLength / 2) break;
-      }
-      return [
-        { ...segment, text: sentences.slice(0, splitIndex).join(' '), boundaryAfter: 'sentence' },
-        { ...segment, text: sentences.slice(splitIndex).join(' ') },
-      ];
+  // A dialogue paragraph carries its speaker attribution and must stay atomic.
+  // Splitting it by words can strand the spoken continuation or attribution on
+  // another page. Narrative paragraphs remain available for pagination relief.
+  if (startsWithDialogueDash(segment.text)) return null;
+
+  const sentences = splitSentences(segment.text);
+  if (sentences.length > 1) {
+    const totalLength = sentences.reduce((sum, sentence) => sum + sentence.length, 0);
+    let leftLength = 0;
+    let splitIndex = 1;
+    for (let index = 0; index < sentences.length - 1; index += 1) {
+      leftLength += sentences[index].length;
+      splitIndex = index + 1;
+      if (leftLength >= totalLength / 2) break;
     }
+    return [
+      { ...segment, text: sentences.slice(0, splitIndex).join(' '), boundaryAfter: 'sentence' },
+      { ...segment, text: sentences.slice(splitIndex).join(' ') },
+    ];
   }
   const words = cleanText(segment.text).split(' ').filter(Boolean);
   if (words.length < 2) return null;
@@ -1895,7 +1953,9 @@ function drawBookPaper(page, assets, variant = 'image8') {
     return;
   }
   // Full-page illustrations bypass this helper and remain artwork-only.
-  const papers = assets.book.creamSpecklePapers;
+  const papers = activePagePaperStyle === 'cyberpunk-speckle'
+    ? assets.book.cyberpunkSpecklePapers
+    : assets.book.creamSpecklePapers;
   const paper = papers[hardcoverPaperVariantIndex % papers.length];
   hardcoverPaperVariantIndex += 1;
   page.drawImage(paper, { x: 0, y: 0, width, height });
@@ -1984,7 +2044,7 @@ function drawPptHardcoverTocRow(page, fonts, chapterTitle, pageNumber, rowTop) {
   });
 }
 
-function addPptHardcoverTocPage(pdf, fonts, assets, chapters, layout, additionalImages = []) {
+function addPptHardcoverTocPage(pdf, fonts, assets, chapters, layout, additionalImages = [], coverStyle = 'standard') {
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, 'image8');
   drawPptText(page, 'Оглавление', pptBox(73.87, 100, 236.22, 28.46), {
@@ -1993,17 +2053,21 @@ function addPptHardcoverTocPage(pdf, fonts, assets, chapters, layout, additional
     minSize: 10,
     align: 'center',
     valign: 'center',
-    color: hexColor('#9B1C1C'),
+    color: interiorAccentColor(coverStyle),
   });
   const chapterPages = pptChapterStartPages(chapters, layout, additionalImages);
   chapters.forEach((chapter, index) => {
     drawPptHardcoverTocRow(page, fonts, chapter.title || `Глава ${chapter.n}`, chapterPages[index], 164 + index * 18);
   });
-  drawPptImage(page, assets.book.image15Burgundy, pptBox(145.6, 292.6, 94.8, 7.74));
+  drawPptImage(
+    page,
+    coverStyle === 'cyberpunk' ? assets.book.image15CyberpunkPurple : assets.book.image15Burgundy,
+    pptBox(145.6, 292.6, 94.8, 7.74),
+  );
 }
 
-function addPptTocPage(pdf, fonts, assets, chapters, layout, additionalImages = []) {
-  addPptHardcoverTocPage(pdf, fonts, assets, chapters, layout, additionalImages);
+function addPptTocPage(pdf, fonts, assets, chapters, layout, additionalImages = [], coverStyle = 'standard') {
+  addPptHardcoverTocPage(pdf, fonts, assets, chapters, layout, additionalImages, coverStyle);
 }
 
 function addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pageNumber, blocks) {
@@ -2073,7 +2137,7 @@ async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pa
   });
 }
 
-function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLastTextPage = false, storyFontControl = null, align = 'left', isChapterFinalTextPage = false, adaptivePagination = false, isChapterFirstTextPage = false) {
+function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLastTextPage = false, storyFontControl = null, align = 'left', isChapterFinalTextPage = false, adaptivePagination = false, isChapterFirstTextPage = false, coverStyle = 'standard') {
   const page = addPptInteriorPage(pdf);
   const usesEndPaper = isChapterFinalTextPage;
   drawBookPaper(page, assets, usesEndPaper ? 'image9' : 'image8');
@@ -2089,6 +2153,7 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLa
       storyFontControl?.maxSize,
       align,
       isChapterFirstTextPage,
+      coverStyle,
     ),
   );
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
@@ -2102,17 +2167,24 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLa
   return textLayout;
 }
 
-function addPptDecorativeOutroPage(pdf, fonts, assets) {
+function addPptDecorativeOutroPage(pdf, fonts, assets, coverStyle = 'standard') {
   const page = addPptInteriorPage(pdf);
   drawBookPaper(page, assets, 'image6');
-  drawPptImage(page, assets.book.image16, pptBox(12, 24, 361.51, 361.51));
+  const outroBox = pptBox(12, 24, 361.51, 361.51);
+  if (coverStyle === 'cyberpunk') {
+    // The supplied finale is 3:2. A centred cover crop keeps the lamppost and
+    // the stack of books intact inside the existing square outro composition.
+    drawClippedCoverImage(page, assets.book.outroCyberpunk, topLeftBox(page, outroBox));
+  } else {
+    drawPptImage(page, assets.book.image16, outroBox);
+  }
   drawPptText(page, 'Конец', pptBox(188, 82, 145.51, 42), {
     font: fonts.fontRubik,
     size: 24,
     minSize: 16,
     align: 'center',
     valign: 'center',
-    color: hexColor('#292929'),
+    color: hexColor(coverStyle === 'cyberpunk' ? '#F6F6F6' : '#292929'),
   });
 }
 
@@ -2152,9 +2224,9 @@ async function addPptAdditionalImagePage(pdf, fonts, dir, imageJob, pageNumber) 
   }
 }
 
-async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
+async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle }) {
   hardcoverPaperVariantIndex = 0;
-  activePagePaperStyle = pagePaperStyle(fullText);
+  activePagePaperStyle = pagePaperStyle(fullText, coverStyle);
   const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
   const assets = await loadTemplateAssets(pdf);
@@ -2234,7 +2306,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
       lineHeightRatio: 1.25,
       align: 'center',
       valign: 'center',
-      color: hexColor('#9B1C1C'),
+      color: interiorAccentColor(coverStyle),
     });
   }
   drawPptText(page, bookSummary(fullText), annotationSummaryBox, {
@@ -2248,7 +2320,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
   });
   await addPlacedImagesAfterSourcePage();
 
-  addPptTocPage(pdf, fonts, assets, chapters, layout, additionalImages);
+  addPptTocPage(pdf, fonts, assets, chapters, layout, additionalImages, coverStyle);
   await addPlacedImagesAfterSourcePage();
 
   for (const chapter of chapters) {
@@ -2280,6 +2352,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
         isChapterFinalTextPage,
         modeConfig.kind === 'adaptive',
         isChapterFirstTextPage,
+        coverStyle,
       );
       if (Number.isFinite(textLayout.size)) storyFontSizes.push(textLayout.size);
       if (textLayout.truncated) {
@@ -2301,7 +2374,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout }) {
     }
   }
 
-  addPptDecorativeOutroPage(pdf, fonts, assets);
+  addPptDecorativeOutroPage(pdf, fonts, assets, coverStyle);
   await addPlacedImagesAfterSourcePage();
   addPptQrPage(pdf, fonts, assets);
   await addPlacedImagesAfterSourcePage();
@@ -2427,43 +2500,14 @@ async function renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount 
   return target.save({ useObjectStreams: false });
 }
 
-function addPreviewCoverHalfPage(target, coverPage, half) {
-  const [targetWidth, targetHeight] = INTERIOR_SIZE_MM.map(mmToPt);
-  const page = target.addPage([targetWidth, targetHeight]);
-  page.drawRectangle({ x: 0, y: 0, width: targetWidth, height: targetHeight, color: rgb(1, 1, 1) });
-
-  const scale = targetHeight / coverPage.height;
-  const drawnWidth = coverPage.width * scale;
-  const drawnHeight = coverPage.height * scale;
-  const halfWidth = drawnWidth / 2;
-  const contentX = (targetWidth - halfWidth) / 2;
-  const drawX = half === 'front' ? contentX - halfWidth : contentX;
-
-  page.pushOperators(
-    pushGraphicsState(),
-    rectangle(contentX, 0, halfWidth, targetHeight),
-    clip(),
-    endPath(),
-  );
-  page.drawPage(coverPage, { x: drawX, y: 0, width: drawnWidth, height: drawnHeight });
-  page.pushOperators(popGraphicsState());
-}
-
-async function renderPreviewPdf({ coverPdf, interiorPdf, interiorPageCount }) {
-  const target = await PDFDocument.create();
-  const [coverPage] = await target.embedPdf(coverPdf, [0]);
-  const interiorDoc = await PDFDocument.load(interiorPdf);
-  const interiorPages = await target.copyPages(interiorDoc, interiorDoc.getPageIndices());
-
-  addPreviewCoverHalfPage(target, coverPage, 'front');
-  for (const page of interiorPages) target.addPage(page);
-  addPreviewCoverHalfPage(target, coverPage, 'back');
-
-  const expectedPages = interiorPageCount + 2;
-  if (target.getPageCount() !== expectedPages) {
-    throw new Error(`Preview PDF page count mismatch: expected ${expectedPages}, got ${target.getPageCount()}`);
+async function writeFileAtomic(path, content) {
+  const temporaryPath = `${path}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    await writeFile(temporaryPath, content, { mode: 0o600 });
+    await rename(temporaryPath, path);
+  } finally {
+    await rm(temporaryPath, { force: true }).catch(() => {});
   }
-  return target.save();
 }
 
 async function main() {
@@ -2526,24 +2570,15 @@ async function main() {
   const visualsArtifact = await readJson(join(artifactsDir, 'visuals.json'));
   const visuals = visualsArtifact.visuals || {};
 
-  const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout });
-  const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout });
+  const coverStyle = await resolveCoverStyle(dir, fullText);
+  const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout, coverStyle });
+  const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle });
   const interiorPdf = interiorResult.bytes;
   const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount: interiorResult.pageCount });
-  const previewPdf = await renderPreviewPdf({ coverPdf, interiorPdf, interiorPageCount: interiorResult.pageCount });
 
-  const coverFileName = variantPdfFileName('cover.pdf');
-  const interiorFileName = variantPdfFileName('interior.pdf');
   const bookFileName = variantPdfFileName('book.pdf');
-  const previewFileName = variantPdfFileName('preview.pdf');
-  const coverPath = join(filesDir, coverFileName);
-  const interiorPath = join(filesDir, interiorFileName);
   const bookPath = join(filesDir, bookFileName);
-  const previewPath = join(filesDir, previewFileName);
-  await writeFile(coverPath, coverPdf, { mode: 0o600 });
-  await writeFile(interiorPath, interiorPdf, { mode: 0o600 });
-  await writeFile(bookPath, bookPdf, { mode: 0o600 });
-  await writeFile(previewPath, previewPdf, { mode: 0o600 });
+  await writeFileAtomic(bookPath, bookPdf);
 
   const render = {
     status: 'ready',
@@ -2565,36 +2600,11 @@ async function main() {
         },
         bytes: bookPdf.length,
       },
-      preview: {
-        fileName: previewFileName,
-        url: `/api/fairyteller/jobs/${JOB_ID}/files/${previewFileName}`,
-        pageCount: interiorResult.pageCount + 2,
-        pageSizeMm: INTERIOR_SIZE_MM,
-        coverPlacement: {
-          firstPage: 'front cover, right half of print cover spread',
-          lastPage: 'back cover, left half of print cover spread',
-        },
-        bytes: previewPdf.length,
-      },
-      cover: {
-        fileName: coverFileName,
-        url: `/api/fairyteller/jobs/${JOB_ID}/files/${coverFileName}`,
-        pageCount: 1,
-        pageSizeMm: coverPageSizeMm,
-        bytes: coverPdf.length,
-      },
-      interior: {
-        fileName: interiorFileName,
-        url: `/api/fairyteller/jobs/${JOB_ID}/files/${interiorFileName}`,
-        pageCount: interiorResult.pageCount,
-        pageSizeMm: INTERIOR_SIZE_MM,
-        bytes: interiorPdf.length,
-      },
     },
     preflight: {
       noTextTruncation: true,
       combinedPageCount: interiorResult.pageCount + 1,
-      previewPageCount: interiorResult.pageCount + 2,
+      webPreviewPageCount: interiorResult.pageCount + 2,
       coverPageCount: 1,
       interiorPageCount: interiorResult.pageCount,
       coverPageSizeMm,
@@ -2606,6 +2616,18 @@ async function main() {
     },
   };
   await writeFile(join(artifactsDir, variantArtifactFileName('render.json')), `${JSON.stringify({ jobId: JOB_ID, render }, null, 2)}\n`, { mode: 0o600 });
+  const legacyPdfFiles = [
+    variantPdfFileName('preview.pdf'),
+    variantPdfFileName('cover.pdf'),
+    variantPdfFileName('interior.pdf'),
+  ];
+  if (!RENDER_VARIANT) {
+    legacyPdfFiles.push('paywall-preview.pdf', 'paywall-preview.meta.json');
+  }
+  await Promise.all(legacyPdfFiles.map((fileName) => rm(join(filesDir, fileName), { force: true })));
+  if (!RENDER_VARIANT) {
+    await rm(join(filesDir, 'paywall-preview-pages'), { recursive: true, force: true });
+  }
   console.log(JSON.stringify({ jobId: JOB_ID, render }, null, 2));
 }
 
