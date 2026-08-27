@@ -24,6 +24,7 @@ No watercolor washes, wet-on-wet edges, transparent pigment blooms, sparse sketc
 Recognizable identity and unmistakable traditional storybook rendering are co-equal requirements. Never sacrifice the hand-rendered quality for facial precision.`;
 
 const priority = 'HARD PRIORITY ORDER: 1) richly finished traditional colored-pencil storybook rendering AND recognizable identity; 2) age and number of people; 3) scene action and relationships; 4) physical placement; 5) story outfit lock; 6) composition and print safety; 7) environmental detail.';
+const referencePortraitPrompt = 'richly finished traditional European fairy-tale book portrait, built from fine colored-pencil contours and dense dry opaque pigment on textured paper; fully colored and richly filled with short overlapping directional strokes, visible hand-made marks, warm gold, ochre, muted olive, earthy brown and dusty blue-gray; gently idealized but anatomically believable, preserving exact recognizable facial geometry, age, hairline, asymmetry and distinctive features; no watercolor washes, wet-on-wet edges, sparse sketching, smooth digital painting, photographic skin, lens realism or 3D';
 
 const contractDeclaration = `const WATERCOLOR_RENDERING_LOCK = ${JSON.stringify(renderingContract)};`;
 const priorityDeclaration = `const WATERCOLOR_PRIORITY = ${JSON.stringify(priority)};`;
@@ -32,35 +33,51 @@ let changedWorkflows = 0;
 for (const relativeFile of workflowFiles) {
   const file = path.join(repoRoot, relativeFile);
   const workflows = JSON.parse(fs.readFileSync(file, 'utf8'));
-  let changedNodes = 0;
+  let contractNodes = 0;
+  let referenceStyleNodes = 0;
 
   for (const workflow of workflows) {
     for (const node of workflow.nodes || []) {
       const code = node?.parameters?.jsCode;
-      if (typeof code !== 'string' || !code.includes('const WATERCOLOR_RENDERING_LOCK =')) continue;
+      if (typeof code !== 'string') continue;
 
-      let next = code.replace(
-        /const WATERCOLOR_RENDERING_LOCK = "(?:[^"\\]|\\.)*";/,
-        contractDeclaration,
-      );
-      next = next.replace(
-        /const WATERCOLOR_PRIORITY = "(?:[^"\\]|\\.)*";/,
-        priorityDeclaration,
-      );
-
-      if (next === code) throw new Error(`No prompt declaration changed in ${relativeFile} / ${node.name}`);
-      if (!next.includes('FULL-COLOR CLASSIC STORYBOOK ILLUSTRATION CONTRACT')) {
-        throw new Error(`New contract missing in ${relativeFile} / ${node.name}`);
+      let next = code;
+      if (code.includes('const WATERCOLOR_RENDERING_LOCK =')) {
+        next = next.replace(
+          /const WATERCOLOR_RENDERING_LOCK = "(?:[^"\\]|\\.)*";/,
+          contractDeclaration,
+        );
+        next = next.replace(
+          /const WATERCOLOR_PRIORITY = "(?:[^"\\]|\\.)*";/,
+          priorityDeclaration,
+        );
+        contractNodes += 1;
       }
-      if (next.includes('PENCIL-AND-WATERCOLOR RENDERING CONTRACT')) {
-        throw new Error(`Old contract remains in ${relativeFile} / ${node.name}`);
+      if (code.includes('const referenceStylePrompts =')) {
+        next = next.replace(
+          /watercolor: '(?:[^'\\]|\\.)*',/,
+          `watercolor: ${JSON.stringify(referencePortraitPrompt)},`,
+        );
+        referenceStyleNodes += 1;
+      }
+
+      if (code.includes('const WATERCOLOR_RENDERING_LOCK =')) {
+        if (!next.includes('FULL-COLOR CLASSIC STORYBOOK ILLUSTRATION CONTRACT')) {
+          throw new Error(`New contract missing in ${relativeFile} / ${node.name}`);
+        }
+        if (next.includes('PENCIL-AND-WATERCOLOR RENDERING CONTRACT')) {
+          throw new Error(`Old contract remains in ${relativeFile} / ${node.name}`);
+        }
       }
       node.parameters.jsCode = next;
-      changedNodes += 1;
     }
   }
 
-  if (changedNodes !== 1) throw new Error(`Expected one image Code node in ${relativeFile}, changed ${changedNodes}`);
+  if (contractNodes !== 1) throw new Error(`Expected one image contract node in ${relativeFile}, found ${contractNodes}`);
+  const expectedReferenceStyleNodes = relativeFile.endsWith('fairyteller_visuals.workflow.json') ? 1 : 0;
+  if (referenceStyleNodes !== expectedReferenceStyleNodes) {
+    throw new Error(`Expected ${expectedReferenceStyleNodes} reference style nodes in ${relativeFile}, found ${referenceStyleNodes}`);
+  }
   fs.writeFileSync(file, JSON.stringify(workflows));
   changedWorkflows += 1;
   process.stdout.write(`${relativeFile}: updated\n`);
