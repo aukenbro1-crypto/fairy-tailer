@@ -80,11 +80,11 @@ const worlds = [
 ];
 
 const styles = [
+  { id: "watercolor", title: "Книжная иллюстрация", label: "Книжная иллюстрация", image: watercolorStyleImage },
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
   { id: "minibrick", title: "Блоки", label: "Блоки", image: minibrickStyleImage },
   { id: "naive", title: "Наивный", label: "Наивный", image: naiveStyleImage },
-  { id: "watercolor", title: "Акварель", label: "Акварель", image: watercolorStyleImage },
   { id: "claymotion", title: "Пластилин", label: "Пластилин", image: claymotionStyleImage },
   { id: "yarncraft", title: "Вязаный", label: "Вязаный", image: yarncraftStyleImage },
   { id: "celcinema", title: "Аниме", label: "Аниме", image: celCinemaStyleImage },
@@ -100,7 +100,7 @@ const illustrationStylePrompts: Record<string, string> = {
   naive:
     "naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk motifs; in the manner of early 20th-century primitivism; strictly figurative, readable silhouettes; original characters; no broken anatomy.",
   watercolor:
-    "soft watercolor illustration: gentle washes, translucent pigment layers, visible paper grain, diffused light, wet-on-wet edges, subtle gradients; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.",
+    "richly finished traditional European fairy-tale book illustration, built from colored-pencil drawing and dense dry opaque pigment on textured paper; fully colored and richly filled with fine pencil contours, thousands of short overlapping directional strokes, visible hand-made marks and a warm luminous palette of gold, ochre, muted olive, earthy brown and dusty blue-gray; intricate narrative environment, tactile matte finish and gently idealized recognizable characters; no watercolor washes, wet-on-wet edges, sparse sketching, smooth digital painting, photographic skin, lens realism, 3D or broken anatomy.",
   claymotion:
     "clay stop-motion aesthetic: sculpted clay characters with visible texture, soft handmade look, warm lighting, slight surface imperfections, tactile realism; carefully staged poses, readable silhouettes; strictly figurative; original characters; no photorealism or 3D-rendered surfaces.",
   yarncraft:

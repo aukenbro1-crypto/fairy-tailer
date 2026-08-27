@@ -199,33 +199,33 @@ export const WORLDS = [{
 }];
 
 export const ILLUSTRATION_STYLES: Record<string, string> = {
+  'watercolor': 'richly finished traditional European fairy-tale book illustration, built from colored-pencil drawing and dense dry opaque pigment on textured paper; fully colored and richly filled with fine pencil contours, thousands of short overlapping directional strokes, visible hand-made marks and a warm luminous palette of gold, ochre, muted olive, earthy brown and dusty blue-gray; intricate narrative environment, tactile matte finish and gently idealized recognizable characters; no watercolor washes, wet-on-wet edges, sparse sketching, smooth digital painting, photographic skin, lens realism, 3D or broken anatomy.',
   'disney': 'hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'toonflat': 'vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.',
   'minibrick': 'brick-miniature diorama style: visible studs and seams, glossy plastic material, simplified blocky anatomy (cylindrical head, curved hands), modular brick-built scenery; strictly figurative, readable poses; original characters; no printed logos or text; no photoreal humans.',
   'naive': 'naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk motifs; in the manner of early 20th-century primitivism; strictly figurative, readable silhouettes; original characters; no broken anatomy.',
-  'watercolor': 'soft watercolor illustration: gentle washes, translucent pigment layers, visible paper grain, diffused light, wet-on-wet edges, subtle gradients; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.',
   'claymotion': 'clay stop-motion aesthetic: sculpted clay characters with visible texture, soft handmade look, warm lighting, slight surface imperfections, tactile realism; carefully staged poses, readable silhouettes; strictly figurative; original characters; no photorealism or 3D-rendered surfaces.',
   'yarncraft': 'fully hand-knitted textile world: characters and environment made only of yarn/felt/thread; human figures are knitted dolls with visible stitches and soft wool fuzz; embroidered facial features (eyebrows/eyelashes/mouth), button/felt-disc eyes; hair = twisted yarn strands; knitted clothing (rib/garter/stockinette); plush volumes, braided cords/rails; knitted snow and embroidered stars; warm window glow vs cold night; cozy fairy-tale diorama, shallow depth of field. strictly figurative, readable silhouettes, clear poses, original characters only. represent glass/water/fire as yarn/felt. no photorealism/CG sheen/3D/collage/plastic.',
   'celcinema': 'cinematic cel-animation aesthetic: expressive faces, clean color blocks with soft shading, painterly backgrounds, atmospheric warm light; strictly figurative (no manga panels or speech bubbles); original characters; no broken anatomy.'
 };
 
 const ILLUSTRATION_STYLE_LABELS: Record<string, string> = {
+  'watercolor': 'Книжная иллюстрация',
   'disney': 'Дисней',
   'toonflat': 'Мультяшный',
   'minibrick': 'Блоки',
   'naive': 'Наивный',
-  'watercolor': 'Акварель',
   'claymotion': 'Пластилин',
   'yarncraft': 'Вязаный',
   'celcinema': 'Аниме'
 };
 
 const STYLE_SPRITES: Record<string, string> = {
+  'watercolor': watercolorStyleImage,
   'disney': disneyStyleImage,
   'toonflat': toonflatStyleImage,
   'minibrick': minibrickStyleImage,
   'naive': naiveStyleImage,
-  'watercolor': watercolorStyleImage,
   'claymotion': claymotionStyleImage,
   'yarncraft': yarncraftStyleImage,
   'celcinema': celcinemaStyleImage
@@ -585,8 +585,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
     title_need: false,
     language: 'ru',
     email: '',
-    illustration_style: 'disney',
-    illustration_style_prompt: ILLUSTRATION_STYLES.disney,
+    illustration_style: 'watercolor',
+    illustration_style_prompt: ILLUSTRATION_STYLES.watercolor,
     hero1_name: '',
     hero1_desc: '',
     hero1_rel: '',
@@ -886,8 +886,8 @@ const StoryConstructor: React.FC<StoryConstructorProps> = ({ showHeader = true }
       title_need: false,
       language: 'ru',
       email: '',
-      illustration_style: 'disney',
-      illustration_style_prompt: ILLUSTRATION_STYLES.disney,
+      illustration_style: 'watercolor',
+      illustration_style_prompt: ILLUSTRATION_STYLES.watercolor,
       hero1_name: '',
       hero1_desc: '',
       hero1_rel: '',
