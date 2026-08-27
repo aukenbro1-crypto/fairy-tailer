@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { basename, join, resolve } from 'node:path';
 // Use pdf-lib's single-file distribution so the local Lab does not pay the
 // cost of hydrating hundreds of cold CommonJS files before every render.
@@ -12,6 +13,7 @@ const TEMPLATE_DIR = resolve(process.env.FAIRYTELLER_TEMPLATE_DIR || '/opt/fairy
 const LAYOUT_DIR = resolve(process.env.FAIRYTELLER_LAYOUT_DIR || '/opt/fairyteller-render/render-layouts');
 const ASSET_DIR = resolve(TEMPLATE_DIR, 'assets');
 const FONT_DIR = resolve(TEMPLATE_DIR, 'fonts');
+const FFMPEG_BIN = process.env.FAIRYTELLER_FFMPEG_BIN || 'ffmpeg';
 const JOB_ID = process.argv[2] || process.env.FAIRYTELLER_JOB_ID;
 const TEXT_PREFLIGHT_ONLY = process.argv.includes('--text-preflight');
 const STORY_FONT_MODE_OVERRIDE = String(process.env.FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE || '').trim();
@@ -802,11 +804,61 @@ async function embedImage(pdf, dir, imageJob) {
   const path = filePathForJobFile(dir, imageJob.fileName);
   if (!existsSync(path)) return null;
   const bytes = await readFile(path);
-  const mime = imageJob.mimeType || '';
-  if (mime.includes('jpg') || mime.includes('jpeg') || imageJob.fileName.match(/\.jpe?g$/i)) {
+  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9;
+  if (isJpeg) {
     return pdf.embedJpg(bytes);
   }
+  const isPng = bytes.length >= 8
+    && bytes[0] === 0x89
+    && bytes[1] === 0x50
+    && bytes[2] === 0x4e
+    && bytes[3] === 0x47
+    && bytes[4] === 0x0d
+    && bytes[5] === 0x0a
+    && bytes[6] === 0x1a
+    && bytes[7] === 0x0a;
+  if (isPng) {
+    try {
+      return pdf.embedJpg(await convertPrintPngToJpeg(bytes));
+    } catch (error) {
+      console.warn(`PNG print conversion failed for ${imageJob.fileName}; embedding the original PNG: ${error?.message || error}`);
+    }
+  }
   return pdf.embedPng(bytes);
+}
+
+function convertPrintPngToJpeg(bytes) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const output = [];
+    const errors = [];
+    const process = spawn(FFMPEG_BIN, [
+      '-hide_banner',
+      '-loglevel', 'error',
+      '-i', 'pipe:0',
+      '-frames:v', '1',
+      '-vf', "scale=w='min(2048,iw)':h='min(2048,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos",
+      '-q:v', '2',
+      '-f', 'image2pipe',
+      '-vcodec', 'mjpeg',
+      'pipe:1',
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
+    process.stdout.on('data', (chunk) => output.push(chunk));
+    process.stderr.on('data', (chunk) => errors.push(chunk));
+    process.once('error', rejectPromise);
+    process.once('close', (code) => {
+      if (code !== 0) {
+        rejectPromise(new Error(Buffer.concat(errors).toString('utf8').trim() || `ffmpeg exited with ${code}`));
+        return;
+      }
+      const jpeg = Buffer.concat(output);
+      if (jpeg.length < 4 || jpeg[0] !== 0xff || jpeg[1] !== 0xd8) {
+        rejectPromise(new Error('ffmpeg did not return a JPEG image'));
+        return;
+      }
+      resolvePromise(jpeg);
+    });
+    process.stdin.end(bytes);
+  });
 }
 
 function drawPageNumber(page, pageNumber, font, layout) {
@@ -895,36 +947,52 @@ async function embedTemplateAsset(pdf, relativePath) {
   return pdf.embedPng(bytes);
 }
 
-async function loadTemplateAssets(pdf) {
+async function loadTemplateAssets(pdf, { coverStyle, paperStyle, includeStandardCover }) {
+  const book = {
+    image2: await embedTemplateAsset(pdf, 'book/image2.png'),
+    image13: await embedTemplateAsset(pdf, 'book/image13.png'),
+    image15: await embedTemplateAsset(pdf, 'book/image15.png'),
+    image17: await embedTemplateAsset(pdf, 'book/image17.png'),
+    image15Burgundy: null,
+    image15CyberpunkPurple: null,
+    image16: null,
+    outroCyberpunk: null,
+    creamSpecklePapers: [],
+    cyberpunkSpecklePapers: [],
+  };
+
+  if (coverStyle === 'cyberpunk') {
+    book.image15CyberpunkPurple = await embedTemplateAsset(pdf, 'book/image15-cyberpunk-purple.png');
+    book.outroCyberpunk = await embedTemplateAsset(pdf, 'book/outro-cyberpunk.png');
+  } else {
+    book.image15Burgundy = await embedTemplateAsset(pdf, 'book/image15-burgundy.png');
+    book.image16 = await embedTemplateAsset(pdf, 'book/image16.png');
+  }
+
+  if (paperStyle === 'cyberpunk-speckle') {
+    book.cyberpunkSpecklePapers = await Promise.all([
+      'book/cyberpunk-speckle-paper-1.jpg',
+      'book/cyberpunk-speckle-paper-2.jpg',
+      'book/cyberpunk-speckle-paper-3.jpg',
+      'book/cyberpunk-speckle-paper-4.jpg',
+    ].map((path) => embedTemplateAsset(pdf, path)));
+  } else if (paperStyle !== 'white') {
+    book.creamSpecklePapers = await Promise.all([
+      'book/cream-speckle-paper-1.jpg',
+      'book/cream-speckle-paper-2.jpg',
+      'book/cream-speckle-paper-3.jpg',
+      'book/cream-speckle-paper-4.jpg',
+    ].map((path) => embedTemplateAsset(pdf, path)));
+  }
+
   return {
-    coverBackground: await embedTemplateAsset(pdf, 'cover/background.png'),
-    coverCyberpunk: await embedTemplateAsset(pdf, 'cover/background-cyberpunk-13x13.png'),
-    book: {
-      image2: await embedTemplateAsset(pdf, 'book/image2.png'),
-      image6: await embedTemplateAsset(pdf, 'book/image6.png'),
-      image7: await embedTemplateAsset(pdf, 'book/image7.png'),
-      image8: await embedTemplateAsset(pdf, 'book/image8.png'),
-      image9: await embedTemplateAsset(pdf, 'book/image9.png'),
-      image13: await embedTemplateAsset(pdf, 'book/image13.png'),
-      image15: await embedTemplateAsset(pdf, 'book/image15.png'),
-      image15Burgundy: await embedTemplateAsset(pdf, 'book/image15-burgundy.png'),
-      image15CyberpunkPurple: await embedTemplateAsset(pdf, 'book/image15-cyberpunk-purple.png'),
-      image16: await embedTemplateAsset(pdf, 'book/image16.png'),
-      image17: await embedTemplateAsset(pdf, 'book/image17.png'),
-      outroCyberpunk: await embedTemplateAsset(pdf, 'book/outro-cyberpunk.png'),
-      creamSpecklePapers: [
-        await embedTemplateAsset(pdf, 'book/cream-speckle-paper-1.jpg'),
-        await embedTemplateAsset(pdf, 'book/cream-speckle-paper-2.jpg'),
-        await embedTemplateAsset(pdf, 'book/cream-speckle-paper-3.jpg'),
-        await embedTemplateAsset(pdf, 'book/cream-speckle-paper-4.jpg'),
-      ],
-      cyberpunkSpecklePapers: [
-        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-1.jpg'),
-        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-2.jpg'),
-        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-3.jpg'),
-        await embedTemplateAsset(pdf, 'book/cyberpunk-speckle-paper-4.jpg'),
-      ],
-    },
+    coverBackground: includeStandardCover && coverStyle !== 'cyberpunk'
+      ? await embedTemplateAsset(pdf, 'cover/background.png')
+      : null,
+    coverCyberpunk: includeStandardCover && coverStyle === 'cyberpunk'
+      ? await embedTemplateAsset(pdf, 'cover/background-cyberpunk-13x13.png')
+      : null,
+    book,
   };
 }
 
@@ -960,12 +1028,8 @@ async function resolveCoverStyle(dir, fullText) {
   return order?.world === CYBERPUNK_WORLD_KEY ? 'cyberpunk' : 'standard';
 }
 
-async function renderCoverPdf({ dir, fullText, visuals, layout, coverStyle }) {
-  if (HARDCOVER_SOURCE_VARIANTS.has(RENDER_VARIANT)) {
-    return renderHardcoverTemplateCoverPdf({ dir, fullText, visuals, coverStyle });
-  }
-  const { pdf, fontRubik, fontAmatic, fontSerif } = await createPdfWithFonts();
-  const assets = await loadTemplateAssets(pdf);
+async function addStandardCoverPage({ dir, fullText, visuals, coverStyle, fonts, assets }) {
+  const { pdf, fontRubik, fontAmatic, fontSerif } = fonts;
   const [width, height] = COVER_SIZE_MM.map(mmToPt);
   const page = pdf.addPage([width, height]);
   const coverImage = await embedImage(pdf, dir, findImage(visuals, 'cover'));
@@ -1037,7 +1101,6 @@ async function renderCoverPdf({ dir, fullText, visuals, layout, coverStyle }) {
     font: fontAmatic,
     color: hexColor('#E9B23A'),
   });
-  return pdf.save({ useObjectStreams: false });
 }
 
 function hardcoverTopLeftBox(page, boxMm) {
@@ -1049,8 +1112,8 @@ function hardcoverTopLeftBox(page, boxMm) {
   });
 }
 
-async function renderHardcoverTemplateCoverPdf({ dir, fullText, visuals, coverStyle }) {
-  const { pdf, fontRubik, fontAmatic, fontSerif } = await createPdfWithFonts();
+async function addHardcoverTemplateCoverPage({ dir, fullText, visuals, coverStyle, fonts }) {
+  const { pdf, fontRubik, fontAmatic, fontSerif } = fonts;
   const [width, height] = HARDCOVER_COVER_SIZE_MM.map(mmToPt);
   const page = pdf.addPage([width, height]);
   const template = await embedTemplateAsset(pdf, coverStyle === 'cyberpunk'
@@ -1138,7 +1201,6 @@ async function renderHardcoverTemplateCoverPdf({ dir, fullText, visuals, coverSt
     font: fontAmatic,
     color: hexColor('#E9B23A'),
   });
-  return pdf.save({ useObjectStreams: false });
 }
 
 function addInteriorTitlePage(pdf, fonts, fullText, layout) {
@@ -2224,12 +2286,12 @@ async function addPptAdditionalImagePage(pdf, fonts, dir, imageJob, pageNumber) 
   }
 }
 
-async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle }) {
+async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle, fonts, assets }) {
   hardcoverPaperVariantIndex = 0;
   activePagePaperStyle = pagePaperStyle(fullText, coverStyle);
-  const fonts = await createPdfWithFonts();
   const { pdf } = fonts;
-  const assets = await loadTemplateAssets(pdf);
+  const initialPageCount = pdf.getPageCount();
+  const interiorPageCount = () => pdf.getPageCount() - initialPageCount;
   const sourceChapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
   if (sourceChapters.length !== layout.pagePlan.chapters) {
     throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${sourceChapters.length}`);
@@ -2266,7 +2328,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle })
   const addPlacedImagesAfterSourcePage = async () => {
     sourcePageNumber += 1;
     for (const image of additionalImagesByAfterPage.get(sourcePageNumber) || []) {
-      await addPptAdditionalImagePage(pdf, fonts, dir, image, pdf.getPageCount() + 1);
+      await addPptAdditionalImagePage(pdf, fonts, dir, image, interiorPageCount() + 1);
       insertedAdditionalImages.add(image);
     }
   };
@@ -2330,9 +2392,9 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle })
     if (modeConfig.kind !== 'adaptive' && blocks.length !== expectedTextPages) {
       throw new Error(`Expected ${expectedTextPages} text blocks for chapter ${chapter.n}, got ${blocks.length}`);
     }
-    addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, pdf.getPageCount() + 1, blocks);
+    addPptChapterTitlePage(pdf, fonts, assets, chapter, chapterIndex, interiorPageCount() + 1, blocks);
     await addPlacedImagesAfterSourcePage();
-    await addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pdf.getPageCount() + 1);
+    await addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, interiorPageCount() + 1);
     await addPlacedImagesAfterSourcePage();
     for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
       const block = blocks[blockIndex];
@@ -2344,7 +2406,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle })
         fonts,
         assets,
         block,
-        pdf.getPageCount() + 1,
+        interiorPageCount() + 1,
         chapterIndex,
         isLastTextPage,
         storyFontControl,
@@ -2359,7 +2421,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle })
         throw new Error(storyTextOverflowMessage({
           chapter,
           blockIndex,
-          pageNumber: pdf.getPageCount(),
+          pageNumber: interiorPageCount(),
           text: block,
           fonts,
           isLastTextPage,
@@ -2387,24 +2449,24 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle })
   // Keep the existing end-of-book behaviour: a lone (or otherwise odd) tail
   // starts after a blank technical page, while positioned images stay exactly
   // after their requested source page.
-  if (additionalImagesAtEnd.length && (pdf.getPageCount() + additionalImagesAtEnd.length) % 2 !== 0) {
-    addPptAdditionalImageSpacerPage(pdf, fonts, assets, pdf.getPageCount() + 1);
+  if (additionalImagesAtEnd.length && (interiorPageCount() + additionalImagesAtEnd.length) % 2 !== 0) {
+    addPptAdditionalImageSpacerPage(pdf, fonts, assets, interiorPageCount() + 1);
   }
   for (const image of additionalImagesAtEnd) {
-    await addPptAdditionalImagePage(pdf, fonts, dir, image, pdf.getPageCount() + 1);
+    await addPptAdditionalImagePage(pdf, fonts, dir, image, interiorPageCount() + 1);
   }
 
-  if (pdf.getPageCount() % 2 !== 0) {
+  if (interiorPageCount() % 2 !== 0) {
     addPptBlankPaddingPage(pdf, assets);
   }
 
   const minimumInteriorPages = modeConfig.kind === 'adaptive' ? 24 : TARGET_INTERIOR_PAGES;
-  if (pdf.getPageCount() < minimumInteriorPages || pdf.getPageCount() > 160 || pdf.getPageCount() % 2 !== 0) {
-    throw new Error(`Interior page count must be even and between ${minimumInteriorPages} and 160, got ${pdf.getPageCount()}`);
+  const finalInteriorPageCount = interiorPageCount();
+  if (finalInteriorPageCount < minimumInteriorPages || finalInteriorPageCount > 160 || finalInteriorPageCount % 2 !== 0) {
+    throw new Error(`Interior page count must be even and between ${minimumInteriorPages} and 160, got ${finalInteriorPageCount}`);
   }
   return {
-    bytes: await pdf.save({ useObjectStreams: false }),
-    pageCount: pdf.getPageCount(),
+    pageCount: finalInteriorPageCount,
     storyFont: {
       mode: storyFontControl.mode,
       textAlign,
@@ -2486,20 +2548,6 @@ async function preflightStoryTextOnly({ fullText, layout, preparedFonts = null, 
   };
 }
 
-async function renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount }) {
-  const target = await PDFDocument.create();
-  const coverDoc = await PDFDocument.load(coverPdf);
-  const interiorDoc = await PDFDocument.load(interiorPdf);
-  const coverPages = await target.copyPages(coverDoc, coverDoc.getPageIndices());
-  const interiorPages = await target.copyPages(interiorDoc, interiorDoc.getPageIndices());
-  for (const page of coverPages) target.addPage(page);
-  for (const page of interiorPages) target.addPage(page);
-  if (target.getPageCount() !== interiorPageCount + 1) {
-    throw new Error(`Combined book page count mismatch: expected ${interiorPageCount + 1}, got ${target.getPageCount()}`);
-  }
-  return target.save({ useObjectStreams: false });
-}
-
 async function writeFileAtomic(path, content) {
   const temporaryPath = `${path}.tmp-${process.pid}-${Date.now()}`;
   try {
@@ -2571,10 +2619,23 @@ async function main() {
   const visuals = visualsArtifact.visuals || {};
 
   const coverStyle = await resolveCoverStyle(dir, fullText);
-  const coverPdf = await renderCoverPdf({ dir, fullText, visuals, layout, coverStyle });
-  const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle });
-  const interiorPdf = interiorResult.bytes;
-  const bookPdf = await renderCombinedBookPdf({ coverPdf, interiorPdf, interiorPageCount: interiorResult.pageCount });
+  const selectedPaperStyle = pagePaperStyle(fullText, coverStyle);
+  const fonts = await createPdfWithFonts();
+  const assets = await loadTemplateAssets(fonts.pdf, {
+    coverStyle,
+    paperStyle: selectedPaperStyle,
+    includeStandardCover: !HARDCOVER_SOURCE_VARIANTS.has(RENDER_VARIANT),
+  });
+  if (HARDCOVER_SOURCE_VARIANTS.has(RENDER_VARIANT)) {
+    await addHardcoverTemplateCoverPage({ dir, fullText, visuals, coverStyle, fonts });
+  } else {
+    await addStandardCoverPage({ dir, fullText, visuals, coverStyle, fonts, assets });
+  }
+  const interiorResult = await renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle, fonts, assets });
+  if (fonts.pdf.getPageCount() !== interiorResult.pageCount + 1) {
+    throw new Error(`Combined book page count mismatch: expected ${interiorResult.pageCount + 1}, got ${fonts.pdf.getPageCount()}`);
+  }
+  const bookPdf = await fonts.pdf.save({ useObjectStreams: false });
 
   const bookFileName = variantPdfFileName('book.pdf');
   const bookPath = join(filesDir, bookFileName);
