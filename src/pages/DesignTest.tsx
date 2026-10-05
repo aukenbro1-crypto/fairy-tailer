@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import SEO from "@/components/SEO";
 import { DeliveryFaqAnswer } from "@/components/DeliveryFaqAnswer";
 import ConstructorHint from "@/components/ConstructorHint";
@@ -25,6 +26,7 @@ import {
   trackConstructorCtaClicked,
   trackConstructorFirstFieldStarted,
   trackConstructorStart,
+  trackFirstGenerationUnique,
   trackGenerateSubmit,
   trackGenreSelected,
   trackHeroRequiredCompleted,
@@ -34,15 +36,15 @@ import {
   trackStyleStepReached,
 } from "@/lib/metrika";
 import { isGenerationLimitPayload, type GenerationLimitPayload } from "@/lib/fairytellerLimit";
+import { checkFairytellerGenerationQuota, submitFairytellerCreate } from "@/lib/fairytellerCreate";
 import logoImage from "@/assets/logo-compact.webp";
 import disneyStyleImage from "@/assets/disney-style.jpg";
-import minibrickStyleImage from "@/assets/minibrick-style.jpg";
+import animeStyleImage from "@/assets/anime-style-warm.webp";
 import naiveStyleImage from "@/assets/naive-style.jpg";
 import claymotionStyleImage from "@/assets/claymotion-style.png";
 import watercolorStyleImage from "@/assets/watercolor-style.jpg";
 import yarncraftStyleImage from "@/assets/yarncraft-style.jpg";
 import toonflatStyleImage from "@/assets/toonflat-style.jpg";
-import celCinemaStyleImage from "@/assets/celcinema-style.jpg";
 import heroCyberStackImage from "@/assets/header-photos/ischezayushchiy-express_header_cyber-stack_1800x1400.webp";
 import heroOpenSpreadImage from "@/assets/header-photos/tropa-za-holm_header_open-spread_1800x1400.webp";
 import heroStillLifeImage from "@/assets/header-photos/tropa-za-holm_header_website-hero-still-life_1800x1400.webp";
@@ -66,6 +68,8 @@ const typeStyle = {
 
 const DEFAULT_CREATE_ENDPOINT_URL = "/webhook/fairyteller/create";
 const CREATE_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_CREATE_URL || DEFAULT_CREATE_ENDPOINT_URL;
+const DEFAULT_STORY_BRIEF_ENDPOINT_URL = "/webhook/fairyteller/story-brief";
+const STORY_BRIEF_ENDPOINT_URL = import.meta.env.VITE_FAIRYTELLER_STORY_BRIEF_URL || DEFAULT_STORY_BRIEF_ENDPOINT_URL;
 const STATUS_ENDPOINT_BASE_URL = import.meta.env.VITE_FAIRYTELLER_STATUS_BASE_URL || "/api/fairyteller/jobs";
 const GENERATION_ETA_SECONDS = 240;
 const SOCIAL_PREVIEW_IMAGE = "/images/fairyteller-social-preview.jpg";
@@ -121,22 +125,21 @@ const worlds = [
 
 const styles = [
   { id: "disney", title: "Дисней", label: "Дисней", image: disneyStyleImage },
+  { id: "celcinema", title: "Аниме", label: "Аниме", image: animeStyleImage },
   { id: "toonflat", title: "Мультяшный", label: "Мультяшный", image: toonflatStyleImage },
-  { id: "minibrick", title: "Блоки", label: "Блоки", image: minibrickStyleImage },
   { id: "naive", title: "Наивный", label: "Наивный", image: naiveStyleImage },
   { id: "watercolor", title: "Акварель", label: "Акварель", image: watercolorStyleImage },
   { id: "claymotion", title: "Пластилин", label: "Пластилин", image: claymotionStyleImage },
   { id: "yarncraft", title: "Вязаный", label: "Вязаный", image: yarncraftStyleImage },
-  { id: "celcinema", title: "Аниме", label: "Аниме", image: celCinemaStyleImage },
 ];
 
 const illustrationStylePrompts: Record<string, string> = {
   disney:
     "hand-drawn storybook animation aesthetic: expressive faces, clean outlines, vivid yet balanced colors, cinematic lighting, gentle gradients, painterly backgrounds; harmonious composition and emotional warmth; strictly figurative, readable silhouettes; original characters; no broken anatomy; no collage/3D.",
+  celcinema:
+    "Japanese hand-drawn fantasy animation, richly painted storybook environments, soft watercolor-and-gouache textures, scene-appropriate atmospheric lighting, gentle haze, expressive but anatomically believable faces, large emotive eyes with subtle catchlights, clean hand-drawn linework, cel shading with soft tonal gradients, tender sense of wonder, cozy cinematic composition, detailed environmental storytelling, magical realism, original character designs. Full-bleed square book illustration, one continuous scene only. No manga panels, speech bubbles, captions, lettering, signs, logos, borders, collage, 3D render, photorealism, broken anatomy, horror, gore, or aggressive action.",
   toonflat:
     "vintage TV-cartoon aesthetic: bold black outlines, flat warm colors, simple geometric forms, playful exaggerated expressions, soft yellowish skin tones optional; strictly figurative, clear character poses; original characters only; no broken anatomy; no collage/3D.",
-  minibrick:
-    "brick-miniature diorama style: visible studs and seams, glossy plastic material, simplified blocky anatomy (cylindrical head, curved hands), modular brick-built scenery; strictly figurative, readable poses; original characters; no printed logos or text; no photoreal humans.",
   naive:
     "naive folk painting: childlike proportions, flat perspective, bold simple shapes, decorative folk motifs; in the manner of early 20th-century primitivism; strictly figurative, readable silhouettes; original characters; no broken anatomy.",
   watercolor:
@@ -145,8 +148,6 @@ const illustrationStylePrompts: Record<string, string> = {
     "clay stop-motion aesthetic: sculpted clay characters with visible texture, soft handmade look, warm lighting, slight surface imperfections, tactile realism; carefully staged poses, readable silhouettes; strictly figurative; original characters; no photorealism or 3D-rendered surfaces.",
   yarncraft:
     "fully hand-knitted textile world: characters and environment made only of yarn/felt/thread; human figures are knitted dolls with visible stitches and soft wool fuzz; embroidered facial features (eyebrows/eyelashes/mouth), button/felt-disc eyes; hair = twisted yarn strands; knitted clothing (rib/garter/stockinette); plush volumes, braided cords/rails; knitted snow and embroidered stars; warm window glow vs cold night; cozy fairy-tale diorama, shallow depth of field. strictly figurative, readable silhouettes, clear poses, original characters only. represent glass/water/fire as yarn/felt. no photorealism/CG sheen/3D/collage/plastic.",
-  celcinema:
-    "cinematic cel-animation aesthetic: expressive faces, clean color blocks with soft shading, painterly backgrounds, atmospheric warm light; strictly figurative (no manga panels or speech bubbles); original characters; no broken anatomy.",
 };
 
 const process = [
@@ -367,7 +368,7 @@ const createJsonLd = [
   },
 ];
 
-const constructorTabs = ["Жанр", "Герои", "Стиль"];
+const constructorTabs = ["Герои", "Жанр", "Стиль"];
 const heroSlots = ["Главный герой", "Герой 2", "Герой 3", "Герой 4"];
 const ageGroups = [
   { value: "child", label: "Ребенок" },
@@ -387,6 +388,14 @@ type CreateResponse = GenerationLimitPayload & {
   ok?: boolean;
   jobId?: string;
   statusUrl?: string;
+  firstGeneration?: boolean;
+  message?: string;
+};
+
+type StoryBriefResponse = {
+  opening?: string;
+  development?: string;
+  artifactCanon?: string;
   message?: string;
 };
 
@@ -396,6 +405,7 @@ type JobStatus = {
   stage?: string;
   progress?: number;
   message?: string;
+  firstGeneration?: boolean;
   preview?: {
     title?: string;
   } | null;
@@ -413,7 +423,7 @@ type JobStatus = {
     bookPdf?: { url?: string };
     previewPdf?: { url?: string };
   };
-  error?: string | null;
+  error?: string | { message?: string; code?: string } | null;
 };
 
 type ConstructorErrorKey = "heroName" | "heroAge" | "email" | "consent";
@@ -438,6 +448,7 @@ const CtaStrip = () => (
 
 const DesignTest = () => {
   const { toast } = useToast();
+  const authenticated = useCustomerAuth();
   const { pathname } = useLocation();
   const isCreatePath = pathname === "/create";
   const [world, setWorld] = useState(worlds[0].id);
@@ -457,6 +468,13 @@ const DesignTest = () => {
   const [constructorErrors, setConstructorErrors] = useState<ConstructorErrors>({});
   const [missingActions, setMissingActions] = useState<MissingAction[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isStoryBriefLoading, setIsStoryBriefLoading] = useState(false);
+  const [storyBriefError, setStoryBriefError] = useState<string | null>(null);
+  const [storyBrief, setStoryBrief] = useState("");
+  const [storyBriefRevision, setStoryBriefRevision] = useState(0);
+  const [storyBriefNeedsRefresh, setStoryBriefNeedsRefresh] = useState(false);
+  const [storyArtifactCanon, setStoryArtifactCanon] = useState("");
+  const [storyArtifactCanonNeedsRefresh, setStoryArtifactCanonNeedsRefresh] = useState(false);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedStatusUrl, setSubmittedStatusUrl] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
@@ -479,10 +497,10 @@ const DesignTest = () => {
   );
   const renderStatus = jobStatus?.artifacts?.render?.status || null;
   const bookPdfUrl =
-    jobStatus?.artifacts?.previewPdf?.url ||
-    jobStatus?.artifacts?.render?.files?.preview?.url ||
     jobStatus?.artifacts?.bookPdf?.url ||
     jobStatus?.artifacts?.render?.files?.book?.url ||
+    jobStatus?.artifacts?.previewPdf?.url ||
+    jobStatus?.artifacts?.render?.files?.preview?.url ||
     "";
   const jobCompleted = jobStatus?.status === "done" || jobStatus?.stage === "complete";
   const isGenerationReady = Boolean(bookPdfUrl) && (renderStatus === "ready" || jobCompleted);
@@ -494,17 +512,23 @@ const DesignTest = () => {
     jobStatus?.artifacts?.cover?.status === "failed" ||
     jobStatus?.artifacts?.render?.status === "failed",
   );
+  const generationFailureCode = typeof jobStatus?.error === "object" ? jobStatus.error?.code : null;
+  const generationFailureMessage = generationFailureCode === "REFERENCE_MODERATION_FAILED"
+    ? "Ошибка модерации. Пожалуйста, приложите другой референс."
+    : "Не удалось завершить создание книги. Данные анкеты сохранены — вернитесь к форме и попробуйте отправить ее еще раз.";
   const generationElapsedSeconds = generationStartedAt
     ? Math.max(0, Math.floor((generationNowMs - generationStartedAt) / 1000))
     : 0;
-  const generationTimedProgress = submittedJobId && !isGenerationReady
+  const generationTimedProgress = submittedJobId && !isGenerationReady && !isGenerationFailed
     ? Math.min(96, Math.max(8, Math.round((generationElapsedSeconds / GENERATION_ETA_SECONDS) * 96)))
     : 0;
   const rawStatusProgress = Math.max(0, Math.min(100, Number(jobStatus?.progress || (submittedJobId ? 8 : 0))));
-  const statusProgress = isGenerationReady ? 100 : Math.max(rawStatusProgress, generationTimedProgress);
+  const statusProgress = isGenerationReady ? 100 : isGenerationFailed ? rawStatusProgress : Math.max(rawStatusProgress, generationTimedProgress);
   const generationRemainingSeconds = Math.max(0, GENERATION_ETA_SECONDS - generationElapsedSeconds);
   const generationTimerText = isGenerationReady
     ? "готово"
+    : isGenerationFailed
+      ? "остановлено"
     : generationRemainingSeconds > 0
       ? `осталось ${formatGenerationTimer(generationRemainingSeconds)}`
       : "финальная проверка";
@@ -518,6 +542,13 @@ const DesignTest = () => {
 
     trackCheckoutStart(submittedJobId);
     window.location.href = `/pay?${params.toString()}`;
+  };
+  const returnToConstructorAfterFailure = () => {
+    setSubmittedJobId(null);
+    setSubmittedStatusUrl(null);
+    setJobStatus(null);
+    setGenerationStartedAt(null);
+    window.requestAnimationFrame(() => constructorFocusRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
   const currentHeroImage = heroImages[heroIndex];
   const hiddenHeroes = heroSlots
@@ -607,7 +638,7 @@ const DesignTest = () => {
       actions.push({
         key: "heroName",
         label: "Добавить имя главного героя",
-        step: 1,
+        step: 0,
         message: "Добавьте имя главного героя, чтобы история была про него.",
       });
     }
@@ -616,7 +647,7 @@ const DesignTest = () => {
       actions.push({
         key: "heroAge",
         label: `Выбрать возраст для поля «${heroSlots[missingAgeHero]}»`,
-        step: 1,
+        step: 0,
         message: `Выберите возраст для поля «${heroSlots[missingAgeHero]}».`,
       });
     }
@@ -666,7 +697,7 @@ const DesignTest = () => {
     ]);
 
     if (shouldOpenHeroStep) {
-      setConstructorStep(1);
+      setConstructorStep(0);
     }
 
     return false;
@@ -695,16 +726,105 @@ const DesignTest = () => {
       return;
     }
 
-    trackStyleStepReached();
-    setConstructorStep(2);
+    setConstructorStep(1);
   };
   const handleMissingActionClick = (action: MissingAction) => {
     setConstructorStep(action.step);
+  };
+  const storyBriefText = storyBrief.trim();
+  const storyBriefReady = Boolean(storyBriefText);
+  const storyBriefPayload = () => ({
+    world: selectedWorld.value,
+    location,
+    artifact,
+    illustrationStyle: style,
+    illustrationStylePrompt: illustrationStylePrompts[style] || style,
+    revision: storyBriefRevision,
+    previousBrief: storyBriefText || undefined,
+    heroes: visibleHeroes.map((index) => {
+      const hero = heroes[index] ?? { name: "", desc: "", photo: null };
+      return {
+        name: hero.name.trim(),
+        description: hero.desc.trim(),
+        ageGroup: heroAgeGroups[index] || "",
+      };
+    }),
+  });
+  const handleRequestStoryBrief = async (isRewrite = false) => {
+    if (isStoryBriefLoading) return;
+
+    const missing = buildMissingActions();
+    if (missing.length > 0) {
+      applyMissingActions(missing);
+      toast({
+        variant: "destructive",
+        title: "Не хватает данных",
+        description: "Проверьте список недостающих действий под формой.",
+      });
+      return;
+    }
+
+    setConstructorErrors({});
+    setMissingActions([]);
+    setStoryBriefError(null);
+    setGenerationLimitNotice(null);
+    setIsStoryBriefLoading(true);
+
+    try {
+      const quotaNotice = await checkFairytellerGenerationQuota(email);
+      if (quotaNotice) {
+        setGenerationLimitNotice(quotaNotice);
+        toast({
+          title: quotaNotice.authRequired ? "Войдите, чтобы продолжить" : "Лимит исчерпан",
+          description: quotaNotice.authRequired
+            ? "Сначала войдите по почте — после этого мы покажем сюжет будущей книги."
+            : "Новый сюжет можно будет создать после обновления лимита.",
+        });
+        return;
+      }
+      const response = await fetch(STORY_BRIEF_ENDPOINT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...storyBriefPayload(), revision: isRewrite ? storyBriefRevision + 1 : storyBriefRevision }),
+      });
+      const result = (await response.json().catch(() => null)) as StoryBriefResponse | null;
+      if (!response.ok || !result?.opening || !result?.development) {
+        throw new Error(result?.message || "Story brief request failed");
+      }
+      setStoryBrief([result.opening.trim(), result.development.trim()].join("\n\n"));
+      setStoryArtifactCanon(result.artifactCanon?.trim() || "");
+      setStoryArtifactCanonNeedsRefresh(false);
+      setStoryBriefNeedsRefresh(false);
+      if (isRewrite) setStoryBriefRevision((value) => value + 1);
+    } catch (error) {
+      setStoryBriefError("Не удалось придумать сюжет. Попробуйте ещё раз.");
+    } finally {
+      setIsStoryBriefLoading(false);
+    }
+  };
+  const handleAddHeroFromBrief = () => {
+    const nextHero = hiddenHeroes[0];
+    if (!nextHero) return;
+
+    addHero(nextHero.index);
+    setStoryBriefNeedsRefresh(true);
+    setConstructorStep(0);
+    toast({
+      title: "Добавьте героя",
+      description: "После этого вернитесь к сюжету и нажмите «Перепридумать сюжет».",
+    });
   };
   const handleSubmitBook = async () => {
     if (isSubmitting) {
       return;
     }
+
+    if (!storyBriefReady) {
+      await handleRequestStoryBrief();
+      return;
+    }
+
+    if (storyBriefNeedsRefresh) return;
 
     trackPreviewSubmitClicked();
 
@@ -722,11 +842,32 @@ const DesignTest = () => {
     setConstructorErrors({});
     setMissingActions([]);
 
+    setIsSubmitting(true);
+
+    let approvedArtifactCanon = storyArtifactCanon;
+    if (storyArtifactCanonNeedsRefresh) {
+      try {
+        const canonResponse = await fetch(STORY_BRIEF_ENDPOINT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "extractArtifactCanon", approvedBrief: storyBriefText }),
+        });
+        const canonResult = (await canonResponse.json().catch(() => null)) as StoryBriefResponse | null;
+        approvedArtifactCanon = canonResponse.ok ? canonResult?.artifactCanon?.trim() || "" : "";
+      } catch {
+        approvedArtifactCanon = "";
+      }
+      setStoryArtifactCanon(approvedArtifactCanon);
+      setStoryArtifactCanonNeedsRefresh(false);
+    }
+
     const multipartData = new FormData();
     multipartData.append("world", selectedWorld.value);
     multipartData.append("newyear_mode", "false");
     multipartData.append("location", location);
-    multipartData.append("artifact", artifact);
+    multipartData.append("approved_story_brief", storyBriefText);
+    multipartData.append("approved_artifact_canon", approvedArtifactCanon);
+    multipartData.append("story_brief_revision", String(storyBriefRevision));
     multipartData.append("length_target", "19500");
     multipartData.append("chapters", "5");
     multipartData.append("title_need", "false");
@@ -750,7 +891,6 @@ const DesignTest = () => {
       }
     });
 
-    setIsSubmitting(true);
     setSubmittedJobId(null);
     setSubmittedStatusUrl(null);
     setJobStatus(null);
@@ -758,10 +898,7 @@ const DesignTest = () => {
     setGenerationStartedAt(null);
 
     try {
-      const response = await fetch(CREATE_ENDPOINT_URL, {
-        method: "POST",
-        body: multipartData,
-      });
+      const response = await submitFairytellerCreate(CREATE_ENDPOINT_URL, multipartData);
       const contentType = response.headers.get("content-type") || "";
       const createResult = contentType.includes("application/json")
         ? ((await response.json()) as CreateResponse)
@@ -771,8 +908,10 @@ const DesignTest = () => {
         if (isGenerationLimitPayload(createResult)) {
           setGenerationLimitNotice(createResult);
           toast({
-            title: "Лимит на сегодня исчерпан",
-            description: "Откройте свои сказки или оплатите готовую книгу.",
+            title: createResult.authRequired ? "Войдите, чтобы продолжить" : "Лимит исчерпан",
+            description: createResult.authRequired
+              ? "После входа по почте можно создать ещё две сказки за 48 часов."
+              : "Откройте свои сказки или оплатите готовую книгу.",
           });
           return;
         }
@@ -781,6 +920,9 @@ const DesignTest = () => {
 
       const nextJobId = createResult?.jobId || null;
       trackGenerateSubmit(nextJobId);
+      if (createResult?.firstGeneration === true) {
+        trackFirstGenerationUnique(nextJobId);
+      }
       trackPreviewSubmitSuccess(nextJobId);
       setSubmittedJobId(nextJobId);
       setSubmittedStatusUrl(createResult?.statusUrl || null);
@@ -974,6 +1116,12 @@ const DesignTest = () => {
   }, [submittedJobId, isGenerationReady, isGenerationFailed]);
 
   useEffect(() => {
+    if (submittedJobId && jobStatus?.firstGeneration === true) {
+      trackFirstGenerationUnique(submittedJobId);
+    }
+  }, [submittedJobId, jobStatus?.firstGeneration]);
+
+  useEffect(() => {
     if (submittedJobId && isGenerationReady) {
       trackPreviewReady(submittedJobId);
     }
@@ -1134,6 +1282,12 @@ const DesignTest = () => {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/account"
+              className="inline-flex h-10 items-center justify-center border border-black bg-white px-3 text-[12px] font-bold uppercase tracking-[0.05em] text-black transition hover:bg-black hover:text-white sm:px-4 sm:text-[13px]"
+            >
+              {authenticated ? "Личный кабинет" : "Войти"}
+            </Link>
             <a
               href="#create"
               onClick={trackConstructorCtaClicked}
@@ -1291,7 +1445,7 @@ const DesignTest = () => {
                 ))}
               </div>
 
-              {constructorStep === 0 && (
+              {constructorStep === 1 && (
                 <div>
                   <fieldset>
 	                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1379,17 +1533,20 @@ const DesignTest = () => {
                   <div className="mt-8 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => setConstructorStep(1)}
+                      onClick={() => {
+                        trackStyleStepReached();
+                        setConstructorStep(2);
+                      }}
                       className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
                     >
-                      Перейти к героям
+                      Перейти к стилю
                       <ChevronRight className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {constructorStep === 1 && (
+              {constructorStep === 0 && (
                 <div>
                   <fieldset>
                     <legend className="text-[28px] font-black uppercase leading-none tracking-[-0.02em]">
@@ -1534,18 +1691,18 @@ const DesignTest = () => {
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                     <button
                       type="button"
-                      onClick={() => setConstructorStep(0)}
+                      onClick={() => setConstructorStep(1)}
                       className="inline-flex h-[52px] items-center justify-center gap-2 border border-black bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
                     >
                       <ChevronLeft className="h-5 w-5" />
-                      Назад
+                      К жанру
                     </button>
 	                    <button
 	                      type="button"
 	                      onClick={handleGoToStyle}
 	                      className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264]"
                     >
-                      Перейти к стилю
+                      Продолжить
                       <ChevronRight className="h-5 w-5" />
                     </button>
                   </div>
@@ -1691,37 +1848,107 @@ const DesignTest = () => {
                       className="inline-flex h-[52px] items-center justify-center gap-2 border border-black bg-white px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
                     >
                       <ChevronLeft className="h-5 w-5" />
-                      Назад
+                      К жанру
                     </button>
                     <button
                       type="button"
-                      onClick={handleSubmitBook}
-                      disabled={isSubmitting}
+                      onClick={() => void handleRequestStoryBrief()}
+                      disabled={isStoryBriefLoading || isSubmitting}
                       className="inline-flex h-[52px] items-center justify-center gap-2 bg-black px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264] disabled:cursor-wait disabled:bg-[#5e6264]"
                     >
                       <Sparkles className="h-5 w-5" />
-                      {isSubmitting ? "Отправляем" : "Создать книгу"}
+                      {isStoryBriefLoading ? "Придумываем сюжет" : "Создать книгу"}
 	                    </button>
 	                  </div>
-	                </div>
-	              )}
+
+                  {(storyBriefReady || isStoryBriefLoading || storyBriefError) && (
+                    <section
+                      className={`mt-8 border border-black bg-[#fae7e1] p-5 md:p-7 ${isStoryBriefLoading ? "story-brief--thinking" : ""}`}
+                      aria-live="polite"
+                    >
+                      <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#5e6264]">
+                        Бриф будущей книги
+                      </p>
+                      <h3 className="mt-3 max-w-[720px] text-[28px] font-black uppercase leading-[1.05] tracking-[-0.02em] md:text-[38px]">
+                        Сейчас здесь появится сюжет будущей книги
+                      </h3>
+                      <p className="mt-4 max-w-[680px] text-[16px] leading-7 text-[#5e6264]">
+                        Если нужно, скорректируйте его, попросите сделать новый сюжет или добавьте еще героев.
+                      </p>
+                      {isStoryBriefLoading && (
+                        <p className="mt-6 text-[16px] font-bold leading-6 text-[#5e6264]">Собираем сюжет из героев и выбранного жанра…</p>
+                      )}
+                      {storyBriefError && <p className="mt-6 text-[15px] font-bold leading-6 text-[#C2410C]">{storyBriefError}</p>}
+                      {storyBriefReady && !isStoryBriefLoading && (
+                        <textarea
+                          value={storyBrief}
+                          onChange={(event) => {
+                            setStoryBrief(event.currentTarget.value);
+                            setStoryArtifactCanonNeedsRefresh(true);
+                          }}
+                          className="mt-6 min-h-[260px] w-full resize-y border border-black bg-white px-4 py-3 text-[16px] leading-7 text-black outline-none transition focus:bg-[#f5f5f5]"
+                          aria-label="Сюжет будущей книги"
+                        />
+                      )}
+                      {storyBriefNeedsRefresh && (
+                        <p className="mt-5 text-[15px] font-bold leading-6 text-[#C2410C]">
+                          В сюжет добавлен новый герой. Перепридумайте сюжет, чтобы он появился в истории.
+                        </p>
+                      )}
+                      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          {hiddenHeroes.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleAddHeroFromBrief}
+                              disabled={isStoryBriefLoading}
+                              className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-white px-5 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white disabled:cursor-wait disabled:opacity-60"
+                            >
+                              <Plus className="h-5 w-5" />
+                              Добавить героя
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleRequestStoryBrief(true)}
+                            disabled={isStoryBriefLoading}
+                            className="inline-flex min-h-[52px] items-center justify-center gap-2 border border-black bg-white px-5 text-[13px] font-bold uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white disabled:cursor-wait disabled:opacity-60"
+                          >
+                            <Sparkles className="h-5 w-5" />
+                            Перепридумать сюжет
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSubmitBook}
+                          disabled={!storyBriefReady || storyBriefNeedsRefresh || isSubmitting}
+                          className="inline-flex min-h-[52px] items-center justify-center gap-2 bg-black px-5 text-[13px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#5e6264] disabled:cursor-not-allowed disabled:bg-[#5e6264]"
+                        >
+                          <Check className="h-5 w-5" />
+                          {isSubmitting ? "Отправляем" : "Создать книгу по этому сюжету"}
+                        </button>
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
 
 	              {generationLimitNotice && (
 	                <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px]">
-	                  <GenerationLimitNotice notice={generationLimitNotice} />
+	                  <GenerationLimitNotice notice={generationLimitNotice} email={email} onAuthenticated={handleSubmitBook} />
 	                </div>
 	              )}
 
-	              {!generationLimitNotice && submittedJobId && (
-	                <div ref={generationStatusRef} className="mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8">
+              {!generationLimitNotice && submittedJobId && (
+                <div ref={generationStatusRef} className={`mx-auto mt-10 max-w-[780px] border border-black bg-[#fae7e1] p-6 text-center md:p-8 ${!isGenerationReady && !isGenerationFailed ? "story-brief--thinking" : ""}`}>
                   <div className="mx-auto flex h-16 w-16 items-center justify-center border border-black bg-white">
-                    {isGenerationReady ? <Check className="h-8 w-8" /> : <Sparkles className="h-8 w-8" />}
+                    {isGenerationReady ? <Check className="h-8 w-8" /> : isGenerationFailed ? <X className="h-8 w-8" /> : <Sparkles className="h-8 w-8" />}
                   </div>
                   <p className="mt-5 text-[12px] font-bold uppercase tracking-[0.14em] text-[#5e6264]">
-                    {isGenerationReady ? "Превью готово" : "Создаем персональную книгу"}
+                    {isGenerationReady ? "Превью готово" : isGenerationFailed ? "Генерация остановлена" : "Создаем персональную книгу"}
                   </p>
                   <h3 className="mx-auto mt-3 max-w-[620px] text-[34px] font-black uppercase leading-[1.05] text-black md:text-[48px]">
-                    {isGenerationReady ? "Книга готова." : "Генерация идет."}
+                    {isGenerationReady ? "Книга готова." : isGenerationFailed ? "Книгу не удалось закончить." : "Генерация идет."}
                   </h3>
                   <div className="mt-7 flex items-center justify-between gap-4 text-[13px] font-bold uppercase tracking-[0.1em]">
                     <span>Статус</span>
@@ -1730,15 +1957,29 @@ const DesignTest = () => {
                   <div className="mt-3 h-4 border border-black bg-white">
                     <div className="h-full bg-black transition-all duration-500" style={{ width: `${statusProgress}%` }} />
                   </div>
-                  {!isGenerationReady && (
+                  {!isGenerationReady && !isGenerationFailed && (
                     <div className="mx-auto mt-4 flex max-w-[560px] flex-col gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-[#5e6264] sm:flex-row sm:justify-center sm:gap-6">
                       <span>Прошло {formatGenerationTimer(generationElapsedSeconds)}</span>
                       <span>{generationTimerText}</span>
                     </div>
                   )}
                   <p className="mx-auto mt-5 max-w-[560px] text-[17px] leading-7 text-[#5e6264]">
-                    {jobStatus?.message || "Готовим сюжет, иллюстрации, обложку и печатный макет."}
+                    {isGenerationFailed ? generationFailureMessage : jobStatus?.message || "Готовим сюжет, иллюстрации, обложку и печатный макет."}
                   </p>
+                  {isGenerationFailed && (
+                    <div className="mt-7 flex flex-col items-center gap-4">
+                      <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#5e6264]">
+                        Номер заявки: {submittedJobId}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={returnToConstructorAfterFailure}
+                        className="inline-flex min-h-[52px] items-center justify-center border border-black bg-white px-6 py-3 text-center text-[13px] font-black uppercase tracking-[0.08em] text-black transition hover:bg-black hover:text-white"
+                      >
+                        Вернуться к форме
+                      </button>
+                    </div>
+                  )}
                   {isGenerationReady && (
                     <>
                       <p className="mx-auto mt-3 max-w-[560px] text-[16px] leading-7 text-[#5e6264]">
@@ -1771,12 +2012,25 @@ const DesignTest = () => {
         </div>
       </section>
 
+      <aside className="border-b border-black bg-white px-5 py-6 md:px-8 md:py-7">
+        <div className="mx-auto flex max-w-[1480px] flex-col gap-4 border-2 border-black bg-[#fae7e1] p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
+          <div className="flex items-start gap-4">
+            <PackageCheck className="mt-0.5 h-7 w-7 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#5e6264]">Подарочный формат</p>
+              <h3 className="mt-1 text-[20px] font-black uppercase leading-tight md:text-[24px]">Твёрдая обложка · 20×20 см · 6 000 ₽</h3>
+              <p className="mt-2 max-w-[760px] text-[15px] leading-6 text-[#5e6264]">Доступна при оформлении заказа — выберите её на странице оплаты.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
       <section id="examples" className="scroll-mt-24 border-b border-black bg-white px-5 py-9 md:px-8 md:py-11">
         <div className="mx-auto max-w-[1480px]">
           <div className="mb-9 grid gap-5 md:grid-cols-[1fr_440px] md:items-end">
             <div>
               <h2 className={sectionTitleClass}>
-                Одна и та же история может быть очень разной
+                Каждая книга — в единственном экземпляре
               </h2>
             </div>
             <p className="text-[18px] leading-7 text-[#5e6264]">
@@ -1811,6 +2065,7 @@ const DesignTest = () => {
             ))}
           </div>
         </div>
+
       </section>
 
       <section className="border-b border-black bg-[#f5f5f5] px-5 py-9 md:px-8 md:py-11">

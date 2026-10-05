@@ -1,13 +1,19 @@
 const METRIKA_COUNTER_ID = 109116448;
-const PRODUCT_PRICE = 3500;
 const PRODUCT_CURRENCY = "RUB";
-const PRODUCT_ID = "fairyteller_printed_book";
-const PRODUCT_NAME = "Печатная персональная книга Fairyteller";
 const STORAGE_PREFIX = "fairyteller:metrika:v2";
+
+type PrintProduct = "softcover" | "hardcover_20x20";
+
+function printProductDetails(product: PrintProduct = "softcover") {
+  return product === "hardcover_20x20"
+    ? { price: 6000, id: "fairyteller_hardcover_20x20", name: "Персональная книга Fairyteller в твёрдой обложке 20×20" }
+    : { price: 3500, id: "fairyteller_softcover", name: "Персональная книга Fairyteller в мягкой обложке" };
+}
 
 type MetrikaGoal =
   | "ft_constructor_start"
   | "ft_generate_submit"
+  | "ft_first_generation_unique"
   | "ft_preview_ready"
   | "ft_checkout_start"
   | "ft_payment_success"
@@ -104,6 +110,21 @@ export function trackGenerateSubmit(jobId?: string | null) {
   });
 }
 
+export function trackFirstGenerationUnique(jobId?: string | null) {
+  if (!jobId) {
+    return false;
+  }
+
+  return trackGoalOnce(
+    "ft_first_generation_unique",
+    {
+      ...pageParams(),
+      jobId,
+    },
+    `first_generation_unique:${jobId}`,
+  );
+}
+
 export function trackPreviewReady(jobId?: string | null) {
   return trackGoalOnce(
     "ft_preview_ready",
@@ -115,22 +136,25 @@ export function trackPreviewReady(jobId?: string | null) {
   );
 }
 
-export function trackCheckoutStart(jobId?: string | null) {
+export function trackCheckoutStart(jobId?: string | null, product: PrintProduct = "softcover") {
+  const details = printProductDetails(product);
   return trackGoalOnce(
     "ft_checkout_start",
     {
       ...pageParams(),
       jobId: jobId || undefined,
-      order_price: PRODUCT_PRICE,
+      order_price: details.price,
+      print_product: product,
       currency: PRODUCT_CURRENCY,
     },
     `checkout_start:${jobId || currentPath()}`,
   );
 }
 
-export function trackPaymentSuccess(jobId?: string | null) {
+export function trackPaymentSuccess(jobId?: string | null, product: PrintProduct = "softcover") {
   const orderId = jobId || currentOrderFallback();
-  pushEcommercePurchaseOnce(orderId);
+  const details = printProductDetails(product);
+  pushEcommercePurchaseOnce(orderId, details);
 
   return trackGoalOnce(
     "ft_payment_success",
@@ -138,7 +162,8 @@ export function trackPaymentSuccess(jobId?: string | null) {
       ...pageParams(),
       jobId: jobId || undefined,
       orderId,
-      order_price: PRODUCT_PRICE,
+      order_price: details.price,
+      print_product: product,
       currency: PRODUCT_CURRENCY,
     },
     `payment_success:${orderId}`,
@@ -238,7 +263,7 @@ function flushPendingGoals() {
   }
 }
 
-function pushEcommercePurchaseOnce(orderId: string) {
+function pushEcommercePurchaseOnce(orderId: string, product: ReturnType<typeof printProductDetails>) {
   if (typeof window === "undefined") {
     return;
   }
@@ -257,13 +282,13 @@ function pushEcommercePurchaseOnce(orderId: string) {
       purchase: {
         actionField: {
           id: orderId,
-          revenue: PRODUCT_PRICE,
+          revenue: product.price,
         },
         products: [
           {
-            id: PRODUCT_ID,
-            name: PRODUCT_NAME,
-            price: PRODUCT_PRICE,
+            id: product.id,
+            name: product.name,
+            price: product.price,
             quantity: 1,
           },
         ],

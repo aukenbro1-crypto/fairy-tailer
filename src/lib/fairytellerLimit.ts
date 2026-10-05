@@ -2,6 +2,10 @@ export type GenerationLimitPayload = {
   ok?: boolean;
   limitExceeded?: boolean;
   code?: string;
+  authRequired?: boolean;
+  authenticated?: boolean;
+  authenticatedLimit?: number;
+  remainingAfterLogin?: number;
   message?: string;
   limit?: number;
   used?: number;
@@ -24,5 +28,7 @@ export type GenerationLimitPayload = {
 export const isGenerationLimitPayload = (value: unknown): value is GenerationLimitPayload => {
   if (!value || typeof value !== "object") return false;
   const payload = value as GenerationLimitPayload;
-  return payload.limitExceeded === true || payload.code === "daily_limit_exceeded";
+  return payload.limitExceeded === true
+    || payload.code === "daily_limit_exceeded"
+    || payload.code === "generation_auth_required";
 };
