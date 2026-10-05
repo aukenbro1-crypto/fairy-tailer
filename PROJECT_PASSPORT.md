@@ -1,8 +1,10 @@
 # Fairyteller Project Passport
 
-Last updated: 2026-08-26
+Last updated: 2026-10-05
 
 ## Project Context
+
+On 2026-10-05, removed the intermediate story-brief approval from the production `/` and `/create` constructor. `Создать книгу` now validates the form, checks the existing 48-hour generation quota, and submits the photographed heroes, world, style, location and optional `artifact` directly to the existing intake/text pipeline. It makes no story-brief request and sends no `approved_story_brief` or `approved_artifact_canon`. The existing first-chapter workflow already creates the story bible and five-chapter plan without an approved brief; a blank important-detail field remains blank at submission. Text/image/cover/PDF workflows, stored customer books, payment and editorial tools were not changed. Production release: `/var/www/fairyteller/releases/20261005-constructor-direct-create-v1`; rollback: `/var/www/fairyteller/releases/20260908-account-delete-v1`. Existing immutable assets were preserved; the affected module graph and 34 HTML entry references were versioned to avoid stale constructor caches. See [direct constructor release](docs/constructor-direct-generation.md) for scope and verification.
 
 Fairyteller is a public personalized storybook generator at `fairyteller.ru`.
 
@@ -17,7 +19,7 @@ The current public app is a Vite/React static site. The active generation path s
 - SSH: `root@82.26.198.127` with local key `~/.ssh/baku_tr_ed25519`; password authentication is disabled in production, root login is key-only.
 - Public site root: `/var/www/fairyteller/current`
 - Releases root: `/var/www/fairyteller/releases`
-- Current static site release: `/var/www/fairyteller/releases/20260820-dialogue-constructor-v5-codex`
+- Current static site release: `/var/www/fairyteller/releases/20261005-constructor-direct-create-v1`
 - Nginx site: `/etc/nginx/sites-available/fairyteller`
 - Domain: `https://fairyteller.ru`
 - Node on VPS: `v22.22.2`
