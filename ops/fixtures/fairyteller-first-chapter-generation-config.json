@@ -1,0 +1,203 @@
+{
+  "temperature": 0.65,
+  "topP": 0.9,
+  "maxOutputTokens": 12000,
+  "thinkingConfig": {
+    "thinkingBudget": 1024
+  },
+  "responseMimeType": "application/json",
+  "responseSchema": {
+    "type": "OBJECT",
+    "properties": {
+      "bookTitle": {
+        "type": "STRING"
+      },
+      "subtitle": {
+        "type": "STRING"
+      },
+      "coverSummary": {
+        "type": "STRING"
+      },
+      "readerBlurb": {
+        "type": "STRING"
+      },
+      "coverArtBrief": {
+        "type": "STRING"
+      },
+      "coverPhysicalPlacement": {
+        "type": "STRING"
+      },
+      "coverSpatialRelations": {
+        "type": "ARRAY",
+        "items": {
+          "type": "STRING"
+        }
+      },
+      "coverForbiddenMisreads": {
+        "type": "ARRAY",
+        "items": {
+          "type": "STRING"
+        }
+      },
+      "outfitCanon": {
+        "type": "STRING"
+      },
+      "storyBible": {
+        "type": "OBJECT",
+        "properties": {
+          "world": {
+            "type": "STRING"
+          },
+          "location": {
+            "type": "STRING"
+          },
+          "artifact": {
+            "type": "STRING"
+          },
+          "tone": {
+            "type": "STRING"
+          },
+          "throughline": {
+            "type": "STRING"
+          }
+        },
+        "required": [
+          "world",
+          "location",
+          "artifact",
+          "tone",
+          "throughline"
+        ]
+      },
+      "chapterPlan": {
+        "type": "ARRAY",
+        "items": {
+          "type": "OBJECT",
+          "properties": {
+            "n": {
+              "type": "NUMBER"
+            },
+            "title": {
+              "type": "STRING"
+            },
+            "beat": {
+              "type": "STRING"
+            },
+            "visualBrief": {
+              "type": "STRING"
+            },
+            "heroNumbers": {
+              "type": "ARRAY",
+              "items": {
+                "type": "NUMBER"
+              }
+            },
+            "shotType": {
+              "type": "STRING"
+            },
+            "physicalPlacement": {
+              "type": "STRING"
+            },
+            "spatialRelations": {
+              "type": "ARRAY",
+              "items": {
+                "type": "STRING"
+              }
+            },
+            "forbiddenMisreads": {
+              "type": "ARRAY",
+              "items": {
+                "type": "STRING"
+              }
+            },
+            "useArtifactCanon": {
+              "type": "BOOLEAN"
+            },
+            "artifactRole": {
+              "type": "STRING"
+            },
+            "requiredObjects": {
+              "type": "ARRAY",
+              "items": {
+                "type": "STRING"
+              }
+            },
+            "objectScale": {
+              "type": "STRING"
+            },
+            "forbiddenElements": {
+              "type": "ARRAY",
+              "items": {
+                "type": "STRING"
+              }
+            }
+          },
+          "required": [
+            "n",
+            "title",
+            "beat",
+            "visualBrief",
+            "heroNumbers",
+            "shotType",
+            "physicalPlacement",
+            "spatialRelations",
+            "forbiddenMisreads",
+            "useArtifactCanon",
+            "artifactRole",
+            "requiredObjects",
+            "objectScale",
+            "forbiddenElements"
+          ]
+        }
+      },
+      "chapter1": {
+        "type": "OBJECT",
+        "properties": {
+          "title": {
+            "type": "STRING"
+          },
+          "summary": {
+            "type": "STRING"
+          },
+          "visualBrief": {
+            "type": "STRING"
+          },
+          "useArtifactCanon": {
+            "type": "BOOLEAN"
+          },
+          "artifactRole": {
+            "type": "STRING"
+          },
+          "textBlocks": {
+            "type": "ARRAY",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "visualBrief",
+          "useArtifactCanon",
+          "artifactRole",
+          "textBlocks"
+        ]
+      }
+    },
+    "required": [
+      "bookTitle",
+      "subtitle",
+      "coverSummary",
+      "readerBlurb",
+      "coverArtBrief",
+      "coverPhysicalPlacement",
+      "coverSpatialRelations",
+      "coverForbiddenMisreads",
+      "outfitCanon",
+      "storyBible",
+      "chapterPlan",
+      "chapter1"
+    ]
+  }
+}
