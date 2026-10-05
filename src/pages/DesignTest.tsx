@@ -380,6 +380,7 @@ type HeroDraft = {
   name: string;
   desc: string;
   photo: File | null;
+  antagonist?: boolean;
 };
 
 type CreateResponse = GenerationLimitPayload & {
@@ -756,7 +757,7 @@ const DesignTest = () => {
       const hero = heroes[index] ?? { name: "", desc: "", photo: null };
       multipartData.append(`hero${n}_name`, hero.name);
       multipartData.append(`hero${n}_desc`, hero.desc);
-      multipartData.append(`hero${n}_rel`, "");
+      multipartData.append(`hero${n}_rel`, index === 1 && hero.antagonist ? "Антагонист главного героя" : "");
       multipartData.append(`hero${n}_age_group`, heroAgeGroups[index] || "");
 
       if (hero.photo) {
@@ -1525,6 +1526,20 @@ const DesignTest = () => {
                               className="min-h-[96px] w-full resize-none border border-black bg-white px-4 py-3 text-[16px] leading-6 text-black outline-none transition placeholder:text-[#8a8a8a] focus:bg-[#f5f5f5]"
                               placeholder="Описание героя: характер, привычки, важные детали."
                             />
+                          {index === 1 && (
+                            <label className="flex min-h-[44px] cursor-pointer items-start gap-3 text-[14px] leading-5">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(heroes[index]?.antagonist)}
+                                onChange={(event) => updateHero(index, { antagonist: event.currentTarget.checked })}
+                                className="mt-1 h-4 w-4 shrink-0 accent-black"
+                              />
+                              <span>
+                                <span className="block font-bold">Антигерой</span>
+                                <span className="block text-[#666]">Противостоит главному герою и мешает ему достичь цели.</span>
+                              </span>
+                            </label>
+                          )}
                             <input
                               id={`hero-photo-${index}`}
                               type="file"
