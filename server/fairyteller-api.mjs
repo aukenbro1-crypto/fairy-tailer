@@ -5,14 +5,27 @@ import { existsSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { createComicWorker } from './fairyteller-comic-worker.mjs';
+
+import {
+  addDashboardManualSale,
+  buildDashboardData,
+  deleteDashboardManualSale,
+  recordCustomerAccountActivity,
+  renderDashboardPage,
+} from './fairyteller-dashboard.mjs';
 
 const require = createRequire(import.meta.url);
 
 const PORT = Number(process.env.FAIRYTELLER_API_PORT || process.env.PORT || 3099);
 const DATA_DIR = resolve(process.env.FAIRYTELLER_DATA_DIR || '.data/fairyteller');
+const GENERATION_USAGE_OVERRIDES_PATH = resolve(DATA_DIR, 'generation-usage-overrides.json');
+const DELETED_ACCOUNT_JOB_FACTS_PATH = resolve(DATA_DIR, 'deleted-account-job-facts.json');
+const CRM_EVENTS_PATH = resolve(DATA_DIR, 'crm', 'events.jsonl');
 const API_TOKEN = process.env.FAIRYTELLER_API_TOKEN || '';
 const RENDER_SCRIPT = process.env.FAIRYTELLER_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-render-pdf.mjs';
 const HARDCOVER_20X20_RENDER_SCRIPT = process.env.FAIRYTELLER_HARDCOVER_20X20_RENDER_SCRIPT || '/opt/fairyteller-render/fairyteller-hardcover-20x20.mjs';
+const TEXT_PREFLIGHT_TIMEOUT_MS = Math.max(60_000, Math.min(600_000, Number(process.env.FAIRYTELLER_TEXT_PREFLIGHT_TIMEOUT_MS || 60_000)));
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JSON_LIMIT_BYTES = Number(process.env.FAIRYTELLER_JSON_LIMIT_BYTES || 16 * 1024 * 1024);
 const ALERT_TELEGRAM_BOT_TOKEN = process.env.FAIRYTELLER_ALERT_TELEGRAM_BOT_TOKEN || process.env.FAIRYTELLER_TELEGRAM_BOT_TOKEN || '';
@@ -24,6 +37,15 @@ const PAYMENT_TELEGRAM_CHAT_ID = process.env.FAIRYTELLER_PAYMENT_TELEGRAM_CHAT_I
 const SUPPORT_TELEGRAM_WEBHOOK_SECRET = (process.env.FAIRYTELLER_CHAT_TELEGRAM_WEBHOOK_SECRET || process.env.FAIRYTELLER_TELEGRAM_WEBHOOK_SECRET || '').trim();
 const SUPPORT_TELEGRAM_POLLING_ENABLED = (process.env.FAIRYTELLER_CHAT_TELEGRAM_POLLING || process.env.FAIRYTELLER_TELEGRAM_POLLING) === '1';
 const PUBLIC_BASE_URL = (process.env.FAIRYTELLER_PUBLIC_BASE_URL || 'https://fairyteller.ru').replace(/\/+$/, '');
+const SUPABASE_URL = (process.env.FAIRYTELLER_SUPABASE_URL || '').replace(/\/+$/, '');
+const SUPABASE_ANON_KEY = process.env.FAIRYTELLER_SUPABASE_ANON_KEY || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.FAIRYTELLER_SUPABASE_SECRET_KEY
+  || process.env.FAIRYTELLER_SUPABASE_SERVICE_ROLE_KEY
+  || '';
+const METRIKA_COUNTER_ID = Number(process.env.FAIRYTELLER_METRIKA_COUNTER_ID || 109116448) || 109116448;
+const METRIKA_OAUTH_TOKEN = process.env.FAIRYTELLER_METRIKA_OAUTH_TOKEN || '';
+const OPENLUX_API_KEY = process.env.FAIRYTELLER_OPENLUX_API_KEY || process.env.OPENLUX_API_KEY || '';
+const OPENLUX_IMAGE_EDIT_MODEL = process.env.FAIRYTELLER_OPENLUX_IMAGE_EDIT_MODEL || 'grok-imagine-image-2.0';
 const RESEND_API_KEY = process.env.FAIRYTELLER_RESEND_API_KEY || '';
 const MAIL_FROM = process.env.FAIRYTELLER_MAIL_FROM || '';
 const MAIL_REPLY_TO = process.env.FAIRYTELLER_MAIL_REPLY_TO || '';
@@ -31,15 +53,20 @@ const YOOKASSA_SHOP_ID = process.env.FAIRYTELLER_YOOKASSA_SHOP_ID || process.env
 const YOOKASSA_SECRET_KEY = process.env.FAIRYTELLER_YOOKASSA_SECRET_KEY || process.env.YOOKASSA_SECRET_KEY || '';
 const YOOKASSA_SHOP_PASSWORD = process.env.FAIRYTELLER_YOOKASSA_SHOP_PASSWORD || process.env.YOOKASSA_SHOP_PASSWORD || '';
 const YOOKASSA_AMOUNT_RUB = process.env.FAIRYTELLER_BOOK_PRICE_RUB || '3500.00';
+const HARDCOVER_20X20_AMOUNT_RUB = process.env.FAIRYTELLER_HARDCOVER_20X20_PRICE_RUB || '6000.00';
 const PAID_ACCESS_TTL_DAYS = Math.max(1, Number(process.env.FAIRYTELLER_PAID_ACCESS_TTL_DAYS || 30) || 30);
 const RESEND_LINK_WINDOW_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_RESEND_LINK_WINDOW_MS || 5 * 60_000) || 5 * 60_000);
 const DAILY_FREE_GENERATION_LIMIT_RAW = Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_LIMIT ?? 3);
 const DAILY_FREE_GENERATION_LIMIT = Number.isFinite(DAILY_FREE_GENERATION_LIMIT_RAW)
   ? Math.max(0, Math.floor(DAILY_FREE_GENERATION_LIMIT_RAW))
   : 3;
+const GUEST_FREE_GENERATION_LIMIT_RAW = Number(process.env.FAIRYTELLER_GUEST_FREE_GENERATION_LIMIT ?? 1);
+const GUEST_FREE_GENERATION_LIMIT = Number.isFinite(GUEST_FREE_GENERATION_LIMIT_RAW)
+  ? Math.max(0, Math.floor(GUEST_FREE_GENERATION_LIMIT_RAW))
+  : 1;
 const DAILY_FREE_GENERATION_WINDOW_MS = Math.max(
   60 * 60 * 1000,
-  Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000,
+  Number(process.env.FAIRYTELLER_DAILY_FREE_GENERATION_WINDOW_MS || 48 * 60 * 60 * 1000) || 48 * 60 * 60 * 1000,
 );
 const CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES = new Map([
   ['zoowall@yandex.ru', {
@@ -83,6 +110,28 @@ const CUSTOMER_BOOKS_TOKEN_TTL_MS = Math.max(
   Number(process.env.FAIRYTELLER_CUSTOMER_BOOKS_TOKEN_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
 );
 const CUSTOMER_BOOKS_TOKEN_SECRET = process.env.FAIRYTELLER_CUSTOMER_BOOKS_SECRET || API_TOKEN || 'fairyteller-local-customer-books';
+const GENERATION_ACCESS_TOKEN_TTL_MS = Math.max(
+  60 * 1000,
+  Math.min(30 * 60 * 1000, Number(process.env.FAIRYTELLER_GENERATION_ACCESS_TOKEN_TTL_MS || 10 * 60 * 1000) || 10 * 60 * 1000),
+);
+const CUSTOMER_ACCOUNT_COOKIE = 'fairyteller_customer_session';
+const CUSTOMER_ACCOUNT_SESSION_TTL_MS = Math.max(
+  24 * 60 * 60 * 1000,
+  Number(process.env.FAIRYTELLER_CUSTOMER_ACCOUNT_SESSION_TTL_MS || 30 * 24 * 60 * 60 * 1000) || 30 * 24 * 60 * 60 * 1000,
+);
+const CUSTOMER_GLOBAL_EDITOR_EMAILS = new Set([
+  'zoowall@yandex.ru',
+]);
+const CUSTOMER_ACCOUNT_LOGIN_TTL_MS = Math.max(
+  5 * 60 * 1000,
+  Number(process.env.FAIRYTELLER_CUSTOMER_ACCOUNT_LOGIN_TTL_MS || 15 * 60 * 1000) || 15 * 60 * 1000,
+);
+const CUSTOMER_ACCOUNT_LOGIN_RATE_LIMIT = Math.max(1, Number(process.env.FAIRYTELLER_CUSTOMER_ACCOUNT_LOGIN_RATE_LIMIT || 5) || 5);
+const CUSTOMER_ACCOUNT_LOGIN_RATE_WINDOW_MS = Math.max(
+  60 * 1000,
+  Number(process.env.FAIRYTELLER_CUSTOMER_ACCOUNT_LOGIN_RATE_WINDOW_MS || 10 * 60 * 1000) || 10 * 60 * 1000,
+);
+const customerAccountLoginRateBuckets = new Map();
 const FOLLOW_UP_DELAY_MS = Math.max(60_000, Number(process.env.FAIRYTELLER_FOLLOW_UP_DELAY_MS || 3 * 60 * 60 * 1000) || 3 * 60 * 60 * 1000);
 const FOLLOW_UP_GENERATION_WINDOW_MS = Math.max(3 * 60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_GENERATION_WINDOW_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
 const FOLLOW_UP_COOLDOWN_MS = Math.max(60 * 60 * 1000, Number(process.env.FAIRYTELLER_FOLLOW_UP_COOLDOWN_MS || 24 * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
@@ -93,6 +142,7 @@ const FOLLOW_UP_UNSUBSCRIBE_TOKEN_TTL_MS = Math.max(24 * 60 * 60 * 1000, Number(
 const FOLLOW_UP_ENABLED_AT_MS = Date.parse(process.env.FAIRYTELLER_FOLLOW_UP_ENABLED_AT || '');
 const CUSTOMER_SUPPORT_SIGNATURE = 'Нужна помощь с текстом или оформлением? Напишите нам в Telegram, через форму на сайте или на books@fairyteller.ru.';
 const ADMIN_BOOKS_PATH = '/api/fairyteller/books';
+const ADMIN_DASHBOARD_PATH = `${ADMIN_BOOKS_PATH}/dashboard`;
 const ADMIN_LEADS_PATH = `${ADMIN_BOOKS_PATH}/leads`;
 const ADMIN_LEADS_CSV_PATH = `${ADMIN_BOOKS_PATH}/leads.csv`;
 const ADMIN_MAIL_PATH = `${ADMIN_BOOKS_PATH}/mail`;
@@ -131,9 +181,25 @@ const HARDCOVER_COVER_TEMPLATE_OPTIONS = [
   { value: 'white', label: 'Белая' },
 ];
 const HARDCOVER_COVER_TEMPLATE_VALUES = new Set(HARDCOVER_COVER_TEMPLATE_OPTIONS.map((option) => option.value));
+const PRINT_PRODUCT_OPTIONS = {
+  softcover: {
+    label: 'Мягкая обложка',
+    amount: YOOKASSA_AMOUNT_RUB,
+  },
+  hardcover_20x20: {
+    label: 'Твёрдая обложка 20×20',
+    amount: HARDCOVER_20X20_AMOUNT_RUB,
+  },
+};
+const COVER_STYLE_OPTIONS = [
+  { value: 'standard', label: 'Стандартная' },
+  { value: 'cyberpunk', label: 'Киберпанк' },
+];
+const COVER_STYLE_VALUES = new Set(COVER_STYLE_OPTIONS.map((option) => option.value));
 const PAGE_PAPER_STYLE_OPTIONS = [
   { value: 'white', label: 'Белый' },
   { value: 'cream-speckle', label: 'Кремовый с крапинками' },
+  { value: 'cyberpunk-speckle', label: 'Серый киберпанк с крапинками · #eae8df' },
 ];
 const PAGE_PAPER_STYLE_VALUES = new Set(PAGE_PAPER_STYLE_OPTIONS.map((option) => option.value));
 const N8N_WEBHOOK_BASE_URL = (process.env.FAIRYTELLER_N8N_WEBHOOK_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
@@ -435,6 +501,88 @@ async function appendEvent(dir, event) {
   await appendFile(join(dir, 'events.jsonl'), `${JSON.stringify({ at: nowIso(), ...event })}\n`, { mode: 0o600 });
 }
 
+function normalizeCrmToken(value, maxLength = 120) {
+  const normalized = String(value || '').trim().slice(0, maxLength);
+  return /^[a-zA-Z0-9._-]+$/.test(normalized) ? normalized : '';
+}
+
+function crmAttributionFromRequest(req, fallback = {}) {
+  const supplied = fallback?.crmAttribution || fallback?.attribution || fallback || {};
+  const header = (name) => String(req?.headers?.[name] || '');
+  const source = normalizeCrmToken(header('x-fairyteller-utm-source') || supplied.source, 60);
+  const medium = normalizeCrmToken(header('x-fairyteller-utm-medium') || supplied.medium, 60);
+  const campaignId = normalizeCrmToken(header('x-fairyteller-campaign-id') || supplied.campaignId);
+  const variant = normalizeCrmToken(header('x-fairyteller-campaign-variant') || supplied.variant, 60);
+  const recipientId = normalizeCrmToken(header('x-fairyteller-recipient-id') || supplied.recipientId, 80);
+  return {
+    ...(source ? { source } : {}),
+    ...(medium ? { medium } : {}),
+    ...(campaignId ? { campaignId } : {}),
+    ...(variant ? { variant } : {}),
+    ...(recipientId ? { recipientId } : {}),
+  };
+}
+
+function crmActorFromEmail(email, actorType = 'customer', authProvider = '') {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return {};
+  return {
+    actorId: createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET)
+      .update(normalized)
+      .digest('hex')
+      .slice(0, 32),
+    actorType,
+    ...(authProvider ? { authProvider: normalizeCrmToken(authProvider, 40) } : {}),
+  };
+}
+
+function crmActorFromSession(session) {
+  if (!session) return {};
+  return crmActorFromEmail(
+    session.email,
+    session.globalEditor === true || CUSTOMER_GLOBAL_EDITOR_EMAILS.has(normalizeEmail(session.email)) ? 'admin' : 'owner',
+    session.authProvider,
+  );
+}
+
+function safeCrmDetails(details = {}) {
+  const allowed = new Set(['editorMode', 'previewPage', 'chapter', 'slot', 'printProduct', 'provider']);
+  const result = {};
+  for (const [key, value] of Object.entries(details || {})) {
+    if (!allowed.has(key) || value === undefined || value === null || value === '') continue;
+    if (typeof value === 'number' && Number.isFinite(value)) result[key] = value;
+    else if (typeof value === 'boolean') result[key] = value;
+    else if (typeof value === 'string') result[key] = normalizeCrmToken(value, 80);
+  }
+  return result;
+}
+
+async function recordCrmEvent({ type, jobId = '', session = null, email = '', attribution = {}, details = {} }) {
+  const eventType = normalizeCrmToken(type, 80);
+  if (!eventType) return;
+  await mkdir(dirname(CRM_EVENTS_PATH), { recursive: true, mode: 0o700 });
+  const actor = session
+    ? crmActorFromSession(session)
+    : crmActorFromEmail(email, email ? 'customer' : 'anonymous');
+  await appendFile(CRM_EVENTS_PATH, `${JSON.stringify({
+    version: 1,
+    at: nowIso(),
+    type: eventType,
+    ...(jobId ? { jobId: assertSafeJobId(jobId) } : {}),
+    ...actor,
+    ...crmAttributionFromRequest(null, attribution),
+    ...safeCrmDetails(details),
+  })}\n`, { mode: 0o600 });
+}
+
+async function recordCrmEventSafe(event) {
+  try {
+    await recordCrmEvent(event);
+  } catch (error) {
+    console.warn(`Could not record CRM event ${event?.type || 'unknown'}: ${error.message}`);
+  }
+}
+
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) ? email : '';
@@ -459,7 +607,7 @@ function generationLimitRuleForIp(ip) {
   return IP_FREE_GENERATION_LIMIT_OVERRIDES.get(normalizeLimitClientIp(ip)) || null;
 }
 
-function generationLimitRuleForEmail(email) {
+function generationLimitRuleForEmail(email, authenticated = false) {
   const normalizedEmail = normalizeEmail(email);
   const override = CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES.get(normalizedEmail);
   if (override) {
@@ -471,10 +619,10 @@ function generationLimitRuleForEmail(email) {
   }
 
   return {
-    limit: DAILY_FREE_GENERATION_LIMIT,
+    limit: authenticated ? DAILY_FREE_GENERATION_LIMIT : GUEST_FREE_GENERATION_LIMIT,
     windowMs: DAILY_FREE_GENERATION_WINDOW_MS,
-    periodLabel: 'сегодня',
-    periodScopeLabel: 'сегодня',
+    periodLabel: 'за 48 часов',
+    periodScopeLabel: 'за последние 48 часов',
   };
 }
 
@@ -533,9 +681,243 @@ function verifyCustomerBooksToken(token) {
   return { email };
 }
 
+function createGenerationAccessToken(session) {
+  const email = normalizeEmail(session?.email);
+  if (!email) throw httpError(401, 'Войдите, чтобы создать ещё одну сказку');
+  const encodedPayload = base64UrlEncode(JSON.stringify({
+    purpose: 'generation-access',
+    email,
+    userId: String(session?.userId || ''),
+    iat: Date.now(),
+    exp: Date.now() + GENERATION_ACCESS_TOKEN_TTL_MS,
+  }));
+  return `${encodedPayload}.${signCustomerBooksPayload(encodedPayload)}`;
+}
+
+function verifyGenerationAccessToken(token) {
+  const [encodedPayload, signature] = String(token || '').split('.');
+  if (!encodedPayload || !signature || !safeEqual(signCustomerBooksPayload(encodedPayload), signature)) {
+    throw httpError(401, 'Сессия входа устарела. Войдите ещё раз.');
+  }
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw httpError(401, 'Сессия входа устарела. Войдите ещё раз.');
+  }
+  const email = normalizeEmail(payload?.email);
+  if (payload?.purpose !== 'generation-access' || !email || Number(payload.exp) <= Date.now()) {
+    throw httpError(401, 'Сессия входа устарела. Войдите ещё раз.');
+  }
+  return { email, userId: String(payload.userId || ''), authProvider: 'generation-access' };
+}
+
 function customerBooksPath(email) {
   const token = createCustomerBooksToken(email);
   return token ? `/api/fairyteller/my-books/${encodeURIComponent(token)}` : '';
+}
+
+function customerAccountLoginRootDir() {
+  return resolve(DATA_DIR, 'customer-account-login');
+}
+
+function customerAccountLoginPath(token) {
+  const digest = createHash('sha256').update(String(token || '')).digest('hex');
+  return join(customerAccountLoginRootDir(), `${digest}.json`);
+}
+
+function createCustomerAccountSessionToken(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) throw httpError(400, 'Укажите корректный email');
+  const encodedPayload = base64UrlEncode(JSON.stringify({
+    purpose: 'customer-account',
+    email: normalizedEmail,
+    iat: Date.now(),
+    exp: Date.now() + CUSTOMER_ACCOUNT_SESSION_TTL_MS,
+  }));
+  return `${encodedPayload}.${signCustomerBooksPayload(encodedPayload)}`;
+}
+
+function verifyCustomerAccountSessionToken(token) {
+  const [encodedPayload, signature] = String(token || '').split('.');
+  if (!encodedPayload || !signature || !safeEqual(signCustomerBooksPayload(encodedPayload), signature)) {
+    throw httpError(401, 'Account session is invalid');
+  }
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw httpError(401, 'Account session is invalid');
+  }
+  if (payload?.purpose !== 'customer-account' || Number(payload.exp) <= Date.now()) {
+    throw httpError(401, 'Account session expired');
+  }
+  const email = normalizeEmail(payload.email);
+  if (!email) throw httpError(401, 'Account session is invalid');
+  return { email };
+}
+
+function customerAccountSession(req) {
+  const token = cookieValue(req, CUSTOMER_ACCOUNT_COOKIE);
+  if (!token) return null;
+  try {
+    return verifyCustomerAccountSessionToken(token);
+  } catch {
+    return null;
+  }
+}
+
+function customerAccountBearerToken(req) {
+  const authorization = String(req.headers.authorization || '');
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+async function supabaseCustomerAccountSession(req) {
+  const accessToken = customerAccountBearerToken(req);
+  if (!accessToken) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw httpError(503, 'Supabase auth is not configured');
+  }
+
+  let response;
+  try {
+    response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        authorization: `Bearer ${accessToken}`,
+      },
+      signal: AbortSignal.timeout(8_000),
+    });
+  } catch {
+    throw httpError(503, 'Supabase auth is unavailable');
+  }
+
+  if (response.status === 401 || response.status === 403) return null;
+  if (!response.ok) throw httpError(503, 'Supabase auth is unavailable');
+  const user = await response.json();
+  const email = normalizeEmail(user?.email);
+  if (!email || !user?.id) return null;
+  return { email, userId: String(user.id), authProvider: 'supabase' };
+}
+
+async function authenticatedCustomerAccount(req) {
+  const supabaseSession = await supabaseCustomerAccountSession(req);
+  if (supabaseSession) return supabaseSession;
+  const legacySession = customerAccountSession(req);
+  return legacySession ? { ...legacySession, authProvider: 'legacy' } : null;
+}
+
+async function requireCustomerJobOwner(req, jobId) {
+  const session = await authenticatedCustomerAccount(req);
+  if (!session) throw httpError(401, 'Войдите, чтобы внести правки');
+  const orderEnvelope = await readJsonFile(join(jobDir(jobId), 'order.json'), null);
+  if (!orderEnvelope) throw httpError(404, 'Книга не найдена');
+  const order = orderEnvelope.order || orderEnvelope || {};
+  const sessionEmail = normalizeEmail(session.email);
+  const globalEditor = CUSTOMER_GLOBAL_EDITOR_EMAILS.has(sessionEmail);
+  if (!globalEditor && (!normalizeEmail(order.email) || normalizeEmail(order.email) !== sessionEmail)) {
+    throw httpError(403, 'Эта книга не привязана к вашему аккаунту');
+  }
+  return { ...session, globalEditor };
+}
+
+function customerAccountCookie(token, maxAgeSeconds) {
+  return `${CUSTOMER_ACCOUNT_COOKIE}=${encodeURIComponent(token || '')}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}${NODE_ENV === 'production' ? '; Secure' : ''}`;
+}
+
+function customerAccountRateKey(value) {
+  return createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function assertCustomerAccountLoginRate(req, email) {
+  const now = Date.now();
+  const keys = [
+    `email:${customerAccountRateKey(normalizeEmail(email))}`,
+    `ip:${customerAccountRateKey(requestIp(req))}`,
+  ];
+  for (const key of keys) {
+    const recent = (customerAccountLoginRateBuckets.get(key) || [])
+      .filter((timestamp) => timestamp > now - CUSTOMER_ACCOUNT_LOGIN_RATE_WINDOW_MS);
+    if (recent.length >= CUSTOMER_ACCOUNT_LOGIN_RATE_LIMIT) {
+      throw httpError(429, 'Слишком много писем. Попробуйте ещё раз через несколько минут.');
+    }
+    recent.push(now);
+    customerAccountLoginRateBuckets.set(key, recent);
+  }
+}
+
+async function createCustomerAccountLoginToken(email) {
+  const token = randomBytes(32).toString('base64url');
+  const path = customerAccountLoginPath(token);
+  await mkdir(customerAccountLoginRootDir(), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(path, {
+    email: normalizeEmail(email),
+    createdAt: nowIso(),
+    expiresAt: new Date(Date.now() + CUSTOMER_ACCOUNT_LOGIN_TTL_MS).toISOString(),
+  });
+  return { token, path };
+}
+
+async function consumeCustomerAccountLoginToken(token) {
+  if (!/^[a-zA-Z0-9_-]{32,100}$/.test(String(token || ''))) {
+    throw httpError(403, 'Ссылка недействительна');
+  }
+  const path = customerAccountLoginPath(token);
+  const consumingPath = `${path}.${randomUUID()}.consuming`;
+  try {
+    await rename(path, consumingPath);
+  } catch (error) {
+    if (error.code === 'ENOENT') throw httpError(403, 'Ссылка недействительна или уже использована');
+    throw error;
+  }
+  try {
+    const record = await readJsonFile(consumingPath, null);
+    const email = normalizeEmail(record?.email);
+    if (!email || Date.parse(record?.expiresAt || '') <= Date.now()) {
+      throw httpError(403, 'Ссылка устарела');
+    }
+    return { email };
+  } finally {
+    await rm(consumingPath, { force: true });
+  }
+}
+
+function customerAccountLoginEmail(email, loginUrl) {
+  const safeUrl = escapeHtml(loginUrl);
+  return {
+    to: email,
+    subject: 'Вход в личный кабинет Fairyteller',
+    text: [
+      'Вход в личный кабинет Fairyteller',
+      '',
+      'Откройте ссылку, чтобы увидеть все свои книги:',
+      loginUrl,
+      '',
+      'Ссылка действует 15 минут и сработает только один раз.',
+      'Если вы не запрашивали вход, просто проигнорируйте это письмо.',
+    ].join('\n'),
+    html: `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;color:#111"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#fff;border:1px solid #111"><tr><td style="padding:28px;background:#fae7e1;border-bottom:1px solid #111"><div style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase">Fairyteller</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.05">Ваши книги ждут вас</h1></td></tr><tr><td style="padding:30px 28px"><p style="margin:0 0 22px;font-size:16px;line-height:1.55">Откройте личный кабинет, чтобы увидеть все истории, созданные с этой почтой.</p><p style="margin:0 0 22px"><a href="${safeUrl}" style="display:inline-block;background:#e89c31;border:1px solid #111;padding:16px 24px;color:#111;font-size:13px;font-weight:900;text-decoration:none;text-transform:uppercase">Открыть мои книги</a></p><p style="margin:0;color:#666;font-size:13px;line-height:1.5">Ссылка действует 15 минут и сработает только один раз. Если вы не запрашивали вход, ничего делать не нужно.</p></td></tr></table></td></tr></table></body></html>`,
+  };
+}
+
+async function requestCustomerAccountLogin(req, emailValue) {
+  const email = normalizeEmail(emailValue);
+  if (!email) throw httpError(400, 'Укажите корректный email');
+  assertCustomerAccountLoginRate(req, email);
+  const login = await createCustomerAccountLoginToken(email);
+  const loginPath = `/api/fairyteller/account/session/${encodeURIComponent(login.token)}`;
+  const loginUrl = `${PUBLIC_BASE_URL}${loginPath}`;
+  const delivery = await sendCustomerEmail(customerAccountLoginEmail(email, loginUrl));
+  if (NODE_ENV === 'production' && delivery.status !== 'sent') {
+    await rm(login.path, { force: true });
+    throw httpError(503, 'Не удалось отправить письмо. Попробуйте ещё раз чуть позже.');
+  }
+  return {
+    ok: true,
+    message: 'Отправили ссылку для входа. Проверьте почту.',
+    ...(NODE_ENV !== 'production' ? { debugLoginUrl: loginPath } : {}),
+  };
 }
 
 function followUpRootDir() {
@@ -704,8 +1086,16 @@ async function listCustomerGenerationJobs(email, options = {}) {
         updatedAt: status?.updatedAt || createdAt,
         statusLabel: customerJobStatusLabel(status, payment),
         paid: payment?.status === 'paid',
+        paidAt: payment?.status === 'paid' ? payment?.paidAt || null : null,
+        printProduct: payment?.status === 'paid' ? paymentProductFromMetadata(payment, '') : '',
+        printProductLabel: payment?.status === 'paid'
+          ? normalizeShortText(payment?.printProductLabel, 120)
+            || PRINT_PRODUCT_OPTIONS[paymentProductFromMetadata(payment, 'softcover')]?.label
+            || ''
+          : '',
         bookUrl: customerJobBookUrl(entry.name),
         payUrl: customerJobPayUrl(entry.name, status),
+        coverUrl: `/api/fairyteller/jobs/${encodeURIComponent(entry.name)}/sample-pages/page-01.jpg`,
       };
     }));
 
@@ -714,6 +1104,289 @@ async function listCustomerGenerationJobs(email, options = {}) {
     .filter(Boolean)
     .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')))
     .slice(0, limit);
+}
+
+async function listGenerationUsageOverrides(email, options = {}) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+  const payload = await readJsonFile(GENERATION_USAGE_OVERRIDES_PATH, {});
+  const rawEntries = Array.isArray(payload?.[normalizedEmail]) ? payload[normalizedEmail] : [];
+  const sinceMs = Number(options.sinceMs || 0);
+  return rawEntries
+    .map((entry, index) => ({
+      jobId: `manual_usage_${index + 1}`,
+      createdAt: typeof entry === 'string' ? entry : String(entry?.createdAt || ''),
+      manualUsage: true,
+    }))
+    .filter((entry) => {
+      const createdMs = Date.parse(entry.createdAt);
+      return Number.isFinite(createdMs) && (!sinceMs || createdMs >= sinceMs);
+    });
+}
+
+function deletedAccountIdentityHash(email) {
+  return createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET)
+    .update(`deleted-account:${normalizeEmail(email)}`)
+    .digest('hex');
+}
+
+function deletedAccountJobHash(jobId) {
+  return createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET)
+    .update(`deleted-job:${assertSafeJobId(jobId)}`)
+    .digest('hex');
+}
+
+function deletedAccountIpHash(ip) {
+  const normalizedIp = normalizeLimitClientIp(ip);
+  return normalizedIp
+    ? createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET).update(`deleted-ip:${normalizedIp}`).digest('hex')
+    : '';
+}
+
+async function listDeletedAccountGenerationUsage(email, options = {}) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+  const payload = await readJsonFile(DELETED_ACCOUNT_JOB_FACTS_PATH, {});
+  const entries = Array.isArray(payload?.identities?.[deletedAccountIdentityHash(normalizedEmail)])
+    ? payload.identities[deletedAccountIdentityHash(normalizedEmail)]
+    : [];
+  const sinceMs = Number(options.sinceMs || 0);
+  return entries
+    .map((entry) => ({
+      jobId: `deleted_${String(entry?.jobHash || '')}`,
+      createdAt: String(entry?.createdAt || ''),
+      deletedAccountUsage: true,
+    }))
+    .filter((entry) => {
+      const createdMs = Date.parse(entry.createdAt);
+      return Number.isFinite(createdMs) && (!sinceMs || createdMs >= sinceMs);
+    });
+}
+
+async function listDeletedAccountIpUsage(ip, options = {}) {
+  const ipHash = deletedAccountIpHash(ip);
+  if (!ipHash) return [];
+  const payload = await readJsonFile(DELETED_ACCOUNT_JOB_FACTS_PATH, {});
+  const sinceMs = Number(options.sinceMs || 0);
+  return Object.values(payload?.identities || {})
+    .flatMap((entries) => Array.isArray(entries) ? entries : [])
+    .filter((entry) => entry?.ipHash === ipHash)
+    .map((entry) => ({
+      jobId: `deleted_${String(entry?.jobHash || '')}`,
+      createdAt: String(entry?.createdAt || ''),
+      deletedAccountUsage: true,
+    }))
+    .filter((entry) => {
+      const createdMs = Date.parse(entry.createdAt);
+      return Number.isFinite(createdMs) && (!sinceMs || createdMs >= sinceMs);
+    });
+}
+
+async function preserveDeletedAccountJobFacts(email, books) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !books.length) return;
+  await withGenerationLimitKeyLock('deleted-account-job-facts', async () => {
+    const payload = await readJsonFile(DELETED_ACCOUNT_JOB_FACTS_PATH, {});
+    const identityHash = deletedAccountIdentityHash(normalizedEmail);
+    const currentEntries = Array.isArray(payload?.identities?.[identityHash])
+      ? payload.identities[identityHash]
+      : [];
+    const merged = new Map(currentEntries.map((entry) => [String(entry?.jobHash || ''), entry]));
+    for (const book of books) {
+      const jobHash = deletedAccountJobHash(book.jobId);
+      merged.set(jobHash, {
+        jobHash,
+        ...(book.ipHash ? { ipHash: book.ipHash } : {}),
+        createdAt: String(book.createdAt || ''),
+        completed: Boolean(book.completed),
+        payment: book.payment || {},
+      });
+    }
+    await writeJsonAtomic(DELETED_ACCOUNT_JOB_FACTS_PATH, {
+      version: 1,
+      identities: {
+        ...(payload?.identities && typeof payload.identities === 'object' ? payload.identities : {}),
+        [identityHash]: [...merged.values()],
+      },
+      updatedAt: nowIso(),
+    });
+  });
+}
+
+async function customerBooksForDeletion(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+  const root = resolve(DATA_DIR, 'jobs');
+  const entries = await readdir(root, { withFileTypes: true }).catch((error) => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  return (await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      let dir;
+      try {
+        dir = jobDir(entry.name);
+      } catch {
+        return null;
+      }
+      const [status, orderEnvelope, payment] = await Promise.all([
+        readJsonFile(join(dir, 'status.json'), {}),
+        readJsonFile(join(dir, 'order.json'), {}),
+        readJsonFile(join(dir, 'payment.json'), {}),
+      ]);
+      const order = orderEnvelope.order || orderEnvelope || {};
+      if (normalizeEmail(order.email) !== normalizedEmail) return null;
+      const paymentId = String(payment?.paymentId || '');
+      return {
+        jobId: entry.name,
+        ipHash: deletedAccountIpHash(order.clientIp),
+        createdAt: status?.createdAt || orderEnvelope.receivedAt || '',
+        completed: status?.status === 'done' || status?.stage === 'complete',
+        payment: {
+          ...(paymentId ? { paymentId: createHmac('sha256', CUSTOMER_BOOKS_TOKEN_SECRET).update(paymentId).digest('hex') } : {}),
+          ...(payment?.createdAt ? { createdAt: payment.createdAt } : {}),
+          ...(payment?.updatedAt ? { updatedAt: payment.updatedAt } : {}),
+          ...(payment?.paidAt ? { paidAt: payment.paidAt } : {}),
+          ...(payment?.status ? { status: payment.status } : {}),
+          ...(payment?.amount ? { amount: payment.amount } : {}),
+        },
+      };
+    }))).filter(Boolean);
+}
+
+async function deleteSupabaseCustomerBooks(userId) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/customer_books?owner_user_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      prefer: 'return=minimal',
+    },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw httpError(502, 'Не удалось удалить список книг. Попробуйте ещё раз.');
+}
+
+async function deleteSupabaseAuthUser(userId) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw httpError(502, 'Книги удалены, но аккаунт не удалился. Повторите попытку.');
+}
+
+async function deleteLegacyAccountLoginRecords(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const root = customerAccountLoginRootDir();
+  const entries = await readdir(root, { withFileTypes: true }).catch((error) => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  await Promise.all(entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map(async (entry) => {
+      const path = join(root, entry.name);
+      const record = await readJsonFile(path, null);
+      if (normalizeEmail(record?.email) === normalizedEmail) await rm(path, { force: true });
+    }));
+}
+
+async function deleteCustomerAccount(req, body = {}) {
+  const session = await supabaseCustomerAccountSession(req);
+  if (!session) throw httpError(401, 'Войдите заново по коду, чтобы удалить аккаунт.');
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw httpError(503, 'Удаление аккаунта временно недоступно.');
+  }
+  if (String(body.confirmation || '').trim().toUpperCase() !== 'УДАЛИТЬ') {
+    throw httpError(400, 'Введите УДАЛИТЬ для подтверждения.');
+  }
+  if (normalizeEmail(body.email) !== session.email) {
+    throw httpError(400, 'Почта подтверждения не совпадает с аккаунтом.');
+  }
+
+  return await withGenerationLimitLock(session.email, async () => {
+    const books = await customerBooksForDeletion(session.email);
+    await deleteSupabaseCustomerBooks(session.userId);
+    await preserveDeletedAccountJobFacts(session.email, books);
+    for (const book of books) {
+      await rm(jobDir(book.jobId), { recursive: true, force: true });
+    }
+    await deleteLegacyAccountLoginRecords(session.email);
+    await deleteSupabaseAuthUser(session.userId);
+    await recordCrmEventSafe({
+      type: 'account.deleted',
+      email: session.email,
+      details: { deletedBooks: books.length },
+    });
+    return { ok: true, deletedBooks: books.length };
+  });
+}
+
+async function mirrorCustomerBooksToSupabase(session, books) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !session?.userId || !books.length) return;
+  const rows = books.map((book) => ({
+    job_id: book.jobId,
+    owner_user_id: session.userId,
+    owner_email: session.email,
+    title: book.title,
+    status: book.statusLabel,
+    created_at: book.createdAt || new Date().toISOString(),
+    updated_at: book.updatedAt || book.createdAt || new Date().toISOString(),
+    paid: Boolean(book.paid),
+    book_url: book.bookUrl,
+    pay_url: book.payUrl,
+    cover_url: book.coverUrl || null,
+  }));
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/customer_books?on_conflict=job_id`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(rows),
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new Error(`Supabase customer_books sync failed: ${response.status}`);
+}
+
+async function hasCustomerGenerationJob(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return false;
+
+  const root = resolve(DATA_DIR, 'jobs');
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+
+    let dir;
+    try {
+      dir = jobDir(entry.name);
+    } catch {
+      continue;
+    }
+
+    const orderEnvelope = await readJsonFile(join(dir, 'order.json'), {});
+    const order = orderEnvelope.order || orderEnvelope || {};
+    if (normalizeEmail(order.email) === normalizedEmail) {
+      return true;
+    }
+  }
+
+  return (await listDeletedAccountGenerationUsage(normalizedEmail)).length > 0;
 }
 
 async function listIpGenerationJobs(ip, options = {}) {
@@ -777,14 +1450,21 @@ function buildIpGenerationLimitPayload(ip, recentJobs, rule) {
   };
 }
 
-async function buildGenerationLimitPayload(email, recentJobs, rule) {
+async function buildGenerationLimitPayload(email, recentJobs, rule, options = {}) {
   const booksPath = customerBooksPath(email);
   const allJobs = await listCustomerGenerationJobs(email, { limit: 20 });
   const payableJob = allJobs.find((job) => !job.paid) || allJobs[0] || null;
+  const authRequired = options.authRequired === true;
   return {
     limitExceeded: true,
-    code: 'daily_limit_exceeded',
-    message: generationLimitMessage(rule),
+    code: authRequired ? 'generation_auth_required' : 'daily_limit_exceeded',
+    authRequired,
+    authenticated: options.authenticated === true,
+    authenticatedLimit: DAILY_FREE_GENERATION_LIMIT,
+    remainingAfterLogin: authRequired ? Math.max(0, DAILY_FREE_GENERATION_LIMIT - recentJobs.length) : 0,
+    message: authRequired
+      ? 'Войдите по почте, чтобы создать ещё две сказки за 48 часов.'
+      : generationLimitMessage(rule),
     limit: rule.limit,
     used: Math.min(recentJobs.length, rule.limit),
     windowMs: rule.windowMs,
@@ -806,10 +1486,15 @@ async function assertIpGenerationLimit(ip) {
   const rule = generationLimitRuleForIp(normalizedIp);
   if (!rule?.limit) return;
 
-  const recentJobs = await listIpGenerationJobs(normalizedIp, {
-    sinceMs: Date.now() - rule.windowMs,
-    limit: rule.limit + 10,
-  });
+  const sinceMs = Date.now() - rule.windowMs;
+  const [activeJobs, deletedAccountUsage] = await Promise.all([
+    listIpGenerationJobs(normalizedIp, {
+      sinceMs,
+      limit: rule.limit + 10,
+    }),
+    listDeletedAccountIpUsage(normalizedIp, { sinceMs }),
+  ]);
+  const recentJobs = [...activeJobs, ...deletedAccountUsage];
   if (recentJobs.length < rule.limit) return;
 
   throw httpError(
@@ -819,23 +1504,50 @@ async function assertIpGenerationLimit(ip) {
   );
 }
 
-async function assertDailyGenerationLimit(order = {}) {
+async function assertDailyGenerationLimit(order = {}, generationSession = null) {
   const email = normalizeEmail(order.email);
   if (!email) return;
-  const rule = generationLimitRuleForEmail(email);
+  const authenticated = Boolean(generationSession);
+  if (authenticated && normalizeEmail(generationSession.email) !== email) {
+    throw httpError(429, 'Войдите с той же почтой, которую указали в конструкторе.', {
+      limitExceeded: true,
+      code: 'generation_email_mismatch',
+      authRequired: true,
+      authenticated: false,
+      authenticatedLimit: DAILY_FREE_GENERATION_LIMIT,
+      remainingAfterLogin: DAILY_FREE_GENERATION_LIMIT,
+      limit: GUEST_FREE_GENERATION_LIMIT,
+      used: 0,
+      windowMs: DAILY_FREE_GENERATION_WINDOW_MS,
+      periodLabel: 'за 48 часов',
+      periodScopeLabel: 'за последние 48 часов',
+    });
+  }
+  const hasOverride = CUSTOMER_FREE_GENERATION_LIMIT_OVERRIDES.has(email);
+  const rule = generationLimitRuleForEmail(email, authenticated);
   if (!rule.limit) return;
 
-  const recentJobs = await listCustomerGenerationJobs(email, {
-    sinceMs: Date.now() - rule.windowMs,
-    includeTitle: false,
-    limit: rule.limit + 10,
-  });
+  const sinceMs = Date.now() - rule.windowMs;
+  const [customerJobs, manualUsage, deletedAccountUsage] = await Promise.all([
+    listCustomerGenerationJobs(email, {
+      sinceMs,
+      includeTitle: false,
+      limit: rule.limit + 10,
+    }),
+    listGenerationUsageOverrides(email, { sinceMs }),
+    listDeletedAccountGenerationUsage(email, { sinceMs }),
+  ]);
+  const recentJobs = [...customerJobs, ...manualUsage, ...deletedAccountUsage]
+    .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
   if (recentJobs.length < rule.limit) return;
 
   throw httpError(
     429,
     'Daily free generation limit reached',
-    await buildGenerationLimitPayload(email, recentJobs, rule),
+    await buildGenerationLimitPayload(email, recentJobs, rule, {
+      authenticated,
+      authRequired: !authenticated && !hasOverride && recentJobs.length < DAILY_FREE_GENERATION_LIMIT,
+    }),
   );
 }
 
@@ -1057,7 +1769,6 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   const summary = summarizeOrder(order);
   const title = status.preview?.title || status.artifacts?.fullText?.title || '';
   const hardcover = hardcoverArtifactForNotification(status);
-  const previewPdfUrl = hardcover ? '' : publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printPdfUrl = hardcover
     ? publicUrl(hardcover.artifact?.file?.url)
     : publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
@@ -1074,8 +1785,7 @@ function telegramMessageForJob(eventType, status, orderEnvelope = {}) {
   if (title) lines.push(`title: ${title}`);
   const artifacts = artifactStatusLine(status.artifacts, hardcover);
   if (artifacts) lines.push(artifacts);
-  if (previewPdfUrl) lines.push(`preview PDF: ${previewPdfUrl}`);
-  if (printPdfUrl && printPdfUrl !== previewPdfUrl) lines.push(`print PDF: ${printPdfUrl}`);
+  if (printPdfUrl) lines.push(`PDF: ${printPdfUrl}`);
   if (status.error?.message) lines.push(`error: ${status.error.message}`);
   lines.push(`admin: https://fairyteller.ru/api/fairyteller/jobs/${status.jobId}`);
   return lines.join('\n');
@@ -1158,6 +1868,30 @@ function paymentAmountLine(amount) {
   return [value, currency].filter(Boolean).join(' ');
 }
 
+function normalizePrintProduct(value) {
+  const product = String(value || 'softcover').trim();
+  if (!Object.hasOwn(PRINT_PRODUCT_OPTIONS, product)) {
+    throw httpError(400, 'Invalid print product');
+  }
+  return product;
+}
+
+function paymentProductFromMetadata(metadata = {}, fallback = 'softcover') {
+  try {
+    return normalizePrintProduct(metadata.printProduct || fallback);
+  } catch {
+    return normalizePrintProduct(fallback);
+  }
+}
+
+function printProductAmount(product) {
+  const amount = Number(PRINT_PRODUCT_OPTIONS[product]?.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw httpError(500, 'Print product price is invalid');
+  }
+  return amount.toFixed(2);
+}
+
 function paymentSuccessTelegramMessage(jobId, status = {}, payment = {}, delivery = {}) {
   const title = status.artifacts?.fullText?.title || status.preview?.title || '';
   const paidAt = payment.paidAt || nowIso();
@@ -1168,6 +1902,8 @@ function paymentSuccessTelegramMessage(jobId, status = {}, payment = {}, deliver
   ];
   const amount = paymentAmountLine(payment.amount);
   if (amount) lines.push(`amount: ${amount}`);
+  const product = paymentProductFromMetadata(payment, 'softcover');
+  lines.push(`product: ${PRINT_PRODUCT_OPTIONS[product].label}`);
   lines.push(`paidAt: ${paidAt}`);
   if (payment.provider) lines.push(`provider: ${payment.provider}`);
   if (payment.paymentId) lines.push(`paymentId: ${payment.paymentId}`);
@@ -1215,6 +1951,41 @@ function daysFromNowIso(days) {
 
 function paymentPath(jobId) {
   return join(jobDir(jobId), 'payment.json');
+}
+
+function makeManualPaymentOrderId() {
+  return `manual_${Date.now()}_${randomBytes(8).toString('hex')}`;
+}
+
+function assertSafeManualPaymentOrderId(orderId) {
+  if (!/^manual_[a-zA-Z0-9_-]{12,100}$/.test(orderId)) {
+    throw httpError(400, 'Invalid manual payment order');
+  }
+  return orderId;
+}
+
+function manualPaymentPath(orderId) {
+  const safeOrderId = assertSafeManualPaymentOrderId(orderId);
+  const root = resolve(DATA_DIR, 'manual-payments');
+  const path = resolve(root, `${safeOrderId}.json`);
+  if (!path.startsWith(`${root}/`)) {
+    throw httpError(400, 'Invalid manual payment path');
+  }
+  return path;
+}
+
+async function readManualPayment(orderId) {
+  return await readJsonFile(manualPaymentPath(orderId), {});
+}
+
+async function writeManualPayment(orderId, payment) {
+  const path = manualPaymentPath(orderId);
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writeJsonAtomic(path, {
+    ...payment,
+    manualOrderId: assertSafeManualPaymentOrderId(orderId),
+    updatedAt: nowIso(),
+  });
 }
 
 async function readPayment(jobId) {
@@ -1667,6 +2438,14 @@ async function createChatMessage(req) {
 async function notifyPrintPaymentPageView(req) {
   const body = await readJsonBody(req);
   const pdfUrl = normalizePublicPdfUrl(body.pdfUrl || body.pdf || '');
+  const jobId = /^ft_[a-zA-Z0-9_-]{8,80}$/.test(String(body.jobId || '')) ? String(body.jobId) : '';
+  if (jobId) {
+    await recordCrmEventSafe({
+      type: 'checkout.page_viewed',
+      jobId,
+      attribution: crmAttributionFromRequest(req, body),
+    });
+  }
   const lines = ['Fairyteller: пользователь перешел на страницу оплаты'];
   if (pdfUrl) lines.push(`pdf: ${pdfUrl}`);
   const referrer = normalizeShortText(body.referrer || req.headers.referer || '', 500);
@@ -1773,7 +2552,7 @@ async function listGeneratedBooks() {
         return null;
       }
 
-      const fileNames = ['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf'];
+      const fileNames = ['book.pdf'];
       const filePairs = await Promise.all(fileNames.map(async (fileName) => {
         const info = await optionalFileInfo(join(dir, 'files', fileName));
         if (!info) return null;
@@ -1931,6 +2710,7 @@ async function getAdminJobDetails(jobId) {
 
 function renderAdminTabs(active = 'books') {
   const links = [
+    ['dashboard', ADMIN_DASHBOARD_PATH, 'Дашборд'],
     ['books', ADMIN_BOOKS_PATH, 'PDF-сказки'],
     ['jobs', ADMIN_JOBS_PATH, 'Заявки'],
     ['storage', ADMIN_STORAGE_PATH, 'Файлы'],
@@ -2552,7 +3332,7 @@ function renderBooksPage(books, options = {}) {
       <h1>PDF-сказки</h1>
       <p>${books.length ? `Найдено PDF-книг: ${books.length}` : 'Пока нет готовых PDF-книг'}</p>
     </div>
-    ${showLogout ? `<div class="actions"><a class="logout" href="${ADMIN_JOBS_PATH}">Заявки</a><a class="logout" href="${ADMIN_STORAGE_PATH}">Файлы</a><a class="logout" href="${ADMIN_LEADS_PATH}">Email-база</a><a class="logout" href="${ADMIN_MAIL_PATH}">Письмо</a><a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
+    ${showLogout ? `<div class="actions">${renderAdminTabs('books')}<a class="logout" href="${ADMIN_BOOKS_PATH}?logout=1">Выйти</a></div>` : ''}
   </header>
   <main>
     ${books.length ? `<table>
@@ -2831,10 +3611,11 @@ async function getAdminBookText(jobId) {
   if (!fullText?.text || !Array.isArray(fullText.text.chapters)) {
     throw httpError(404, 'Full text artifact not found');
   }
-  let [status, files, renderArtifact] = await Promise.all([
+  let [status, files, renderArtifact, order] = await Promise.all([
     readJsonFile(join(dir, 'status.json'), {}),
     getJobPdfFiles(jobId),
     readJsonFile(join(dir, 'artifacts', 'render.json'), null),
+    readJsonFile(join(dir, 'order.json'), {}),
   ]);
   const render = status.artifacts?.render;
   const previousReady = readyRenderSnapshot(renderArtifact?.render || renderArtifact);
@@ -2858,12 +3639,12 @@ async function getAdminBookText(jobId) {
     const info = await optionalFileInfo(join(dir, 'files', image.fileName || ''));
     return info ? { ...image, url: withUrlParam(adminFileUrl(jobId, image.fileName), 'v', info.updatedAt || String(Date.now())) } : null;
   }));
-  return { dir, fullText, status, files, images, additionalImages: additionalImages.filter(Boolean) };
+  return { dir, fullText, status, files, images, order, additionalImages: additionalImages.filter(Boolean) };
 }
 
 async function getJobPdfFiles(jobId) {
   const dir = jobDir(jobId);
-  const filePairs = await Promise.all(['preview.pdf', 'book.pdf', 'cover.pdf', 'interior.pdf', 'hardcover-20x20.pdf', 'hardcover-20x20-12pt.pdf'].map(async (fileName) => {
+  const filePairs = await Promise.all(['book.pdf', 'hardcover-20x20.pdf', 'hardcover-20x20-12pt.pdf'].map(async (fileName) => {
     const info = await optionalFileInfo(join(dir, 'files', fileName));
     if (!info) return null;
     return [
@@ -2916,20 +3697,39 @@ function currentHardcoverCoverTemplate(fullText) {
   return HARDCOVER_COVER_TEMPLATE_VALUES.has(template) ? template : 'bitten';
 }
 
+function normalizeCoverStyle(value, label = 'Cover style') {
+  const style = String(value || 'standard').trim();
+  if (COVER_STYLE_VALUES.has(style)) return style;
+  throw httpError(400, `${label} is invalid`);
+}
+
+function currentCoverStyle(fullText, order = {}) {
+  const style = String(fullText?.text?.printLayout?.coverStyle || '').trim();
+  if (COVER_STYLE_VALUES.has(style)) return style;
+  return order?.world === 'cyberpunk_dream' ? 'cyberpunk' : 'standard';
+}
+
 function normalizePagePaperStyle(value, label = 'Page paper style') {
   const style = String(value || 'cream-speckle').trim();
   if (PAGE_PAPER_STYLE_VALUES.has(style)) return style;
   throw httpError(400, `${label} is invalid`);
 }
 
-function currentPagePaperStyle(fullText) {
-  const style = String(fullText?.text?.printLayout?.pagePaperStyle || 'cream-speckle').trim();
-  return PAGE_PAPER_STYLE_VALUES.has(style) ? style : 'cream-speckle';
+function currentPagePaperStyle(fullText, coverStyle = 'standard') {
+  const style = String(fullText?.text?.printLayout?.pagePaperStyle || '').trim();
+  if (PAGE_PAPER_STYLE_VALUES.has(style)) return style;
+  return coverStyle === 'cyberpunk' ? 'cyberpunk-speckle' : 'cream-speckle';
 }
 
 function renderHardcoverCoverTemplateOptions(selectedTemplate) {
   return HARDCOVER_COVER_TEMPLATE_OPTIONS.map((option) => (
     `<option value="${escapeHtml(option.value)}"${option.value === selectedTemplate ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
+  )).join('');
+}
+
+function renderCoverStyleOptions(selectedStyle) {
+  return COVER_STYLE_OPTIONS.map((option) => (
+    `<option value="${escapeHtml(option.value)}"${option.value === selectedStyle ? ' selected' : ''}>${escapeHtml(option.label)}</option>`
   )).join('');
 }
 
@@ -2983,6 +3783,7 @@ function readyRenderSnapshot(render = null) {
   return {
     status: 'ready',
     generatedAt: source.generatedAt || '',
+    coverColor: source.coverColor || null,
     preflight: source.preflight || null,
     files: source.files || null,
   };
@@ -3038,8 +3839,9 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
   const lastRender = previousReadyRender?.generatedAt || '';
   const storyFontMode = currentStoryFontMode(fullText);
   const storyTextAlign = currentStoryTextAlign(fullText);
+  const coverStyle = currentCoverStyle(fullText, options.order);
   const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
-  const pagePaperStyle = currentPagePaperStyle(fullText);
+  const pagePaperStyle = currentPagePaperStyle(fullText, coverStyle);
   const renderedStoryFont = renderStoryFontSummary(previousReadyRender?.preflight?.storyFont);
   const renderedPaginationChapters = previousReadyRender?.preflight?.storyFont?.pagination?.chapters || [];
   const hasReadyHardcoverRender = hardcoverRender.status === 'ready' || hardcover12Render.status === 'ready';
@@ -3155,6 +3957,7 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       <p>${escapeHtml(bible.bookTitle || preview.title || jobId)} · ${escapeHtml(jobId)}</p>
     </div>
     <div class="top-links">
+      <a href="${ADMIN_DASHBOARD_PATH}">Дашборд</a>
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
@@ -3203,14 +4006,21 @@ function renderBookTextEditorPage(jobId, fullText, status = {}, options = {}) {
       </div>
       <div class="grid two">
         <div>
-          <label for="hardcoverCoverTemplate">Оформление обложки 20×20</label>
-          <select id="hardcoverCoverTemplate" name="hardcoverCoverTemplate">${renderHardcoverCoverTemplateOptions(hardcoverCoverTemplate)}</select>
-          <p class="field-hint">Выбирается только для сборок «твёрдая 20×20» и «твёрдая 20×20 · 12 pt». Обычный PDF 13×13 не меняется.</p>
+          <label for="coverStyle">Оформление обложки</label>
+          <select id="coverStyle" name="coverStyle">${renderCoverStyleOptions(coverStyle)}</select>
+          <p class="field-hint">Применяется ко всем PDF книги. Для историй в мире «Киберпанк» этот вариант выбирается автоматически; его можно поменять вручную.</p>
         </div>
+        <div>
+          <label for="hardcoverCoverTemplate">Макет твёрдой обложки 20×20</label>
+          <select id="hardcoverCoverTemplate" name="hardcoverCoverTemplate">${renderHardcoverCoverTemplateOptions(hardcoverCoverTemplate)}</select>
+          <p class="field-hint">«Покусанная» и «Белая» используются только для стандартного оформления. У киберпанка свой типографский макет.</p>
+        </div>
+      </div>
+      <div class="grid two">
         <div>
           <label for="pagePaperStyle">Фон страниц</label>
           <select id="pagePaperStyle" name="pagePaperStyle">${renderPagePaperStyleOptions(pagePaperStyle)}</select>
-          <p class="field-hint">Белый — без текстуры. Кремовый — фон #fff4e6 с прежней частотой крапинок. Применяется ко всем версиям книги; полноформатные иллюстрации не меняются.</p>
+          <p class="field-hint">Серый киберпанк — фон #eae8df с той же ритмичной крапинкой. Для киберпанк-историй выбирается автоматически; полноформатные иллюстрации не меняются.</p>
         </div>
       </div>
       ${renderError ? `<div class="render-warning"><strong>Последняя пересборка PDF не удалась.</strong>${escapeHtml(renderError)}${lastRender ? `<br>Ссылки ниже ведут к предыдущему успешному PDF от ${escapeHtml(formatDateTime(lastRender) || lastRender)}.` : ''}</div>` : ''}
@@ -3333,6 +4143,9 @@ function buildEditedFullText(current, params) {
   const hardcoverCoverTemplate = normalizeHardcoverCoverTemplate(
     params.has('hardcoverCoverTemplate') ? params.get('hardcoverCoverTemplate') : next.text.printLayout?.hardcoverCoverTemplate,
   );
+  const coverStyle = normalizeCoverStyle(
+    params.has('coverStyle') ? params.get('coverStyle') : next.text.printLayout?.coverStyle,
+  );
   const pagePaperStyle = normalizePagePaperStyle(
     params.has('pagePaperStyle') ? params.get('pagePaperStyle') : next.text.printLayout?.pagePaperStyle,
   );
@@ -3348,6 +4161,7 @@ function buildEditedFullText(current, params) {
     storyFontMode,
     storyTextAlign,
     hardcoverCoverTemplate,
+    coverStyle,
     pagePaperStyle,
   };
 
@@ -3508,7 +4322,7 @@ function upsertImageRecord(records, slotDef, replacement) {
     mimeType: replacement.mimeType,
     bytes: replacement.bytes,
     editedAt: replacement.editedAt,
-    source: 'admin_upload',
+    source: replacement.source || 'admin_upload',
   };
   if (slotDef.chapter) next.chapter = slotDef.chapter;
   if (index >= 0) list[index] = next;
@@ -3552,7 +4366,7 @@ async function updateStatusAfterImageEdit(jobId, updates) {
         mimeType: update.mimeType,
         bytes: update.bytes,
         editedAt,
-        source: 'admin_upload',
+        source: update.source || 'admin_upload',
       };
       continue;
     }
@@ -3690,7 +4504,7 @@ function redirectAdmin(res, location) {
 }
 
 async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
-  const { fullText, status, files, images, additionalImages } = await getAdminBookText(jobId);
+  const { fullText, status, files, images, order, additionalImages } = await getAdminBookText(jobId);
   let notice = options.notice || '';
   if (!notice && url.searchParams.get('renderQueued') === '1') {
     notice = 'Изменения сохранены. Пересборка PDF запущена, файлы обновятся примерно через минуту.';
@@ -3718,6 +4532,7 @@ async function sendAdminBookEditor(req, res, jobId, url, options = {}) {
     notice,
     files,
     images,
+    order,
     additionalImages,
   }));
 }
@@ -3799,6 +4614,7 @@ function renderLeadsPage(leads) {
       <p>${leads.contacts.length ? `Уникальных email: ${leads.contacts.length}; заявок с email: ${leads.totalEvents}` : 'Пока нет email из заявок'}</p>
     </div>
     <div class="actions">
+      <a href="${ADMIN_DASHBOARD_PATH}">Дашборд</a>
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
@@ -4276,6 +5092,7 @@ function renderAdminMailPage({ form = new URLSearchParams(), notice = '', error 
       <div class="follow-up-stat">Отписались от follow-up: ${escapeHtml(String(followUpStats.unsubscribed || 0))}</div>
     </div>
     <div class="actions">
+      <a href="${ADMIN_DASHBOARD_PATH}">Дашборд</a>
       <a href="${ADMIN_BOOKS_PATH}">PDF-сказки</a>
       <a href="${ADMIN_JOBS_PATH}">Заявки</a>
       <a href="${ADMIN_STORAGE_PATH}">Файлы</a>
@@ -5170,7 +5987,6 @@ function customerEmailPayload(status, orderEnvelope = {}) {
   if (!email) return null;
 
   const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
-  const previewUrl = publicUrl(status.artifacts?.previewPdf?.url || status.artifacts?.render?.files?.preview?.url);
   const printUrl = publicUrl(status.artifacts?.bookPdf?.url || status.artifacts?.render?.files?.book?.url);
   const buyPrintUrl = `${PUBLIC_BASE_URL}/pay?jobId=${encodeURIComponent(status.jobId)}${printUrl ? `&pdf=${encodeURIComponent(printUrl)}` : ''}`;
   const primaryBookUrl = `${PUBLIC_BASE_URL}/book/${encodeURIComponent(status.jobId)}`;
@@ -5510,24 +6326,20 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
   if (!email) return null;
 
   const title = status.artifacts?.fullText?.title || status.preview?.title || 'ваша сказка';
-  const pdfUrl = withUrlParam(publicUrl(
-    status.artifacts?.previewPdf?.url
-      || status.artifacts?.render?.files?.preview?.url
-      || status.artifacts?.bookPdf?.url
-      || status.artifacts?.render?.files?.book?.url,
-  ), 'access', payment.accessToken || '');
-  const fallbackUrl = `${PUBLIC_BASE_URL}/book/${status.jobId}?access=${encodeURIComponent(payment.accessToken || '')}`;
-  const accessUrl = pdfUrl || fallbackUrl;
+  const accessUrl = `${PUBLIC_BASE_URL}/book/${status.jobId}?access=${encodeURIComponent(payment.accessToken || '')}`;
   const telegramUrl = 'https://t.me/nikita0shch';
   const siteUrl = PUBLIC_BASE_URL;
   const deliveryUrl = `${PUBLIC_BASE_URL}/delivery/`;
+  const product = paymentProductFromMetadata(payment, 'softcover');
+  const productLabel = PRINT_PRODUCT_OPTIONS[product].label;
   const subject = 'Ваша история готова — спасибо за заказ';
   const text = [
     'Почти готово!',
     '',
     `Спасибо за покупку. Персональная книга "${title}" готова — полностью историю вы можете прочитать по ссылке.`,
+    `Вы выбрали: ${productLabel}.`,
     '',
-    `Открыть PDF-книгу: ${accessUrl}`,
+    `Открыть книгу: ${accessUrl}`,
     '',
     `Если у вас есть замечания по сюжету или иллюстрациям — свяжитесь с нами в Telegram (${telegramUrl}) или через форму на сайте (${siteUrl}), мы оперативно внесем необходимые правки или пришлем вам новую историю. Если вам не понравится и она — мы вернем оплату за заказ.`,
     '',
@@ -5559,11 +6371,12 @@ function purchaseAccessEmailPayload(status, orderEnvelope = {}, payment = {}) {
             <tr>
               <td style="padding:30px 32px 10px;">
                 <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Спасибо за покупку. Персональная книга «${escapeHtml(title)}» готова — полностью историю вы можете прочитать по ссылке.</p>
+                <p style="margin:0 0 16px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:26px; color:#000000;">Вы выбрали: <strong>${escapeHtml(productLabel)}</strong>.</p>
               </td>
             </tr>
             <tr>
               <td style="padding:8px 32px 26px; text-align:center;">
-                ${renderEmailButton('Открыть PDF-книгу', accessUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
+                ${renderEmailButton('Открыть книгу', accessUrl, { background: '#E89C31', color: '#000000', border: '#000000', padding: '17px 30px' })}
               </td>
             </tr>
             <tr>
@@ -5622,6 +6435,105 @@ async function ensurePaidAccess(jobId, currentPayment = null) {
   };
 }
 
+function manualPaymentTelegramMessage(payment = {}) {
+  const lines = [
+    'Fairyteller: успешная оплата без номера книги',
+    `manualOrder: ${payment.manualOrderId || '-'}`,
+  ];
+  const amount = paymentAmountLine(payment.amount);
+  if (amount) lines.push(`amount: ${amount}`);
+  const product = paymentProductFromMetadata(payment, 'softcover');
+  lines.push(`product: ${PRINT_PRODUCT_OPTIONS[product].label}`);
+  lines.push(`paidAt: ${payment.paidAt || nowIso()}`);
+  if (payment.paymentId) lines.push(`paymentId: ${payment.paymentId}`);
+  lines.push('');
+  lines.push('Данные заказа:');
+  lines.push(`email: ${normalizeShortText(payment.email, 180) || '-'}`);
+  lines.push(`phone: ${normalizeShortText(payment.phone, 80) || '-'}`);
+  lines.push(`messengers: ${normalizeShortText(payment.contactChannels, 80) || '-'}`);
+  lines.push(`recipient: ${normalizeShortText(payment.customerName, 180) || '-'}`);
+  lines.push(`address: ${normalizeShortText(payment.customerAddress, 360) || '-'}`);
+  lines.push(`pdf: ${normalizePublicPdfUrl(payment.pdfUrl) || '-'}`);
+  lines.push('');
+  lines.push('Книга не привязана автоматически — нужно связаться с покупателем и сопоставить заказ вручную.');
+  return lines.join('\n');
+}
+
+async function createManualCheckout(checkout = {}) {
+  if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+    throw httpError(503, 'YooKassa is not configured');
+  }
+  const email = normalizeEmail(checkout.email);
+  const phone = normalizeShortText(checkout.phone, 64);
+  const customerName = normalizeShortText(checkout.customerName || checkout.custName, 180);
+  const customerAddress = normalizeShortText(checkout.customerAddress || checkout.custAddr, 320);
+  if (!email || !phone || !customerName || !customerAddress) {
+    throw httpError(400, 'Email, phone, recipient, and delivery address are required');
+  }
+  const contactChannels = [
+    checkout.contactWhatsApp === true ? 'WhatsApp' : '',
+    checkout.contactTelegram === true ? 'Telegram' : '',
+    checkout.contactMax === true ? 'MAX' : '',
+  ].filter(Boolean).join(', ');
+  const pdfUrl = normalizePublicPdfUrl(checkout.pdfUrl);
+  const printProduct = normalizePrintProduct(checkout.printProduct);
+  const product = PRINT_PRODUCT_OPTIONS[printProduct];
+  const manualOrderId = makeManualPaymentOrderId();
+  const body = {
+    amount: { value: printProductAmount(printProduct), currency: 'RUB' },
+    confirmation: {
+      type: 'redirect',
+      return_url: `${PUBLIC_BASE_URL}/pay?status=success&manual=1&product=${encodeURIComponent(printProduct)}`,
+    },
+    capture: true,
+    description: `${product.label} — персональная книга`,
+    metadata: {
+      manualOrderId,
+      printProduct,
+      email,
+      phone,
+      contactChannels,
+      customerName,
+      customerAddress,
+      pdfUrl,
+    },
+  };
+  const response = await fetch('https://api.yookassa.ru/v3/payments', {
+    method: 'POST',
+    headers: {
+      authorization: yookassaAuthHeader(),
+      'content-type': 'application/json',
+      'idempotence-key': `ft-manual-checkout-${randomUUID()}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw httpError(502, payload.description || payload.message || 'YooKassa checkout failed');
+  }
+  const confirmationUrl = payload.confirmation?.confirmation_url;
+  if (!payload.id || !confirmationUrl) {
+    throw httpError(502, 'YooKassa did not return a confirmation URL');
+  }
+  await writeManualPayment(manualOrderId, {
+    status: 'pending',
+    provider: 'yookassa',
+    paymentId: payload.id,
+    confirmationUrl,
+    amount: body.amount,
+    printProduct,
+    printProductLabel: product.label,
+    email,
+    phone,
+    contactChannels,
+    customerName,
+    customerAddress,
+    pdfUrl,
+    createdAt: nowIso(),
+  });
+  return { manualOrderId, paymentId: payload.id, confirmationUrl };
+}
+
 async function createCheckout(jobId, checkout = {}) {
   if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
     throw httpError(503, 'YooKassa is not configured');
@@ -5653,23 +6565,32 @@ async function createCheckout(jobId, checkout = {}) {
   const customerName = normalizeShortText(checkout.customerName || checkout.custName, 180);
   const customerAddress = normalizeShortText(checkout.customerAddress || checkout.custAddr, 320);
   const pdfUrl = normalizeShortText(checkout.pdfUrl, 500);
+  const printProduct = normalizePrintProduct(checkout.printProduct);
+  const product = PRINT_PRODUCT_OPTIONS[printProduct];
+  const crmAttribution = crmAttributionFromRequest(null, checkout.crmAttribution || checkout);
   const idempotenceKey = `ft-checkout-${randomUUID()}`;
   const body = {
-    amount: { value: Number(YOOKASSA_AMOUNT_RUB).toFixed(2), currency: 'RUB' },
+    amount: { value: printProductAmount(printProduct), currency: 'RUB' },
     confirmation: {
       type: 'redirect',
-      return_url: `${PUBLIC_BASE_URL}/pay?status=success&jobId=${encodeURIComponent(jobId)}`,
+      return_url: `${PUBLIC_BASE_URL}/pay?status=success&jobId=${encodeURIComponent(jobId)}&product=${encodeURIComponent(printProduct)}`,
     },
     capture: true,
-    description: `Персональная сказка — ${jobId}`,
+    description: `${product.label} — персональная сказка ${jobId}`,
     metadata: {
       jobId,
+      printProduct,
       email,
       phone,
       contactChannels,
       customerName,
       customerAddress,
       pdfUrl,
+      ...(crmAttribution.campaignId ? { campaignId: crmAttribution.campaignId } : {}),
+      ...(crmAttribution.variant ? { campaignVariant: crmAttribution.variant } : {}),
+      ...(crmAttribution.recipientId ? { recipientId: crmAttribution.recipientId } : {}),
+      ...(crmAttribution.source ? { utmSource: crmAttribution.source } : {}),
+      ...(crmAttribution.medium ? { utmMedium: crmAttribution.medium } : {}),
     },
   };
   const response = await fetch('https://api.yookassa.ru/v3/payments', {
@@ -5695,16 +6616,26 @@ async function createCheckout(jobId, checkout = {}) {
     paymentId: payload.id,
     confirmationUrl,
     amount: body.amount,
+    printProduct,
+    printProductLabel: product.label,
     email,
     phone,
     contactChannels,
     customerName,
     customerAddress,
     pdfUrl,
+    crmAttribution,
     createdAt: nowIso(),
   };
   await writePayment(jobId, payment);
-  await appendEvent(dir, { type: 'job.payment.checkout.created', provider: 'yookassa', paymentId: payload.id });
+  await appendEvent(dir, { type: 'job.payment.checkout.created', provider: 'yookassa', paymentId: payload.id, printProduct });
+  await recordCrmEventSafe({
+    type: 'checkout.started',
+    jobId,
+    email,
+    attribution: crmAttribution,
+    details: { printProduct, provider: 'yookassa' },
+  });
   return { paymentId: payload.id, confirmationUrl };
 }
 
@@ -5722,12 +6653,64 @@ async function fetchYookassaPayment(paymentId) {
   return payload;
 }
 
+async function handleManualYookassaWebhook(paymentId, manualOrderId, notification) {
+  const safeOrderId = assertSafeManualPaymentOrderId(manualOrderId);
+  const actual = await fetchYookassaPayment(paymentId);
+  if (actual.id !== paymentId || actual.metadata?.manualOrderId !== safeOrderId) {
+    throw httpError(400, 'Manual payment metadata mismatch');
+  }
+  const current = await readManualPayment(safeOrderId);
+  if (!current.paymentId || current.paymentId !== paymentId) {
+    throw httpError(404, 'Manual payment not found');
+  }
+  if (notification.event === 'payment.succeeded' && actual.status === 'succeeded' && actual.paid === true) {
+    if (current.status === 'paid') return { ok: true, status: 'paid', duplicate: true };
+    const payment = {
+      ...current,
+      status: 'paid',
+      provider: 'yookassa',
+      paymentId,
+      paidAt: actual.captured_at || nowIso(),
+      amount: actual.amount || current.amount || null,
+      printProduct: paymentProductFromMetadata(actual.metadata, current.printProduct || 'softcover'),
+      printProductLabel: PRINT_PRODUCT_OPTIONS[paymentProductFromMetadata(actual.metadata, current.printProduct || 'softcover')].label,
+      email: actual.metadata?.email || current.email || '',
+      phone: actual.metadata?.phone || current.phone || '',
+      contactChannels: actual.metadata?.contactChannels || current.contactChannels || '',
+      customerName: actual.metadata?.customerName || current.customerName || '',
+      customerAddress: actual.metadata?.customerAddress || current.customerAddress || '',
+      pdfUrl: actual.metadata?.pdfUrl || current.pdfUrl || '',
+    };
+    const telegram = await sendPaymentTelegramMessage(manualPaymentTelegramMessage(payment));
+    await writeManualPayment(safeOrderId, {
+      ...payment,
+      telegramStatus: telegram?.ok ? 'sent' : 'failed',
+    });
+    return { ok: true, status: 'paid' };
+  }
+  if (notification.event === 'payment.canceled' || actual.status === 'canceled') {
+    await writeManualPayment(safeOrderId, {
+      ...current,
+      status: 'canceled',
+      provider: 'yookassa',
+      paymentId,
+      canceledAt: actual.canceled_at || nowIso(),
+      cancellationDetails: actual.cancellation_details || null,
+    });
+    return { ok: true, status: 'canceled' };
+  }
+  return { ok: true, ignored: true, event: notification.event, status: actual.status };
+}
+
 async function handleYookassaWebhook(req) {
   const notification = await readJsonBody(req);
   const object = notification.object || {};
   const paymentId = object.id;
   const jobId = object.metadata?.jobId;
-  if (!paymentId || !jobId) return { ignored: true, reason: 'missing_payment_or_job' };
+  const manualOrderId = object.metadata?.manualOrderId;
+  if (!paymentId) return { ignored: true, reason: 'missing_payment' };
+  if (manualOrderId) return await handleManualYookassaWebhook(paymentId, manualOrderId, notification);
+  if (!jobId) return { ignored: true, reason: 'missing_job' };
   assertSafeJobId(jobId);
 
   const actual = await fetchYookassaPayment(paymentId);
@@ -5750,6 +6733,8 @@ async function handleYookassaWebhook(req) {
       paymentId,
       paidAt: actual.captured_at || nowIso(),
       amount: actual.amount || current.amount || null,
+      printProduct: paymentProductFromMetadata(actual.metadata, current.printProduct || 'softcover'),
+      printProductLabel: PRINT_PRODUCT_OPTIONS[paymentProductFromMetadata(actual.metadata, current.printProduct || 'softcover')].label,
       email: actual.metadata?.email || current.email || '',
       phone: actual.metadata?.phone || current.phone || '',
       contactChannels: actual.metadata?.contactChannels || current.contactChannels || '',
@@ -5766,11 +6751,37 @@ async function handleYookassaWebhook(req) {
     await writePayment(jobId, nextPayment);
     const telegramStatus = await notifyPaymentSucceeded(jobId, status, nextPayment, delivery);
     await appendEvent(dir, { type: 'job.payment.succeeded', provider: 'yookassa', paymentId, emailStatus: delivery.status });
+    await recordCrmEventSafe({
+      type: 'payment.succeeded',
+      jobId,
+      email: nextPayment.email,
+      attribution: current.crmAttribution || {
+        campaignId: actual.metadata?.campaignId,
+        variant: actual.metadata?.campaignVariant,
+        recipientId: actual.metadata?.recipientId,
+        source: actual.metadata?.utmSource,
+        medium: actual.metadata?.utmMedium,
+      },
+      details: { printProduct: nextPayment.printProduct, provider: 'yookassa' },
+    });
     await appendEvent(dir, { type: 'job.payment.telegram.delivery', provider: 'telegram', status: telegramStatus });
     return { ok: true, status: 'paid' };
   }
 
   if (notification.event === 'payment.canceled' || actual.status === 'canceled') {
+    if (
+      current.status === 'paid'
+      || (current.paymentId && current.paymentId !== paymentId)
+    ) {
+      await appendEvent(dir, {
+        type: 'job.payment.canceled.ignored',
+        provider: 'yookassa',
+        paymentId,
+        reason: current.status === 'paid' ? 'job_already_paid' : 'stale_payment_attempt',
+        activePaymentId: current.paymentId || null,
+      });
+      return { ok: true, status: current.status || 'ignored', ignored: true, reason: 'stale_payment_attempt' };
+    }
     await writePayment(jobId, {
       ...current,
       status: 'canceled',
@@ -5962,6 +6973,9 @@ async function createJob(body, options = {}) {
     throw httpError(400, 'Missing order object');
   }
   const order = { ...body.order };
+  const generationSession = body.customerGenerationAccessToken
+    ? verifyGenerationAccessToken(body.customerGenerationAccessToken)
+    : null;
   const clientIp = normalizeLimitClientIp(order.clientIp || body.clientIp || options.clientIp);
   if (clientIp) order.clientIp = clientIp;
 
@@ -5969,7 +6983,10 @@ async function createJob(body, options = {}) {
     await assertIpGenerationLimit(clientIp);
 
     return await withGenerationLimitLock(order.email, async () => {
-      await assertDailyGenerationLimit(order);
+      await assertDailyGenerationLimit(order, generationSession);
+
+      const firstGeneration = Boolean(normalizeEmail(order.email))
+        && !(await hasCustomerGenerationJob(order.email));
 
       const jobId = assertSafeJobId(body.jobId || makeJobId());
       const dir = jobDir(jobId);
@@ -5996,6 +7013,7 @@ async function createJob(body, options = {}) {
         preview: null,
         artifacts: {},
         error: null,
+        firstGeneration,
       };
 
       await writeJsonAtomic(join(dir, 'order.json'), {
@@ -6028,6 +7046,7 @@ function sanitizePublicStatus(status, payment = null) {
     payment: sanitizePublicPayment(payment),
     paid: payment?.status === 'paid',
     error: status.error ? { message: status.error.message || 'Job failed' } : null,
+    firstGeneration: status.firstGeneration === true,
   };
 }
 
@@ -6230,6 +7249,28 @@ async function putJobFile(jobId, fileName, body) {
   await mkdir(filesDir, { recursive: true, mode: 0o700 });
   const path = join(filesDir, fileName);
   await writeFile(path, content, { mode: 0o600 });
+  const comicPreviewMatch = fileName.match(/^(comic-preview-(?:spread|page)-\d+-clean)\.(png|jpe?g|webp)$/i);
+  let webPreview = null;
+  if (comicPreviewMatch) {
+    const webFileName = `${comicPreviewMatch[1]}-web.webp`;
+    const webPath = join(filesDir, webFileName);
+    try {
+      await runCommand('ffmpeg', [
+        '-nostdin', '-loglevel', 'error', '-y', '-i', path,
+        '-vf', 'scale=1400:-2:force_original_aspect_ratio=decrease',
+        '-c:v', 'libwebp', '-quality', '76', '-compression_level', '4',
+        '-map_metadata', '-1', webPath,
+      ], { timeoutMs: 120_000 });
+      const webInfo = await stat(webPath);
+      webPreview = {
+        webFileName,
+        webUrl: `/api/fairyteller/jobs/${jobId}/files/${webFileName}`,
+        webBytes: webInfo.size,
+      };
+    } catch (error) {
+      console.warn(`Comic web preview conversion failed for ${jobId}/${fileName}: ${error?.message || error}`);
+    }
+  }
   await appendEvent(dir, {
     type: 'job.file.written',
     fileName,
@@ -6242,6 +7283,7 @@ async function putJobFile(jobId, fileName, body) {
     contentType: normalizeContentType(body.contentType),
     bytes: content.length,
     url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+    ...(webPreview || {}),
   };
 }
 
@@ -6274,11 +7316,847 @@ async function renderWithCurrentFileInfo(jobId, render) {
   return next;
 }
 
-const PAYWALL_SAMPLE_CACHE_VERSION = 'paywall-preview-chapter-breaks-v1';
-const PAYWALL_PREVIEW_PAGES_CACHE_VERSION = 'paywall-preview-pages-light-v1';
+const WEB_PREVIEW_CACHE_VERSION = 'book-web-preview-v2-hq';
+const WEB_PREVIEW_PAGES_DIR = 'preview-pages';
 const PAYWALL_FRONT_COVER_PAGES = 1;
 const PAYWALL_INTERIOR_FRONT_MATTER_PAGES = 3;
 const PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES = [4, 4, 6, 6, 5];
+const CUSTOMER_PAGE_EDITOR_VERSION = 1;
+const CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES = new Set();
+const CUSTOMER_IMAGE_EDITOR_ACTIVE_EDITS = new Set();
+const CUSTOMER_UNPAID_IMAGE_EDIT_LIMIT = 4;
+const CUSTOMER_IMAGE_EDIT_RESERVATION_TTL_MS = 10 * 60 * 1000;
+const CUSTOMER_COVER_COLOR_VALUES = new Set(['purple', 'dark-green', 'blue', 'yellow']);
+
+function customerCoverColor(fullText) {
+  const value = String(fullText?.text?.printLayout?.coverColor || '').trim();
+  return CUSTOMER_COVER_COLOR_VALUES.has(value) ? value : '';
+}
+
+function customerCoverColorNeedsRebuild(fullText, render) {
+  const selectedColor = customerCoverColor(fullText);
+  if (!selectedColor) return false;
+  const renderedColor = String(readyRenderSnapshot(render)?.coverColor || '').trim();
+  return renderedColor !== selectedColor;
+}
+
+function customerPageEditorPath(jobId) {
+  return join(jobDir(jobId), 'artifacts', 'customer-page-editor.json');
+}
+
+function customerImageEditHistoryPath(jobId) {
+  return join(jobDir(jobId), 'artifacts', 'customer-image-edits.json');
+}
+
+function customerImageEditUsagePath(jobId) {
+  return join(jobDir(jobId), 'artifacts', 'customer-image-edit-usage.json');
+}
+
+async function customerImageEditQuotaState(jobId, options = {}) {
+  const [payment, history, usage] = await Promise.all([
+    readPayment(jobId).catch(() => ({})),
+    readJsonFile(customerImageEditHistoryPath(jobId), { edits: [] }),
+    readJsonFile(customerImageEditUsagePath(jobId), { version: 1, entries: [] }),
+  ]);
+  const paid = payment?.status === 'paid';
+  const unlimited = paid || options.unlimited === true;
+  const edits = Array.isArray(history?.edits) ? history.edits : [];
+  const completedRequestIds = new Set(edits.map((edit) => String(edit?.requestId || '')).filter(Boolean));
+  const nowMs = Date.now();
+  let changed = false;
+  const entries = (Array.isArray(usage?.entries) ? usage.entries : []).map((entry) => {
+    if (entry?.status !== 'pending') return entry;
+    const requestId = String(entry.requestId || '');
+    if (requestId && completedRequestIds.has(requestId)) {
+      changed = true;
+      return { ...entry, status: 'succeeded', completedAt: entry.completedAt || nowIso() };
+    }
+    const startedMs = Date.parse(entry.startedAt || '');
+    if (!Number.isFinite(startedMs) || startedMs <= nowMs - CUSTOMER_IMAGE_EDIT_RESERVATION_TTL_MS) {
+      changed = true;
+      return { ...entry, status: 'failed', completedAt: entry.completedAt || nowIso(), reason: 'reservation_expired' };
+    }
+    return entry;
+  });
+  if (changed && options.persistCleanup) {
+    await writeJsonAtomic(customerImageEditUsagePath(jobId), {
+      version: 1,
+      entries,
+      updatedAt: nowIso(),
+    });
+  }
+  const used = edits.length;
+  const reserved = unlimited ? 0 : entries.filter((entry) => entry?.status === 'pending').length;
+  const remaining = unlimited ? null : Math.max(0, CUSTOMER_UNPAID_IMAGE_EDIT_LIMIT - used - reserved);
+  return {
+    limited: !unlimited,
+    paid,
+    limit: unlimited ? null : CUSTOMER_UNPAID_IMAGE_EDIT_LIMIT,
+    used,
+    reserved,
+    remaining,
+  };
+}
+
+async function reserveCustomerImageEdit(jobId, slot, options = {}) {
+  const quota = await customerImageEditQuotaState(jobId, { ...options, persistCleanup: true });
+  const requestId = randomBytes(16).toString('hex');
+  if (!quota.limited) return { requestId, limited: false, quota };
+  if (quota.remaining <= 0) {
+    throw httpError(403, 'Бесплатные правки закончились. Оплатите книгу, чтобы продолжить редактирование иллюстраций.', {
+      code: 'image_edit_limit_reached',
+      quota,
+    });
+  }
+  const usage = await readJsonFile(customerImageEditUsagePath(jobId), { version: 1, entries: [] });
+  const entries = Array.isArray(usage?.entries) ? usage.entries : [];
+  entries.push({
+    requestId,
+    slot,
+    status: 'pending',
+    startedAt: nowIso(),
+  });
+  await writeJsonAtomic(customerImageEditUsagePath(jobId), {
+    version: 1,
+    entries,
+    updatedAt: nowIso(),
+  });
+  return { requestId, limited: true, quota };
+}
+
+async function settleCustomerImageEditReservation(jobId, requestId, status, reason = '') {
+  const usage = await readJsonFile(customerImageEditUsagePath(jobId), { version: 1, entries: [] });
+  const entries = (Array.isArray(usage?.entries) ? usage.entries : []).map((entry) => (
+    entry?.requestId === requestId
+      ? {
+        ...entry,
+        status,
+        completedAt: nowIso(),
+        ...(reason ? { reason: normalizeShortText(reason, 180) } : {}),
+      }
+      : entry
+  ));
+  await writeJsonAtomic(customerImageEditUsagePath(jobId), {
+    version: 1,
+    entries,
+    updatedAt: nowIso(),
+  });
+}
+
+function customerPageEditorRevision(fullText) {
+  const bookTitle = String(fullText?.text?.bible?.bookTitle || fullText?.text?.preview?.title || '');
+  const coverColor = customerCoverColor(fullText);
+  const chapters = Array.isArray(fullText?.text?.chapters)
+    ? [...fullText.text.chapters]
+      .sort((left, right) => Number(left?.n || 0) - Number(right?.n || 0))
+      .map((chapter) => ({
+        n: Number(chapter?.n || 0),
+        title: String(chapter?.title || ''),
+        summary: String(chapter?.summary || ''),
+        blocks: editableChapterBlocks(chapter),
+      }))
+    : [];
+  return createHash('sha256').update(JSON.stringify({ bookTitle, coverColor, chapters })).digest('hex').slice(0, 20);
+}
+
+function customerPageEditorStoredMapIsCompatible(stored, fullText) {
+  if (Number(stored?.version) !== CUSTOMER_PAGE_EDITOR_VERSION || !Array.isArray(stored?.pages)) return false;
+  const chapters = new Map((fullText?.text?.chapters || []).map((chapter) => [Number(chapter?.n), editableChapterBlocks(chapter)]));
+  if (!chapters.size || !stored.pages.length) return false;
+  const seen = new Set();
+  for (const page of stored.pages) {
+    const chapter = Number(page?.chapter);
+    const blockIndex = Number(page?.blockIndex);
+    const previewPage = Number(page?.previewPage);
+    const blocks = chapters.get(chapter);
+    if (!blocks || !Number.isInteger(blockIndex) || blockIndex < 0 || blockIndex >= blocks.length) return false;
+    if (!Number.isInteger(previewPage) || previewPage < 1) return false;
+    seen.add(`${chapter}:${blockIndex}`);
+  }
+  const expectedCount = [...chapters.values()].reduce((sum, blocks) => sum + blocks.length, 0);
+  return seen.size === expectedCount;
+}
+
+function customerPageEditorPagesFromStored(stored, fullText) {
+  const chapters = new Map((fullText?.text?.chapters || []).map((chapter) => [Number(chapter?.n), chapter]));
+  return stored.pages.map((page) => {
+    const chapter = chapters.get(Number(page.chapter));
+    const blocks = editableChapterBlocks(chapter);
+    const blockIndex = Number(page.blockIndex);
+    return {
+      previewPage: Number(page.previewPage),
+      chapter: Number(page.chapter),
+      chapterTitle: String(chapter?.title || ''),
+      blockIndex,
+      text: blocks[blockIndex] || '',
+      characterCount: String(blocks[blockIndex] || '').length,
+      utilization: Number.isFinite(Number(page.utilization)) ? Number(page.utilization) : null,
+    };
+  }).sort((left, right) => left.previewPage - right.previewPage);
+}
+
+function customerPageEditorPagesFromPagination(fullText, status) {
+  const readyRender = readyRenderSnapshot(status?.artifacts?.render || {});
+  const paginationChapters = readyRender?.preflight?.storyFont?.pagination?.chapters;
+  if (!Array.isArray(paginationChapters) || !paginationChapters.length) return [];
+
+  const pages = [];
+  const chapters = [...(fullText?.text?.chapters || [])].sort((left, right) => Number(left?.n || 0) - Number(right?.n || 0));
+  for (const chapter of chapters) {
+    const chapterNumber = Number(chapter?.n);
+    const paginationChapter = paginationChapters.find((entry) => Number(entry?.chapter) === chapterNumber);
+    const metrics = Array.isArray(paginationChapter?.pages) ? paginationChapter.pages : [];
+    const blocks = renderedChapterBlocks(chapter, paginationChapter);
+    if (!metrics.length || blocks.length !== metrics.length) return [];
+    blocks.forEach((text, blockIndex) => {
+      const metric = metrics[blockIndex] || {};
+      const interiorPage = Number(metric.pageNumber);
+      if (!Number.isInteger(interiorPage) || interiorPage < 1) return;
+      pages.push({
+        previewPage: interiorPage + PAYWALL_FRONT_COVER_PAGES,
+        chapter: chapterNumber,
+        chapterTitle: String(chapter?.title || ''),
+        blockIndex,
+        text,
+        characterCount: text.length,
+        utilization: Number.isFinite(Number(metric.utilization)) ? Number(metric.utilization) : null,
+      });
+    });
+  }
+  return pages.sort((left, right) => left.previewPage - right.previewPage);
+}
+
+function customerPageEditorPagesFromBlocks(fullText) {
+  const pages = [];
+  let interiorPage = PAYWALL_INTERIOR_FRONT_MATTER_PAGES;
+  let valid = true;
+  const chapters = [...(fullText?.text?.chapters || [])].sort((left, right) => Number(left?.n || 0) - Number(right?.n || 0));
+  chapters.forEach((chapter) => {
+    if (!valid) return;
+    const chapterNumber = Number(chapter?.n);
+    const blocks = editableChapterBlocks(chapter);
+    const expectedCount = PAYWALL_DEFAULT_CHAPTER_TEXT_PAGES[chapterNumber - 1];
+    if (!expectedCount || blocks.length !== expectedCount) {
+      valid = false;
+      return;
+    }
+    interiorPage += 2;
+    blocks.forEach((text, blockIndex) => {
+      interiorPage += 1;
+      pages.push({
+        previewPage: interiorPage + PAYWALL_FRONT_COVER_PAGES,
+        chapter: chapterNumber,
+        chapterTitle: String(chapter?.title || ''),
+        blockIndex,
+        text,
+        characterCount: text.length,
+        utilization: null,
+      });
+    });
+  });
+  return valid ? pages.sort((left, right) => left.previewPage - right.previewPage) : [];
+}
+
+async function getCustomerPageEditorState(jobId) {
+  const dir = jobDir(jobId);
+  const [fullText, status, stored, bookInfo] = await Promise.all([
+    readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
+    readJsonFile(join(dir, 'status.json'), {}),
+    readJsonFile(customerPageEditorPath(jobId), null),
+    optionalFileInfo(join(dir, 'files', 'book.pdf')),
+  ]);
+  if (!fullText?.text || !Array.isArray(fullText.text.chapters)) {
+    throw httpError(409, 'Текст книги ещё не готов');
+  }
+  if (!bookInfo) throw httpError(409, 'PDF книги ещё не готов');
+
+  let pages = customerPageEditorStoredMapIsCompatible(stored, fullText)
+    ? customerPageEditorPagesFromStored(stored, fullText)
+    : customerPageEditorPagesFromPagination(fullText, status);
+  if (!pages.length) pages = customerPageEditorPagesFromBlocks(fullText);
+  if (!pages.length) {
+    throw httpError(409, 'Для этой книги пока не удалось определить текстовые страницы');
+  }
+
+  const render = status?.artifacts?.render || {};
+  return {
+    jobId,
+    title: String(fullText.text?.bible?.bookTitle || fullText.text?.preview?.title || status?.preview?.title || 'Ваша сказка'),
+    revision: customerPageEditorRevision(fullText),
+    sourceVersion: webPreviewSourceVersion(bookInfo),
+    render: {
+      status: String(render.status || status.status || ''),
+      message: String(status.message || ''),
+    },
+    pendingRebuild: Boolean(
+      render.editedAfterRenderAt
+      || render.editedAfterImageAt
+      || customerCoverColorNeedsRebuild(fullText, render)
+    ),
+    pages,
+    fullText,
+    status,
+  };
+}
+
+function publicCustomerPageEditorState(state) {
+  return {
+    jobId: state.jobId,
+    title: state.title,
+    bookTitle: state.title,
+    revision: state.revision,
+    sourceVersion: state.sourceVersion,
+    render: state.render,
+    pendingRebuild: state.pendingRebuild,
+    coverColor: customerCoverColor(state.fullText),
+    pages: state.pages,
+    chapters: customerChapterTitles(state.fullText),
+  };
+}
+
+function customerChapterTitles(fullText) {
+  return [...(fullText?.text?.chapters || [])]
+    .sort((left, right) => Number(left?.n || 0) - Number(right?.n || 0))
+    .map((chapter) => ({
+      chapter: Number(chapter?.n || 0),
+      title: String(chapter?.title || ''),
+      summary: String(chapter?.summary || ''),
+    }))
+    .filter((chapter) => chapter.chapter > 0);
+}
+
+async function saveCustomerChapterTitles(jobId, payload = {}) {
+  if (CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.has(jobId)) {
+    throw httpError(409, 'Другая правка этой книги уже сохраняется');
+  }
+  CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.add(jobId);
+  try {
+    const state = await getCustomerPageEditorState(jobId);
+    if (payload.revision && payload.revision !== state.revision) {
+      throw httpError(409, 'Книга уже изменилась. Обновите страницу и повторите правку.', { code: 'stale_revision' });
+    }
+
+    const submitted = Array.isArray(payload.titles) ? payload.titles : [];
+    const submittedByChapter = new Map(submitted.map((entry) => [Number(entry?.chapter), entry]));
+    const currentTitles = customerChapterTitles(state.fullText);
+    if (!currentTitles.length || currentTitles.some((entry) => !submittedByChapter.has(entry.chapter))) {
+      throw httpError(400, 'Передайте названия всех глав');
+    }
+
+    const editedFullText = JSON.parse(JSON.stringify(state.fullText));
+    const submittedBookTitle = normalizeSingleLine(payload.bookTitle || state.title, 180, 'Название книги');
+    if (!submittedBookTitle) throw httpError(400, 'Название книги не может быть пустым');
+    editedFullText.text.bible = editedFullText.text.bible || {};
+    editedFullText.text.preview = editedFullText.text.preview || {};
+    editedFullText.text.bible.bookTitle = submittedBookTitle;
+    editedFullText.text.preview.title = submittedBookTitle;
+    for (const chapter of editedFullText.text.chapters) {
+      const chapterNumber = Number(chapter?.n || 0);
+      const submittedChapter = submittedByChapter.get(chapterNumber) || {};
+      const title = normalizeSingleLine(submittedChapter.title, 140, `Название главы ${chapterNumber}`);
+      if (!title) throw httpError(400, `Название главы ${chapterNumber} не может быть пустым`);
+      chapter.title = title;
+      chapter.summary = normalizeSingleLine(submittedChapter.summary, 700, `Подзаголовок главы ${chapterNumber}`);
+    }
+
+    const dir = jobDir(jobId);
+    const backupPath = await writeFullTextBackup(dir, state.fullText);
+    await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), editedFullText);
+    let preflight;
+    try {
+      preflight = await preflightJobStoryText(jobId, { storyFontModeOverride: 'balanced' });
+    } catch (error) {
+      await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), state.fullText);
+      throw error;
+    }
+    if (!preflight.ok) {
+      await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), state.fullText);
+      throw httpError(422, 'Название или один из заголовков не помещается. Сократите его и попробуйте снова.', {
+        code: 'title_overflow',
+        details: preflight.error,
+      });
+    }
+
+    const revision = customerPageEditorRevision(editedFullText);
+    const stored = await readJsonFile(customerPageEditorPath(jobId), null);
+    if (customerPageEditorStoredMapIsCompatible(stored, editedFullText)) {
+      await writeJsonAtomic(customerPageEditorPath(jobId), {
+        ...stored,
+        revision,
+        updatedAt: nowIso(),
+      });
+    }
+    await appendEvent(dir, {
+      type: 'job.fullText.customerTitlesEdited',
+      backupPath,
+      bookTitle: submittedBookTitle,
+      chapters: customerChapterTitles(editedFullText),
+    });
+    await updateStatusAfterTextEdit(jobId, editedFullText);
+    return {
+      ok: true,
+      jobId,
+      revision,
+      bookTitle: submittedBookTitle,
+      titles: customerChapterTitles(editedFullText),
+      pendingRebuild: true,
+    };
+  } finally {
+    CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.delete(jobId);
+  }
+}
+
+async function saveCustomerCoverColor(jobId, payload = {}) {
+  if (CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.has(jobId)) {
+    throw httpError(409, 'Другая правка этой книги уже сохраняется');
+  }
+  const coverColor = normalizeSingleLine(payload.coverColor, 40, 'Цвет обложки');
+  if (!CUSTOMER_COVER_COLOR_VALUES.has(coverColor)) {
+    throw httpError(400, 'Выберите один из доступных цветов обложки');
+  }
+
+  CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.add(jobId);
+  try {
+    const state = await getCustomerPageEditorState(jobId);
+    if (payload.revision && payload.revision !== state.revision) {
+      throw httpError(409, 'Книга уже изменилась. Обновите страницу и повторите правку.', { code: 'stale_revision' });
+    }
+
+    const editedFullText = JSON.parse(JSON.stringify(state.fullText));
+    editedFullText.text.printLayout = editedFullText.text.printLayout || {};
+    editedFullText.text.printLayout.coverColor = coverColor;
+
+    const dir = jobDir(jobId);
+    const backupPath = await writeFullTextBackup(dir, state.fullText);
+    await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), editedFullText);
+    const revision = customerPageEditorRevision(editedFullText);
+    const stored = await readJsonFile(customerPageEditorPath(jobId), null);
+    if (customerPageEditorStoredMapIsCompatible(stored, editedFullText)) {
+      await writeJsonAtomic(customerPageEditorPath(jobId), {
+        ...stored,
+        revision,
+        updatedAt: nowIso(),
+      });
+    }
+    await appendEvent(dir, {
+      type: 'job.fullText.customerCoverColorEdited',
+      backupPath,
+      coverColor,
+    });
+    await updateStatusAfterTextEdit(jobId, editedFullText);
+    return {
+      ok: true,
+      jobId,
+      coverColor,
+      revision,
+      pendingRebuild: true,
+    };
+  } finally {
+    CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.delete(jobId);
+  }
+}
+
+async function getCustomerImageEditorState(jobId, options = {}) {
+  const dir = jobDir(jobId);
+  const [status, visualsArtifact, fullText, quota] = await Promise.all([
+    readJsonFile(join(dir, 'status.json'), null),
+    readJsonFile(join(dir, 'artifacts', 'visuals.json'), null),
+    readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
+    customerImageEditQuotaState(jobId, { ...options, persistCleanup: true }),
+  ]);
+  if (!status) throw httpError(404, 'Книга не найдена');
+  if (!fullText?.text) throw httpError(409, 'Текст книги ещё не готов');
+
+  const images = await Promise.all(adminBookImageSlots().map(async (slotDef) => {
+    const image = findVisualImageJob(visualsArtifact, slotDef) || statusImageForSlot(status, slotDef) || {};
+    const fileName = image.fileName || slotDef.defaultFileName;
+    const info = await optionalFileInfo(join(dir, 'files', fileName));
+    return {
+      slot: slotDef.slot,
+      chapter: slotDef.chapter || null,
+      label: slotDef.label,
+      fileName,
+      available: Boolean(info),
+      url: info
+        ? withUrlParam(`/api/fairyteller/jobs/${jobId}/files/${fileName}`, 'v', info.updatedAt || String(Date.now()))
+        : '',
+    };
+  }));
+
+  const render = status?.artifacts?.render || {};
+  return {
+    jobId,
+    revision: customerPageEditorRevision(fullText),
+    coverColor: customerCoverColor(fullText),
+    pendingRebuild: Boolean(
+      render.editedAfterRenderAt
+      || render.editedAfterImageAt
+      || customerCoverColorNeedsRebuild(fullText, render)
+    ),
+    images,
+    quota,
+  };
+}
+
+function detectCustomerEditedImage(content, mimeType = '') {
+  if (!Buffer.isBuffer(content) || content.length === 0) throw httpError(502, 'Сервис обработки вернул пустое изображение');
+  if (content.length > ADMIN_BOOK_IMAGE_MAX_BYTES) throw httpError(502, 'Сервис обработки вернул слишком большой файл');
+  if (content.length >= 8 && content[0] === 0x89 && content[1] === 0x50 && content[2] === 0x4e && content[3] === 0x47) {
+    return { ext: 'png', mimeType: 'image/png' };
+  }
+  if (content.length >= 3 && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff) {
+    return { ext: 'jpg', mimeType: 'image/jpeg' };
+  }
+  if (content.length >= 12 && content.subarray(0, 4).toString('ascii') === 'RIFF' && content.subarray(8, 12).toString('ascii') === 'WEBP') {
+    return { ext: 'webp', mimeType: 'image/webp' };
+  }
+  throw httpError(502, `Сервис обработки вернул неподдерживаемый формат${mimeType ? ` (${mimeType})` : ''}`);
+}
+
+function detectCustomerReferenceImage(file) {
+  const content = file?.content;
+  if (!Buffer.isBuffer(content) || content.length === 0) {
+    throw httpError(400, 'Референс пустой');
+  }
+  if (content.length > ADMIN_BOOK_IMAGE_MAX_BYTES) {
+    throw httpError(413, 'Референс слишком большой. Максимальный размер — 12 МБ');
+  }
+  if (content.length >= 8 && content[0] === 0x89 && content[1] === 0x50 && content[2] === 0x4e && content[3] === 0x47) {
+    return { mimeType: 'image/png' };
+  }
+  if (content.length >= 3 && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff) {
+    return { mimeType: 'image/jpeg' };
+  }
+  if (content.length >= 12 && content.subarray(0, 4).toString('ascii') === 'RIFF' && content.subarray(8, 12).toString('ascii') === 'WEBP') {
+    return { mimeType: 'image/webp' };
+  }
+  throw httpError(400, 'Референс должен быть в формате JPG, PNG или WEBP');
+}
+
+async function downloadCustomerEditedImage(urlValue) {
+  let parsed;
+  try {
+    parsed = new URL(String(urlValue || ''));
+  } catch {
+    throw httpError(502, 'Сервис обработки вернул некорректную ссылку на изображение');
+  }
+  if (parsed.protocol !== 'https:') throw httpError(502, 'Сервис обработки вернул небезопасную ссылку на изображение');
+  const response = await fetch(parsed, { signal: AbortSignal.timeout(180_000) });
+  if (!response.ok) throw httpError(502, `Не удалось скачать обработанное изображение: ${response.status}`);
+  const content = Buffer.from(await response.arrayBuffer());
+  return { content, mimeType: response.headers.get('content-type') || '' };
+}
+
+async function requestOpenLuxImageEdit(sourceContent, sourceMimeType, slotDef, instruction, referenceImage = null) {
+  if (!OPENLUX_API_KEY) {
+    throw httpError(503, 'Сервис обработки изображений пока не настроен');
+  }
+  const prompt = [
+    'Edit the attached existing book illustration.',
+    referenceImage
+      ? 'Image 1 is the current book illustration. Image 2 is an identity reference photo. Use image 2 only to improve the facial identity and recognizability of the matching character or characters; do not copy its background, lighting, camera angle, clothing or photographic style unless the user explicitly asks for that.'
+      : '',
+    'Preserve everything the user did not explicitly ask to change: the identities and number of characters, their age, facial features, clothing, pose, composition, environment, lighting, color palette and illustration style.',
+    'Do not add text, captions, logos, frames or new characters. Keep the result suitable for a premium printed storybook.',
+    `Requested change: ${instruction}`,
+  ].filter(Boolean).join('\n');
+  const images = [{
+    type: 'image_url',
+    url: `data:${sourceMimeType};base64,${sourceContent.toString('base64')}`,
+  }];
+  if (referenceImage?.content) {
+    images.push({
+      type: 'image_url',
+      url: `data:${referenceImage.mimeType};base64,${referenceImage.content.toString('base64')}`,
+    });
+  }
+  const response = await fetch('https://api.openlux.ai/v1/images/edits', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${OPENLUX_API_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: OPENLUX_IMAGE_EDIT_MODEL,
+      prompt,
+      images,
+      aspect_ratio: slotDef.slot === 'cover' ? '3:2' : '1:1',
+      resolution: '1k',
+      quality: 'low',
+      response_format: 'url',
+    }),
+    signal: AbortSignal.timeout(300_000),
+  });
+  const raw = await response.text();
+  let payload;
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch {
+    payload = {};
+  }
+  if (!response.ok) {
+    const providerMessage = normalizeShortText(payload?.error?.message || payload?.message || '', 280);
+    if (providerMessage) console.warn(`Image edit provider error: ${providerMessage}`);
+    throw httpError(502, `Не удалось внести правки в изображение. Попробуйте ещё раз (${response.status})`);
+  }
+  const output = payload?.data?.[0] || payload?.images?.[0] || null;
+  if (output?.b64_json || output?.base64) {
+    return {
+      content: Buffer.from(output.b64_json || output.base64, 'base64'),
+      mimeType: output.mime_type || output.mimeType || 'image/jpeg',
+      responseId: payload?.id || output?.id || '',
+    };
+  }
+  if (output?.url) {
+    return {
+      ...(await downloadCustomerEditedImage(output.url)),
+      responseId: payload?.id || output?.id || '',
+    };
+  }
+  throw httpError(502, 'Сервис обработки не вернул готовое изображение');
+}
+
+async function editCustomerBookImage(jobId, payload = {}, options = {}) {
+  if (CUSTOMER_IMAGE_EDITOR_ACTIVE_EDITS.has(jobId)) {
+    throw httpError(409, 'Другая иллюстрация этой книги уже обрабатывается');
+  }
+  const slot = normalizeSingleLine(payload.slot, 40, 'Иллюстрация');
+  const slotDef = adminBookImageSlots().find((candidate) => candidate.slot === slot);
+  if (!slotDef) throw httpError(400, 'Выберите иллюстрацию');
+  const instruction = normalizeMultiLine(payload.prompt, 2000, 'Описание правки');
+  if (!instruction) throw httpError(400, 'Опишите, что нужно исправить');
+  const referenceFile = payload.referencePhoto || null;
+  const referenceType = referenceFile ? detectCustomerReferenceImage(referenceFile) : null;
+
+  CUSTOMER_IMAGE_EDITOR_ACTIVE_EDITS.add(jobId);
+  let reservation = null;
+  let imageStored = false;
+  try {
+    const state = await getCustomerImageEditorState(jobId, options);
+    const selected = state.images.find((image) => image.slot === slot);
+    if (!selected?.available) throw httpError(404, 'Исходная иллюстрация ещё не готова');
+    reservation = await reserveCustomerImageEdit(jobId, slot, options);
+    const dir = jobDir(jobId);
+    const sourceContent = await readFile(join(dir, 'files', selected.fileName));
+    const sourceMimeType = contentTypeFromFileName(selected.fileName);
+    const generated = await requestOpenLuxImageEdit(
+      sourceContent,
+      sourceMimeType,
+      slotDef,
+      instruction,
+      referenceFile ? {
+        content: referenceFile.content,
+        mimeType: referenceType.mimeType,
+      } : null,
+    );
+    const detected = detectCustomerEditedImage(generated.content, generated.mimeType);
+    const stamp = `${Date.now()}-${randomBytes(3).toString('hex')}`;
+    const fileName = `${slotDef.baseName}-customer-ai-${stamp}.${detected.ext}`;
+    await writeFile(join(dir, 'files', fileName), generated.content, { mode: 0o600 });
+    const editedAt = nowIso();
+    const update = {
+      slotDef,
+      fileName,
+      url: `/api/fairyteller/jobs/${jobId}/files/${fileName}`,
+      absoluteUrl: publicUrl(`/api/fairyteller/jobs/${jobId}/files/${fileName}`),
+      mimeType: detected.mimeType,
+      bytes: generated.content.length,
+      editedAt,
+      source: 'customer_ai_edit',
+    };
+    await updateVisualsAfterImageEdit(jobId, [update]);
+    await updateStatusAfterImageEdit(jobId, [update]);
+
+    const historyPath = customerImageEditHistoryPath(jobId);
+    const history = await readJsonFile(historyPath, { edits: [] });
+    history.edits = Array.isArray(history.edits) ? history.edits : [];
+    history.edits.push({
+      requestId: reservation.requestId,
+      slot,
+      prompt: instruction,
+      sourceFileName: selected.fileName,
+      fileName,
+      provider: 'openlux',
+      model: OPENLUX_IMAGE_EDIT_MODEL,
+      responseId: generated.responseId || '',
+      referencePhoto: referenceFile ? {
+        originalName: normalizeShortText(referenceFile.originalName || '', 180),
+        mimeType: referenceType.mimeType,
+        bytes: referenceFile.content.length,
+      } : null,
+      createdAt: editedAt,
+    });
+    history.updatedAt = editedAt;
+    await writeJsonAtomic(historyPath, history);
+    await appendEvent(dir, {
+      type: 'job.images.customerAiEdited',
+      slot,
+      sourceFileName: selected.fileName,
+      fileName,
+      provider: 'openlux',
+      model: OPENLUX_IMAGE_EDIT_MODEL,
+      hasReferencePhoto: Boolean(referenceFile),
+    });
+    imageStored = true;
+
+    if (reservation.limited) {
+      await settleCustomerImageEditReservation(jobId, reservation.requestId, 'succeeded').catch((error) => {
+        console.error(`Could not settle image edit reservation for ${jobId}:`, error);
+      });
+    }
+    const quota = await customerImageEditQuotaState(jobId, { ...options, persistCleanup: true }).catch(() => state.quota);
+
+    return {
+      ok: true,
+      jobId,
+      pendingRebuild: true,
+      quota,
+      image: {
+        slot,
+        chapter: slotDef.chapter || null,
+        label: slotDef.label,
+        fileName,
+        available: true,
+        url: withUrlParam(update.url, 'v', editedAt),
+      },
+    };
+  } catch (error) {
+    if (reservation?.limited && !imageStored) {
+      await settleCustomerImageEditReservation(jobId, reservation.requestId, 'failed', error?.message || 'image_edit_failed').catch((settleError) => {
+        console.error(`Could not release image edit reservation for ${jobId}:`, settleError);
+      });
+    }
+    throw error;
+  } finally {
+    CUSTOMER_IMAGE_EDITOR_ACTIVE_EDITS.delete(jobId);
+  }
+}
+
+function applyCustomerPageBlocks(fullText, pages) {
+  const next = JSON.parse(JSON.stringify(fullText));
+  next.text = next.text || {};
+  next.text.printLayout = {
+    ...(next.text.printLayout || {}),
+    storyFontMode: 'balanced',
+  };
+  next.text.chapters = Array.isArray(next.text.chapters) ? next.text.chapters : [];
+  for (const chapter of next.text.chapters) {
+    const chapterNumber = Number(chapter?.n);
+    const blocks = pages
+      .filter((page) => page.chapter === chapterNumber)
+      .sort((left, right) => left.blockIndex - right.blockIndex)
+      .map((page) => page.text);
+    if (!blocks.length) throw httpError(409, `Не удалось подготовить страницы главы ${chapterNumber}`);
+    chapter.textBlocks = blocks;
+    chapter.text = blocks.join('\n\n');
+  }
+  const editedAt = nowIso();
+  next.fullText = {
+    ...(next.fullText || {}),
+    status: next.fullText?.status || 'ready',
+    editedAt,
+  };
+  return next;
+}
+
+async function saveCustomerPageEditorText(jobId, previewPage, payload = {}) {
+  if (CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.has(jobId)) {
+    throw httpError(409, 'Другая правка этой книги уже сохраняется');
+  }
+  CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.add(jobId);
+  try {
+    const state = await getCustomerPageEditorState(jobId);
+    if (payload.revision && payload.revision !== state.revision) {
+      throw httpError(409, 'Книга уже изменилась. Обновите страницу и повторите правку.', { code: 'stale_revision' });
+    }
+    const selectedPage = state.pages.find((page) => page.previewPage === previewPage);
+    if (!selectedPage) throw httpError(404, 'На этой странице нет редактируемого текста');
+
+    const text = normalizeMultiLine(payload.text, 7000, 'Текст страницы');
+    if (!text) throw httpError(400, 'Текст страницы не может быть пустым');
+    const editedPages = state.pages.map((page) => (
+      page.previewPage === previewPage ? { ...page, text, characterCount: text.length } : page
+    ));
+    const editedFullText = applyCustomerPageBlocks(state.fullText, editedPages);
+    const dir = jobDir(jobId);
+    const backupPath = await writeFullTextBackup(dir, state.fullText);
+    await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), editedFullText);
+
+    let preflight;
+    try {
+      preflight = await preflightJobStoryText(jobId, { storyFontModeOverride: 'balanced' });
+    } catch (error) {
+      await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), state.fullText);
+      throw error;
+    }
+    if (!preflight.ok) {
+      await writeJsonAtomic(join(dir, 'artifacts', 'full-text.json'), state.fullText);
+      await appendEvent(dir, {
+        type: 'job.fullText.customerPageEditRejected',
+        previewPage,
+        chapter: selectedPage.chapter,
+        blockIndex: selectedPage.blockIndex,
+        backupPath,
+        reason: preflight.error,
+      });
+      throw httpError(422, 'Текст не помещается на странице. Сократите его и попробуйте снова.', {
+        code: 'text_overflow',
+        previewPage,
+        details: preflight.error,
+      });
+    }
+
+    const revision = customerPageEditorRevision(editedFullText);
+    await writeJsonAtomic(customerPageEditorPath(jobId), {
+      version: CUSTOMER_PAGE_EDITOR_VERSION,
+      updatedAt: nowIso(),
+      revision,
+      pages: editedPages.map((page) => ({
+        previewPage: page.previewPage,
+        chapter: page.chapter,
+        blockIndex: page.blockIndex,
+        utilization: page.utilization,
+      })),
+    });
+    await appendEvent(dir, {
+      type: 'job.fullText.customerPageEdited',
+      previewPage,
+      chapter: selectedPage.chapter,
+      blockIndex: selectedPage.blockIndex,
+      backupPath,
+      characterCount: text.length,
+    });
+    await updateStatusAfterTextEdit(jobId, editedFullText);
+    return {
+      ok: true,
+      jobId,
+      revision,
+      previewPage,
+      pendingRebuild: true,
+      message: 'Изменения сохранены. Нажмите "Пересобрать макет", чтобы они отразились в книге.',
+    };
+  } finally {
+    CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.delete(jobId);
+  }
+}
+
+async function rebuildCustomerPageEditorLayout(jobId) {
+  if (CUSTOMER_PAGE_EDITOR_ACTIVE_SAVES.has(jobId)) {
+    throw httpError(409, 'Дождитесь завершения сохранения текста');
+  }
+  const state = await getCustomerPageEditorState(jobId);
+  if (!state.pendingRebuild) {
+    throw httpError(409, 'Сначала сохраните изменения в тексте');
+  }
+  const renderStarted = await queueAdminRenderJob(jobId, 'job.customerPageRenderRequested');
+  return {
+    ok: true,
+    jobId,
+    renderQueued: true,
+    renderStarted,
+    message: 'Пересобираем макет книги.',
+  };
+}
 
 async function loadPdfLib() {
   try {
@@ -6288,64 +8166,79 @@ async function loadPdfLib() {
   }
 }
 
-async function buildPaywallSamplePdf(jobId) {
+function webPreviewSourceVersion(bookInfo) {
+  return createHash('sha256')
+    .update(`${WEB_PREVIEW_CACHE_VERSION}:${bookInfo.updatedAt}:${bookInfo.bytes}`)
+    .digest('hex')
+    .slice(0, 16);
+}
+
+function addWebPreviewCoverHalfPage(target, coverPage, targetSize, half, pdfLib) {
+  const { clip, endPath, popGraphicsState, pushGraphicsState, rectangle, rgb } = pdfLib;
+  const { width: targetWidth, height: targetHeight } = targetSize;
+  const page = target.addPage([targetWidth, targetHeight]);
+  page.drawRectangle({ x: 0, y: 0, width: targetWidth, height: targetHeight, color: rgb(1, 1, 1) });
+
+  const scale = targetHeight / coverPage.height;
+  const drawnWidth = coverPage.width * scale;
+  const drawnHeight = coverPage.height * scale;
+  const halfWidth = drawnWidth / 2;
+  const contentX = (targetWidth - halfWidth) / 2;
+  const drawX = half === 'front' ? contentX - halfWidth : contentX;
+
+  page.pushOperators(
+    pushGraphicsState(),
+    rectangle(contentX, 0, halfWidth, targetHeight),
+    clip(),
+    endPath(),
+  );
+  page.drawPage(coverPage, { x: drawX, y: 0, width: drawnWidth, height: drawnHeight });
+  page.pushOperators(popGraphicsState());
+}
+
+async function buildBookWebPreviewPdf(jobId) {
   const dir = jobDir(jobId);
   const filesDir = join(dir, 'files');
-  const previewPath = join(filesDir, 'preview.pdf');
-  const samplePath = join(filesDir, 'paywall-preview.pdf');
-  const sampleMetaPath = join(filesDir, 'paywall-preview.meta.json');
-  const [previewInfo, sampleInfo, sampleMeta] = await Promise.all([
-    optionalFileInfo(previewPath),
-    optionalFileInfo(samplePath),
-    readJsonFile(sampleMetaPath, null),
-  ]);
+  const bookPath = join(filesDir, 'book.pdf');
+  const bookInfo = await optionalFileInfo(bookPath);
+  if (!bookInfo) throw httpError(404, 'Book PDF not found');
 
-  if (!previewInfo) {
-    throw httpError(404, 'Preview PDF not found');
-  }
-
-  const previewBytes = await readFile(previewPath);
-  const { PDFDocument } = await loadPdfLib();
-  const source = await PDFDocument.load(previewBytes);
-  const totalPages = source.getPageCount();
-  const endPage = totalPages;
-
-  if (
-    sampleInfo
-    && sampleMeta?.version === PAYWALL_SAMPLE_CACHE_VERSION
-    && sampleMeta.sourceUpdatedAt === previewInfo.updatedAt
-    && Number(sampleMeta.totalPages || 0) === totalPages
-    && Number(sampleMeta.endPage || 0) === endPage
-  ) {
-    return readFile(samplePath);
-  }
+  const bookBytes = await readFile(bookPath);
+  const pdfLib = await loadPdfLib();
+  const { PDFDocument } = pdfLib;
+  const source = await PDFDocument.load(bookBytes);
+  const sourcePageCount = source.getPageCount();
+  if (sourcePageCount < 2) throw httpError(500, 'Book PDF has no interior pages');
 
   const target = await PDFDocument.create();
-  const pageIndexes = Array.from({ length: endPage }, (_, index) => index);
-  const pages = await target.copyPages(source, pageIndexes);
-  for (const page of pages) target.addPage(page);
-  const sampleBytes = await target.save();
+  const [coverPage] = await target.embedPdf(bookBytes, [0]);
+  const interiorPages = await target.copyPages(source, source.getPageIndices().slice(1));
+  const targetSize = source.getPage(1).getSize();
+  addWebPreviewCoverHalfPage(target, coverPage, targetSize, 'front', pdfLib);
+  for (const page of interiorPages) target.addPage(page);
+  addWebPreviewCoverHalfPage(target, coverPage, targetSize, 'back', pdfLib);
 
-  await writeFile(samplePath, sampleBytes, { mode: 0o600 });
-  await writeJsonAtomic(sampleMetaPath, {
-    version: PAYWALL_SAMPLE_CACHE_VERSION,
-    sourceUpdatedAt: previewInfo.updatedAt,
+  const totalPages = sourcePageCount + 1;
+  if (target.getPageCount() !== totalPages) {
+    throw httpError(500, `Web preview page count mismatch: expected ${totalPages}, got ${target.getPageCount()}`);
+  }
+  return {
+    bytes: await target.save(),
+    bookInfo,
+    sourceVersion: webPreviewSourceVersion(bookInfo),
     totalPages,
-    endPage,
-    generatedAt: nowIso(),
-  });
-  return sampleBytes;
+  };
 }
 
 async function sendPaywallSamplePdf(req, res, jobId) {
-  const content = await buildPaywallSamplePdf(jobId);
+  const preview = await buildBookWebPreviewPdf(jobId);
   res.writeHead(200, {
     ...corsHeaders(req),
     'content-type': 'application/pdf',
-    'content-length': content.length,
+    'content-length': preview.bytes.length,
     'cache-control': 'no-store',
   });
-  res.end(content);
+  res.end(preview.bytes);
 }
 
 async function runCommand(command, args, options = {}) {
@@ -6375,32 +8268,67 @@ async function runCommand(command, args, options = {}) {
   });
 }
 
+async function pruneWebPreviewPageVersions(pagesRoot, currentVersion) {
+  const entries = await readdir(pagesRoot, { withFileTypes: true });
+  const versions = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === currentVersion) continue;
+    if (!/^[a-f0-9]{16}$/.test(entry.name)) continue;
+    const info = await stat(join(pagesRoot, entry.name)).catch(() => null);
+    if (info) versions.push({ name: entry.name, modifiedMs: info.mtimeMs });
+  }
+  versions.sort((left, right) => right.modifiedMs - left.modifiedMs);
+  await Promise.all(versions.slice(1).map((entry) => rm(join(pagesRoot, entry.name), { recursive: true, force: true })));
+}
+
 async function listPaywallPreviewPages(jobId) {
   const dir = jobDir(jobId);
   const filesDir = join(dir, 'files');
-  const samplePath = join(filesDir, 'paywall-preview.pdf');
-  const pagesDir = join(filesDir, 'paywall-preview-pages');
-  await buildPaywallSamplePdf(jobId);
-  const sampleInfo = await optionalFileInfo(samplePath);
+  const bookInfo = await optionalFileInfo(join(filesDir, 'book.pdf'));
+  if (!bookInfo) throw httpError(404, 'Book PDF not found');
+  const sourceVersion = webPreviewSourceVersion(bookInfo);
+  const pagesRoot = join(filesDir, WEB_PREVIEW_PAGES_DIR);
+  const pagesDir = join(pagesRoot, sourceVersion);
   const metaPath = join(pagesDir, 'metadata.json');
   const existingMeta = await readJsonFile(metaPath, null);
+  let totalPages = Number(existingMeta?.totalPages || 0);
 
-  if (!existingMeta || existingMeta.version !== PAYWALL_PREVIEW_PAGES_CACHE_VERSION || existingMeta.sourceUpdatedAt !== sampleInfo.updatedAt) {
-    await rm(pagesDir, { recursive: true, force: true });
-    await mkdir(pagesDir, { recursive: true, mode: 0o700 });
-    await runCommand('pdftoppm', [
-      '-jpeg',
-      '-r', '72',
-      '-scale-to', '760',
-      '-jpegopt', 'quality=62,optimize=y',
-      samplePath,
-      join(pagesDir, 'page'),
-    ]);
-    await writeJsonAtomic(metaPath, {
-      version: PAYWALL_PREVIEW_PAGES_CACHE_VERSION,
-      sourceUpdatedAt: sampleInfo.updatedAt,
-      generatedAt: nowIso(),
-    });
+  if (!existingMeta || existingMeta.cacheVersion !== WEB_PREVIEW_CACHE_VERSION || existingMeta.sourceVersion !== sourceVersion) {
+    const preview = await buildBookWebPreviewPdf(jobId);
+    if (preview.sourceVersion !== sourceVersion) return listPaywallPreviewPages(jobId);
+    totalPages = preview.totalPages;
+    await mkdir(pagesRoot, { recursive: true, mode: 0o700 });
+    const temporaryDir = join(pagesRoot, `.tmp-${sourceVersion}-${randomUUID()}`);
+    await mkdir(temporaryDir, { recursive: true, mode: 0o700 });
+    try {
+      const temporaryPdf = join(temporaryDir, 'preview.pdf');
+      await writeFile(temporaryPdf, preview.bytes, { mode: 0o600 });
+      await runCommand('pdftoppm', [
+        '-jpeg',
+        '-r', '72',
+        '-scale-to', '1600',
+        '-jpegopt', 'quality=88,optimize=y',
+        temporaryPdf,
+        join(temporaryDir, 'page'),
+      ]);
+      await rm(temporaryPdf, { force: true });
+      await writeJsonAtomic(join(temporaryDir, 'metadata.json'), {
+        cacheVersion: WEB_PREVIEW_CACHE_VERSION,
+        sourceVersion,
+        sourceUpdatedAt: preview.bookInfo.updatedAt,
+        sourceBytes: preview.bookInfo.bytes,
+        totalPages: preview.totalPages,
+        generatedAt: nowIso(),
+      });
+      await rename(temporaryDir, pagesDir).catch(async (error) => {
+        if (error.code !== 'EEXIST' && error.code !== 'ENOTEMPTY') throw error;
+        await rm(temporaryDir, { recursive: true, force: true });
+      });
+    } catch (error) {
+      await rm(temporaryDir, { recursive: true, force: true });
+      throw error;
+    }
+    await pruneWebPreviewPageVersions(pagesRoot, sourceVersion);
   }
 
   const entries = await readdir(pagesDir);
@@ -6408,11 +8336,15 @@ async function listPaywallPreviewPages(jobId) {
     .filter((fileName) => /^page-\d+\.jpg$/i.test(fileName))
     .sort((a, b) => Number(a.match(/\d+/)?.[0] || 0) - Number(b.match(/\d+/)?.[0] || 0));
 
-  return pageFiles.map((fileName, index) => ({
-    n: index + 1,
-    fileName,
-    url: `/api/fairyteller/jobs/${jobId}/sample-pages/${fileName}?v=${PAYWALL_PREVIEW_PAGES_CACHE_VERSION}`,
-  }));
+  return {
+    sourceVersion,
+    totalPages,
+    pages: pageFiles.map((fileName, index) => ({
+      n: index + 1,
+      fileName,
+      url: `/api/fairyteller/jobs/${jobId}/sample-pages/${sourceVersion}/${fileName}`,
+    })),
+  };
 }
 
 function paywallChapterTextPageCount(chapter, index) {
@@ -6440,23 +8372,27 @@ function getPaywallChapterEndPages(chapters, totalPages) {
   }).filter((breakpoint) => breakpoint.page > 0 && (!totalPages || breakpoint.page <= totalPages));
 }
 
-async function getPaywallPreviewProgress(jobId, availablePages) {
+async function getPaywallPreviewProgress(jobId, availablePages, previewTotalPages = 0) {
   const dir = jobDir(jobId);
   const filesDir = join(dir, 'files');
-  const previewPath = join(filesDir, 'preview.pdf');
-  const [status, fullText, previewInfo] = await Promise.all([
+  const bookPath = join(filesDir, 'book.pdf');
+  const [status, fullText, bookInfo] = await Promise.all([
     readJsonFile(join(dir, 'status.json'), {}),
     readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
-    optionalFileInfo(previewPath),
+    optionalFileInfo(bookPath),
   ]);
   const chapters = Array.isArray(fullText?.text?.chapters) ? fullText.text.chapters : [];
-  let totalPages = Number(status.artifacts?.render?.preflight?.previewPages || 0);
-  if (!totalPages && previewInfo) {
+  let totalPages = Number(
+    previewTotalPages
+    || status.artifacts?.render?.preflight?.webPreviewPageCount
+    || (Number(status.artifacts?.render?.preflight?.combinedPageCount || 0) + 1),
+  );
+  if (!totalPages && bookInfo) {
     try {
       const { PDFDocument } = await loadPdfLib();
-      const previewBytes = await readFile(previewPath);
-      const previewPdf = await PDFDocument.load(previewBytes);
-      totalPages = previewPdf.getPageCount();
+      const bookBytes = await readFile(bookPath);
+      const bookPdf = await PDFDocument.load(bookBytes);
+      totalPages = bookPdf.getPageCount() + 1;
     } catch {
       totalPages = 0;
     }
@@ -6472,20 +8408,24 @@ async function getPaywallPreviewProgress(jobId, availablePages) {
 }
 
 async function sendPaywallPreviewPages(req, res, jobId) {
-  const pages = await listPaywallPreviewPages(jobId);
+  const preview = await listPaywallPreviewPages(jobId);
   sendJson(req, res, 200, {
     jobId,
-    pages,
-    progress: await getPaywallPreviewProgress(jobId, pages.length),
+    sourceVersion: preview.sourceVersion,
+    pages: preview.pages,
+    progress: await getPaywallPreviewProgress(jobId, preview.pages.length, preview.totalPages),
   });
 }
 
-async function sendPaywallPreviewPage(req, res, jobId, fileName) {
+async function sendPaywallPreviewPage(req, res, jobId, sourceVersion, fileName) {
+  if (!/^[a-f0-9]{16}$/.test(String(sourceVersion || ''))) {
+    throw httpError(400, 'Invalid preview version');
+  }
   if (!/^page-\d+\.jpg$/i.test(String(fileName || ''))) {
     throw httpError(400, 'Invalid page file');
   }
   await listPaywallPreviewPages(jobId);
-  const path = join(jobDir(jobId), 'files', 'paywall-preview-pages', basename(fileName));
+  const path = join(jobDir(jobId), 'files', WEB_PREVIEW_PAGES_DIR, sourceVersion, basename(fileName));
   let content;
   try {
     content = await readFile(path);
@@ -6497,9 +8437,14 @@ async function sendPaywallPreviewPage(req, res, jobId, fileName) {
     ...corsHeaders(req),
     'content-type': 'image/jpeg',
     'content-length': content.length,
-    'cache-control': 'public, max-age=86400',
+    'cache-control': 'public, max-age=31536000, immutable',
   });
   res.end(content);
+}
+
+async function sendCurrentPaywallPreviewPage(req, res, jobId, fileName) {
+  const preview = await listPaywallPreviewPages(jobId);
+  await sendPaywallPreviewPage(req, res, jobId, preview.sourceVersion, fileName);
 }
 
 async function requirePaidAccessToken(jobId, token) {
@@ -6526,7 +8471,10 @@ async function sendJobFile(req, res, jobId, fileName) {
   res.writeHead(200, {
     ...corsHeaders(req),
     'content-type': contentTypeFromFileName(fileName),
-    'cache-control': 'no-store',
+    'content-length': content.length,
+    'cache-control': /^comic-preview-(?:spread|page)-\d+-clean(?:-web)?\.(?:png|jpe?g|webp)$/i.test(fileName)
+      ? 'public, max-age=31536000, immutable'
+      : 'no-store',
   });
   res.end(content);
 }
@@ -6594,9 +8542,9 @@ async function renderJobPdf(jobId, options = {}) {
       artifacts: {
         render,
         bookPdf: render.files?.book || null,
-        previewPdf: render.files?.preview || null,
-        coverPdf: render.files?.cover || null,
-        interiorPdf: render.files?.interior || null,
+        previewPdf: null,
+        coverPdf: null,
+        interiorPdf: null,
       },
     });
     if (!options.skipCustomerEmail && process.env.FAIRYTELLER_SEND_RENDER_READY_EMAIL === '1') {
@@ -6626,11 +8574,16 @@ async function renderJobPdf(jobId, options = {}) {
 async function renderHardcover20x20Pdf(jobId) {
   const dir = jobDir(jobId);
   const sourceFile = 'book-hardcover-source.pdf';
-  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  const [fullText, order] = await Promise.all([
+    readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
+    readJsonFile(join(dir, 'order.json'), {}),
+  ]);
+  const coverStyle = currentCoverStyle(fullText, order);
   const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
   await runRendererVariant(jobId, {
     FAIRYTELLER_RENDER_VARIANT: 'hardcover-source',
     FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+    FAIRYTELLER_COVER_STYLE: coverStyle,
   }, '20x20 hardcover source render');
   const output = await new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(process.execPath, [HARDCOVER_20X20_RENDER_SCRIPT, jobId], {
@@ -6638,7 +8591,7 @@ async function renderHardcover20x20Pdf(jobId) {
         ...process.env,
         FAIRYTELLER_DATA_DIR: DATA_DIR,
         FAIRYTELLER_HARDCOVER_SOURCE_FILE: sourceFile,
-        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: coverStyle === 'cyberpunk' ? 'cyberpunk' : hardcoverCoverTemplate,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -6725,12 +8678,17 @@ async function renderHardcover20x20Adult12Pdf(jobId) {
   const dir = jobDir(jobId);
   const sourceFile = 'book-hardcover-12-source.pdf';
   const outputFile = 'hardcover-20x20-12pt.pdf';
-  const fullText = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+  const [fullText, order] = await Promise.all([
+    readJsonFile(join(dir, 'artifacts', 'full-text.json'), null),
+    readJsonFile(join(dir, 'order.json'), {}),
+  ]);
+  const coverStyle = currentCoverStyle(fullText, order);
   const hardcoverCoverTemplate = currentHardcoverCoverTemplate(fullText);
   await runRendererVariant(jobId, {
     FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE: 'hardcover12',
     FAIRYTELLER_RENDER_VARIANT: 'hardcover-12-source',
     FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+    FAIRYTELLER_COVER_STYLE: coverStyle,
   }, '20x20 12 pt source render');
 
   const output = await new Promise((resolvePromise, rejectPromise) => {
@@ -6740,7 +8698,7 @@ async function renderHardcover20x20Adult12Pdf(jobId) {
         FAIRYTELLER_DATA_DIR: DATA_DIR,
         FAIRYTELLER_HARDCOVER_SOURCE_FILE: sourceFile,
         FAIRYTELLER_HARDCOVER_OUTPUT_FILE: outputFile,
-        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: hardcoverCoverTemplate,
+        FAIRYTELLER_HARDCOVER_COVER_TEMPLATE: coverStyle === 'cyberpunk' ? 'cyberpunk' : hardcoverCoverTemplate,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -6794,55 +8752,131 @@ async function renderHardcover20x20Adult12Pdf(jobId) {
   return file;
 }
 
-async function preflightJobStoryText(jobId) {
+const TEXT_PREFLIGHT_WORKERS = new Map();
+
+function textPreflightFailureResult(message) {
+  const normalized = String(message || '').replace(/\s+/g, ' ').trim();
+  const isTextFitFailure = /Story chapter \d+ cannot|Story text does not fit|Expected \d+ text blocks/i.test(normalized);
+  if (!isTextFitFailure) return null;
+  return {
+    ok: false,
+    checkedAt: nowIso(),
+    chapter: Number(normalized.match(/Story chapter (\d+)/i)?.[1] || 0) || null,
+    error: normalized || 'Story text does not fit the uniform layout',
+  };
+}
+
+function failTextPreflightWorker(state, error) {
+  if (TEXT_PREFLIGHT_WORKERS.get(state.mode) === state) TEXT_PREFLIGHT_WORKERS.delete(state.mode);
+  const failure = error instanceof Error ? error : new Error(String(error || 'Text preflight worker stopped'));
+  for (const request of state.requests.values()) {
+    clearTimeout(request.timer);
+    request.reject(failure);
+  }
+  state.requests.clear();
+}
+
+function ensureTextPreflightWorker(storyFontModeOverride) {
+  const existing = TEXT_PREFLIGHT_WORKERS.get(storyFontModeOverride);
+  if (existing && existing.child.exitCode === null && !existing.child.killed) return existing;
+
+  const child = spawn(process.execPath, [RENDER_SCRIPT, 'ft_preflight_worker', '--text-preflight-worker'], {
+    env: {
+      ...process.env,
+      FAIRYTELLER_DATA_DIR: DATA_DIR,
+      FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE: storyFontModeOverride,
+    },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const state = {
+    mode: storyFontModeOverride,
+    child,
+    buffer: '',
+    stderr: '',
+    requests: new Map(),
+  };
+  TEXT_PREFLIGHT_WORKERS.set(storyFontModeOverride, state);
+
+  child.stdout.on('data', (chunk) => {
+    state.buffer += chunk.toString();
+    let newlineIndex = state.buffer.indexOf('\n');
+    while (newlineIndex >= 0) {
+      const line = state.buffer.slice(0, newlineIndex).trim();
+      state.buffer = state.buffer.slice(newlineIndex + 1);
+      newlineIndex = state.buffer.indexOf('\n');
+      if (!line) continue;
+      let payload;
+      try {
+        payload = JSON.parse(line);
+      } catch (error) {
+        failTextPreflightWorker(state, httpError(500, `Story text preflight returned invalid JSON: ${error.message}`));
+        child.kill('SIGKILL');
+        return;
+      }
+      const request = state.requests.get(payload.requestId);
+      if (!request) continue;
+      state.requests.delete(payload.requestId);
+      clearTimeout(request.timer);
+      if (payload.ok) {
+        request.resolve({ ok: true, checkedAt: nowIso(), storyFont: payload.storyFont || null });
+        continue;
+      }
+      const fitFailure = textPreflightFailureResult(payload.error);
+      if (fitFailure) request.resolve(fitFailure);
+      else request.reject(httpError(500, payload.error || 'Story text preflight failed'));
+    }
+  });
+  child.stderr.on('data', (chunk) => {
+    state.stderr = `${state.stderr}${chunk.toString()}`.slice(-8000);
+  });
+  child.on('error', (error) => failTextPreflightWorker(state, error));
+  child.on('close', (code) => {
+    if (TEXT_PREFLIGHT_WORKERS.get(storyFontModeOverride) !== state) return;
+    const details = state.stderr.replace(/\s+/g, ' ').trim();
+    failTextPreflightWorker(state, httpError(500, details || `Story text preflight worker exited with code ${code}`));
+  });
+  return state;
+}
+
+async function preflightJobStoryText(jobId, options = {}) {
   const dir = jobDir(jobId);
   if (!existsSync(dir)) throw httpError(404, 'Job not found');
   if (!existsSync(join(dir, 'artifacts', 'full-text.json'))) {
     throw httpError(409, 'Full text artifact is not ready');
   }
 
-  return await new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(process.execPath, [RENDER_SCRIPT, jobId, '--text-preflight'], {
-      env: {
-        ...process.env,
-        FAIRYTELLER_DATA_DIR: DATA_DIR,
-        FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE: 'uniform',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      rejectPromise(httpError(504, 'Story text preflight timed out'));
-    }, 60_000);
+  const storyFontModeOverride = String(options.storyFontModeOverride || 'uniform').trim();
+  if (!STORY_FONT_MODE_VALUES.has(storyFontModeOverride)) {
+    throw httpError(400, 'Invalid story font mode override');
+  }
 
-    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-    child.on('error', (error) => {
+  return await new Promise((resolvePromise, rejectPromise) => {
+    const state = ensureTextPreflightWorker(storyFontModeOverride);
+    const requestId = randomUUID();
+    const timer = setTimeout(() => {
+      state.requests.delete(requestId);
+      rejectPromise(httpError(504, 'Story text preflight timed out'));
+      state.child.kill('SIGKILL');
+    }, TEXT_PREFLIGHT_TIMEOUT_MS);
+    state.requests.set(requestId, { resolve: resolvePromise, reject: rejectPromise, timer });
+    state.child.stdin.write(`${JSON.stringify({ requestId, jobId })}\n`, (error) => {
+      if (!error) return;
+      const request = state.requests.get(requestId);
+      if (!request) return;
+      state.requests.delete(requestId);
       clearTimeout(timer);
       rejectPromise(error);
     });
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      if (code === 0) {
-        try {
-          const payload = JSON.parse(stdout);
-          resolvePromise({ ok: true, checkedAt: nowIso(), storyFont: payload.storyFont || null });
-        } catch (error) {
-          rejectPromise(httpError(500, `Story text preflight returned invalid JSON: ${error.message}`));
-        }
-        return;
-      }
-      const message = String(stderr || stdout || `exit ${code}`).replace(/\s+/g, ' ').trim();
-      const chapter = Number(message.match(/Story chapter (\d+)/i)?.[1] || 0) || null;
-      resolvePromise({
-        ok: false,
-        checkedAt: nowIso(),
-        chapter,
-        error: message || 'Story text does not fit the uniform layout',
-      });
-    });
+  });
+}
+
+const CUSTOMER_PAGE_EDITOR_PREFLIGHT_WARMUPS = new Set();
+
+function warmCustomerPageEditorPreflight(jobId) {
+  if (CUSTOMER_PAGE_EDITOR_PREFLIGHT_WARMUPS.has(jobId)) return;
+  CUSTOMER_PAGE_EDITOR_PREFLIGHT_WARMUPS.add(jobId);
+  void preflightJobStoryText(jobId, { storyFontModeOverride: 'balanced' }).catch(() => {
+    CUSTOMER_PAGE_EDITOR_PREFLIGHT_WARMUPS.delete(jobId);
   });
 }
 
@@ -7038,11 +9072,12 @@ function corsHeaders(req) {
   };
 }
 
-function sendJson(req, res, status, payload) {
+function sendJson(req, res, status, payload, headers = {}) {
   res.writeHead(status, {
     ...corsHeaders(req),
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
+    ...headers,
   });
   res.end(`${JSON.stringify(payload)}\n`);
 }
@@ -7074,6 +9109,98 @@ async function route(req, res) {
     return;
   }
 
+  if (method === 'POST' && url.pathname === '/api/fairyteller/account/login') {
+    const body = await readJsonBody(req);
+    sendJson(req, res, 202, await requestCustomerAccountLogin(req, body.email));
+    return;
+  }
+
+  const customerAccountSessionMatch = url.pathname.match(/^\/api\/fairyteller\/account\/session\/([a-zA-Z0-9_-]{32,100})$/);
+  if (method === 'GET' && customerAccountSessionMatch) {
+    try {
+      const { email } = await consumeCustomerAccountLoginToken(customerAccountSessionMatch[1]);
+      const sessionToken = createCustomerAccountSessionToken(email);
+      res.writeHead(303, {
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex, nofollow, noarchive',
+        'referrer-policy': 'no-referrer',
+        'set-cookie': customerAccountCookie(sessionToken, CUSTOMER_ACCOUNT_SESSION_TTL_MS / 1000),
+        location: '/account?login=success',
+      });
+      res.end();
+    } catch {
+      res.writeHead(303, {
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex, nofollow, noarchive',
+        'referrer-policy': 'no-referrer',
+        location: '/account?login=expired',
+      });
+      res.end();
+    }
+    return;
+  }
+
+  if (method === 'GET' && url.pathname === '/api/fairyteller/account') {
+    const session = await authenticatedCustomerAccount(req);
+    if (!session) {
+      sendJson(req, res, 401, { authenticated: false });
+      return;
+    }
+    void recordCustomerAccountActivity({
+      dataDir: DATA_DIR,
+      email: session.email,
+      provider: session.authProvider,
+      secret: CUSTOMER_BOOKS_TOKEN_SECRET,
+    }).catch((error) => console.warn(`Could not record account activity: ${error.message}`));
+    if (String(req.headers['x-fairyteller-account-view'] || '') === '1') {
+      await recordCrmEventSafe({
+        type: 'account.opened',
+        session,
+        attribution: crmAttributionFromRequest(req),
+      });
+    }
+    const books = await listCustomerGenerationJobs(session.email, { limit: 100 });
+    void mirrorCustomerBooksToSupabase(session, books)
+      .catch((error) => console.warn(error.message));
+    sendJson(req, res, 200, {
+      authenticated: true,
+      email: session.email,
+      authProvider: session.authProvider,
+      books,
+    });
+    return;
+  }
+
+  if (method === 'DELETE' && url.pathname === '/api/fairyteller/account') {
+    const body = await readJsonBody(req);
+    const result = await deleteCustomerAccount(req, body);
+    sendJson(req, res, 200, result, {
+      'set-cookie': customerAccountCookie('', 0),
+    });
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/account/activity') {
+    const session = await authenticatedCustomerAccount(req);
+    if (!session) throw httpError(401, 'Войдите в личный кабинет');
+    const body = await readJsonBody(req);
+    if (body.type !== 'account.login_succeeded') throw httpError(400, 'Unknown account activity');
+    await recordCrmEventSafe({
+      type: body.type,
+      session,
+      attribution: crmAttributionFromRequest(req, body),
+    });
+    sendJson(req, res, 201, { ok: true });
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/account/logout') {
+    sendJson(req, res, 200, { ok: true }, {
+      'set-cookie': customerAccountCookie('', 0),
+    });
+    return;
+  }
+
   if (method === 'POST' && url.pathname === '/api/fairyteller/chat/messages') {
     sendJson(req, res, 201, { ok: true, ...(await createChatMessage(req)) });
     return;
@@ -7097,6 +9224,11 @@ async function route(req, res) {
 
   if (method === 'POST' && url.pathname === '/api/fairyteller/webhook/yookassa-form') {
     await handleYookassaFormWebhook(req, res);
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/pay/checkout') {
+    sendJson(req, res, 201, await createManualCheckout(await readJsonBody(req)));
     return;
   }
 
@@ -7152,6 +9284,55 @@ async function route(req, res) {
       return;
     }
     sendHtml(req, res, 200, renderJobsPage(await listGenerationJobs()));
+    return;
+  }
+
+  if ((method === 'GET' || method === 'POST') && url.pathname === ADMIN_DASHBOARD_PATH) {
+    if (!hasAdminBooksAuth(req)) {
+      sendHtml(req, res, 401, renderBooksLoginPage());
+      return;
+    }
+    if (method === 'POST') {
+      const params = await readFormBody(req);
+      const requestedGroup = params.get('group') || '';
+      const group = ['day', 'week', 'month', 'all'].includes(requestedGroup) ? requestedGroup : 'week';
+      const action = params.get('action') || '';
+      if (action === 'add_manual_sale') {
+        await addDashboardManualSale({
+          dataDir: DATA_DIR,
+          soldDate: params.get('soldDate') || '',
+          soldMonth: params.get('soldMonth') || '',
+          product: params.get('product') || '',
+          amount: params.get('amount') || '',
+          note: params.get('note') || '',
+        });
+        redirectAdmin(res, `${ADMIN_DASHBOARD_PATH}?group=${group}&manualAdded=1`);
+        return;
+      }
+      if (action === 'delete_manual_sale') {
+        await deleteDashboardManualSale({ dataDir: DATA_DIR, saleId: params.get('saleId') || '' });
+        redirectAdmin(res, `${ADMIN_DASHBOARD_PATH}?group=${group}&manualDeleted=1`);
+        return;
+      }
+      throw httpError(400, 'Unknown dashboard action');
+    }
+    const dashboard = await buildDashboardData({
+      dataDir: DATA_DIR,
+      group: url.searchParams.get('group') || 'week',
+      metrikaCounterId: METRIKA_COUNTER_ID,
+      metrikaOauthToken: METRIKA_OAUTH_TOKEN,
+      supabaseUrl: SUPABASE_URL,
+      supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+    });
+    sendHtml(req, res, 200, renderDashboardPage(dashboard, {
+      tabsHtml: renderAdminTabs('dashboard'),
+      logoutHref: `${ADMIN_BOOKS_PATH}?logout=1`,
+      notice: url.searchParams.get('manualAdded') === '1'
+        ? 'Ручная продажа добавлена в статистику.'
+        : url.searchParams.get('manualDeleted') === '1'
+          ? 'Ручная продажа удалена из статистики.'
+          : '',
+    }));
     return;
   }
 
@@ -7395,10 +9576,60 @@ async function route(req, res) {
     return;
   }
 
+  if (method === 'POST' && url.pathname === '/api/fairyteller/comic-preview') {
+    requireAuth(req);
+    const result = await comicWorker.submit(await readJsonBody(req));
+    sendJson(req, res, 202, { ok: true, ...result });
+    return;
+  }
+
   if (method === 'POST' && url.pathname === '/api/fairyteller/jobs') {
     requireAuth(req);
     const status = await createJob(await readJsonBody(req), { clientIp: requestIp(req) });
     sendJson(req, res, 201, sanitizePublicStatus(status));
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/generation-access') {
+    const session = await authenticatedCustomerAccount(req);
+    if (!session) {
+      sendJson(req, res, 200, { authenticated: false });
+      return;
+    }
+    sendJson(req, res, 200, {
+      authenticated: true,
+      email: session.email,
+      token: createGenerationAccessToken(session),
+      expiresInMs: GENERATION_ACCESS_TOKEN_TTL_MS,
+    });
+    return;
+  }
+
+  if (method === 'POST' && url.pathname === '/api/fairyteller/generation-check') {
+    const body = await readJsonBody(req);
+    const email = normalizeEmail(body?.email);
+    if (!email) throw httpError(400, 'Укажите корректный email');
+    const session = await authenticatedCustomerAccount(req);
+    try {
+      await assertDailyGenerationLimit({ email }, session);
+    } catch (error) {
+      if (error.status !== 429) throw error;
+      const safeFields = { ...(error.publicFields || {}) };
+      for (const field of ['booksUrl', 'booksAbsoluteUrl', 'payUrl', 'payAbsoluteUrl', 'jobs', 'support']) {
+        delete safeFields[field];
+      }
+      sendJson(req, res, 429, {
+        ok: false,
+        error: error.message,
+        ...safeFields,
+      });
+      return;
+    }
+    sendJson(req, res, 200, {
+      ok: true,
+      allowed: true,
+      authenticated: Boolean(session),
+    });
     return;
   }
 
@@ -7420,15 +9651,160 @@ async function route(req, res) {
     return;
   }
 
+  const versionedSamplePageMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample-pages\/([a-f0-9]{16})\/([^/]+)$/);
+  if (method === 'GET' && versionedSamplePageMatch) {
+    await sendPaywallPreviewPage(req, res, versionedSamplePageMatch[1], versionedSamplePageMatch[2], versionedSamplePageMatch[3]);
+    return;
+  }
+
   const samplePageMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/sample-pages\/([^/]+)$/);
   if (method === 'GET' && samplePageMatch) {
-    await sendPaywallPreviewPage(req, res, samplePageMatch[1], samplePageMatch[2]);
+    await sendCurrentPaywallPreviewPage(req, res, samplePageMatch[1], samplePageMatch[2]);
+    return;
+  }
+
+  const customerPageEditorMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor$/);
+  if (method === 'GET' && customerPageEditorMatch) {
+    const session = await requireCustomerJobOwner(req, customerPageEditorMatch[1]);
+    const state = await getCustomerPageEditorState(customerPageEditorMatch[1]);
+    await recordCrmEventSafe({
+      type: 'book.editor_opened',
+      jobId: customerPageEditorMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req),
+      details: { editorMode: 'text' },
+    });
+    sendJson(req, res, 200, publicCustomerPageEditorState(state));
+    warmCustomerPageEditorPreflight(customerPageEditorMatch[1]);
+    return;
+  }
+
+  const customerPageEditorSaveMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor\/pages\/(\d+)$/);
+  if (method === 'PATCH' && customerPageEditorSaveMatch) {
+    const session = await requireCustomerJobOwner(req, customerPageEditorSaveMatch[1]);
+    const previewPage = Number(customerPageEditorSaveMatch[2]);
+    if (!Number.isInteger(previewPage) || previewPage < 1 || previewPage > 999) {
+      throw httpError(400, 'Неверный номер страницы');
+    }
+    const body = await readJsonBody(req);
+    const result = await saveCustomerPageEditorText(
+      customerPageEditorSaveMatch[1],
+      previewPage,
+      body,
+    );
+    await recordCrmEventSafe({
+      type: 'book.text_saved',
+      jobId: customerPageEditorSaveMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req, body),
+      details: { previewPage },
+    });
+    sendJson(req, res, 202, result);
+    return;
+  }
+
+  const customerChapterTitlesMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor\/titles$/);
+  if (method === 'PATCH' && customerChapterTitlesMatch) {
+    const session = await requireCustomerJobOwner(req, customerChapterTitlesMatch[1]);
+    const body = await readJsonBody(req);
+    const result = await saveCustomerChapterTitles(
+      customerChapterTitlesMatch[1],
+      body,
+    );
+    await recordCrmEventSafe({
+      type: 'book.titles_saved',
+      jobId: customerChapterTitlesMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req, body),
+      details: { editorMode: 'titles' },
+    });
+    sendJson(req, res, 202, result);
+    return;
+  }
+
+  const customerCoverColorMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor\/cover-color$/);
+  if (method === 'PATCH' && customerCoverColorMatch) {
+    const session = await requireCustomerJobOwner(req, customerCoverColorMatch[1]);
+    const body = await readJsonBody(req);
+    const result = await saveCustomerCoverColor(
+      customerCoverColorMatch[1],
+      body,
+    );
+    await recordCrmEventSafe({
+      type: 'book.cover_color_saved',
+      jobId: customerCoverColorMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req, body),
+      details: { editorMode: 'images' },
+    });
+    sendJson(req, res, 202, result);
+    return;
+  }
+
+  const customerImageEditorMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor\/images$/);
+  if (method === 'GET' && customerImageEditorMatch) {
+    const session = await requireCustomerJobOwner(req, customerImageEditorMatch[1]);
+    const result = await getCustomerImageEditorState(customerImageEditorMatch[1], {
+      unlimited: session.globalEditor === true,
+    });
+    await recordCrmEventSafe({
+      type: 'book.editor_opened',
+      jobId: customerImageEditorMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req),
+      details: { editorMode: 'images' },
+    });
+    sendJson(req, res, 200, result);
+    return;
+  }
+  if (method === 'POST' && customerImageEditorMatch) {
+    const session = await requireCustomerJobOwner(req, customerImageEditorMatch[1]);
+    let payload;
+    if (String(req.headers['content-type'] || '').toLowerCase().includes('multipart/form-data')) {
+      const { fields, files } = await readMultipartForm(req, ADMIN_BOOK_IMAGE_MAX_BYTES + 1024 * 1024);
+      payload = {
+        slot: fields.get('slot') || '',
+        prompt: fields.get('prompt') || '',
+        referencePhoto: files.get('referencePhoto') || null,
+      };
+    } else {
+      payload = await readJsonBody(req);
+    }
+    const result = await editCustomerBookImage(
+      customerImageEditorMatch[1],
+      payload,
+      { unlimited: session.globalEditor === true },
+    );
+    await recordCrmEventSafe({
+      type: 'book.image_saved',
+      jobId: customerImageEditorMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req),
+      details: { editorMode: 'images', slot: result.image?.slot },
+    });
+    sendJson(req, res, 202, result);
+    return;
+  }
+
+  const customerPageEditorRebuildMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/page-editor\/rebuild$/);
+  if (method === 'POST' && customerPageEditorRebuildMatch) {
+    const session = await requireCustomerJobOwner(req, customerPageEditorRebuildMatch[1]);
+    const result = await rebuildCustomerPageEditorLayout(customerPageEditorRebuildMatch[1]);
+    await recordCrmEventSafe({
+      type: 'book.rebuild_requested',
+      jobId: customerPageEditorRebuildMatch[1],
+      session,
+      attribution: crmAttributionFromRequest(req),
+    });
+    sendJson(req, res, 202, result);
     return;
   }
 
   const checkoutMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/checkout$/);
   if (method === 'POST' && checkoutMatch) {
-    sendJson(req, res, 201, await createCheckout(checkoutMatch[1], await readJsonBody(req)));
+    const body = await readJsonBody(req);
+    body.crmAttribution = crmAttributionFromRequest(req, body);
+    sendJson(req, res, 201, await createCheckout(checkoutMatch[1], body));
     return;
   }
 
@@ -7543,6 +9919,14 @@ async function route(req, res) {
   throw httpError(404, 'Not found');
 }
 
+const comicWorker = createComicWorker({
+  dataDir: DATA_DIR,
+  apiKey: OPENLUX_API_KEY,
+  updateStatus: updateJobStatus,
+  putArtifact: putJobJsonArtifact,
+  putFile: putJobFile,
+});
+
 async function main() {
   await mkdir(resolve(DATA_DIR, 'jobs'), { recursive: true, mode: 0o700 });
 
@@ -7564,6 +9948,9 @@ async function main() {
       await route(req, res);
     } catch (error) {
       const status = error.status || 500;
+      if (status >= 500) {
+        console.error(`${req.method || 'GET'} ${req.url || '/'} failed:`, error);
+      }
       const publicFields = status >= 500 ? {} : (error.publicFields || {});
       sendJson(req, res, status, {
         ok: false,
@@ -7581,6 +9968,8 @@ async function main() {
     console.log(`fairyteller-api listening on :${PORT}`);
     console.log(`fairyteller data dir: ${DATA_DIR}`);
   });
+
+  await comicWorker.start();
 
   if (SUPPORT_TELEGRAM_POLLING_ENABLED) {
     void pollTelegramUpdates();

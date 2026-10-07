@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { basename, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 // Use pdf-lib's single-file distribution so the local Lab does not pay the
 // cost of hydrating hundreds of cold CommonJS files before every render.
 import { PDFDocument, clip, endPath, popGraphicsState, pushGraphicsState, rectangle, rgb } from 'pdf-lib/dist/pdf-lib.js';
@@ -15,7 +16,8 @@ const ASSET_DIR = resolve(TEMPLATE_DIR, 'assets');
 const FONT_DIR = resolve(TEMPLATE_DIR, 'fonts');
 const FFMPEG_BIN = process.env.FAIRYTELLER_FFMPEG_BIN || 'ffmpeg';
 const JOB_ID = process.argv[2] || process.env.FAIRYTELLER_JOB_ID;
-const TEXT_PREFLIGHT_ONLY = process.argv.includes('--text-preflight');
+const TEXT_PREFLIGHT_WORKER = process.argv.includes('--text-preflight-worker');
+const TEXT_PREFLIGHT_ONLY = process.argv.includes('--text-preflight') || TEXT_PREFLIGHT_WORKER;
 const STORY_FONT_MODE_OVERRIDE = String(process.env.FAIRYTELLER_RENDER_STORY_FONT_MODE_OVERRIDE || '').trim();
 const RENDER_VARIANT = String(process.env.FAIRYTELLER_RENDER_VARIANT || '').trim();
 const HARDCOVER_COVER_TEMPLATE = String(process.env.FAIRYTELLER_HARDCOVER_COVER_TEMPLATE || 'bitten').trim();
@@ -31,6 +33,13 @@ const HARDCOVER_COVER_TEMPLATE_ASSETS = {
   white: 'cover/background-hardcover-template-white.jpg',
 };
 const COVER_STYLE_VALUES = new Set(['standard', 'cyberpunk']);
+const COVER_COLOR_ASSETS = {
+  purple: 'cover/background-purple.png',
+  'dark-green': 'cover/background-dark-green.png',
+  blue: 'cover/background-blue.png',
+  yellow: 'cover/background-yellow.png',
+};
+const COVER_COLOR_VALUES = new Set(Object.keys(COVER_COLOR_ASSETS));
 const CYBERPUNK_WORLD_KEY = 'cyberpunk_dream';
 const CYBERPUNK_HARDCOVER_TEMPLATE_ASSET = 'cover/background-hardcover-template-cyberpunk.png';
 const STANDARD_INTERIOR_ACCENT = '#9B1C1C';
@@ -947,7 +956,7 @@ async function embedTemplateAsset(pdf, relativePath) {
   return pdf.embedPng(bytes);
 }
 
-async function loadTemplateAssets(pdf, { coverStyle, paperStyle, includeStandardCover }) {
+async function loadTemplateAssets(pdf, { coverStyle, coverColor, paperStyle, includeStandardCover }) {
   const book = {
     image2: await embedTemplateAsset(pdf, 'book/image2.png'),
     image13: await embedTemplateAsset(pdf, 'book/image13.png'),
@@ -985,12 +994,15 @@ async function loadTemplateAssets(pdf, { coverStyle, paperStyle, includeStandard
     ].map((path) => embedTemplateAsset(pdf, path)));
   }
 
+  const coverBackgroundAsset = coverColor
+    ? COVER_COLOR_ASSETS[coverColor]
+    : coverStyle === 'cyberpunk'
+      ? 'cover/background-cyberpunk-13x13.png'
+      : 'cover/background.png';
+
   return {
-    coverBackground: includeStandardCover && coverStyle !== 'cyberpunk'
-      ? await embedTemplateAsset(pdf, 'cover/background.png')
-      : null,
-    coverCyberpunk: includeStandardCover && coverStyle === 'cyberpunk'
-      ? await embedTemplateAsset(pdf, 'cover/background-cyberpunk-13x13.png')
+    coverBackground: includeStandardCover
+      ? await embedTemplateAsset(pdf, coverBackgroundAsset)
       : null,
     book,
   };
@@ -1028,6 +1040,11 @@ async function resolveCoverStyle(dir, fullText) {
   return order?.world === CYBERPUNK_WORLD_KEY ? 'cyberpunk' : 'standard';
 }
 
+function resolveCoverColor(fullText) {
+  const stored = String(fullText?.text?.printLayout?.coverColor || '').trim();
+  return COVER_COLOR_VALUES.has(stored) ? stored : '';
+}
+
 async function addStandardCoverPage({ dir, fullText, visuals, coverStyle, fonts, assets }) {
   const { pdf, fontRubik, fontAmatic, fontSerif } = fonts;
   const [width, height] = COVER_SIZE_MM.map(mmToPt);
@@ -1038,7 +1055,7 @@ async function addStandardCoverPage({ dir, fullText, visuals, coverStyle, fonts,
   const subtitle = bible.subtitle || '';
   const summary = bookSummary(fullText);
 
-  page.drawImage(coverStyle === 'cyberpunk' ? assets.coverCyberpunk : assets.coverBackground, { x: 0, y: 0, width, height });
+  page.drawImage(assets.coverBackground, { x: 0, y: 0, width, height });
 
   if (coverImage) {
     drawContainedCoverImage(page, coverImage, topLeftBox(page, pptBox(418.01, 145.37, 311.06, 216.64)));
@@ -2559,6 +2576,32 @@ async function writeFileAtomic(path, content) {
 }
 
 async function main() {
+  if (TEXT_PREFLIGHT_WORKER) {
+    const layout = validateLayout(await readJson(LAYOUT_PATH));
+    const preparedFonts = await createPdfWithFonts();
+    const input = createInterface({ input: process.stdin, crlfDelay: Infinity });
+    for await (const line of input) {
+      const trimmed = String(line || '').trim();
+      if (!trimmed) continue;
+      let request;
+      try {
+        request = JSON.parse(trimmed);
+        assertSafeJobIdForPreflight(request.jobId);
+        const dir = jobDir(request.jobId);
+        const fullText = await readJson(join(dir, 'artifacts', 'full-text.json'));
+        const additionalImages = await readAvailableAdditionalImages(dir);
+        const storyFont = await preflightStoryTextOnly({ fullText, layout, preparedFonts, additionalImages });
+        process.stdout.write(`${JSON.stringify({ requestId: request.requestId, ok: true, storyFont })}\n`);
+      } catch (error) {
+        process.stdout.write(`${JSON.stringify({
+          requestId: request?.requestId || null,
+          ok: false,
+          error: error?.message || 'Text preflight failed',
+        })}\n`);
+      }
+    }
+    return;
+  }
   if (TEXT_PREFLIGHT_ONLY && TEXT_PREFLIGHT_BATCH_JOB_IDS.length) {
     const layout = validateLayout(await readJson(LAYOUT_PATH));
     debugTextPagination('embedding shared batch fonts');
@@ -2619,10 +2662,12 @@ async function main() {
   const visuals = visualsArtifact.visuals || {};
 
   const coverStyle = await resolveCoverStyle(dir, fullText);
+  const coverColor = resolveCoverColor(fullText);
   const selectedPaperStyle = pagePaperStyle(fullText, coverStyle);
   const fonts = await createPdfWithFonts();
   const assets = await loadTemplateAssets(fonts.pdf, {
     coverStyle,
+    coverColor,
     paperStyle: selectedPaperStyle,
     includeStandardCover: !HARDCOVER_SOURCE_VARIANTS.has(RENDER_VARIANT),
   });
@@ -2648,6 +2693,7 @@ async function main() {
     layoutVersion: layout.version,
     pdfVersionTarget: '1.7',
     colorSpaceTarget: 'RGB',
+    coverColor: coverColor || null,
     fontsEmbedded: true,
     protection: 'none',
     files: {
