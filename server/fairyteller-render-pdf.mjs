@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { LOCAL_LAYOUT_VERSION, LOCAL_PRINT_LAYOUT, localChapterIssues, localChapterContentIssues, localChapterTarget, localPrepareBlockParagraphs, localDensityIssues, localDensityWarnings } from './fairyteller-local-layout-contract.mjs';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -541,6 +542,7 @@ function drawParagraphTextBox(page, text, box, options) {
     font,
     color = rgb(0.16, 0.12, 0.09),
     align = 'left',
+    maxJustifySpaceRatio = Infinity,
   } = options;
   const paddingX = box.paddingX || 0;
   const paddingY = box.paddingY || 0;
@@ -582,6 +584,13 @@ function drawParagraphTextBox(page, text, box, options) {
         const wordsWidth = words.reduce((total, word) => total + textWidthAtSize(font, word, layout.size), 0);
         const availableWidth = content.width - line.xOffset - line.indent;
         const wordGap = (availableWidth - wordsWidth) / (words.length - 1);
+        // Keep rare short wrapped lines readable instead of creating huge word gaps.
+        const normalSpace = textWidthAtSize(font, ' ', layout.size);
+        if (wordGap > normalSpace * maxJustifySpaceRatio) {
+          page.drawText(line.text, { x, y, size: layout.size, font, color });
+          y -= layout.lineHeight;
+          return;
+        }
         let wordX = x;
         words.forEach((word) => {
           page.drawText(word, { x: wordX, y, size: layout.size, font, color });
@@ -1339,6 +1348,7 @@ function drawPptParagraphText(page, text, box, options) {
     font: options.font,
     color: options.color || hexColor('#292929'),
     align: options.align || 'left',
+    maxJustifySpaceRatio: options.maxJustifySpaceRatio ?? Infinity,
   });
 }
 
@@ -1514,11 +1524,13 @@ const TEXT_PAGE_NUM_BOXES = {
 };
 
 function storyFontMode(fullText) {
+  if (fullText?.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION) return 'regular';
   const mode = STORY_FONT_MODE_OVERRIDE || String(fullText?.text?.printLayout?.storyFontMode || 'uniform').trim();
   return STORY_FONT_MODE_CONFIGS.has(mode) ? mode : 'uniform';
 }
 
 function storyTextAlign(fullText) {
+  if (fullText?.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION) return LOCAL_PRINT_LAYOUT.storyTextAlign;
   const align = String(fullText?.text?.printLayout?.storyTextAlign || 'justify').trim();
   return align === 'justify' ? 'justify' : 'left';
 }
@@ -1568,7 +1580,7 @@ function pptStoryTextBox(pageNumber, isLastTextPage = false, isChapterFinalTextP
   return pptBox(x, STANDARD_TEXT_TOP, width, 300.35);
 }
 
-function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null, align = 'left', isChapterFirstTextPage = false, coverStyle = 'standard') {
+function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null, align = 'left', isChapterFirstTextPage = false, coverStyle = 'standard', lockParagraphGap = false) {
   const hasFixedSize = Number.isFinite(fixedSize);
   const size = hasFixedSize ? fixedSize : Number.isFinite(maxSize) ? maxSize : 11;
   // A text page can move when a story is reflowed (especially in the 12 pt mode).
@@ -1582,7 +1594,8 @@ function pptStoryTextOptions(fonts, pageNumber, fixedSize = null, maxSize = null
     lineHeightRatio: 1.25,
     firstLineIndent: 15,
     paragraphGapRatio: 0.54,
-    maxParagraphGapRatio: 1.45,
+    maxParagraphGapRatio: lockParagraphGap ? 0.54 : 1.45,
+    maxJustifySpaceRatio: lockParagraphGap ? 4 : Infinity,
     inferParagraphs: false,
     align,
     dropCap: hasDropCap ? {
@@ -1707,7 +1720,7 @@ function baseStoryLayoutHeight(layout, size) {
 
 function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
   const startedAt = Date.now();
-  let segments = ensurePaginationSegmentCount(storyPaginationSegments(chapter), pagePlans.length);
+  let segments = ensurePaginationSegmentCount(storyPaginationSegments(chapter, pagePlans.some(p => p.localLimits)), pagePlans.length);
   const sourceText = getChapterTextBlocks(chapter).join('\n\n');
   const layoutCache = new Map();
   let candidateCalls = 0;
@@ -1717,6 +1730,18 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
     candidateCalls += 1;
     const text = paginationText(segments, start, end);
     const pagePlan = pagePlans[pageIndex];
+    if (pagePlan.localLimits) {
+      const { min, max, paragraphsMin, paragraphsMax } = pagePlan.localLimits;
+      if (pagePlan.localLimits.sceneQuote && !cleanText(text).includes(cleanText(pagePlan.localLimits.sceneQuote))) {
+        layoutCache.set(key, null);
+        return null;
+      }
+      const paragraphs = text.split(/\n{2,}/).length;
+      if (text.length < min || text.length > max || paragraphs < paragraphsMin || paragraphs > paragraphsMax) {
+        layoutCache.set(key, null);
+        return null;
+      }
+    }
     const layout = fitPptStoryTextLayout(
       text,
       fonts,
@@ -1727,6 +1752,14 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
       pagePlan.isChapterFinalTextPage,
       pagePlan.chapterIndex,
     );
+    if (pagePlan.localLimits) {
+      const continuedStart = start > 0 && segments[start - 1].paragraphIndex === segments[start].paragraphIndex;
+      const continuedEnd = end < segments.length && segments[end - 1].paragraphIndex === segments[end].paragraphIndex;
+      if ((continuedStart && layout.sections[0]?.length < 2) || (continuedEnd && layout.sections.at(-1)?.length < 2)) {
+        layoutCache.set(key, null);
+        return null;
+      }
+    }
     const box = pptStoryTextBox(
       pagePlan.pageNumber,
       pagePlan.isLastTextPage,
@@ -1744,7 +1777,8 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
   };
 
   function pagePaginationScore(page, end) {
-    return ((1 - page.utilization) ** 2) * 100 + paginationBoundaryPenalty(segments, end);
+    const target = pagePlans[0]?.localLimits?.targetDensity ?? 1;
+    return ((target - page.utilization) ** 2) * 100 + (pagePlans.some(p => p.localLimits) ? Math.min(0.005, paginationBoundaryPenalty(segments, end)) : paginationBoundaryPenalty(segments, end));
   }
 
   function solutionScore(boundaries, pages) {
@@ -1757,7 +1791,7 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
     const pages = [];
     for (let pageIndex = 0; pageIndex < pagePlans.length; pageIndex += 1) {
       const measured = candidate(pageIndex, boundaries[pageIndex], boundaries[pageIndex + 1]);
-      if (measured.layout.truncated) return null;
+      if (!measured || measured.layout.truncated) return null;
       pages.push(measured);
     }
     return pages;
@@ -1776,7 +1810,7 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
       }
       if (pageIndex === pagePlans.length - 1) {
         const page = candidate(pageIndex, start, segments.length);
-        const result = page.layout.truncated
+        const result = !page || page.layout.truncated
           ? null
           : { score: pagePaginationScore(page, segments.length), pages: [page] };
         memo.set(key, result);
@@ -1787,6 +1821,7 @@ function paginateChapterStoryText(chapter, pagePlans, fonts, size) {
       let best = null;
       for (let end = start + 1; end <= maxEnd; end += 1) {
         const page = candidate(pageIndex, start, end);
+        if (!page) continue;
         if (page.layout.truncated) break;
         const tail = solveFrom(pageIndex + 1, end);
         if (!tail) continue;
@@ -1969,6 +2004,7 @@ function collectPptStoryTextPages(chapters, layout, allowVariablePageCount = fal
 function resolvePptStoryFontControl(fullText, fonts, textPages, appliedUniformSize = null, modeConfig = null) {
   const mode = storyFontMode(fullText);
   const config = modeConfig || effectiveStoryFontModeConfig(mode);
+  if (fullText.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION) return { mode, requestedSize: 10.5, maxSize: 10.5, fixedSize: 10.5 };
   if (config.kind === 'fixed') {
     return { mode, requestedSize: config.size, maxSize: config.size, fixedSize: null };
   }
@@ -2216,7 +2252,7 @@ async function addPptChapterImagePage(pdf, fonts, dir, visuals, chapterIndex, pa
   });
 }
 
-function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLastTextPage = false, storyFontControl = null, align = 'left', isChapterFinalTextPage = false, adaptivePagination = false, isChapterFirstTextPage = false, coverStyle = 'standard') {
+function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLastTextPage = false, storyFontControl = null, align = 'left', isChapterFinalTextPage = false, adaptivePagination = false, isChapterFirstTextPage = false, coverStyle = 'standard', lockParagraphGap = false) {
   const page = addPptInteriorPage(pdf);
   const usesEndPaper = isChapterFinalTextPage;
   drawBookPaper(page, assets, usesEndPaper ? 'image9' : 'image8');
@@ -2233,6 +2269,7 @@ function addPptTextPage(pdf, fonts, assets, text, pageNumber, chapterIndex, isLa
       align,
       isChapterFirstTextPage,
       coverStyle,
+      lockParagraphGap,
     ),
   );
   drawPptPageNumber(page, pageNumber, fonts, TEXT_PAGE_NUM_BOXES[pageNumber] || undefined);
@@ -2314,6 +2351,11 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle, f
     throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${sourceChapters.length}`);
   }
   const additionalImages = await readAvailableAdditionalImages(dir);
+  const lockedChapterMetrics = [];
+  if (fullText.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION) {
+    if (fullText.text.printLayout.layoutStage === 'final' && fullText.text.printLayout.layoutReady !== true) throw new Error('Final local book layout is not ready');
+    for (const chapter of sourceChapters) lockedChapterMetrics.push(...(await preflightLocalChapter(chapter, fonts, layout, false, fullText.text.printLayout.layoutStage === 'final')).pagination.chapters);
+  }
   const mode = storyFontMode(fullText);
   const modeConfig = effectiveStoryFontModeConfig(mode);
   const pagination = modeConfig.kind === 'paginated'
@@ -2432,6 +2474,7 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle, f
         modeConfig.kind === 'adaptive',
         isChapterFirstTextPage,
         coverStyle,
+        fullText.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION,
       );
       if (Number.isFinite(textLayout.size)) storyFontSizes.push(textLayout.size);
       if (textLayout.truncated) {
@@ -2495,9 +2538,92 @@ async function renderInteriorPdf({ dir, fullText, visuals, layout, coverStyle, f
         reflowed: true,
         fontSizePt: pagination.fontSizePt,
         chapters: pagination.metrics,
-      } : null,
+      } : lockedChapterMetrics.length ? { reflowed: false, fontSizePt: 10.5, chapters: lockedChapterMetrics } : null,
     },
   };
+}
+
+async function preflightLocalChapter(chapter, fonts, layout, preparePages = false, physicalOnly = false) {
+  const issues = physicalOnly ? localChapterContentIssues(chapter) : localChapterIssues(chapter, { preparePages });
+  if (issues.length) throw new Error('Story chapter ' + chapter.n + ' cannot satisfy layout contract: ' + issues.join('; '));
+  const n = Number(chapter.n);
+  const start = (layout.pagePlan.frontMatterPages || 3) + layout.pagePlan.chapterTextPages.slice(0, n - 1).reduce((sum, count) => sum + count + 2, 0) + 2;
+  const originalBlocks = [...chapter.textBlocks];
+  if (preparePages && originalBlocks.length > 1) {
+    const tailPlans = originalBlocks.slice(1).map((_, i) => ({
+      pageNumber: start + i + 2, isLastTextPage: n === 5 && i === originalBlocks.length - 2,
+      isChapterFirstTextPage: false, isChapterFinalTextPage: i === originalBlocks.length - 2, chapterIndex: n,
+      localLimits: { min: 680, max: n === 5 && i === originalBlocks.length - 2 ? 880 : 1000, paragraphsMin: 2, paragraphsMax: 8 },
+    }));
+    const originalDensity = tailPlans.map((p, i) => {
+      const l = fitPptStoryTextLayout(originalBlocks[i + 1], fonts, p.pageNumber, p.isLastTextPage, 10.5, false, p.isChapterFinalTextPage, n);
+      return baseStoryLayoutHeight(l, 10.5) / pptStoryTextBox(p.pageNumber, p.isLastTextPage, p.isChapterFinalTextPage, n).height;
+    });
+    const targetDensity = originalDensity.reduce((sum, d) => sum + d, 0) / originalDensity.length;
+    for (const p of tailPlans) p.localLimits.targetDensity = targetDensity;
+    try {
+      const balanced = paginateChapterStoryText({ ...chapter, textBlocks: originalBlocks.slice(1) }, tailPlans, fonts, 10.5);
+      const blocks = [originalBlocks[0], ...balanced.pages.map(p => p.text)];
+      const candidate = { ...chapter, textBlocks: blocks };
+      if (!localChapterIssues(candidate).length && cleanText(blocks.join(' ')) === cleanText(originalBlocks.join(' '))) {
+        chapter = { ...candidate, text: blocks.join('\n\n') };
+      } else debugTextPagination('chapter ' + n + ': rejected reflow: ' + localChapterIssues(candidate).join('; ') + ', words preserved=' + (cleanText(blocks.join(' ')) === cleanText(originalBlocks.join(' '))));
+    } catch (error) {
+      // Balancing is optional. Actual overflow is still checked below and never accepted.
+      debugTextPagination('chapter ' + n + ': keep original page boundaries: ' + error.message);
+    }
+  }
+  const finalIssues = physicalOnly ? (chapter.textBlocks.length === localChapterTarget(n).blocks ? [] : ['incorrect physical page count']) : localChapterIssues(chapter);
+  if (finalIssues.length) throw new Error('Story chapter ' + n + ' cannot satisfy layout contract: ' + finalIssues.join('; '));
+  const pages = chapter.textBlocks.map((text, i, blocks) => {
+    const pageNumber = start + i + 1;
+    const final = i === blocks.length - 1;
+    const l = fitPptStoryTextLayout(text, fonts, pageNumber, n === 5 && final, 10.5, i === 0, final, n);
+    if (l.truncated) throw new Error('Story chapter ' + n + ' cannot fit block ' + (i + 1) + ' at 10.5 pt');
+    const box = pptStoryTextBox(pageNumber, n === 5 && final, final, n);
+    return { block: i + 1, pageNumber, utilization: baseStoryLayoutHeight(l, 10.5) / box.height, lineCount: l.lineCount, characterCount: text.length };
+  });
+  const storyFont = { mode: 'regular', appliedSizePt: 10.5, textAlign: LOCAL_PRINT_LAYOUT.storyTextAlign, pagination: { reflowed: false, chapters: [{ chapter: n, pages }] } };
+  const densityIssues = localDensityIssues(storyFont);
+  if (densityIssues.length) throw new Error('Story chapter ' + n + ' cannot satisfy page density: ' + densityIssues.map(x => x.message).join('; '));
+  storyFont.densityWarnings = localDensityWarnings(storyFont);
+  if (preparePages) storyFont.preparedChapter = chapter;
+  return storyFont;
+}
+
+async function prepareLocalBookLayout(fullText, fonts, layout) {
+  const chapters = fullText.text?.chapters || [];
+  if (chapters.length !== 5 || chapters.some((c, i) => Number(c.n) !== i + 1)) throw new Error('Final local layout requires all five chapters in order');
+  const preparedChapters = [], metrics = [], failures = [];
+  for (const original of chapters) {
+    try {
+      const issues = localChapterContentIssues(original);
+      if (issues.length) throw new Error(issues.join('; '));
+      const n = Number(original.n), count = localChapterTarget(n).blocks;
+      const chapter = { ...original, textBlocks: original.textBlocks.map(localPrepareBlockParagraphs) };
+      const quote = cleanText(original.visualSourceQuote || '');
+      if (quote && !cleanText(original.textBlocks.join(' ')).includes(quote)) throw new Error('Illustration quote is not grounded in the source chapter');
+      const start = (layout.pagePlan.frontMatterPages || 3) + layout.pagePlan.chapterTextPages.slice(0, n - 1).reduce((sum, pages) => sum + pages + 2, 0) + 2;
+      const plans = Array.from({ length: count }, (_, i) => ({
+        pageNumber: start + i + 1, isLastTextPage: n === 5 && i === count - 1,
+        isChapterFirstTextPage: i === 0, isChapterFinalTextPage: i === count - 1, chapterIndex: n,
+        localLimits: { min: 1, max: Infinity, paragraphsMin: 1, paragraphsMax: Infinity, targetDensity: 0.85 },
+      }));
+      const result = paginateChapterStoryText(chapter, plans, fonts, 10.5);
+      const blocks = result.pages.map(p => p.text);
+      if (cleanText(blocks.join(' ')) !== cleanText(original.textBlocks.join(' '))) throw new Error('Final layout changed story words');
+      if (quote && !cleanText(blocks.join(' ')).includes(quote)) throw new Error('Final layout lost the illustration anchor');
+      const prepared = { ...original, textBlocks: blocks, text: blocks.join('\n\n') };
+      const verified = await preflightLocalChapter(prepared, fonts, layout, false, true);
+      preparedChapters.push(prepared);metrics.push(...verified.pagination.chapters);
+    } catch (error) {
+      failures.push({ chapter: Number(original.n), error: error.message,
+        repairable: /cannot be paginated|cannot fit|cannot satisfy page density/.test(error.message) });
+    }
+  }
+  return { mode: 'regular', appliedSizePt: 10.5, textAlign: 'justify', layoutReady: !failures.length,
+    preparedChapters, failures, pagination: { reflowed: true, chapters: metrics },
+    densityWarnings: localDensityWarnings({ pagination: { chapters: metrics } }) };
 }
 
 async function preflightStoryTextOnly({ fullText, layout, preparedFonts = null, additionalImages = [] }) {
@@ -2510,6 +2636,11 @@ async function preflightStoryTextOnly({ fullText, layout, preparedFonts = null, 
   const sourceChapters = (fullText.text?.chapters || []).sort((a, b) => Number(a.n) - Number(b.n));
   if (sourceChapters.length !== layout.pagePlan.chapters) {
     throw new Error(`Expected ${layout.pagePlan.chapters} chapters, got ${sourceChapters.length}`);
+  }
+  if (fullText.text?.printLayout?.contractVersion === LOCAL_LAYOUT_VERSION) {
+    if (fullText.text.printLayout.layoutStage === 'final' && fullText.text.printLayout.layoutReady !== true) throw new Error('Final local book layout is not ready');
+    const verified = await Promise.all(sourceChapters.map(chapter => preflightLocalChapter(chapter, fonts, layout, false, fullText.text.printLayout.layoutStage === 'final')));
+    if (TEXT_PREFLIGHT_ONLY || TEXT_PREFLIGHT_WORKER) return { mode: 'regular', requestedSizePt: 10.5, appliedSizePt: 10.5, minAppliedSizePt: 10.5, maxAppliedSizePt: 10.5, textPageCount: 25, pagination: { reflowed: false, chapters: verified.flatMap(x => x.pagination.chapters) } };
   }
   const mode = storyFontMode(fullText);
   const modeConfig = effectiveStoryFontModeConfig(mode);
@@ -2588,9 +2719,17 @@ async function main() {
         request = JSON.parse(trimmed);
         assertSafeJobIdForPreflight(request.jobId);
         const dir = jobDir(request.jobId);
-        const fullText = await readJson(join(dir, 'artifacts', 'full-text.json'));
-        const additionalImages = await readAvailableAdditionalImages(dir);
-        const storyFont = await preflightStoryTextOnly({ fullText, layout, preparedFonts, additionalImages });
+        let storyFont;
+        if (request.chapter && process.env.FAIRYTELLER_LAB_SEQUENTIAL === '1') {
+          storyFont = await preflightLocalChapter(request.chapter, preparedFonts, layout, request.preparePages === true);
+        } else {
+          const fullText = await readJson(join(dir, 'artifacts', 'full-text.json'));
+          const additionalImages = await readAvailableAdditionalImages(dir);
+          if (request.prepareBook === true) {
+            if (fullText.text?.printLayout?.contractVersion !== LOCAL_LAYOUT_VERSION || fullText.text?.printLayout?.layoutStage !== 'final') throw new Error('Final book layout contract is required');
+            storyFont = await prepareLocalBookLayout(fullText, preparedFonts, layout);
+          } else storyFont = await preflightStoryTextOnly({ fullText, layout, preparedFonts, additionalImages });
+        }
         process.stdout.write(`${JSON.stringify({ requestId: request.requestId, ok: true, storyFont })}\n`);
       } catch (error) {
         process.stdout.write(`${JSON.stringify({

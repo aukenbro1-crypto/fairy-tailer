@@ -1,5 +1,8 @@
 # Fairyteller Project Passport
 
+Production generation (2026-10-07): **Gemini 2.5 Pro/OpenLux, three main calls: plan + chapter 1 → chapters 2–3 → chapters 4–5**, Grok images released per accepted chapter. Whole-chapter quoted scenes, action/reaction/gaze, neutral references and wardrobe/scene locks (7600 UTF-8 bytes) are live on the original six workflow IDs. Authenticated `/book-layout` performs final whole-book pagination at 10.5 pt with justification and no word changes. Only true overflow permits one bounded shortening call that preserves accepted illustrated fragments; old books retain their previous path. Production checkpoints `production_paired_v1_whole_chapter_scenes`. API/n8n/public routes and published-node parity verified; deployed renderer smoke produced a 41-page PDF without clipping/word changes, in 9.65 s of layout, with zero provider calls/emails and the original book unchanged. Last full user Lab test was 4m51.438s; production generation time/four-minute goal is not proven. Rollback `/root/fairyteller-pipeline-20261007-v5/before/`. Git branch `codex/paired-generation-production-v1`. Details: [production pipeline](docs/production-paired-generation-20261007.md).
+
+
 Last updated: 2026-08-26
 
 ## Project Context

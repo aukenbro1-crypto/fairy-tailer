@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const root=new URL('../',import.meta.url);
+const workflow=JSON.parse(await readFile(new URL('n8n/local-sequential/fairyteller_full_text.workflow.json',root),'utf8'))[0];
+const code=workflow.nodes.find(n=>n.name==='Generate Full Text — Selected Provider').parameters.jsCode;
+const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+const source={jobId:'ft_lab_scene_repair_test',pipeline:{localSequentialRun:'offline-scene-test'},order:{heroes:[{n:1,name:'Герой'}],textProvider:'openlux',openluxTextModel:'gpt-6.1-sol'},text:{chapters:[{n:1,textBlocks:['Первая глава.']}],bible:{chapterPlan:[{n:5,title:'Финал',textBlockTarget:5}]}},laterPlan:[{n:5,title:'Финал',textBlockTarget:5}],fullTextPrompt:'Контекст'};
+const env={FAIRYTELLER_API_BASE_URL:'http://127.0.0.1:3098',OPENLUX_API_KEY:'fake',FAIRYTELLER_API_TOKEN:'fake'};
+const api=await new AsyncFunction('$','$env',code.split('try {\n  const generated = [];')[0]+'\nreturn {chapterRequest,localChapterSceneIsGrounded};')(()=>({first:()=>({json:source})}),env);
+const scene={scene:'Герой стоит возле пульта и проверяет состояние городского транспорта.',sourceQuote:'Герой стоит возле пульта и проверяет расписание.',heroNumbers:[1],physicalPlacement:'На сухом полу возле пульта.',shotType:'medium'};
+const block=scene.sourceQuote+' '+('Он рассматривает линии, вспоминая ответы спутников. '.repeat(9))+'\n\n'+('Важные подробности помогают ему принять решение. '.repeat(9));
+const draft={n:5,summary:'Развязка',textBlocks:Array(5).fill(block),visualScene:scene};
+assert.ok(api.localChapterSceneIsGrounded(scene,block,source.order.heroes));
+const repair=api.chapterRequest(source.laterPlan[0],'chapter 5 has 4900 characters; required 3900-4600; block 5 has 980 characters; required 680-880',draft);
+assert.equal(repair.localRepairIndexes,undefined,'no page repairs before final layout');
+const misplaced={...draft,textBlocks:[...draft.textBlocks],visualScene:{...scene,sourceQuote:'У окна его ждал давно пропущенный урок, который ещё можно было провести.'}};
+misplaced.textBlocks[4]+=' '+misplaced.visualScene.sourceQuote;
+assert.ok(api.localChapterSceneIsGrounded(misplaced.visualScene,misplaced.textBlocks,source.order.heroes));
+assert.equal(api.chapterRequest(source.laterPlan[0],'',misplaced).localSceneRepair,undefined,'late scene quote is valid without repair');
+misplaced.visualScene={...misplaced.visualScene,sourceQuote:'Эта цитата нигде не встречается в написанной главе.'};
+const regenerate=api.chapterRequest(source.laterPlan[0],'chapter 5 has 4769 characters; required 3900-4600',misplaced);
+assert.equal(regenerate.localSceneRepair,true,'bad grounding gets metadata-only repair irrespective of volume');
+assert.match(regenerate.contents[0].parts[0].text,/Прозу не возвращай и не переписывай/);
+console.log(JSON.stringify({ok:true,paidRequests:0,checks:['no early volume repair','invalid scene uses metadata-only repair']}));

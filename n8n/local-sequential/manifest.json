@@ -1,0 +1,57 @@
+{
+  "mode": "local_only",
+  "textModelSwitch": {
+    "env": "FAIRYTELLER_LOCAL_TEXT_MODEL",
+    "default": "gemini-2.5-pro",
+    "candidate": "grok-4.3",
+    "provider": "openlux",
+    "grokReasoningEffort": "low",
+    "gptCandidate": "gpt-6.1-sol",
+    "gptReasoningEffort": "low",
+    "gptResponseFormat": "json_schema_strict"
+  },
+  "workflows": [
+    {
+      "name": "fairyteller_intake_local_sequential",
+      "id": "FTLocalintake",
+      "active": false,
+      "baselineVersion": "12c4a0ef-a585-44e8-9a7e-7a2dc44405ed",
+      "sha256": "59d5b9ee8f6d74a736bb90322cdf031b24b0f69054bafe52c123cbed1f332d46"
+    },
+    {
+      "name": "fairyteller_text_local_sequential",
+      "id": "FTLocaltext",
+      "active": false,
+      "baselineVersion": "6ff6b6b8-8950-48b3-99ca-5f5571720580",
+      "sha256": "e8c4457c6df009394aa88d8802d65c0746ea705049233bfb35102833aadda937"
+    },
+    {
+      "name": "fairyteller_full_text_local_sequential",
+      "id": "FTLocalfulltext",
+      "active": false,
+      "baselineVersion": "f1054ed5-55ba-4884-8717-33117aa45b67",
+      "sha256": "46e277b74bf1a39e38e362fddab8a4b12f175a4306dbbd4906329bbcebc6e20b"
+    },
+    {
+      "name": "fairyteller_visuals_local_sequential",
+      "id": "FTLocalvisuals",
+      "active": false,
+      "baselineVersion": "f1d31764-bce1-4592-82e6-e1a4bea566f5",
+      "sha256": "fe6603baca04d9dbffc5ae05127f46eb534bee9b4057955b2d0edc1e4130551d"
+    },
+    {
+      "name": "fairyteller_full_visuals_local_sequential",
+      "id": "FTLocalfullvisuals",
+      "active": false,
+      "baselineVersion": "7a98a00d-9273-4ed2-a861-78a36d0573c7",
+      "sha256": "2eb3b4c6605b1522aeb712ce3454a60f9bd1dbcb5f84392d2cdb22528251e8da"
+    },
+    {
+      "name": "fairyteller_cover_local_sequential",
+      "id": "FTLocalcover",
+      "active": false,
+      "baselineVersion": "2914e8d9-df1c-46e4-92b7-9f234e289cb8",
+      "sha256": "a3a0669a3c232ec0a167f831d8adca6b64a6b1af301950bb872f68012e809720"
+    }
+  ]
+}

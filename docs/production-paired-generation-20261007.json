@@ -1,0 +1,49 @@
+{
+  "release": "20261007-paired-v1",
+  "workflows": [
+    {
+      "name": "fairyteller_full_text",
+      "id": "C2Pcin7lctSY5nc2",
+      "versionId": "dbd271d2-53ae-4d86-8894-5c8d95be39c6"
+    },
+    {
+      "name": "fairyteller_intake",
+      "id": "Vty7vSn4vd5Nduht",
+      "versionId": "b5d19bcc-c615-4764-909e-e510c9845a66"
+    },
+    {
+      "name": "fairyteller_text",
+      "id": "kCtpw2d7pEOI3QRF",
+      "versionId": "7db3cf3f-09da-4d37-bed5-d0a37fcb8b10"
+    },
+    {
+      "name": "fairyteller_visuals",
+      "id": "RXzoJ7Bdlr2y3l60",
+      "versionId": "fcf8bebe-12b5-4aa4-b670-430a894e5c1a"
+    },
+    {
+      "name": "fairyteller_full_visuals",
+      "id": "FVFullVisuals20260523",
+      "versionId": "15f7db8c-1885-4f98-992e-c6dfc130524d"
+    },
+    {
+      "name": "fairyteller_cover",
+      "id": "FVCover20260523",
+      "versionId": "a303dcca-8b01-4d53-940e-3fa2e5eb75b4"
+    }
+  ],
+  "rollback": "/root/fairyteller-pipeline-20261007-v5/before",
+  "smoke": {
+    "providerCalls": 0,
+    "emailsSent": 0,
+    "authRequired": true,
+    "layoutSeconds": 9.65,
+    "preparedPages": 25,
+    "pages": 41,
+    "noTruncation": true,
+    "wordsPreserved": true,
+    "textAlign": "justify",
+    "fontPt": 10.5,
+    "legacyBookUnchanged": true
+  }
+}

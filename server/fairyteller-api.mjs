@@ -6,6 +6,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { createComicWorker } from './fairyteller-comic-worker.mjs';
+import { LOCAL_LAYOUT_VERSION } from './fairyteller-local-layout-contract.mjs';
 
 import {
   addDashboardManualSale,
@@ -8841,8 +8842,14 @@ function ensureTextPreflightWorker(storyFontModeOverride) {
 async function preflightJobStoryText(jobId, options = {}) {
   const dir = jobDir(jobId);
   if (!existsSync(dir)) throw httpError(404, 'Job not found');
-  if (!existsSync(join(dir, 'artifacts', 'full-text.json'))) {
+  if (!options.chapter && !existsSync(join(dir, 'artifacts', 'full-text.json'))) {
     throw httpError(409, 'Full text artifact is not ready');
+  }
+  if (options.prepareBook) {
+    const artifact = await readJsonFile(join(dir, 'artifacts', 'full-text.json'), null);
+    if (artifact?.text?.printLayout?.contractVersion !== LOCAL_LAYOUT_VERSION || artifact?.text?.printLayout?.layoutStage !== 'final') {
+      throw httpError(409, 'Book does not use the final layout contract');
+    }
   }
 
   const storyFontModeOverride = String(options.storyFontModeOverride || 'uniform').trim();
@@ -8859,7 +8866,7 @@ async function preflightJobStoryText(jobId, options = {}) {
       state.child.kill('SIGKILL');
     }, TEXT_PREFLIGHT_TIMEOUT_MS);
     state.requests.set(requestId, { resolve: resolvePromise, reject: rejectPromise, timer });
-    state.child.stdin.write(`${JSON.stringify({ requestId, jobId })}\n`, (error) => {
+    state.child.stdin.write(`${JSON.stringify({ requestId, jobId, ...(options.prepareBook ? { prepareBook: true } : {}), ...(options.chapter ? { chapter: options.chapter, preparePages: options.preparePages === true } : {}) })}\n`, (error) => {
       if (!error) return;
       const request = state.requests.get(requestId);
       if (!request) return;
@@ -9842,6 +9849,29 @@ async function route(req, res) {
     return;
   }
 
+  const localChapterPreflightMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/local-chapter-preflight$/);
+  const bookLayoutMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/book-layout$/);
+  if (method === 'POST' && bookLayoutMatch) {
+    requireAuth(req);
+    sendJson(req, res, 200, await preflightJobStoryText(bookLayoutMatch[1], { storyFontModeOverride: 'regular', prepareBook: true }));
+    return;
+  }
+  const localBookLayoutMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/local-book-layout$/);
+  if (method === 'POST' && localBookLayoutMatch && process.env.FAIRYTELLER_LAB_SEQUENTIAL === '1') {
+    requireAuth(req);
+    if (!/^ft_(?:lab|local)_/.test(localBookLayoutMatch[1])) throw httpError(400, 'Final local layout requires a local job');
+    sendJson(req, res, 200, await preflightJobStoryText(localBookLayoutMatch[1], { storyFontModeOverride: 'regular', prepareBook: true }));
+    return;
+  }
+  if (method === 'POST' && localChapterPreflightMatch && process.env.FAIRYTELLER_LAB_SEQUENTIAL === '1') {
+    requireAuth(req);
+    if (!/^ft_(?:lab|local)_/.test(localChapterPreflightMatch[1])) throw httpError(400, 'Local chapter preflight requires a local job');
+    const body = await readJsonBody(req);
+    if (!body.chapter || JSON.stringify(body.chapter).length > 25000) throw httpError(400, 'Invalid local chapter');
+    sendJson(req, res, 200, await preflightJobStoryText(localChapterPreflightMatch[1], { storyFontModeOverride: 'regular', chapter: body.chapter, preparePages: body.preparePages === true }));
+    return;
+  }
+
   const textPreflightMatch = url.pathname.match(/^\/api\/fairyteller\/jobs\/([^/]+)\/text-preflight$/);
   if (method === 'POST' && textPreflightMatch) {
     requireAuth(req);
@@ -9961,7 +9991,7 @@ async function main() {
     }
   });
 
-  server.listen(PORT, () => {
+  server.listen({ port: PORT, host: process.env.FAIRYTELLER_API_HOST || undefined }, () => {
     if (NODE_ENV === 'production' && !API_TOKEN) {
       console.warn('FAIRYTELLER_API_TOKEN is required for production mutations.');
     }
