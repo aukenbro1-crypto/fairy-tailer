@@ -281,9 +281,11 @@ async function regenerateChapters(chapters, offenderNumbers, attempt) {
 let payload = cloneJson(source);
 if (payload.text?.printLayout?.layoutStage !== 'final') throw new Error('Final local layout contract missing');
 const attempts = [];
+let lastPreparedResult;
 async function prepareBook() {
   const result = await apiRequest.call(this, { method:'POST',url:jobUrl+'/local-book-layout',timeout:300000 });
   if (!result.ok || !result.storyFont) throw new Error('Final book layout returned no result');
+  lastPreparedResult = result.storyFont;
   return result.storyFont;
 }
 function acceptBookLayout(result) {
@@ -291,7 +293,13 @@ function acceptBookLayout(result) {
   if (result.preparedChapters?.length !== 5) throw new Error('Final layout returned incomplete chapters');
   for (const chapter of result.preparedChapters) {
     const original = payload.text.chapters.find(c=>Number(c.n)===Number(chapter.n));
-    if (!original || cleanText(chapter.textBlocks.join(' ')) !== cleanText(original.textBlocks.join(' '))) throw new Error('Final layout changed story words');
+    if (!original || cleanText(chapter.textBlocks.join(' ')) !== cleanText(original.textBlocks.join(' '))) {
+      const expected = cleanText(original?.textBlocks?.join(' ') || '');
+      const actual = cleanText(chapter.textBlocks.join(' '));
+      const firstDifference = [...expected].findIndex((char, i) => char !== actual[i]);
+      throw new Error('Final layout changed story words in chapter ' + chapter.n
+        + ' (source length ' + expected.length + ', prepared length ' + actual.length + ', first difference ' + firstDifference + ')');
+    }
     if (original.visualSourceQuote && !cleanText(chapter.textBlocks.join(' ')).includes(cleanText(original.visualSourceQuote))) throw new Error('Final layout moved the illustration anchor');
   }
   payload.text = { ...payload.text,chapters:result.preparedChapters,printLayout:{...LOCAL_PRINT_LAYOUT,layoutReady:true} };
@@ -320,6 +328,12 @@ try {
   await writeArtifact.call(this,payload);
   return [{json:payload}];
 } catch(error) {
+  if (/Final layout changed story words/.test(error.message || '') && lastPreparedResult) {
+    try {
+      await apiRequest.call(this, { method:'PUT', url:jobUrl+'/artifacts/layout-failure.json',
+        body:{ jobId, error:error.message, sourceChapters:payload.text.chapters, prepared:lastPreparedResult } });
+    } catch { console.log('Could not save private layout failure evidence'); }
+  }
   await markFailed.call(this,'Не удалось разместить текст на страницах. История сохранена.',{technicalMessage:cleanText(error.message||error),attempts});
   throw error;
 }

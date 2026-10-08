@@ -30,7 +30,7 @@
       "id": "FTLocalfulltext",
       "active": false,
       "baselineVersion": "f1054ed5-55ba-4884-8717-33117aa45b67",
-      "sha256": "46e277b74bf1a39e38e362fddab8a4b12f175a4306dbbd4906329bbcebc6e20b"
+      "sha256": "dad4e7e4debcc7f604a34c4c86115b33cdfe25a4095f9952b16530a75ba4e2a6"
     },
     {
       "name": "fairyteller_visuals_local_sequential",

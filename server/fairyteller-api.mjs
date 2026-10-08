@@ -8798,6 +8798,8 @@ function ensureTextPreflightWorker(storyFontModeOverride) {
   };
   TEXT_PREFLIGHT_WORKERS.set(storyFontModeOverride, state);
 
+  // Decode across byte chunks: a Cyrillic letter can span two stdout buffers.
+  child.stdout.setEncoding('utf8');
   child.stdout.on('data', (chunk) => {
     state.buffer += chunk.toString();
     let newlineIndex = state.buffer.indexOf('\n');

@@ -443,7 +443,10 @@ try {
   const generated = [];
   for (const plan of [...chapterPlans].sort((a, b) => Number(a.n) - Number(b.n))) {
     const checkpointUrl = apiBase + '/api/fairyteller/jobs/' + jobId + '/artifacts/chapter-' + Number(plan.n) + '.json';
-    const context = JSON.stringify({ contractVersion: LOCAL_LAYOUT_VERSION, runKey: source.pipeline?.localSequentialRun, plan, order: source.order, firstChapter: source.text?.chapters?.[0], previousChapters, system: source.fullTextSystemText, prompt: source.fullTextPrompt });
+    // Photo bytes are for identity generation, not prose checkpoint identity.
+    // The immutable run key scopes the source photos; never duplicate them per chapter.
+    const { _photoRefs: _privatePhotos, ...textOrder } = source.order || {};
+    const context = JSON.stringify({ contractVersion: LOCAL_LAYOUT_VERSION, runKey: source.pipeline?.localSequentialRun, plan, order: textOrder, firstChapter: source.text?.chapters?.[0], previousChapters, system: source.fullTextSystemText, prompt: source.fullTextPrompt });
     let cached;
     try {
       cached = await this.helpers.httpRequest({ method: 'GET', url: checkpointUrl,

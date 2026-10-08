@@ -13,13 +13,16 @@ const block=quote+' '+('Она замечает новые линии и вни�
 const scene={scene:'Наталья раскрывает старый чертёж на столе возле сухой стены инженерной комнаты.',sourceQuote:quote,heroNumbers:[1],shotType:'medium',physicalPlacement:'На сухом каменном полу у стола.'};
 const draft=n=>({n,textBlocks:[...Array(counts[n]-1).fill(block.replace(quote,'Героиня внимательно осматривает комнату перед поиском документов.')),block],summary:'Наталья ищет ответы в старых документах.',visualScene:scene});
 const source={jobId:'ft_local_paired_test',pipeline:{localSequentialRun:'pair-test'},order:{textProvider:'openlux',openluxTextModel:'gemini-2.5-pro',heroes:[{n:1,name:'Наталья'}],artifact:''},text:{chapters:[draft(1)],bible:{outfitCanon:'Hero 1: navy wool coat, cream blouse, grey trousers, brown boots.'}},laterPlan:[2,3,4,5].map(n=>({n,title:'Глава '+n+'. Название '+n,beat:'Найти ответ '+n})),fullTextSystemText:'Пиши связную историю.',fullTextPrompt:'Первый написанный текст: '+block+'\nТребования к главам 2-5: старый объём.'};
+source.order._photoRefs={photo1:{data:'private-photo-marker'.repeat(70000)}};
 const env={FAIRYTELLER_API_BASE_URL:'http://127.0.0.1:3098',FAIRYTELLER_API_TOKEN:'fake',OPENLUX_API_KEY:'fake',FAIRYTELLER_TEXT_GROUPING:'paired',FAIRYTELLER_TEXT_PRIMARY_ATTEMPTS:'3',FAIRYTELLER_TEXT_RETRY_DELAY_MS:'0'};
+if (production) delete env.FAIRYTELLER_API_BASE_URL;
 const wrap=value=>({candidates:[{content:{parts:[{text:JSON.stringify(value)}]}}]});
 const notFound=()=>new Error('Request failed with status code 404');
 const canon=()=>({first:()=>({json:source})});
 const artifacts=new Map();let calls=[];let events=[];
 let badScene=false;let permanentFailure=false;let sceneShape='array';let flatScene=false;
 const helpers={async httpRequest(opts){
+ if(production && !opts.url.includes('api.openlux.ai')) assert.ok(opts.url.startsWith('https://fairyteller.ru/api/fairyteller/jobs/'),'production API requests must use the deployed target with no Lab env');
  if(opts.url.includes('api.openlux.ai')){
   const prompt=opts.body.contents[0].parts[0].text;
   const properties=opts.body.generationConfig.responseSchema.properties;
@@ -42,7 +45,7 @@ const helpers={async httpRequest(opts){
   return wrap({summary:draft(3).summary,visualScene:permanentFailure?{...scene,sourceQuote:'Такого предложения на первой странице совсем нет.'}:scene});
  }
  if(opts.url.endsWith('/local-chapter-preflight'))throw new Error('Early typography is forbidden');
- if(opts.url.includes('/artifacts/')){const name=opts.url.split('/').at(-1);if(opts.method==='PUT'){artifacts.set(name,structuredClone(opts.body));events.push('save:'+name);return {ok:true};}if(!artifacts.has(name))throw notFound();return structuredClone(artifacts.get(name));}
+ if(opts.url.includes('/artifacts/')){const name=opts.url.split('/').at(-1);if(opts.method==='PUT'){assert.ok(JSON.stringify(opts.body).length<500000,'chapter artifacts must not include source photo bytes');assert.ok(!JSON.stringify(opts.body).includes('private-photo-marker'));artifacts.set(name,structuredClone(opts.body));events.push('save:'+name);return {ok:true};}if(!artifacts.has(name))throw notFound();return structuredClone(artifacts.get(name));}
  if(opts.method==='PATCH'){events.push('failed');return {ok:true};}
  throw new Error('Unexpected route '+opts.url);
 }};
@@ -98,4 +101,16 @@ assert.equal(localDensityIssues({pagination:{chapters:[{chapter:2,pages:[{block:
 assert.equal(localDensityWarnings({pagination:{chapters:[{chapter:2,pages:[{block:2,utilization:0.974}]}]}}).length,1);
 assert.equal(localDensityIssues({pagination:{chapters:[{chapter:2,pages:[{block:2,utilization:1.02}]}]}}).length,1);
 assert.equal(localChapterTitle('Глава IV. Долгая дорога'),'Долгая дорога');assert.equal(localChapterTitle('Главарь и его помощники'),'Главарь и его помощники');
+if(production){
+ for(const file of ['full_text','text','full_visuals','visuals','intake','cover']){
+  const workflow=JSON.parse(await readFile(new URL('../n8n/workflows/fairyteller_'+file+'.workflow.json',import.meta.url),'utf8'))[0];
+  for(const node of workflow.nodes)assert.doesNotMatch(node.parameters?.jsCode||'',/FAIRYTELLER_API_BASE_URL|requires a loopback/,'production node retains a local dependency: '+node.name);
+ }
+ const wait=new AsyncFunction('$input','$env',w.nodes.find(n=>n.name==='Wait For Written Chapter Illustrations').parameters.jsCode);
+ const waited=await wait.call({helpers:{async httpRequest(opts){
+  assert.equal(opts.url,'https://fairyteller.ru/api/fairyteller/jobs/'+source.jobId);
+  return {artifacts:{fullVisuals:{status:'ready',images:[2,3,4,5].map(chapter=>({chapter,status:'ready'}))}}};
+ }}},{first:()=>({json:source})},env);
+ assert.equal(waited[0].json,source);
+}
 console.log(JSON.stringify({ok:true,paidRequests:0,checks:['late chapter scenes without extra calls','two paired continuation calls','single string scene lists without retries','raw pair drafts preserved before validation','save each good mate before repair','full previous canon in final pair','scene-only bounded repairs','first chapter scene repair preserves plan and prose','resume without paid calls','failure preserves good chapters','density warning versus overflow','no duplicate chapter numbering']}));

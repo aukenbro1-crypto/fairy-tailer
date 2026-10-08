@@ -4,7 +4,7 @@
     {
       "name": "fairyteller_full_text",
       "id": "C2Pcin7lctSY5nc2",
-      "versionId": "dbd271d2-53ae-4d86-8894-5c8d95be39c6"
+      "versionId": "5cbc2d8c-c2bc-4bdf-882f-6625e074a375"
     },
     {
       "name": "fairyteller_intake",
@@ -14,7 +14,7 @@
     {
       "name": "fairyteller_text",
       "id": "kCtpw2d7pEOI3QRF",
-      "versionId": "7db3cf3f-09da-4d37-bed5-d0a37fcb8b10"
+      "versionId": "84fe4464-aaa4-4597-89e3-67ceca914823"
     },
     {
       "name": "fairyteller_visuals",
@@ -45,5 +45,38 @@
     "textAlign": "justify",
     "fontPt": 10.5,
     "legacyBookUnchanged": true
+  },
+  "incidentFix": {
+    "date": "2026-10-08",
+    "jobId": "ft_1791448881549_qbxcxx",
+    "cause": "Nested Lab API targets were left in production continuation and illustration barrier",
+    "fix": "Use deployed API base and reject remaining Lab env dependencies",
+    "snapshot": "/root/fairyteller-recovery-20261008",
+    "verified": [
+      "production paired generation with absent FAIRYTELLER_API_BASE_URL",
+      "all production workflow code nodes scanned for local API dependency",
+      "production illustration barrier uses deployed target",
+      "promotion rebuild matches all six production graphs",
+      "scoped ESLint",
+      "large photo payload remains absent from chapter artifacts",
+      "real API split UTF-8 regression fails on old decoder and passes on fixed decoder",
+      "actual production book finished with 41 pages and no text truncation"
+    ],
+    "recovery": "done",
+    "completedAt": "2026-10-08T09:21:39.509Z",
+    "pageCount": 41,
+    "firstArtifactsUnchanged": true,
+    "allChapterWordsPreserved": true,
+    "textPageCounts": [
+      4,
+      4,
+      6,
+      6,
+      5
+    ],
+    "additionalFixes": [
+      "Omit order._photoRefs from prose checkpoint context to prevent HTTP 413",
+      "Decode preflight-worker stdout as streaming UTF-8 to prevent corrupt Cyrillic letters"
+    ]
   }
 }

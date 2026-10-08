@@ -51,12 +51,18 @@ for (const original of originals) {
       const end = js.indexOf('\n}\n');
       if (end < 0 || !js.slice(0, end).includes('Local sandbox only')) throw new Error('Missing local guard');
       js = "const localApiBase = 'https://fairyteller.ru';\n" + js.slice(end + 3);
+      // Nested shared helpers have their own local targets, beyond the wrapper guard.
+      // Strip local diagnostic capture entirely; production never depends on Lab env.
+      js = js.replace(/  \/\/ Private local artifacts[\s\S]*?(?=  if \(choice\?\.message\?\.refusal\))/, '');
+      js = js.replace(/const apiBase = String\(\$env\.FAIRYTELLER_API_BASE_URL[^\n]*\nif \([^\n]*\n  throw new Error\('Local sequential pipeline requires a loopback FAIRYTELLER_API_BASE_URL'\);\n}\n/, 'const apiBase = localApiBase;\n');
+      js = js.replace(/const base = String\(\$env\.FAIRYTELLER_API_BASE_URL[^\n]*\n/, 'const base = localApiBase;\n');
       js = js.replaceAll('/local-book-layout', '/book-layout')
         .replace("const localTextModel = String($env.FAIRYTELLER_LOCAL_TEXT_MODEL || 'gemini-2.5-pro').trim();", "const localTextModel = 'gemini-2.5-pro';")
         .replace("const paired = String($env.FAIRYTELLER_TEXT_GROUPING || 'paired') === 'paired';", 'const paired = true;')
         .replaceAll('local_paired_v5_whole_chapter_scenes', 'production_paired_v1_whole_chapter_scenes')
         .replaceAll('ЛОКАЛЬНАЯ СХЕМА V2', 'СХЕМА ГЕНЕРАЦИИ V5');
       if (/http:\/\/(?:localhost|127\.0\.0\.1)|FTLocal|ft_lab_|\/local-book-layout|Local sandbox only/.test(js)) throw new Error('Local execution target remains: ' + n.name);
+      if (/FAIRYTELLER_API_BASE_URL|requires a loopback/.test(js)) throw new Error('Local API dependency remains: ' + n.name);
       new vm.Script('(async function(){\n' + js + '\n})');
       n.parameters.jsCode = js;
     }

@@ -28,3 +28,17 @@ Sources: `n8n/workflows/` holds the active production exports; `n8n/local-sequen
 Published IDs/versions and smoke metrics: [release record](production-paired-generation-20261007.json).
 
 Git deployment branch: `codex/paired-generation-production-v1`. The first commit syncs previously deployed API helpers/behavior; the second records the new pipeline. Production was compared live before mutation; unrelated local changes were preserved.
+
+## Production incident and fix (2026-10-08)
+
+Job `ft_1791448881549_qbxcxx` exposed a promotion defect: the continuation node still required a loopback `FAIRYTELLER_API_BASE_URL`, and the illustration wait node read the same absent Lab variable. The previous offline production test supplied that variable, masking the defect; the API/renderer smoke did not execute continuation. First-chapter text, three identity references and its image were already saved.
+
+The promotion builder now rewrites both nested API bases to the deployed `localApiBase` (`https://fairyteller.ru`), removes local response-capture helpers, and rejects any remaining `FAIRYTELLER_API_BASE_URL` dependency. Production integration tests deliberately omit this variable, assert every API request uses the production target, scan all six workflows, and execute the illustration barrier. Scope: only the first-text and full-text workflows; model choice, chapter grouping, prose, saved references and PDF layout remain unchanged.
+
+Incident snapshot and recovery evidence: `/root/fairyteller-recovery-20261008/`. The orphan image waiter was stopped through its existing failed-text check before an idle restart. Recovery uses the original run key and saved first chapter; no new customer order or first-chapter/photo generation is required.
+
+Continuation checkpoints also used to serialize `order._photoRefs` into every prose context. Real three-photo requests produced very large chapter artifacts and HTTP 413 even though the model response was valid. The checkpoint context now omits only these private image bytes; the immutable run key still scopes the original photos. A regression fixture with over 1 MB of photo data verifies every chapter artifact remains below 500 KB and contains no photo marker. Source photos and identity references remain in their original storage.
+
+Word-preservation checks remain strict. Their failure diagnostics now include chapter number, source/prepared character counts and first differing position, without logging private prose. The mismatch was traced to the API preflight worker stdout parser: `Buffer.toString()` decoded each byte chunk independently, turning a Cyrillic letter split across chunks into two replacement characters. The API now uses the stream UTF-8 decoder before collecting lines. A real API/subprocess regression deliberately splits a Cyrillic code point across stdout chunks in a large JSON response and repeats three requests on the reused worker. Guarding word preservation remains mandatory.
+
+Recovery completed at `2026-10-08T09:21:39.509Z`: original job is `done`, 41-page PDF, 25 text pages at 10.5 pt justified, no truncation and all chapter words preserved. First chapter, three identity reference files and first image are byte-identical to the incident snapshot. Final recovery reused the four saved continuation chapters and their four existing images; only the outstanding cover/PDF stage remained. This was incident recovery, not a new-generation timing benchmark.
