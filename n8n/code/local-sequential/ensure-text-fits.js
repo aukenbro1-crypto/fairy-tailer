@@ -172,15 +172,26 @@ function localFrozenSceneBlocks(chapter) {
   return [...new Set(indices)];
 }
 
-function correctionRequest(chapters, offenderNumbers, attempt) {
+function shorteningBudget(chapter, attempt) {
+  const target = chapterTargets[Number(chapter.n)];
+  const frozenIndices = localFrozenSceneBlocks(chapter);
+  const frozenCharacters = frozenIndices.reduce((sum, i) => sum + cleanBlock(chapter.textBlocks[i]).length, 0);
+  const editableBlocks = chapter.textBlocks.length - frozenIndices.length;
+  // A physical overflow needs headroom, not a one-character reduction.
+  const max = Math.floor(Math.min(target.max * (0.9 ** attempt), chapterCharacters(chapter) * 0.9));
+  if (!editableBlocks || max <= frozenCharacters + editableBlocks) {
+    throw new Error('Cannot shorten chapter ' + chapter.n + ' while preserving its illustrated scene');
+  }
+  return { min: Math.max(frozenCharacters + editableBlocks, Math.floor(max * 0.9)), max,
+    frozenIndices, editableCharactersMax: max - frozenCharacters };
+}
+
+function correctionRequest(chapters, offenderNumbers, attempt, feedback) {
   const selected = chapters.filter((chapter) => offenderNumbers.includes(Number(chapter.n)));
   const chapterContext = selected.map((chapter) => {
     const n = Number(chapter.n);
     const index = chapters.findIndex((candidate) => Number(candidate.n) === n);
-    const target = chapterTargets[n];
-    const scale = attempt === 1 ? 1 : 0.9;
-    const min = Math.round(target.min * scale);
-    const max = Math.round(target.max * scale);
+    const { min, max, editableCharactersMax } = shorteningBudget(chapter, attempt);
     return {
       n,
       fixedTitle: chapter.title || 'Глава ' + n,
@@ -189,6 +200,7 @@ function correctionRequest(chapters, offenderNumbers, attempt) {
       nextChapterSummary: index + 1 < chapters.length ? chapters[index + 1]?.summary || '' : '',
       requiredBlocks: chapter.textBlocks.length,
       targetCharacters: min + '-' + max,
+      editableCharactersMax,
       currentCharacters: chapterCharacters(chapter),
       currentTextBlocks: chapter.textBlocks || [],
       frozenSceneBlocks: localFrozenSceneBlocks(chapter).map(i => ({ index: i, text: cleanBlock(chapter.textBlocks[i]) })),
@@ -207,9 +219,11 @@ function correctionRequest(chapters, offenderNumbers, attempt) {
     'Строго сохрани все события, причинно-следственные связи, имена, возраст, отношения, факты, важные предметы, эмоциональную арку, исход главы и переход к соседним главам.',
     'Не добавляй новые события и не меняй название, summary, визуальное ТЗ или роль главы.',
     'Соблюдай targetCharacters всей главы и requiredBlocks. Распредели объем по блокам примерно равномерно.',
-    'Каждый блок должен содержать 3-5 абзацев разной длины. Разделяй абзацы экранированной JSON-последовательностью \\n\\n.',
+    'editableCharactersMax — максимальная сумма длин только незамороженных блоков. Считай длины строк вместе с пробелами и переносами, без разделителей между блоками.',
+    'Сохраняй абзацы, где они нужны по смыслу; не добавляй новых разрывов ради плотности. Разделяй абзацы экранированной JSON-последовательностью \\n\\n.',
     'Диалоги не больше 30%. Прямая речь только через русское тире без внешних кавычек.',
     'Перед ответом пересчитай объем каждой главы. Верхняя граница targetCharacters является жесткой.',
+    feedback ? 'Предыдущая попытка не прошла: ' + feedback : '',
     '',
     'Контекст всей книги (не переписывать остальные главы):',
     JSON.stringify(chapters.map(c=>({n:c.n,textBlocks:c.textBlocks}))),
@@ -249,8 +263,8 @@ function correctionRequest(chapters, offenderNumbers, attempt) {
   };
 }
 
-async function regenerateChapters(chapters, offenderNumbers, attempt) {
-  const request = correctionRequest(chapters, offenderNumbers, attempt);
+async function regenerateChapters(chapters, offenderNumbers, attempt, feedback) {
+  const request = correctionRequest(chapters, offenderNumbers, attempt, feedback);
   const response = provider === 'openai'
     ? await requestOpenAIText.call(this, request, openAIModel, 'fairyteller_text_fit', 300000)
     : (provider === 'openlux' && (/^grok-/i.test(model) || model === 'gpt-6.1-sol')
@@ -268,6 +282,14 @@ async function regenerateChapters(chapters, offenderNumbers, attempt) {
     if (!original || blocks.length !== original.textBlocks.length) continue;
     if (localFrozenSceneBlocks(original).some(i => blocks[i] !== cleanBlock(original.textBlocks[i]))) {
       throw new Error('Text-fit cannot change the illustrated scene blocks of chapter ' + n);
+    }
+    const budget = shorteningBudget(original, attempt);
+    const characters = chapterCharacters({ textBlocks: blocks });
+    if (characters < budget.min || characters > budget.max) {
+      const error = new Error('Chapter ' + n + ' shortening returned ' + characters
+        + ' characters; required ' + budget.min + '-' + budget.max);
+      error.retryableVolume = true;
+      throw error;
     }
     replacements.set(n, blocks);
   }
@@ -310,21 +332,26 @@ try {
   await apiRequest.call(this,{method:'PATCH',url:jobUrl,body:{stage:'text',progress:55,message:'Раскладываем историю по страницам'}});
   await apiRequest.call(this,{method:'PUT',url:jobUrl+'/artifacts/story-text.json',body:{jobId,status:'ready',text:payload.text,fullText:payload.fullText}});
   let result = await prepareBook.call(this);
-  if (!acceptBookLayout(result)) {
+  for (let attempt = 1; !acceptBookLayout(result) && attempt <= 2; attempt++) {
     if (!result.failures?.length || result.failures.some(f=>!f.repairable)) throw new Error(result.failures?.map(f=>f.error).join('; ') || 'Invalid final layout result');
     const offenderNumbers = result.failures.map(f=>Number(f.chapter));
     const before = payload.text.chapters;
-    const corrected = await regenerateChapters.call(this,before,offenderNumbers,1);
-    for (const n of offenderNumbers) {
-      const original = before.find(c=>Number(c.n)===n), next = corrected.find(c=>Number(c.n)===n);
-      if (cleanText(next.textBlocks.join(' ')).length >= cleanText(original.textBlocks.join(' ')).length) throw new Error('Final shortening did not reduce chapter '+n);
+    let corrected;
+    try {
+      corrected = await regenerateChapters.call(this, before, offenderNumbers, attempt, attempts.at(-1)?.error);
+    } catch (error) {
+      attempts.push({ attempt, chapters: offenderNumbers, reason: 'physical_overflow', status: 'rejected', error: cleanText(error.message) });
+      if (error.retryableVolume && attempt < 2) continue;
+      throw error;
     }
-    attempts.push({attempt:1,chapters:offenderNumbers,reason:'physical_overflow'});
+    attempts.push({attempt,chapters:offenderNumbers,reason:'physical_overflow',status:'accepted',
+      volumes:offenderNumbers.map(n=>({chapter:n,before:chapterCharacters(before.find(c=>Number(c.n)===n)),
+        after:chapterCharacters(corrected.find(c=>Number(c.n)===n)),max:shorteningBudget(before.find(c=>Number(c.n)===n),attempt).max}))});
     payload.text = {...payload.text,chapters:corrected};
     await writeArtifact.call(this,payload);
     result = await prepareBook.call(this);
-    if (!acceptBookLayout(result)) throw new Error(result.failures?.map(f=>f.error).join('; ') || 'Book cannot fit after one shortening');
   }
+  if (!acceptBookLayout(result)) throw new Error(result.failures?.map(f=>f.error).join('; ') || 'Book cannot fit after two bounded shortenings');
   await writeArtifact.call(this,payload);
   return [{json:payload}];
 } catch(error) {

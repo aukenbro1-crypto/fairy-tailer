@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+// File-only update of the final layout owner; no providers, imports or deployment.
+import { readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+const [inputPath, outputPath] = process.argv.slice(2);
+if (!inputPath || !outputPath) throw new Error('Pass workflow JSON input and output paths');
+const raw = JSON.parse(await readFile(inputPath, 'utf8'));
+const workflows = Array.isArray(raw) ? raw : [raw];
+const workflow = workflows.find(w => /^fairyteller_full_text(?:_local_sequential)?$/.test(w.name));
+if (!workflow) throw new Error('Full-text workflow missing');
+const before = structuredClone(workflow);
+const node = workflow.nodes.find(n => n.name === 'Ensure Full Text Fits');
+const marker = "const source = $('Normalize Full Text').first().json;";
+const start = node?.parameters?.jsCode?.indexOf(marker);
+if (!(start >= 0)) throw new Error('Final layout source marker missing');
+const local = node.parameters.jsCode.includes('/local-book-layout');
+let source = await readFile(new URL('../n8n/code/local-sequential/ensure-text-fits.js', import.meta.url), 'utf8');
+source = source.replace("'https://fairyteller.ru/api/fairyteller/jobs/'", "localApiBase + '/api/fairyteller/jobs/'");
+if (!local) source = source.replaceAll('/local-book-layout', '/book-layout');
+node.parameters.jsCode = node.parameters.jsCode.slice(0, start) + source;
+new vm.Script('(async function(){\n' + node.parameters.jsCode + '\n})');
+assert.deepEqual(workflow.connections, before.connections);
+assert.deepEqual(workflow.nodes.filter(n => n.name !== node.name), before.nodes.filter(n => n.name !== node.name));
+workflow.active = false;
+for (const key of ['activeVersionId', 'activeVersion', 'versionCounter', 'createdAt', 'updatedAt', 'shared', 'pinData']) delete workflow[key];
+workflow.versionId = randomUUID();
+await writeFile(outputPath, JSON.stringify([workflow], null, 2) + '\n');
+console.log(JSON.stringify({ok:true,workflowId:workflow.id,changedNodes:[node.name],fileOnly:true,local}));

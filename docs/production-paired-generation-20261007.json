@@ -4,7 +4,7 @@
     {
       "name": "fairyteller_full_text",
       "id": "C2Pcin7lctSY5nc2",
-      "versionId": "5cbc2d8c-c2bc-4bdf-882f-6625e074a375"
+      "versionId": "390ff2e9-76ab-40f5-822e-47eb0478e6a3"
     },
     {
       "name": "fairyteller_intake",
@@ -78,5 +78,25 @@
       "Omit order._photoRefs from prose checkpoint context to prevent HTTP 413",
       "Decode preflight-worker stdout as streaming UTF-8 to prevent corrupt Cyrillic letters"
     ]
+  },
+  "finalFitFix": {
+    "date": "2026-10-09",
+    "changedNode": "Ensure Full Text Fits",
+    "maxShorteningCalls": 2,
+    "initialHeadroom": 0.1,
+    "validateVolumeBeforePersistence": true,
+    "regressionTestsPassed": true,
+    "recovery": {
+      "status": "done",
+      "completedAt": "2026-10-09T01:28:56.353Z",
+      "elapsedMs": 186353,
+      "pageCount": 41,
+      "fontSizePt": 10.5,
+      "textAlign": "justify",
+      "noTextTruncation": true,
+      "continuationWordsPreserved": true,
+      "allSavedImagesUnchanged": true
+    },
+    "snapshot": "/root/fairyteller-layout-repair-20261009/"
   }
 }
