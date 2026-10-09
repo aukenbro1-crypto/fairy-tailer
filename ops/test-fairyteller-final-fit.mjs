@@ -25,7 +25,7 @@ async function scenario(replies, layoutFailures = 1, offenders = [1]) {
    const reply=replies[calls++];assert.ok(reply,'Unexpected provider call');
    const edit={block:1,paragraph:1,text:item.editableParagraphs[0].text.slice(0,-1)};
    let edits=[edit],n=1;
-   if(reply==='one-character') { /* A tiny edit must still reach real layout. */ }
+   if(['one-character','thought-part','reasoning-prefix','reasoning-fence','only-thought','truncated'].includes(reply)) { /* A tiny edit must still reach real layout. */ }
    else if(reply==='valid')edit.text=item.editableParagraphs[0].text.slice(0,-200);
    else if(reply==='changed-scene'){edit.block=3;edit.text='Другая сцена.';}
    else if(reply==='unchanged')edit.text=item.editableParagraphs[0].text;
@@ -36,7 +36,15 @@ async function scenario(replies, layoutFailures = 1, offenders = [1]) {
    else if(reply==='extra-edits')edits=Array(4).fill(edit);
    else if(reply==='other-chapter')n=2;
    else throw new Error('Unsupported test response');
-   return wrap({chapters:offenders.length===1 ? [{n,edits}] : context.map(c=>({n:c.n,edits:[{...c.editableParagraphs[0],text:c.editableParagraphs[0].text.slice(0,-1)}]}))});
+   const response=wrap({chapters:offenders.length===1 ? [{n,edits}] : context.map(c=>({n:c.n,edits:[{...c.editableParagraphs[0],text:c.editableParagraphs[0].text.slice(0,-1)}]}))});
+   const parts=response.candidates[0].content.parts;
+   if(reply==='thought-part')parts.unshift({thought:true,text:'**My Thinking**: this is not JSON.'});
+   if(reply==='reasoning-prefix')parts[0].text='**My Thinking**: I preserve the scene.\n'+parts[0].text;
+   if(reply==='reasoning-fence')parts[0].text='**My Thinking**: I preserve the scene.\n```json\n'+parts[0].text+'\n```';
+   if(reply==='only-thought')parts[0]={thought:true,text:'**My Thinking**: no completed answer.'};
+   if(reply==='truncated')response.candidates[0].finishReason='MAX_TOKENS';
+   assert.equal(opts.body.generationConfig.thinkingConfig.includeThoughts,false);
+   return response;
   }
   if(opts.method==='PUT'){
    writes.push({url:opts.url,body:structuredClone(opts.body)});
@@ -55,7 +63,7 @@ async function scenario(replies, layoutFailures = 1, offenders = [1]) {
  return {result,error,calls,layouts,writes,requests,statuses};
 }
 const clean=await scenario([],0);assert.ifError(clean.error);assert.equal(clean.calls,0);assert.equal(clean.layouts,1);
-for(const reply of ['valid','one-character']){
+for(const reply of ['valid','one-character','thought-part','reasoning-prefix','reasoning-fence']){
  const repair=await scenario([reply]);assert.ifError(repair.error);assert.equal(repair.calls,1);assert.equal(repair.layouts,2);
  assert.deepEqual(repair.result.text.chapters.slice(1),source.text.chapters.slice(1));
  assert.deepEqual(repair.result.text.chapters[0].textBlocks.slice(1),source.text.chapters[0].textBlocks.slice(1));
@@ -77,9 +85,10 @@ assert.equal(again.requests[1][0].currentCharacters,again.requests[0][0].current
 const exhausted=await scenario(['one-character','one-character'],3);assert.ok(exhausted.error);assert.equal(exhausted.calls,2);assert.equal(exhausted.layouts,3);assert.equal(exhausted.statuses.at(-1).status,'failed');
 assert.deepEqual(exhausted.writes.find(x=>x.url.endsWith('/artifacts/story-text.json')).body.text.chapters,source.text.chapters);
 assert.equal(exhausted.writes.filter(x=>x.url.includes('/artifacts/text-fit-attempt-')).length,4);
-for(const reply of ['changed-scene','unchanged','empty','split-paragraph','duplicate','bad-address','extra-edits','other-chapter']){
+for(const reply of ['changed-scene','unchanged','empty','split-paragraph','duplicate','bad-address','extra-edits','other-chapter','only-thought','truncated']){
  const rejected=await scenario([reply]);assert.ok(rejected.error,reply);assert.equal(rejected.calls,1);assert.equal(rejected.layouts,1);
  assert.equal(rejected.writes.filter(x=>x.url.endsWith('/artifacts/full-text.json')).length,0);
+ assert.equal(rejected.writes.filter(x=>x.url.endsWith('/artifacts/text-fit-response-1.json')).length,1);
  if(reply==='changed-scene')assert.match(rejected.error.message,/illustrated scene/);
 }
 console.log(JSON.stringify({ok:true,production,paidRequests:0,checks:['physical overflow only','one-character edit reaches layout','above-target text accepted when fitting','paragraph-only edits','all unedited prose and metadata unchanged','illustrated scene locked','candidate diagnostics saved','two provider calls and three layouts maximum','original story preserved on failure','invalid patches fail before persistence']}));

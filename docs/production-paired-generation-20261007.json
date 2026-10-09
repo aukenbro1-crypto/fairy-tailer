@@ -4,7 +4,7 @@
     {
       "name": "fairyteller_full_text",
       "id": "C2Pcin7lctSY5nc2",
-      "versionId": "89114310-3efd-4cb8-b37d-511c5556b6ca"
+      "versionId": "a3b1e640-e4e4-4285-84f7-814d34f4e78a"
     },
     {
       "name": "fairyteller_intake",
@@ -146,5 +146,52 @@
     "providerCalls": 0,
     "freshPaidGenerationTested": false,
     "fourMinuteTargetProven": false
+  },
+  "finalFitResponseParsing": {
+    "date": "2026-10-09",
+    "jobId": "ft_1791528333748_fqg5v4",
+    "snapshot": "/root/fairyteller-fit-json-20261009",
+    "deployment": {
+      "ok": true,
+      "versionId": "a3b1e640-e4e4-4285-84f7-814d34f4e78a",
+      "changedNodes": [
+        "Ensure Full Text Fits"
+      ],
+      "otherActiveWorkflowsUnchanged": 14,
+      "customerArtifactsUnchanged": true,
+      "providerCalls": 0,
+      "restartWhileIdle": true
+    },
+    "policy": [
+      "explicit includeThoughts=false",
+      "ignore thought=true parts",
+      "accept only a complete final paragraph-edit JSON object",
+      "reject incomplete finish reasons",
+      "retain strict paragraph addresses and frozen scenes",
+      "save each raw editor response privately before parsing"
+    ],
+    "tests": [
+      "production and Lab contract tests",
+      "tagged thoughts, reasoning prefix and final JSON fence",
+      "only-thought and truncated answers rejected",
+      "actual renderer and scoped lint"
+    ],
+    "recovery": {
+      "jobId": "ft_1791528333748_fqg5v4",
+      "status": "done",
+      "completedAt": "2026-10-09T07:03:40.059Z",
+      "editorCalls": 1,
+      "editedChapters": [
+        1,
+        2
+      ],
+      "originalStoryAndAllChapterCheckpointsAndImagesUnchanged": true,
+      "preparedWordsMatchAcceptedEdits": true,
+      "pages": 41,
+      "noTextTruncation": true,
+      "fontPt": 10.5,
+      "secondsAfterResume": 73.644,
+      "freshGenerationBenchmark": false
+    }
   }
 }

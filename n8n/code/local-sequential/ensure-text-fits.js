@@ -30,7 +30,7 @@ function chapterCharacters(chapter) {
 }
 
 function responseText(response) {
-  return (response?.candidates?.[0]?.content?.parts || []).map((part) => part.text || '').join('').trim();
+  return (response?.candidates?.[0]?.content?.parts || []).filter(part => part.thought !== true).map((part) => part.text || '').join('').trim();
 }
 
 function lowerCaseSchemaTypes(value) {
@@ -88,7 +88,23 @@ function stripJsonMarkdownFences(text) {
     .trim();
 }
 function parseJsonResponse(response) {
-  return JSON.parse(stripJsonMarkdownFences(responseText(response)));
+  const finish = String(response?.candidates?.[0]?.finishReason || '').toUpperCase();
+  if (finish && !['STOP', 'COMPLETED'].includes(finish)) throw new Error('Text-fit response incomplete: ' + finish);
+  const raw = responseText(response);
+  const candidates = [stripJsonMarkdownFences(raw)];
+  // Some proxies prepend untagged reasoning. Accept only a complete final JSON object,
+  // never an example embedded in unfinished reasoning or a truncated response.
+  const fence = raw.match(/```json\s*([\s\S]*?)\s*```\s*$/i);
+  if (fence) candidates.push(fence[1].trim());
+  if (raw.trimEnd().endsWith('}')) {
+    for (const match of raw.matchAll(/\{\s*"chapters"\s*:/g)) candidates.push(raw.slice(match.index).trim());
+  }
+  for (const text of candidates) {
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { continue; }
+    if (parsed && !Array.isArray(parsed) && Object.keys(parsed).length === 1 && Array.isArray(parsed.chapters)) return parsed;
+  }
+  throw new Error('Text-fit response contract: no complete final paragraph-edit JSON');
 }
 
 async function apiRequest(options) {
@@ -184,7 +200,7 @@ function correctionRequest(chapters, offenderNumbers, attempt, failures) {
     systemInstruction: { parts: [{ text: 'Ты литературный редактор Fairyteller. Делай адресные бережные правки абзацев. Остальной текст сохраняет код. Верни только JSON.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.35, topP: 0.85, maxOutputTokens: 9000, thinkingConfig: { thinkingBudget: 128 }, responseMimeType: 'application/json',
+      temperature: 0.35, topP: 0.85, maxOutputTokens: 9000, thinkingConfig: { thinkingBudget: 128, includeThoughts: false }, responseMimeType: 'application/json',
       responseSchema: { type: 'OBJECT', properties: { chapters: {
         type: 'ARRAY', minItems: selected.length, maxItems: selected.length,
         items: { type: 'OBJECT', properties: { n: { type: 'NUMBER' }, edits: {
@@ -203,6 +219,8 @@ async function regenerateChapters(chapters, offenderNumbers, attempt, failures) 
     : (provider === 'openlux' && (/^grok-/i.test(model) || model === 'gpt-6.1-sol')
       ? await requestOpenLuxChat.call(this, request, model, 'fairyteller_text_fit', 240000)
       : await this.helpers.httpRequest({ method: 'POST', url: geminiUrl, headers: geminiHeaders, body: request, json: true, timeout: 240000 }));
+  await apiRequest.call(this, { method: 'PUT', url: jobUrl + '/artifacts/text-fit-response-' + attempt + '.json',
+    body: { jobId, attempt, provider, model, receivedAt: new Date().toISOString(), response } });
   const parsed = parseJsonResponse(response), replacements = new Map();
   if (!Array.isArray(parsed.chapters)) throw new Error('Invalid paragraph-edit response');
   for (const item of parsed.chapters) {
