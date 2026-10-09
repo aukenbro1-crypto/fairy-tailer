@@ -23,6 +23,7 @@ const chapters=structuredClone(artifact.text.chapters);
 for (const c of chapters) {
  c.visualSourceQuote=c.textBlocks.at(-1).match(/^.*?[.!?]/u)[0];
  c.visualSourceText=c.textBlocks.at(-1);
+ delete c.supportingPeopleQuote; // This fixture isolates late primary-scene protection.
 }
 // The scene remains intact; bad page boundaries/paragraph density cannot block early generation.
 chapters[2].textBlocks.splice(0,2,chapters[2].textBlocks.slice(0,2).join('\n\n'));
@@ -36,15 +37,18 @@ const api=spawn(process.execPath,[resolve(root,'server/fairyteller-api.mjs')],{c
 const workflow=JSON.parse(await readFile(resolve(root,production?'n8n/workflows/fairyteller_full_text.workflow.json':'n8n/local-sequential/fairyteller_full_text.workflow.json'),'utf8'))[0];
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 const run=new AsyncFunction('$','$env',workflow.nodes.find(n=>n.name==='Ensure Full Text Fits').parameters.jsCode);
-const words=s=>s.replace(/\s+/g,' ').trim();let paid=0,layoutCalls=0;const messages=[];
+const words=s=>s.replace(/\s+/g,' ').trim();let paid=0,layoutCalls=0,forceInitialOverflow=false,modelReply='restore-overflow';const messages=[];
 const helper={async httpRequest(opts){
  if(production)opts={...opts,url:opts.url.replace('https://fairyteller.ru',base)};
  if(opts.url.includes('api.openlux.ai')) {
-  paid++;const prompt=opts.body.contents[0].parts[0].text;assert.match(prompt,/Блоки frozenSceneBlocks уже переданы художнику/);assert.match(prompt,/Контекст всей книги/);
-  return {candidates:[{content:{parts:[{text:JSON.stringify({chapters:[{n:2,textBlocks:chapters[1].textBlocks}]})}]}}]};
+  paid++;const prompt=opts.body.contents[0].parts[0].text;assert.match(prompt,/Блоки frozenSceneBlocks уже переданы художнику/);
+  const context=JSON.parse(prompt.split('Главы для сокращения:\n')[1].split('\n\nВерни только')[0])[0];
+  const edit=modelReply==='tiny' ? {...context.editableParagraphs[0],text:context.editableParagraphs[0].text.slice(0,-1)}
+   : {block:2,paragraph:1,text:chapters[1].textBlocks[1].split('\n\n')[0]};
+  return {candidates:[{content:{parts:[{text:JSON.stringify({chapters:[{n:context.n,edits:[edit]}]})}]}}]};
  }
  assert.ok(opts.url.startsWith(base+'/'),'loopback only');
- if(opts.url.endsWith('/'+layoutRoute))layoutCalls++;
+ if(opts.url.endsWith('/'+layoutRoute)){layoutCalls++;if(forceInitialOverflow){forceInitialOverflow=false;return {ok:true,storyFont:{layoutReady:false,failures:[{chapter:1,repairable:true,error:'forced initial overflow; next layout is real'}]}};}}
  if(opts.method==='PATCH')messages.push(opts.body);
  const result=await fetch(opts.url,{method:opts.method,headers:opts.headers,...(opts.body?{body:JSON.stringify(opts.body)}:{})});
  const body=await result.json();if(!result.ok)throw new Error(body.error?.message||body.error||JSON.stringify(body));return body;
@@ -76,16 +80,24 @@ try {
  await mkdir(resolve(root,'tmp/pdfs'),{recursive:true});await copyFile(resolve(dir,'files/book.pdf'),resolve(root,'tmp/pdfs/final-layout-proof.pdf'));
  report.pdf={pages:41,font:rendered.preflight.storyFont.appliedSizePt,noTruncation:true};
  // Real physical overflow is the only condition that permits one bounded model call.
- const overflow=structuredClone(payload);overflow.text.chapters[1].textBlocks[1]+=' '+overflow.text.chapters[1].textBlocks.slice(1).join(' ').repeat(4);
+ const overflow=structuredClone(payload);const paragraphs=overflow.text.chapters[1].textBlocks[1].split('\n\n');paragraphs[0]+=' '+('Длинное избыточное описание занимает место на странице. '.repeat(100));overflow.text.chapters[1].textBlocks[1]=paragraphs.join('\n\n');
  await save(overflow);const repaired=(await run.call({helpers:helper},()=>({first:()=>({json:overflow})}),nodeEnv))[0].json;
  assert.equal(paid,1);assert.equal(layoutCalls,3);assert.equal(repaired.fullText.fitControl.status,'corrected');
  assert.deepEqual(repaired.fullText.fitControl.attempts[0].chapters,[2]);
  report.overflowPass={mockModelCalls:1,onlyChapter:2,layoutCalls:2};
+ // Simulate only the initial failure; a one-character patch above the old ceiling must reach the real renderer.
+ const originalCount=chapters[0].textBlocks.reduce((n,b)=>n+b.length,0);assert.ok(originalCount>3330);
+ await save(payload);forceInitialOverflow=true;modelReply='tiny';
+ const tiny=(await run.call({helpers:helper},()=>({first:()=>({json:payload})}),nodeEnv))[0].json;
+ assert.equal(paid,2);assert.equal(layoutCalls,5);assert.equal(tiny.fullText.fitControl.attempts[0].status,'accepted');
+ const volume=tiny.fullText.fitControl.attempts[0].volumes[0];assert.equal(volume.before-volume.after,1);assert.ok(volume.after>3330);
+ const trace=JSON.parse(await readFile(resolve(dir,'artifacts/text-fit-attempt-1.json'),'utf8'));assert.equal(trace.status,'accepted');
+ report.tinyEditPass={initialFailure:'simulated',candidateLayout:'actual API/renderer',mockModelCalls:1,characters:volume.after,aboveOldCeiling:true};
  // A failed shortening cannot silently change an already illustrated scene late in a chapter.
  let blockedCalls=0,failed=false;
  await assert.rejects(run.call({helpers:{async httpRequest(opts){
   if(opts.url.endsWith('/'+layoutRoute))return {ok:true,storyFont:{layoutReady:false,failures:[{chapter:2,repairable:true,error:'physical overflow'}]}};
-  if(opts.url.includes('api.openlux.ai')){blockedCalls++;return {candidates:[{content:{parts:[{text:JSON.stringify({chapters:[{n:2,textBlocks:[...chapters[1].textBlocks.slice(0,-1),'Изменённая сцена.']}]})}]}}]};}
+  if(opts.url.includes('api.openlux.ai')){blockedCalls++;return {candidates:[{content:{parts:[{text:JSON.stringify({chapters:[{n:2,edits:[{block:chapters[1].textBlocks.length,paragraph:1,text:'Изменённая сцена.'}]}]})}]}}]};}
   if(opts.method==='PATCH'&&opts.body.status==='failed')failed=true;
   return {ok:true};
  }}},()=>({first:()=>({json:overflow})}),nodeEnv),/cannot change the illustrated scene blocks/);

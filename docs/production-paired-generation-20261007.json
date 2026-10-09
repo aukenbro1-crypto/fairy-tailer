@@ -4,7 +4,7 @@
     {
       "name": "fairyteller_full_text",
       "id": "C2Pcin7lctSY5nc2",
-      "versionId": "390ff2e9-76ab-40f5-822e-47eb0478e6a3"
+      "versionId": "89114310-3efd-4cb8-b37d-511c5556b6ca"
     },
     {
       "name": "fairyteller_intake",
@@ -98,5 +98,53 @@
       "allSavedImagesUnchanged": true
     },
     "snapshot": "/root/fairyteller-layout-repair-20261009/"
+  },
+  "finalFitParagraphs": {
+    "date": "2026-10-09",
+    "snapshot": "/root/fairyteller-fit-paragraphs-20261009",
+    "policy": {
+      "trigger": "actual physical overflow",
+      "characterCount": "advisory only",
+      "editScope": "at most three addressed existing paragraphs per overflowing chapter",
+      "frozen": "entire illustrated scene blocks",
+      "maxModelCalls": 2,
+      "maxLayoutPasses": 3,
+      "thinkingBudget": 128,
+      "candidateEvidence": "text-fit-attempt-1.json and text-fit-attempt-2.json"
+    },
+    "deployment": {
+      "ok": true,
+      "versionId": "89114310-3efd-4cb8-b37d-511c5556b6ca",
+      "changedNodes": [
+        "Ensure Full Text Fits"
+      ],
+      "otherActiveWorkflowsUnchanged": 14,
+      "customerArtifactsUnchanged": true,
+      "providerCalls": 0,
+      "restartWhileIdle": true
+    },
+    "actualRenderer": {
+      "pdf": {
+        "pages": 41,
+        "font": 10.5,
+        "noTruncation": true
+      },
+      "overflowPass": {
+        "mockModelCalls": 1,
+        "onlyChapter": 2,
+        "layoutCalls": 2
+      },
+      "tinyEditPass": {
+        "initialFailure": "simulated",
+        "candidateLayout": "actual API/renderer",
+        "mockModelCalls": 1,
+        "characters": 3594,
+        "aboveOldCeiling": true
+      },
+      "sourceBookUnchanged": true
+    },
+    "providerCalls": 0,
+    "freshPaidGenerationTested": false,
+    "fourMinuteTargetProven": false
   }
 }

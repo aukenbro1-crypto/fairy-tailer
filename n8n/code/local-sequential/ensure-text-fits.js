@@ -13,13 +13,7 @@ const geminiUrl = (provider === 'openlux' ? 'https://api.openlux.ai' : 'https://
 const geminiHeaders = provider === 'openlux'
   ? { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' }
   : { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' };
-const chapterTargets = {
-  1: { min: 3300, max: 3700, blocks: 4 },
-  2: { min: 3300, max: 3700, blocks: 4 },
-  3: { min: 4500, max: 4900, blocks: 6 },
-  4: { min: 4500, max: 4900, blocks: 6 },
-  5: { min: 3700, max: 4100, blocks: 5 },
-};
+
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
@@ -110,16 +104,6 @@ async function apiRequest(options) {
   });
 }
 
-async function preflight() {
-  try {
-    return await apiRequest.call(this, { method: 'POST', url: preflightUrl, timeout: 300000 });
-  } catch (error) {
-    const message = 'Не удалось проверить верстку книги. Попробуйте еще раз.';
-    await markFailed.call(this, message, { technicalMessage: cleanText(error?.message || error) });
-    throw error;
-  }
-}
-
 async function writeArtifact(payload) {
   return await apiRequest.call(this, {
     method: 'PUT',
@@ -147,17 +131,6 @@ async function markFailed(message, details) {
   }
 }
 
-function offendersFor(chapters, fit) {
-  const offenders = new Set();
-  if (Number(fit?.chapter)) offenders.add(Number(fit.chapter));
-  for (const chapter of chapters) {
-    const n = Number(chapter.n);
-    const target = chapterTargets[n];
-    if (target && chapterCharacters(chapter) > target.max + 150) offenders.add(n);
-  }
-  return [...offenders].sort((a, b) => a - b);
-}
-
 function localFrozenSceneBlocks(chapter) {
   const quotes = [chapter.visualSourceQuote, chapter.supportingPeopleQuote].filter(Boolean);
   if (!quotes.length) throw new Error('Illustration anchor missing before shortening');
@@ -172,132 +145,92 @@ function localFrozenSceneBlocks(chapter) {
   return [...new Set(indices)];
 }
 
-function shorteningBudget(chapter, attempt) {
-  const target = chapterTargets[Number(chapter.n)];
-  const frozenIndices = localFrozenSceneBlocks(chapter);
-  const frozenCharacters = frozenIndices.reduce((sum, i) => sum + cleanBlock(chapter.textBlocks[i]).length, 0);
-  const editableBlocks = chapter.textBlocks.length - frozenIndices.length;
-  // A physical overflow needs headroom, not a one-character reduction.
-  const max = Math.floor(Math.min(target.max * (0.9 ** attempt), chapterCharacters(chapter) * 0.9));
-  if (!editableBlocks || max <= frozenCharacters + editableBlocks) {
-    throw new Error('Cannot shorten chapter ' + chapter.n + ' while preserving its illustrated scene');
-  }
-  return { min: Math.max(frozenCharacters + editableBlocks, Math.floor(max * 0.9)), max,
-    frozenIndices, editableCharactersMax: max - frozenCharacters };
+function editableParagraphs(chapter) {
+  const frozen = new Set(localFrozenSceneBlocks(chapter));
+  return chapter.textBlocks.flatMap((block, blockIndex) => frozen.has(blockIndex) ? []
+    : cleanBlock(block).split('\n\n').map((text, paragraphIndex) => ({ block: blockIndex + 1, paragraph: paragraphIndex + 1, text })));
 }
 
-function correctionRequest(chapters, offenderNumbers, attempt, feedback) {
-  const selected = chapters.filter((chapter) => offenderNumbers.includes(Number(chapter.n)));
-  const chapterContext = selected.map((chapter) => {
-    const n = Number(chapter.n);
-    const index = chapters.findIndex((candidate) => Number(candidate.n) === n);
-    const { min, max, editableCharactersMax } = shorteningBudget(chapter, attempt);
+function correctionRequest(chapters, offenderNumbers, attempt, failures) {
+  const selected = chapters.filter(chapter => offenderNumbers.includes(Number(chapter.n)));
+  const chapterContext = selected.map(chapter => {
+    const index = chapters.indexOf(chapter);
+    const editable = editableParagraphs(chapter);
+    if (!editable.length) throw new Error('Cannot shorten chapter ' + chapter.n + ' while preserving its illustrated scene');
     return {
-      n,
-      fixedTitle: chapter.title || 'Глава ' + n,
-      fixedSummary: chapter.summary || '',
-      previousChapterSummary: index > 0 ? chapters[index - 1]?.summary || '' : '',
-      nextChapterSummary: index + 1 < chapters.length ? chapters[index + 1]?.summary || '' : '',
-      requiredBlocks: chapter.textBlocks.length,
-      targetCharacters: min + '-' + max,
-      editableCharactersMax,
-      currentCharacters: chapterCharacters(chapter),
-      currentTextBlocks: chapter.textBlocks || [],
-      frozenSceneBlocks: localFrozenSceneBlocks(chapter).map(i => ({ index: i, text: cleanBlock(chapter.textBlocks[i]) })),
-      visualBrief: chapter.visualBrief || '',
+      n: Number(chapter.n), fixedTitle: chapter.title || '', fixedSummary: chapter.summary || '',
+      previousChapterSummary: chapters[index - 1]?.summary || '', nextChapterSummary: chapters[index + 1]?.summary || '',
+      currentCharacters: chapterCharacters(chapter), suggestedCharacters: Math.round(chapterCharacters(chapter) * 0.95),
+      layoutError: failures.find(f => Number(f.chapter) === Number(chapter.n))?.error || '',
+      currentTextBlocks: chapter.textBlocks,
+      frozenSceneBlocks: localFrozenSceneBlocks(chapter).map(i => ({ block: i + 1, text: cleanBlock(chapter.textBlocks[i]) })),
+      editableParagraphs: editable,
     };
   });
-  const requestedShape = selected.map((chapter) => {
-    const n = Number(chapter.n);
-    const count = chapter.textBlocks.length;
-    return '{ "n": ' + n + ', "textBlocks": [' + Array.from({ length: count }, () => '"..."').join(', ') + '] }';
-  }).join(', ');
   const prompt = [
-    'Перепиши только перечисленные главы персональной книги на русском языке.',
-    'Причина: текущий текст физически не помещается в фиксированный книжный макет с единым шрифтом.',
-    'Сократи формулировки только в незамороженных блоках. Блоки frozenSceneBlocks уже переданы художнику: верни их дословно на тех же индексах, независимо от их места в главе. Если не помещается сама замороженная сцена, не меняй её: исправление будет отклонено.',
-    'Строго сохрани все события, причинно-следственные связи, имена, возраст, отношения, факты, важные предметы, эмоциональную арку, исход главы и переход к соседним главам.',
-    'Не добавляй новые события и не меняй название, summary, визуальное ТЗ или роль главы.',
-    'Соблюдай targetCharacters всей главы и requiredBlocks. Распредели объем по блокам примерно равномерно.',
-    'editableCharactersMax — максимальная сумма длин только незамороженных блоков. Считай длины строк вместе с пробелами и переносами, без разделителей между блоками.',
-    'Сохраняй абзацы, где они нужны по смыслу; не добавляй новых разрывов ради плотности. Разделяй абзацы экранированной JSON-последовательностью \\n\\n.',
-    'Диалоги не больше 30%. Прямая речь только через русское тире без внешних кавычек.',
-    'Перед ответом пересчитай объем каждой главы. Верхняя граница targetCharacters является жесткой.',
-    feedback ? 'Предыдущая попытка не прошла: ' + feedback : '',
-    '',
-    'Контекст всей книги (не переписывать остальные главы):',
-    JSON.stringify(chapters.map(c=>({n:c.n,textBlocks:c.textBlocks}))),
-    'Главы для сокращения:',
-    JSON.stringify(chapterContext),
-    '',
-    'Верни только валидный JSON строго такой формы: { "chapters": [' + requestedShape + '] }',
+    'Точечно сократи избыточные формулировки в нескольких абзацах переполненных глав персональной книги на русском языке.',
+    'Сборщик проверил реальный книжный макет: перечисленные главы не помещаются при шрифте 10.5 pt.',
+    'Верни только изменённые абзацы из editableParagraphs, используя их точные номера block и paragraph (от 1). Не возвращай всю главу.',
+    'Блоки frozenSceneBlocks уже переданы художнику. Они защищены целиком: не возвращай правки для них.',
+    'Выбери минимум нужных абзацев, максимум три в каждой главе. Сначала убери повторы, лишние вводные слова и многословные конструкции.',
+    'Сохрани события, причинно-следственные связи, имена, возраст, отношения, мотивировки, реакции героев, факты, важные предметы, атмосферу, исход главы и переход к следующей.',
+    'Не добавляй события, не удаляй абзацы или реплики целиком, не меняй название, аннотацию и визуальное ТЗ. Каждый новый text должен быть одним непустым абзацем, короче исходного.',
+    'suggestedCharacters — мягкий ориентир небольшого сокращения примерно на 5%, не требование точного числа знаков. Сохраняй выразительность текста. Окончательную вместимость проверит сборщик.',
+    attempt > 1 ? 'Предыдущую сокращённую версию сборщик проверил, но она всё ещё не поместилась. Исправь только оставшуюся избыточность в текущем тексте.' : '',
+    'Главы для сокращения:', JSON.stringify(chapterContext), '',
+    'Верни только JSON: { "chapters": [{ "n": 1, "edits": [{ "block": 1, "paragraph": 2, "text": "Сокращённый абзац" }] }] }. Только перечисленные главы.',
   ].join('\n');
   return {
-    systemInstruction: { parts: [{ text: 'Ты литературный редактор Fairyteller. Переписывай главы цельно и бережно, соблюдай жесткий печатный объем. Верни только JSON.' }] },
+    systemInstruction: { parts: [{ text: 'Ты литературный редактор Fairyteller. Делай адресные бережные правки абзацев. Остальной текст сохраняет код. Верни только JSON.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.45,
-      topP: 0.85,
-      maxOutputTokens: 9000,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: 'OBJECT',
-        properties: {
-          chapters: {
-            type: 'ARRAY',
-            minItems: selected.length,
-            maxItems: selected.length,
-            items: {
-              type: 'OBJECT',
-              properties: {
-                n: { type: 'NUMBER' },
-                textBlocks: { type: 'ARRAY', items: { type: 'STRING' } },
-              },
-              required: ['n', 'textBlocks'],
-            },
-          },
-        },
-        required: ['chapters'],
-      },
+      temperature: 0.35, topP: 0.85, maxOutputTokens: 9000, thinkingConfig: { thinkingBudget: 128 }, responseMimeType: 'application/json',
+      responseSchema: { type: 'OBJECT', properties: { chapters: {
+        type: 'ARRAY', minItems: selected.length, maxItems: selected.length,
+        items: { type: 'OBJECT', properties: { n: { type: 'NUMBER' }, edits: {
+          type: 'ARRAY', minItems: 1, maxItems: 3,
+          items: { type: 'OBJECT', properties: { block: { type: 'INTEGER' }, paragraph: { type: 'INTEGER' }, text: { type: 'STRING' } }, required: ['block', 'paragraph', 'text'] },
+        } }, required: ['n', 'edits'] },
+      } }, required: ['chapters'] },
     },
   };
 }
 
-async function regenerateChapters(chapters, offenderNumbers, attempt, feedback) {
-  const request = correctionRequest(chapters, offenderNumbers, attempt, feedback);
+async function regenerateChapters(chapters, offenderNumbers, attempt, failures) {
+  const request = correctionRequest(chapters, offenderNumbers, attempt, failures);
   const response = provider === 'openai'
     ? await requestOpenAIText.call(this, request, openAIModel, 'fairyteller_text_fit', 300000)
     : (provider === 'openlux' && (/^grok-/i.test(model) || model === 'gpt-6.1-sol')
       ? await requestOpenLuxChat.call(this, request, model, 'fairyteller_text_fit', 240000)
       : await this.helpers.httpRequest({ method: 'POST', url: geminiUrl, headers: geminiHeaders, body: request, json: true, timeout: 240000 }));
-  const parsed = parseJsonResponse(response);
-  const replacements = new Map();
-  for (const chapter of parsed.chapters || []) {
-    const n = Number(chapter.n);
-    const target = chapterTargets[n];
-    if (!Array.isArray(chapter.textBlocks) || chapter.textBlocks.some(b => typeof b !== 'string' || !cleanBlock(b))) throw new Error('Invalid text blocks in final shortening');
-    const blocks = chapter.textBlocks.map(cleanBlock);
-    if (!offenderNumbers.includes(n) || !target) continue;
-    const original = chapters.find((candidate) => Number(candidate.n) === n);
-    if (!original || blocks.length !== original.textBlocks.length) continue;
-    if (localFrozenSceneBlocks(original).some(i => blocks[i] !== cleanBlock(original.textBlocks[i]))) {
-      throw new Error('Text-fit cannot change the illustrated scene blocks of chapter ' + n);
-    }
-    const budget = shorteningBudget(original, attempt);
-    const characters = chapterCharacters({ textBlocks: blocks });
-    if (characters < budget.min || characters > budget.max) {
-      const error = new Error('Chapter ' + n + ' shortening returned ' + characters
-        + ' characters; required ' + budget.min + '-' + budget.max);
-      error.retryableVolume = true;
-      throw error;
+  const parsed = parseJsonResponse(response), replacements = new Map();
+  if (!Array.isArray(parsed.chapters)) throw new Error('Invalid paragraph-edit response');
+  for (const item of parsed.chapters) {
+    const n = item.n, original = chapters.find(c => Number(c.n) === n);
+    if (!offenderNumbers.includes(n) || !original || replacements.has(n)) throw new Error('Invalid or duplicate text-fit chapter');
+    if (!Array.isArray(item.edits) || !item.edits.length || item.edits.length > 3) throw new Error('Text-fit requires one to three paragraph edits');
+    const frozen = new Set(localFrozenSceneBlocks(original)), blocks = [...original.textBlocks], seen = new Set();
+    for (const edit of item.edits) {
+      const blockIndex = edit.block - 1, paragraphIndex = edit.paragraph - 1;
+      if (!Number.isInteger(edit.block) || !Number.isInteger(edit.paragraph) || blockIndex < 0 || blockIndex >= blocks.length || paragraphIndex < 0) throw new Error('Invalid paragraph-edit address');
+      if (frozen.has(blockIndex)) throw new Error('Text-fit cannot change the illustrated scene blocks of chapter ' + n);
+      const key = blockIndex + ':' + paragraphIndex;
+      if (seen.has(key)) throw new Error('Duplicate paragraph-edit address');
+      seen.add(key);
+      const paragraphs = cleanBlock(blocks[blockIndex]).split('\n\n');
+      if (paragraphIndex >= paragraphs.length || typeof edit.text !== 'string') throw new Error('Invalid paragraph-edit text');
+      const text = cleanBlock(edit.text);
+      if (!text || text.includes('\n') || text.length >= paragraphs[paragraphIndex].length) throw new Error('Paragraph edit must preserve one nonempty paragraph and shorten its wording');
+      paragraphs[paragraphIndex] = text;
+      blocks[blockIndex] = paragraphs.join('\n\n');
     }
     replacements.set(n, blocks);
   }
-  if (replacements.size !== offenderNumbers.length) throw new Error('Selected text provider returned an incomplete text-fit replacement');
-  return chapters.map((chapter) => {
+  if (replacements.size !== offenderNumbers.length) throw new Error('Selected text provider returned incomplete paragraph edits');
+  return { edits: parsed.chapters, chapters: chapters.map(chapter => {
     const blocks = replacements.get(Number(chapter.n));
     return blocks ? { ...chapter, textBlocks: blocks, text: blocks.join('\n\n') } : chapter;
-  });
+  }) };
 }
 
 let payload = cloneJson(source);
@@ -336,20 +269,24 @@ try {
     if (!result.failures?.length || result.failures.some(f=>!f.repairable)) throw new Error(result.failures?.map(f=>f.error).join('; ') || 'Invalid final layout result');
     const offenderNumbers = result.failures.map(f=>Number(f.chapter));
     const before = payload.text.chapters;
-    let corrected;
-    try {
-      corrected = await regenerateChapters.call(this, before, offenderNumbers, attempt, attempts.at(-1)?.error);
-    } catch (error) {
-      attempts.push({ attempt, chapters: offenderNumbers, reason: 'physical_overflow', status: 'rejected', error: cleanText(error.message) });
-      if (error.retryableVolume && attempt < 2) continue;
-      throw error;
-    }
-    attempts.push({attempt,chapters:offenderNumbers,reason:'physical_overflow',status:'accepted',
+    const correction = await regenerateChapters.call(this, before, offenderNumbers, attempt, result.failures);
+    const corrected = correction.chapters;
+    const trace = { jobId, attempt, status: 'pending_layout', sourceChapters: before.filter(c => offenderNumbers.includes(Number(c.n))),
+      candidateChapters: corrected.filter(c => offenderNumbers.includes(Number(c.n))), edits: correction.edits };
+    const traceUrl = jobUrl + '/artifacts/text-fit-attempt-' + attempt + '.json';
+    await apiRequest.call(this, { method: 'PUT', url: traceUrl, body: trace });
+    attempts.push({attempt,chapters:offenderNumbers,reason:'physical_overflow',status:'pending_layout',
       volumes:offenderNumbers.map(n=>({chapter:n,before:chapterCharacters(before.find(c=>Number(c.n)===n)),
-        after:chapterCharacters(corrected.find(c=>Number(c.n)===n)),max:shorteningBudget(before.find(c=>Number(c.n)===n),attempt).max}))});
+        after:chapterCharacters(corrected.find(c=>Number(c.n)===n))})),
+      editedParagraphs:correction.edits.map(c=>({chapter:c.n,paragraphs:c.edits.map(e=>({block:e.block,paragraph:e.paragraph}))}))});
     payload.text = {...payload.text,chapters:corrected};
     await writeArtifact.call(this,payload);
+    // Character counts are advisory. Every valid candidate reaches the real layout checker.
     result = await prepareBook.call(this);
+    const accepted = acceptBookLayout(result);
+    attempts.at(-1).status = accepted ? 'accepted' : 'overflow';
+    await apiRequest.call(this, { method: 'PUT', url: traceUrl, body: { ...trace, status: accepted ? 'accepted' : 'overflow',
+      layoutFailures: result.failures || [] } });
   }
   if (!acceptBookLayout(result)) throw new Error(result.failures?.map(f=>f.error).join('; ') || 'Book cannot fit after two bounded shortenings');
   await writeArtifact.call(this,payload);
